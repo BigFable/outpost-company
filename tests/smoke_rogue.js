@@ -19,6 +19,10 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(/12\.3K/.test(d.getElementById('runStats').textContent),'old save delivered carried into run stats');
  ok(d.title==='Outpost Company' && /Outpost Company/.test(d.querySelector('.brand h1').textContent),'re-theme: title and brand are Outpost Company');
  ok(/Charter Shares/.test(d.getElementById('legacyPanel').textContent) && !/Timberline/.test(d.body.textContent),'re-theme: Charter Shares wording, no Timberline left');
+ // M2: the prototype stays one self-contained file and runs on the inlined packages/core bundle
+ ok(!/<script[^>]*\ssrc=/.test(html) && d.querySelectorAll('script#outpost-core').length===1,'single file: core inlined, no external scripts');
+ ok(w.Core && Object.isFrozen(w.Core.EQUIPMENT) && w.Core.marketPrice(0)===1+0.18*Math.sin(1),'window.Core exposes frozen content and formulas');
+ ok(d.querySelectorAll('#eq .row').length===w.Core.EQUIPMENT.length && /Finish 1 skidding run/.test(d.getElementById('upgs').textContent),'equipment and improvement panels built from Core data');
  dom.window.close();
 
  // 2. fresh game: drive the felling game with pointer events

@@ -365,135 +365,1605 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   </div>
 </div>
 
+<script id="outpost-core">
+// GENERATED from packages/core by `pnpm run core:inline`. Do not edit here: edit packages/core and re-run.
+var Core = (function(exports) {
+	Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+	//#region packages/core/src/freeze.ts
+	/**
+	* Recursively freeze a data literal so content tables cannot be changed at
+	* runtime by accident (the prototype used to attach fields to its tables).
+	*/
+	function deepFreeze(value) {
+		if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+			Object.freeze(value);
+			for (const v of Object.values(value)) deepFreeze(v);
+		}
+		return value;
+	}
+	//#endregion
+	//#region packages/core/src/content.ts
+	/**
+	* Logging content as data, moved verbatim from prototype/timberline.html (tech plan M2).
+	* The prototype reads these through window.Core; edit them here, then run
+	* `pnpm run core:inline` to regenerate the bundled region in the prototype.
+	* (Logging content moves on to packages/skills/logging in M4.)
+	*/
+	var SPECIES = deepFreeze({
+		pine: {
+			name: "Fogbound pine",
+			hp: 20,
+			bf: 200,
+			saw: .75,
+			sawP: .25,
+			pulpP: .06,
+			shape: "con"
+		},
+		spruce: {
+			name: "Shore spruce",
+			hp: 16,
+			bf: 160,
+			saw: .6,
+			sawP: .23,
+			pulpP: .07,
+			shape: "con"
+		},
+		hemlock: {
+			name: "Mist hemlock",
+			hp: 22,
+			bf: 220,
+			saw: .5,
+			sawP: .18,
+			pulpP: .06,
+			shape: "con"
+		},
+		maple: {
+			name: "Glacier maple",
+			hp: 28,
+			bf: 260,
+			saw: .55,
+			sawP: .42,
+			pulpP: .05,
+			shape: "dec"
+		},
+		oak: {
+			name: "Hot-spring oak",
+			hp: 32,
+			bf: 300,
+			saw: .6,
+			sawP: .52,
+			pulpP: .05,
+			shape: "dec"
+		},
+		walnut: {
+			name: "Giant cloudwood",
+			hp: 30,
+			bf: 280,
+			saw: .7,
+			sawP: 1.4,
+			pulpP: .04,
+			shape: "dec"
+		}
+	});
+	var ERAS = deepFreeze([
+		{
+			name: "Cove Landing",
+			year: 1890,
+			cost: 0
+		},
+		{
+			name: "Steam Camp",
+			year: 1905,
+			cost: 15e3,
+			blurb: "Steam donkeys, drag saws and a logging railroad up from the cove."
+		},
+		{
+			name: "Diesel Road",
+			year: 1950,
+			cost: 1e6,
+			blurb: "Chainsaws, crawler tractors and log trucks on roads pushed into the fog."
+		},
+		{
+			name: "Into the Interior",
+			year: 1990,
+			cost: 1e7,
+			blurb: "Feller bunchers, processors and forwarders working the deep Interior."
+		}
+	]);
+	/** Species that can appear in a generated tract, per era. */
+	var ERA_SPECIES = deepFreeze([
+		[
+			"pine",
+			"spruce",
+			"hemlock"
+		],
+		[
+			"pine",
+			"spruce",
+			"hemlock",
+			"maple"
+		],
+		[
+			"pine",
+			"spruce",
+			"hemlock",
+			"maple",
+			"oak"
+		],
+		[
+			"pine",
+			"spruce",
+			"hemlock",
+			"maple",
+			"oak",
+			"walnut"
+		]
+	]);
+	/** Typical tree count of a tract, per era tier. */
+	var TRACT_BASE = deepFreeze([
+		60,
+		1500,
+		15e3,
+		12e4
+	]);
+	var STAGES = deepFreeze([
+		{
+			id: "fell",
+			name: "Fell",
+			verb: "Felling",
+			unit: "chops/s"
+		},
+		{
+			id: "buck",
+			name: "Buck",
+			verb: "Bucking",
+			unit: "bd ft/s"
+		},
+		{
+			id: "skid",
+			name: "Skid",
+			verb: "Skidding",
+			unit: "bd ft/s"
+		},
+		{
+			id: "haul",
+			name: "Haul",
+			verb: "Hauling",
+			unit: "bd ft/s"
+		}
+	]);
+	var PILES = deepFreeze([
+		{
+			id: "stems",
+			label: "stems on the ground"
+		},
+		{
+			id: "cut",
+			label: "logs at the stump"
+		},
+		{
+			id: "landing",
+			label: "logs at the landing"
+		}
+	]);
+	var EQUIPMENT = deepFreeze([
+		{
+			id: "axeman",
+			stage: "fell",
+			era: 0,
+			name: "Axeman",
+			desc: "Double-bit axe, company issue, and a long day.",
+			rate: 1,
+			cost: 40,
+			up: 3
+		},
+		{
+			id: "crosscut",
+			stage: "fell",
+			era: 0,
+			name: "Crosscut sawyers",
+			desc: "Two men on a six-foot felling saw, shipped out in oiled canvas.",
+			rate: 4,
+			cost: 220,
+			up: 10
+		},
+		{
+			id: "bucker",
+			stage: "buck",
+			era: 0,
+			name: "Bucker",
+			desc: "Limbs stems and saws them to log lengths in the fog.",
+			rate: 12,
+			cost: 60,
+			up: 3
+		},
+		{
+			id: "oxen",
+			stage: "skid",
+			era: 0,
+			name: "Ox team",
+			desc: "Landed off the first ship. Slow and steady to the landing.",
+			rate: 10,
+			cost: 90,
+			up: 5
+		},
+		{
+			id: "horses",
+			stage: "skid",
+			era: 0,
+			name: "Horse team",
+			desc: "Faster than oxen. Eats more of the ship’s hay.",
+			rate: 22,
+			cost: 300,
+			up: 11
+		},
+		{
+			id: "sled",
+			stage: "haul",
+			era: 0,
+			name: "Logging sled",
+			desc: "Landing to the cove mill. Best on frozen roads.",
+			rate: 15,
+			cost: 70,
+			up: 4
+		},
+		{
+			id: "wagon",
+			stage: "haul",
+			era: 0,
+			name: "Log wagon and teamster",
+			desc: "Big wheels for the beach road.",
+			rate: 35,
+			cost: 600,
+			up: 12
+		},
+		{
+			id: "springboard",
+			stage: "fell",
+			era: 1,
+			name: "Springboard fallers",
+			desc: "Cut above the butt swell of the big coast trees from notched planks.",
+			rate: 15,
+			cost: 2500,
+			up: 45
+		},
+		{
+			id: "dragsaw",
+			stage: "buck",
+			era: 1,
+			name: "Steam drag saw",
+			desc: "A reciprocating saw driven by steam.",
+			rate: 120,
+			cost: 2800,
+			up: 40
+		},
+		{
+			id: "donkey",
+			stage: "skid",
+			era: 1,
+			name: "Steam donkey",
+			desc: "Winch engine that yards logs on cable.",
+			rate: 180,
+			cost: 7e3,
+			up: 110
+		},
+		{
+			id: "shay",
+			stage: "haul",
+			era: 1,
+			name: "Shay locomotive",
+			desc: "Geared engine on the company railroad down to the cove.",
+			rate: 300,
+			cost: 15e3,
+			up: 170
+		},
+		{
+			id: "chainsaw",
+			stage: "fell",
+			era: 2,
+			name: "Chainsaw faller",
+			desc: "One faller, one saw, a lot of trees.",
+			rate: 90,
+			cost: 3e4,
+			up: 350
+		},
+		{
+			id: "slasher",
+			stage: "buck",
+			era: 2,
+			name: "Slasher saw deck",
+			desc: "Bucks whole stems at the landing.",
+			rate: 800,
+			cost: 36e3,
+			up: 320
+		},
+		{
+			id: "crawler",
+			stage: "skid",
+			era: 2,
+			name: "Crawler tractor",
+			desc: "Tracks and an arch for dragging logs.",
+			rate: 1100,
+			cost: 85e3,
+			up: 650
+		},
+		{
+			id: "cableskid",
+			stage: "skid",
+			era: 2,
+			name: "Cable skidder",
+			desc: "Rubber-tired and quick between turns.",
+			rate: 1600,
+			cost: 14e4,
+			up: 900
+		},
+		{
+			id: "logtruck",
+			stage: "haul",
+			era: 2,
+			name: "Log truck",
+			desc: "Hauls down company roads from deep in the fog.",
+			rate: 2e3,
+			cost: 13e4,
+			up: 950
+		},
+		{
+			id: "buncher",
+			stage: "fell",
+			era: 3,
+			name: "Feller buncher",
+			desc: "Cuts and stacks several stems at a time.",
+			rate: 700,
+			cost: 6e5,
+			up: 4e3
+		},
+		{
+			id: "processor",
+			stage: "buck",
+			era: 3,
+			name: "Processor",
+			desc: "Delimbs and bucks a stem in seconds.",
+			rate: 7e3,
+			cost: 5e5,
+			up: 3200
+		},
+		{
+			id: "grapple",
+			stage: "skid",
+			era: 3,
+			name: "Grapple skidder",
+			desc: "Grabs a bunched turn and goes.",
+			rate: 9e3,
+			cost: 75e4,
+			up: 4200
+		},
+		{
+			id: "forwarder",
+			stage: "skid",
+			era: 3,
+			name: "Forwarder",
+			desc: "Carries logs clear of the ground. Easy on soil.",
+			rate: 14e3,
+			cost: 13e5,
+			up: 6500
+		},
+		{
+			id: "selfloader",
+			stage: "haul",
+			era: 3,
+			name: "Self-loading truck",
+			desc: "Loads itself at the landing.",
+			rate: 15e3,
+			cost: 12e5,
+			up: 6e3
+		}
+	]);
+	var IMPROVEMENTS = deepFreeze([
+		{
+			id: "file",
+			era: 0,
+			name: "Mill file",
+			desc: "Keep an edge on the axe. Your chop ×2. Felling game: wider green hinge zone.",
+			cost: 40,
+			mult: { click: 2 },
+			game: "fell"
+		},
+		{
+			id: "peavey",
+			era: 0,
+			name: "Peaveys and cant hooks",
+			desc: "Your own bucking, skidding and hauling ×2. Skid game: hang-ups free up in half the time.",
+			cost: 120,
+			mult: { hand: 2 },
+			game: "skid"
+		},
+		{
+			id: "gunstick",
+			era: 0,
+			name: "Gunning stick",
+			desc: "Felling game: shows where the tree will really fall, wind included.",
+			cost: 350,
+			mult: {},
+			game: "fell"
+		},
+		{
+			id: "scalestick",
+			era: 0,
+			name: "Scaler’s stick",
+			desc: "Bucking game: see what each log is worth as you plan the cuts.",
+			cost: 450,
+			mult: {},
+			game: "buck"
+		},
+		{
+			id: "swamper",
+			era: 0,
+			name: "Swamping crew",
+			desc: "Clears brush and stumps from skid trails. Skidding ×1.15. Skid game: half the stumps are gone.",
+			cost: 600,
+			mult: { skid: 1.15 },
+			game: "skid"
+		},
+		{
+			id: "hay",
+			era: 0,
+			name: "Hay on the hills",
+			desc: "Sled tenders spread ship’s hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.",
+			cost: 700,
+			mult: { haul: 1.1 },
+			game: "haul"
+		},
+		{
+			id: "wedges",
+			era: 0,
+			name: "Felling wedges",
+			desc: "Drive the tree over the hinge. Felling ×1.15. Felling game: a thick hinge no longer sits back, and falls are steadier.",
+			cost: 900,
+			mult: { fell: 1.15 },
+			game: "fell"
+		},
+		{
+			id: "bunks",
+			era: 0,
+			name: "Bigger bunks",
+			desc: "Longer, wider log bunks. Hauling ×1.15. Haul game: road limit +4 logs.",
+			cost: 1200,
+			mult: { haul: 1.15 },
+			game: "haul"
+		},
+		{
+			id: "cook",
+			era: 0,
+			name: "Camp cookhouse",
+			desc: "Fed crews work harder. Felling and bucking ×1.25.",
+			cost: 1500,
+			mult: {
+				fell: 1.25,
+				buck: 1.25
+			}
+		},
+		{
+			id: "grade",
+			era: 0,
+			name: "Bucking for grade",
+			desc: "Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.",
+			cost: 2500,
+			mult: { value: 1.12 },
+			game: "buck"
+		},
+		{
+			id: "corduroy",
+			era: 0,
+			name: "Corduroy roads",
+			desc: "Log-paved roads. Spring mud costs you half as much. Skid game: mud barely slows you. Haul game: spring road limit +2 logs.",
+			cost: 4e3,
+			mult: {},
+			game: "skid haul"
+		},
+		{
+			id: "icerd",
+			era: 0,
+			name: "Road sprinkler sled",
+			desc: "Ice the haul road at night. Winter hauling ×1.5. Haul game: faster, surer winter runs.",
+			cost: 6e3,
+			mult: {},
+			game: "haul"
+		},
+		{
+			id: "smith",
+			era: 1,
+			name: "Camp blacksmith",
+			desc: "Repairs done in camp. Upkeep ×0.85.",
+			cost: 2e4,
+			mult: { upkeep: .85 }
+		},
+		{
+			id: "scribner",
+			era: 1,
+			name: "Scribner log rule",
+			desc: "A fairer scale at the mill. Sale price ×1.1.",
+			cost: 35e3,
+			mult: { scale: 1.1 }
+		},
+		{
+			id: "skyline",
+			era: 1,
+			name: "Skyline yarding",
+			desc: "Overhead cable reaches steep ground. Slope barely slows skidding. Skid game: logs ride above stumps, so hits no longer scar them.",
+			cost: 6e4,
+			mult: {},
+			game: "skid"
+		},
+		{
+			id: "radios",
+			era: 2,
+			name: "Two-way radios",
+			desc: "Crews coordinate across the site. Every stage ×1.2. All games: pace boosts last 45 s instead of 30.",
+			cost: 5e5,
+			mult: { all: 1.2 },
+			game: "fell buck skid haul"
+		},
+		{
+			id: "airbrakes",
+			era: 2,
+			name: "Air brakes",
+			desc: "Hauling ×1.2. Haul game: brakes ×2, and the load holds to a higher speed before it runs away.",
+			cost: 35e4,
+			mult: { haul: 1.2 },
+			game: "haul"
+		},
+		{
+			id: "shop",
+			era: 2,
+			name: "Diesel shop",
+			desc: "Rebuild engines in-house. Upkeep ×0.85.",
+			cost: 9e5,
+			mult: { upkeep: .85 }
+		},
+		{
+			id: "optimize",
+			era: 3,
+			name: "Cut-to-length optimizer",
+			desc: "Computer bucking for value. Log value ×1.15. Bucking game: one button places the best cuts.",
+			cost: 5e6,
+			mult: { value: 1.15 },
+			game: "buck"
+		},
+		{
+			id: "gps",
+			era: 3,
+			name: "Survey-grid harvest plan",
+			desc: "Charted skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.",
+			cost: 9e6,
+			mult: { all: 1.25 },
+			game: "skid"
+		},
+		{
+			id: "telematics",
+			era: 3,
+			name: "Fleet telematics",
+			desc: "Catch breakdowns early. Upkeep ×0.8.",
+			cost: 14e6,
+			mult: { upkeep: .8 }
+		}
+	]);
+	var RUNS_ANY = [
+		"run_fell",
+		"run_buck",
+		"run_skid",
+		"run_haul"
+	];
+	var IMPROVEMENT_REQS = deepFreeze({
+		file: {
+			text: "Finish 1 felling run",
+			stats: ["run_fell"],
+			target: 1
+		},
+		gunstick: {
+			text: "Finish 3 felling runs",
+			stats: ["run_fell"],
+			target: 3
+		},
+		wedges: {
+			text: "Land 3 falls in the opening",
+			stats: ["goodFell"],
+			target: 3
+		},
+		cook: {
+			text: "Finish 10 felling or bucking runs",
+			stats: ["run_fell", "run_buck"],
+			target: 10
+		},
+		scalestick: {
+			text: "Finish 1 bucking run",
+			stats: ["run_buck"],
+			target: 1
+		},
+		grade: {
+			text: "Buck 3 stems at 85% of best value or better",
+			stats: ["buck85"],
+			target: 3
+		},
+		scribner: {
+			text: "Buck 10 stems at 90% of best value or better",
+			stats: ["buck90"],
+			target: 10
+		},
+		optimize: {
+			text: "Buck 5 stems for full value",
+			stats: ["perfBuck"],
+			target: 5
+		},
+		peavey: {
+			text: "Finish 1 skidding run",
+			stats: ["run_skid"],
+			target: 1
+		},
+		swamper: {
+			text: "Finish 3 skidding runs",
+			stats: ["run_skid"],
+			target: 3
+		},
+		corduroy: {
+			text: "Finish 2 skidding or hauling runs in spring mud",
+			stats: ["mudRuns"],
+			target: 2
+		},
+		skyline: {
+			text: "Skid 5 clean turns",
+			stats: ["cleanSkid"],
+			target: 5
+		},
+		gps: {
+			text: "Skid 12 clean turns",
+			stats: ["cleanSkid"],
+			target: 12
+		},
+		hay: {
+			text: "Finish 1 hauling run",
+			stats: ["run_haul"],
+			target: 1
+		},
+		bunks: {
+			text: "Deliver 3 full loads without losing a log",
+			stats: ["fullLoads"],
+			target: 3
+		},
+		icerd: {
+			text: "Finish 2 hauling runs in winter",
+			stats: ["winterHauls"],
+			target: 2
+		},
+		airbrakes: {
+			text: "Make 5 clean hauls",
+			stats: ["cleanHaul"],
+			target: 5
+		},
+		smith: {
+			text: "Finish 25 runs of any job",
+			stats: RUNS_ANY,
+			target: 25
+		},
+		radios: {
+			text: "Finish 40 runs of any job",
+			stats: RUNS_ANY,
+			target: 40
+		},
+		shop: {
+			text: "Finish 60 runs of any job",
+			stats: RUNS_ANY,
+			target: 60
+		},
+		telematics: {
+			text: "Finish 100 runs of any job",
+			stats: RUNS_ANY,
+			target: 100
+		}
+	});
+	var SEASONS = deepFreeze([
+		"Spring",
+		"Summer",
+		"Fall",
+		"Winter"
+	]);
+	/** Seconds per season. */
+	var SEASON_LEN = 150;
+	var SLOPES = deepFreeze({
+		flat: {
+			label: "flat",
+			skid: 1,
+			disc: 1
+		},
+		rolling: {
+			label: "rolling",
+			skid: .8,
+			disc: .85
+		},
+		steep: {
+			label: "steep",
+			skid: .55,
+			disc: .65
+		}
+	});
+	var PLACES = deepFreeze([
+		"Landfall Cove",
+		"Foghorn Point",
+		"Grey Wash",
+		"Charter Creek",
+		"Lantern Bluff",
+		"Drowned Inlet",
+		"Seal Rock Flats",
+		"Mistfall Ridge",
+		"Hollow Sound",
+		"Cairn Hill",
+		"Long Fog Meadow",
+		"Spar Gulch",
+		"Otter Slough",
+		"Surveyor’s Run",
+		"Whistle Pond",
+		"Glass Creek"
+	]);
+	var MILLS = deepFreeze([
+		"the Cove Sawmill",
+		"the charter ship Perseverance",
+		"Landfall Pier Works",
+		"the Admiralty spar yard",
+		"Fogline Box & Crate",
+		"the Company shipwrights",
+		"Harbor Planing Mill",
+		"the Survey Office stores"
+	]);
+	var PERKS = deepFreeze([
+		{
+			id: "sharp",
+			r: "common",
+			name: "Sharp crews",
+			desc: "Felling ×1.25.",
+			m: { fell: 1.25 }
+		},
+		{
+			id: "buckers",
+			r: "common",
+			name: "Quick buckers",
+			desc: "Bucking ×1.25.",
+			m: { buck: 1.25 }
+		},
+		{
+			id: "teams",
+			r: "common",
+			name: "Good teamsters",
+			desc: "Skidding ×1.25.",
+			m: { skid: 1.25 }
+		},
+		{
+			id: "roadcrew",
+			r: "common",
+			name: "Road crew",
+			desc: "Hauling ×1.25.",
+			m: { haul: 1.25 }
+		},
+		{
+			id: "frugal",
+			r: "common",
+			name: "Frugal cook",
+			desc: "Ship’s biscuit stretches further. Upkeep ×0.85.",
+			m: { upkeep: .85 }
+		},
+		{
+			id: "grader",
+			r: "common",
+			name: "Sharp-eyed grader",
+			desc: "Log value ×1.08.",
+			m: { value: 1.08 }
+		},
+		{
+			id: "strong",
+			r: "common",
+			name: "Strong back",
+			desc: "Your chops and hand work ×3.",
+			m: {
+				click: 3,
+				hand: 3
+			}
+		},
+		{
+			id: "bargain",
+			r: "common",
+			name: "Friendly land agent",
+			desc: "Cutting rights at the land office cost 15% less.",
+			m: { stump: .85 }
+		},
+		{
+			id: "pacer",
+			r: "common",
+			name: "Pace-setter",
+			desc: "Pace boosts last 15 s longer."
+		},
+		{
+			id: "widow",
+			r: "rare",
+			name: "Widowmaker’s luck",
+			desc: "Felling game: a barber chair has a 50% chance to swing true and count as a perfect fall."
+		},
+		{
+			id: "iceking",
+			r: "rare",
+			name: "Ice road king",
+			desc: "Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs."
+		},
+		{
+			id: "hotsaw",
+			r: "rare",
+			name: "Hot saw",
+			desc: "Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you."
+		},
+		{
+			id: "scaler",
+			r: "rare",
+			name: "Scaler’s friend",
+			desc: "Bucking game: any score of 90% or better is scaled as 100%."
+		},
+		{
+			id: "four",
+			r: "rare",
+			name: "Four-log turns",
+			desc: "Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn."
+		},
+		{
+			id: "daredevil",
+			r: "rare",
+			name: "Downhill daredevil",
+			desc: "Haul game: runaway speed +40, but a runaway spills twice the logs."
+		},
+		{
+			id: "swamp",
+			r: "rare",
+			name: "Swamp boots",
+			desc: "Mud never slows the skid game, and idle skidding ignores spring mud."
+		},
+		{
+			id: "neck",
+			r: "rare",
+			name: "Bottleneck boss",
+			desc: "Idle: whichever stage is the bottleneck runs ×1.35."
+		},
+		{
+			id: "handshake",
+			r: "rare",
+			name: "Handshake deals",
+			desc: "Missed charter orders carry no penalty."
+		},
+		{
+			id: "store",
+			r: "rare",
+			name: "Company store",
+			desc: "Crews with nothing to do draw no pay at all (instead of ¼).",
+			set: 2
+		},
+		{
+			id: "cruiser",
+			r: "rare",
+			name: "Timber cruiser",
+			desc: "Land office listings carry 25% more trees for the same price.",
+			set: 2
+		},
+		{
+			id: "domino",
+			r: "legendary",
+			name: "Domino fall",
+			desc: "Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6)."
+		},
+		{
+			id: "bull",
+			r: "legendary",
+			name: "Bull of the woods",
+			desc: "Pace boosts are ×2 instead of ×1.5."
+		},
+		{
+			id: "golden",
+			r: "legendary",
+			name: "Fog lifts",
+			desc: "Any pace boost from a mini-game boosts every stage at once.",
+			set: 2
+		},
+		{
+			id: "snowball",
+			r: "legendary",
+			name: "Snowball camp",
+			desc: "Idle: every filled charter order speeds all crews +4% for the rest of the outpost.",
+			set: 2
+		},
+		{
+			id: "strict",
+			r: "curse",
+			name: "Strict scaler",
+			desc: "Log value −15%, but charter order premiums +40 points.",
+			m: { value: .85 }
+		},
+		{
+			id: "scrip",
+			r: "curse",
+			name: "Company scrip",
+			desc: "No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.",
+			m: { price: 1.15 }
+		},
+		{
+			id: "absentee",
+			r: "curse",
+			name: "Absentee directors",
+			desc: "The board runs things from home. Mini-games never grant pace boosts, but every crew works ×1.2.",
+			m: { all: 1.2 }
+		}
+	]);
+	var RARITY = deepFreeze({
+		common: {
+			w: 60,
+			label: "Common"
+		},
+		rare: {
+			w: 26,
+			label: "Rare"
+		},
+		legendary: {
+			w: 5,
+			label: "Legendary"
+		},
+		curse: {
+			w: 9,
+			label: "Curse"
+		}
+	});
+	var META = deepFreeze([
+		{
+			id: "cash",
+			cost: 4,
+			name: "Board advance",
+			desc: "Start each outpost with $750."
+		},
+		{
+			id: "sled",
+			cost: 5,
+			name: "Crew on the first boat",
+			desc: "Start each outpost with an axeman, a bucker, an ox team and a logging sled."
+		},
+		{
+			id: "pace",
+			cost: 6,
+			name: "Camp fiddler",
+			desc: "Pace boosts last 10 s longer."
+		},
+		{
+			id: "reroll",
+			cost: 8,
+			name: "Lucky compass",
+			desc: "+1 draft reroll each outpost."
+		},
+		{
+			id: "foremen",
+			cost: 8,
+			name: "Seasoned foremen",
+			desc: "Every crew and machine works ×1.2."
+		},
+		{
+			id: "steam",
+			cost: 8,
+			name: "Steam surveyor",
+			desc: "Reaching Steam Camp costs 20% less."
+		},
+		{
+			id: "starter",
+			cost: 10,
+			name: "Camp stories",
+			desc: "Start each outpost with a random common perk."
+		},
+		{
+			id: "nest",
+			cost: 12,
+			name: "Nest egg",
+			desc: "Keep 10% of your cash when you close camp."
+		},
+		{
+			id: "legacy",
+			cost: 14,
+			name: "Company chronicler",
+			desc: "Charter Shares from closing camp +15%."
+		},
+		{
+			id: "lore",
+			cost: 14,
+			name: "Old Reach hands",
+			desc: "Four more rare and legendary perks join the draft pool."
+		},
+		{
+			id: "gas",
+			cost: 12,
+			name: "Diesel dealer",
+			desc: "Reaching Diesel Road costs 25% less."
+		},
+		{
+			id: "four",
+			cost: 20,
+			name: "Wider choice",
+			desc: "Drafts show 4 perks instead of 3."
+		}
+	]);
+	/** Charter clauses: optional hard modifiers that multiply Charter Shares. */
+	var MODS = deepFreeze([
+		{
+			id: "drought",
+			name: "Dry summer",
+			desc: "Felling −10%, and summer slash fires can burn stems on the ground.",
+			x: 1.25
+		},
+		{
+			id: "market",
+			name: "Dividends due",
+			desc: "Investors back home take their cut. Every sale pays 15% less.",
+			x: 1.3
+		},
+		{
+			id: "beetle",
+			name: "Thin survey",
+			desc: "Land office listings carry 20% fewer trees.",
+			x: 1.2
+		}
+	]);
+	/** Board feet an outpost must deliver before it can close camp without reaching Steam Camp. */
+	var CLOSE_VOL = 25e4;
+	//#endregion
+	//#region packages/core/src/achievements.ts
+	/**
+	* Achievements and improvement unlock requirements as data (tech plan 2.1 principle 3).
+	* Conditions read named metrics through a callback, so the caller decides where
+	* the numbers come from (the prototype reads its save state; M3 reads GameState).
+	*/
+	var ladder = (id, name, desc, metric, target, cash, rep) => ({
+		id,
+		name,
+		desc,
+		cash,
+		rep,
+		when: [{
+			metric,
+			op: ">=",
+			value: target
+		}],
+		ladder: true
+	});
+	var once = (id, name, desc, when, cash, rep = 0) => ({
+		id,
+		name,
+		desc,
+		cash,
+		rep,
+		when,
+		ladder: false
+	});
+	var atLeast = (metric, value) => ({
+		metric,
+		op: ">=",
+		value
+	});
+	var ACHIEVEMENTS = deepFreeze([
+		once("first_tree", "Timber!", "Fell your first tree.", [atLeast("felled", 1)], 10),
+		once("first_sale", "First load to the cove", "Deliver logs to the cove mill.", [{
+			metric: "deliv",
+			op: ">",
+			value: 0
+		}], 15),
+		once("first_crew", "On the payroll", "Bring your first crew ashore.", [atLeast("crew", 1)], 25),
+		once("full_chain", "Stump to mill", "Have a crew working every stage.", [atLeast("crewedStages", 4)], 100, 1),
+		ladder("d10k", "10 MBF", "Deliver 10,000 bd ft.", "deliv", 1e4, 150, 1),
+		ladder("d50k", "50 MBF", "Deliver 50,000 bd ft.", "deliv", 5e4, 500, 1),
+		ladder("d250k", "Quarter million", "Deliver 250,000 bd ft.", "deliv", 25e4, 1800, 2),
+		ladder("d1m", "A million board feet", "Deliver 1,000,000 bd ft.", "deliv", 1e6, 6e3, 2),
+		ladder("d3m", "Three million", "Deliver 3 million bd ft.", "deliv", 3e6, 2e4, 1),
+		ladder("d10m", "Ten million", "Deliver 10 million bd ft.", "deliv", 1e7, 7e4, 3),
+		ladder("d30m", "Thirty million", "Deliver 30 million bd ft.", "deliv", 3e7, 25e4, 2),
+		ladder("d100m", "A hundred million", "Deliver 100 million bd ft.", "deliv", 1e8, 9e5, 3),
+		ladder("d300m", "Three hundred million", "Deliver 300 million bd ft.", "deliv", 3e8, 3e6, 2),
+		ladder("d1b", "A billion board feet", "Deliver 1 billion bd ft.", "deliv", 1e9, 12e6, 5),
+		ladder("e10k", "Ten-thousand-dollar year", "Earn $10K in sales.", "earned", 1e4, 300, 0),
+		ladder("e100k", "Six figures", "Earn $100K in sales.", "earned", 1e5, 3e3, 1),
+		ladder("e1m", "Millionaire charter", "Earn $1M in sales.", "earned", 1e6, 3e4, 1),
+		ladder("e5m", "Five million in sales", "Earn $5M in sales.", "earned", 5e6, 12e4, 1),
+		ladder("e25m", "Toast of the board", "Earn $25M in sales.", "earned", 25e6, 6e5, 2),
+		ladder("e100m", "Founders of Landfall", "Earn $100M in sales.", "earned", 1e8, 2e6, 2),
+		ladder("t100", "Hundred trees", "Fell 100 trees.", "felled", 100, 200, 0),
+		ladder("t1k", "Thousand trees", "Fell 1,000 trees.", "felled", 1e3, 2500, 1),
+		ladder("t3k", "Three thousand trees", "Fell 3,000 trees.", "felled", 3e3, 1e4, 1),
+		ladder("t10k", "Ten thousand trees", "Fell 10,000 trees.", "felled", 1e4, 4e4, 2),
+		ladder("t30k", "Thirty thousand trees", "Fell 30,000 trees.", "felled", 3e4, 2e5, 1),
+		ladder("t100k", "A hundred thousand", "Fell 100,000 trees.", "felled", 1e5, 7e5, 3),
+		ladder("tr3", "Cut out", "Finish 3 tracts.", "tracts", 3, 300, 0),
+		ladder("tr10", "Ten tracts", "Finish 10 tracts.", "tracts", 10, 2500, 1),
+		ladder("tr30", "Thirty tracts", "Finish 30 tracts.", "tracts", 30, 3e4, 2),
+		ladder("tr60", "Sixty tracts", "Finish 60 tracts.", "tracts", 60, 15e4, 2),
+		ladder("hire1", "Hired hands", "Finish a cut-for-hire job.", "hires", 1, 150, 0),
+		ladder("c1", "Under contract", "Fill a delivery contract.", "contracts", 1, 250, 0),
+		ladder("c5", "Reliable supplier", "Fill 5 delivery contracts.", "contracts", 5, 1500, 1),
+		ladder("c10", "Steady supplier", "Fill 10 delivery contracts.", "contracts", 10, 8e3, 1),
+		ladder("c20", "Preferred supplier", "Fill 20 delivery contracts.", "contracts", 20, 25e3, 2),
+		ladder("crew10", "Ten-crew outfit", "Own 10 crews or machines.", "crew", 10, 400, 0),
+		ladder("crew30", "Big outfit", "Own 30 crews or machines.", "crew", 30, 4e3, 1),
+		ladder("crew75", "Industrial outfit", "Own 75 crews or machines.", "crew", 75, 8e4, 2),
+		ladder("crew50", "Fifty-crew outfit", "Own 50 crews or machines.", "crew", 50, 2e4, 1),
+		ladder("crew120", "Company of the Reach", "Own 120 crews or machines.", "crew", 120, 5e5, 2),
+		ladder("w1", "Wintered over", "Work through a winter on the Reach.", "winters", 1, 250, 0),
+		ladder("w5", "Five winters", "Work through five winters.", "winters", 5, 3500, 1),
+		ladder("w10", "Ten winters", "Work through ten winters.", "winters", 10, 3e4, 1),
+		ladder("pf1", "Right where you wanted it", "Land a perfect fall.", "perfFell", 1, 60, 0),
+		ladder("pf10", "Faller of note", "Land 10 perfect falls.", "perfFell", 10, 900, 1),
+		ladder("pb1", "Full value", "Buck a stem for its full value.", "perfBuck", 1, 60, 0),
+		ladder("pb10", "Scaler’s favorite", "Buck 10 stems for full value.", "perfBuck", 10, 900, 1),
+		ladder("cs1", "Clean turn", "Skid a turn under par with no stump hits.", "cleanSkid", 1, 60, 0),
+		ladder("cs10", "Teamster", "Skid 10 clean turns.", "cleanSkid", 10, 900, 1),
+		ladder("ch1", "Clean haul", "Deliver a full load under par with nothing lost.", "cleanHaul", 1, 60, 0),
+		ladder("ch10", "Road boss", "Make 10 clean hauls.", "cleanHaul", 10, 900, 1),
+		once("allround", "All-around logger", "Do a clean run of every mini-game.", [
+			atLeast("perfFell", 1),
+			atLeast("perfBuck", 1),
+			atLeast("cleanSkid", 1),
+			atLeast("cleanHaul", 1)
+		], 1500, 2),
+		once("era1", "Full steam", "Reach Steam Camp.", [atLeast("era", 1)], 0, 2),
+		once("era2", "Diesel Road", "Reach Diesel Road.", [atLeast("era", 2)], 0, 2),
+		once("era3", "Into the Interior", "Reach the Interior with mechanized logging.", [atLeast("era", 3)], 0, 3)
+	]);
+	function holds(c, read) {
+		const v = read(c.metric);
+		if (v === void 0) return false;
+		return c.op === ">" ? v > c.value : v >= c.value;
+	}
+	/** True when every condition holds. */
+	function achievementMet(def, read) {
+		return def.when.every((c) => holds(c, read));
+	}
+	/** [current, target] for a ladder achievement's progress bar; null for one-off achievements. */
+	function achievementProgress(def, read) {
+		const c = def.when[0];
+		if (!def.ladder || !c) return null;
+		return [read(c.metric), c.value];
+	}
+	/** The metric a repeat bounty measures for this achievement (ladders only). */
+	function bountyMetric(def) {
+		return def.ladder && def.when[0] ? def.when[0].metric : null;
+	}
+	/** Repeat bounties pay this share of the original cash reward. */
+	var BOUNTY_SHARE = .6;
+	/** [current, target] for an improvement unlock: the sum of the named run stats. */
+	function requirementProgress(req, stats) {
+		return [req.stats.reduce((a, k) => a + (stats[k] || 0), 0), req.target];
+	}
+	//#endregion
+	//#region packages/core/src/formulas.ts
+	/**
+	* Logging rate, cost and prestige formulas, moved from prototype/timberline.html (tech plan M2).
+	*
+	* Exactness rule: the sim baseline must stay byte-identical, so each function
+	* keeps the prototype's floating-point order of operations. Multiplier chains
+	* are applied left to right with `applyMults` (((base*a)*b)*c), never pre-multiplied.
+	*/
+	/** Multiply `base` by each factor in order. */
+	function applyMults(base, mults) {
+		let r = base;
+		for (const m of mults) r *= m;
+		return r;
+	}
+	/** Dollar value of one average tree: sawlog share at sawlog price plus the rest as pulp. */
+	function treeValue(s) {
+		return s.bf * (s.saw * s.sawP + (1 - s.saw) * s.pulpP);
+	}
+	/** Price of the next unit: +15% per unit already owned, rounded up. */
+	function equipmentCost(baseCost, owned) {
+		return Math.ceil(baseCost * Math.pow(1.15, owned));
+	}
+	/** Summed rate of every crew and machine owned for one stage, before multipliers. */
+	function crewRate(stage, own) {
+		return EQUIPMENT.reduce((a, e) => e.stage === stage ? a + e.rate * (own[e.id] || 0) : a, 0);
+	}
+	/** Total crew count (used by achievements). */
+	function crewCount(own) {
+		return EQUIPMENT.reduce((a, e) => a + (own[e.id] || 0), 0);
+	}
+	/**
+	* Upkeep per minute before multipliers. Crews with nothing to do (utilisation
+	* below 1) are paid `idleShare` of their wage: 0.25 normally, 0 with Company store.
+	*/
+	function crewUpkeep(own, util, idleShare) {
+		return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0) * (idleShare + (1 - idleShare) * (util[e.stage] ?? 1)), 0);
+	}
+	/** Upkeep per minute if every crew worked flat out, before multipliers. */
+	function crewUpkeepFull(own) {
+		return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0), 0);
+	}
+	/** Product of an improvement multiplier over the improvements owned, in table order. */
+	function improvementMult(owned, key) {
+		return IMPROVEMENTS.reduce((m, u) => {
+			const v = u.mult[key];
+			return owned.includes(u.id) && v ? m * v : m;
+		}, 1);
+	}
+	var PERK_BY_ID = new Map(PERKS.map((p) => [p.id, p]));
+	/** Product of a perk multiplier over drafted perks (copies stack), in draft order. */
+	function perkMult(perks, key) {
+		let m = 1;
+		for (const id of perks) {
+			const v = PERK_BY_ID.get(id)?.m?.[key];
+			if (v) m *= v;
+		}
+		return m;
+	}
+	/** How many copies of a perk were drafted. */
+	function perkCount(perks, id) {
+		return perks.filter((x) => x === id).length;
+	}
+	/** Seasonal speed factor for a stage. Spring mud slows skid and haul; winter freezes the ground. */
+	function seasonFactor(season, stage, o) {
+		if (season === "Spring" && stage === "skid" && o.swampBoots) return 1;
+		if (season === "Spring" && (stage === "skid" || stage === "haul")) return o.corduroy ? .75 : .5;
+		if (season === "Winter") {
+			if (stage === "fell") return .85;
+			if (stage === "skid") return 1.25;
+			if (stage === "haul") return 1.25 * (o.iceRoad ? 1.5 : 1) * (o.iceKing ? 1.4 : 1);
+		}
+		return 1;
+	}
+	/** Skidding factor for ground slope; skyline yarding floors it at 0.92. */
+	function slopeFactor(slope, skyline) {
+		const sl = SLOPES[slope].skid;
+		return skyline ? Math.max(sl, .92) : sl;
+	}
+	/** Hauling factor for haul distance in miles (1.0 at one mile). */
+	function distanceFactor(miles) {
+		return 1.07 / (1 + .07 * miles);
+	}
+	/** Pace-boost speed multiplier. */
+	function boostFactor(bull) {
+		return bull ? 2 : 1.5;
+	}
+	/** Seconds a pace boost lasts. */
+	function boostLength(radios, pacerCopies, fiddler) {
+		return (radios ? 45 : 30) + 15 * pacerCopies + (fiddler ? 10 : 0);
+	}
+	/** Effective per-second rate of a stage (before payroll efficiency). */
+	function stageRate(stage, i) {
+		let r = i.base * i.season * i.boost;
+		if (stage === "skid") r *= i.slope;
+		if (stage === "haul") r *= i.distance;
+		return r;
+	}
+	/** Board feet moved by one click of hand work. `hand` is the hand-work multiplier. */
+	function handAmount(stage, hand, slope, distance) {
+		if (stage === "buck") return 30 * hand;
+		if (stage === "skid") return 20 * hand * slope;
+		if (stage === "haul") return 25 * hand * distance;
+		return 0;
+	}
+	/** Market price multiplier at sim time `t` seconds: a slow swell plus a short chop, about 0.76 to 1.24. */
+	function marketPrice(t) {
+		return 1 + .18 * Math.sin(t / 300 + 1) + .06 * Math.sin(t / 41);
+	}
+	/** Advance paid on signing a cut-for-hire job. */
+	function mobilization(trees, val, upkeepPerMin) {
+		return Math.round(Math.max(40, Math.min(upkeepPerMin * 4, trees * val * .3)));
+	}
+	/** Penalty for a missed charter order, scaled by the share left undelivered. */
+	function missedPenalty(penalty, done, vol, handshake) {
+		return handshake ? 0 : Math.round(penalty * (1 - done / vol));
+	}
+	/** Price of pushing on to era `i`; Infinity past the last era. */
+	function eraCost(i, d) {
+		const era = ERAS[i];
+		return era ? Math.round(era.cost * (i === 1 && d.steam ? .8 : 1) * (i === 2 && d.gas ? .75 : 1)) : Infinity;
+	}
+	/**
+	* Charter Shares before multipliers for `delivered` board feet:
+	* √(d ÷ 20,000) up to 10M bd ft (≈22.4), then +8 per tenfold beyond, so a long
+	* run pays but a fresh run pays better per minute.
+	*/
+	function legacyBase(delivered) {
+		return delivered <= 1e7 ? Math.sqrt(delivered / 2e4) : Math.sqrt(500) + 8 * Math.log10(delivered / 1e7);
+	}
+	/** Product of the chosen charter clauses' share multipliers (unknown ids count as ×1). */
+	function clauseMult(mods) {
+		return mods.reduce((m, id) => m * (MODS.find((x) => x.id === id)?.x || 1), 1);
+	}
+	/** Charter Shares banked by closing camp now. */
+	function legacyGain(delivered, mods, chronicler) {
+		return Math.floor(legacyBase(delivered) * clauseMult(mods) * (chronicler ? 1.15 : 1));
+	}
+	/** The charter ship takes a cargo once the outpost reaches Steam Camp or delivers CLOSE_VOL. */
+	function canCloseCamp(era, delivered) {
+		return era >= 1 || delivered >= 25e4;
+	}
+	//#endregion
+	//#region packages/core/src/rng.ts
+	/** Uniform float in [a, b). One draw. Same as the prototype's `rnd(a, b)`. */
+	function rngRange(rng, a, b) {
+		return a + rng() * (b - a);
+	}
+	/** Uniform element of a non-empty list. One draw. Same as the prototype's `pick(a)`. */
+	function rngPick(rng, list) {
+		if (list.length === 0) throw new RangeError("rngPick: empty list");
+		return list[Math.floor(rng() * list.length)];
+	}
+	//#endregion
+	//#region packages/core/src/generators.ts
+	/**
+	* Procedural generation with an injected RNG (tech plan M2): land-office
+	* tracts, cut-for-hire jobs, charter orders, tree picks and perk drafts.
+	*
+	* Draw order is part of the contract. Each function documents the order of
+	* its rng() calls; the seeded sim baseline depends on it.
+	*/
+	/** Build a tract with weight-averaged tree stats. No randomness. */
+	function makeTract(name, mix, trees, miles, slope) {
+		let hp = 0, bf = 0, val = 0, w = 0;
+		mix.forEach(([id, wt]) => {
+			const s = SPECIES[id];
+			hp += s.hp * wt;
+			bf += s.bf * wt;
+			val += treeValue(s) * wt;
+			w += wt;
+		});
+		return {
+			name,
+			mix,
+			trees,
+			left: trees,
+			miles,
+			slope,
+			hp: hp / w,
+			bf: bf / w,
+			val: val / w,
+			road: false
+		};
+	}
+	function lotName(rng) {
+		return `${rngPick(rng, PLACES)}, Lot ${Math.floor(rngRange(rng, 2, 40))}`;
+	}
+	/**
+	* A land-office listing for the current era.
+	* Draws, in order: older-tier roll, species a, species b, weight, trees, miles, slope, place, lot.
+	*/
+	function genTract(rng, era, o) {
+		const tier = Math.max(0, era - (rng() < .3 ? 1 : 0));
+		const pool = ERA_SPECIES[era] ?? [];
+		const a = rngPick(rng, pool);
+		let b = rngPick(rng, pool);
+		if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
+		const wa = Math.round(rngRange(rng, 5, 8));
+		const mix = [[a, wa], [b, 10 - wa]];
+		const trees = Math.round((TRACT_BASE[tier] ?? 0) * rngRange(rng, .6, 1.5));
+		const miles = Math.round(rngRange(rng, 1, 12) * 2) / 2;
+		const slope = rngPick(rng, [
+			"flat",
+			"flat",
+			"rolling",
+			"rolling",
+			"steep"
+		]);
+		const t = makeTract(lotName(rng), mix, trees, miles, slope);
+		t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult);
+		const sz = (o.thinSurvey ? .8 : 1) * (o.cruiser ? 1.25 : 1);
+		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
+		return t;
+	}
+	/** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
+	function tractPrice(gross, miles, slope, stumpMult) {
+		return Math.round(gross * .42 * Math.max(.55, 1.12 - .04 * miles) * SLOPES[slope].disc * stumpMult);
+	}
+	/** One-off cost to build a haul road into a bought tract. */
+	function roadCost(t) {
+		return Math.round(t.trees * t.val * .07);
+	}
+	/** Haul distance after building a road: halved, rounded to half a mile, at least 0.5. */
+	function milesWithRoad(miles) {
+		return Math.max(.5, Math.round(miles / 2 * 2) / 2);
+	}
+	/** Cut-for-hire jobs pay this share of market value. */
+	var HIRE_RATE = .45;
+	/**
+	* A cut-for-hire job (bigger and closer than listings, paid at HIRE_RATE).
+	* Draws, in order: species a, species b, weight, place, lot, trees, miles, slope, mill.
+	*/
+	function genHire(rng, era) {
+		const pool = ERA_SPECIES[era] ?? [];
+		const a = rngPick(rng, pool), b = rngPick(rng, pool.filter((x) => x !== a));
+		const wa = Math.round(rngRange(rng, 5, 8));
+		const name = lotName(rng);
+		const trees = Math.round((TRACT_BASE[era] ?? 0) * rngRange(rng, 1, 1.5));
+		const miles = Math.round(rngRange(rng, 1, 4) * 2) / 2;
+		const slope = rngPick(rng, [
+			"flat",
+			"flat",
+			"rolling"
+		]);
+		const t = makeTract(name, [[a, wa], [b, 10 - wa]], trees, miles, slope);
+		t.hire = {
+			mill: rngPick(rng, MILLS),
+			rate: HIRE_RATE
+		};
+		t.val *= t.hire.rate;
+		return t;
+	}
+	/**
+	* A charter order sized to haul capacity (bd ft/s, floor 8): volume over a
+	* 4-8 minute window, rounded to two significant figures.
+	* `perBf` is the current tract's value per board foot (0.2 with no tract).
+	* Draws, in order: duration, volume share, mill, premium.
+	*/
+	function genOffer(rng, haulCapacity, perBf) {
+		const cap = Math.max(8, haulCapacity);
+		const dur = Math.round(rngRange(rng, 240, 480) / 30) * 30;
+		const raw = Math.max(2e3, cap * dur * rngRange(rng, .4, .75));
+		const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+		const vol = Math.round(raw / mag) * mag;
+		return {
+			mill: rngPick(rng, MILLS),
+			vol,
+			dur,
+			prem: Math.round(rngRange(rng, .15, .4) * 100) / 100,
+			penalty: Math.round(vol * perBf * .25)
+		};
+	}
+	/** Weighted pick of a species from a tract mix. One draw. Null only if float rounding exhausts the loop. */
+	function pickFromMix(rng, mix) {
+		const tot = mix.reduce((a, m) => a + m[1], 0);
+		let r = rng() * tot;
+		for (const [id, w] of mix) {
+			r -= w;
+			if (r <= 0) return id;
+		}
+		return null;
+	}
+	/** Perks that can be offered: set-2 perks need Old Reach hands; non-commons appear once per run. */
+	function draftPool(drafted, lore) {
+		return PERKS.filter((p) => (!p.set || lore) && (p.r === "common" || !drafted.includes(p.id)));
+	}
+	/** Draft weight of a rarity at draft quality q (0..1): better runs favour rare and legendary perks. */
+	function draftWeight(r, q) {
+		return RARITY[r].w * (r === "rare" ? 1 + 1.2 * q : r === "legendary" ? 1 + 4 * q * q : r === "curse" ? 1 + .5 * q : 1);
+	}
+	/** Roll `n` distinct perk ids from `pool` by weight. One draw per card. */
+	function rollDraft(rng, pool, n, q) {
+		const left = pool.slice(), out = [];
+		const w = (p) => draftWeight(p.r, q);
+		while (out.length < n && left.length) {
+			const tot = left.reduce((a, p) => a + w(p), 0);
+			let x = rng() * tot, i = 0;
+			for (; i < left.length - 1; i++) {
+				x -= w(left[i]);
+				if (x <= 0) break;
+			}
+			out.push(left[i].id);
+			left.splice(i, 1);
+		}
+		return out;
+	}
+	//#endregion
+	//#region packages/core/src/index.ts
+	/** Clamp a number into [min, max]. */
+	function clamp(value, min, max) {
+		if (min > max) throw new RangeError(`clamp: min ${min} > max ${max}`);
+		return Math.min(max, Math.max(min, value));
+	}
+	/**
+	* Split elapsed simulated milliseconds into whole fixed ticks plus the
+	* leftover, the building block of the fixed-tick loop (tech plan 2.3).
+	*/
+	function splitTicks(elapsedMs, tickMs) {
+		if (tickMs <= 0) throw new RangeError("splitTicks: tickMs must be positive");
+		const safe = Math.max(0, elapsedMs);
+		const ticks = Math.floor(safe / tickMs);
+		return {
+			ticks,
+			remainderMs: safe - ticks * tickMs
+		};
+	}
+	//#endregion
+	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.BOUNTY_SHARE = BOUNTY_SHARE;
+	exports.CLOSE_VOL = CLOSE_VOL;
+	exports.EQUIPMENT = EQUIPMENT;
+	exports.ERAS = ERAS;
+	exports.ERA_SPECIES = ERA_SPECIES;
+	exports.HIRE_RATE = HIRE_RATE;
+	exports.IMPROVEMENTS = IMPROVEMENTS;
+	exports.IMPROVEMENT_REQS = IMPROVEMENT_REQS;
+	exports.META = META;
+	exports.MILLS = MILLS;
+	exports.MODS = MODS;
+	exports.PERKS = PERKS;
+	exports.PILES = PILES;
+	exports.PLACES = PLACES;
+	exports.RARITY = RARITY;
+	exports.SEASONS = SEASONS;
+	exports.SEASON_LEN = SEASON_LEN;
+	exports.SLOPES = SLOPES;
+	exports.SPECIES = SPECIES;
+	exports.STAGES = STAGES;
+	exports.TRACT_BASE = TRACT_BASE;
+	exports.achievementMet = achievementMet;
+	exports.achievementProgress = achievementProgress;
+	exports.applyMults = applyMults;
+	exports.boostFactor = boostFactor;
+	exports.boostLength = boostLength;
+	exports.bountyMetric = bountyMetric;
+	exports.canCloseCamp = canCloseCamp;
+	exports.clamp = clamp;
+	exports.clauseMult = clauseMult;
+	exports.crewCount = crewCount;
+	exports.crewRate = crewRate;
+	exports.crewUpkeep = crewUpkeep;
+	exports.crewUpkeepFull = crewUpkeepFull;
+	exports.deepFreeze = deepFreeze;
+	exports.distanceFactor = distanceFactor;
+	exports.draftPool = draftPool;
+	exports.draftWeight = draftWeight;
+	exports.equipmentCost = equipmentCost;
+	exports.eraCost = eraCost;
+	exports.genHire = genHire;
+	exports.genOffer = genOffer;
+	exports.genTract = genTract;
+	exports.handAmount = handAmount;
+	exports.improvementMult = improvementMult;
+	exports.legacyBase = legacyBase;
+	exports.legacyGain = legacyGain;
+	exports.makeTract = makeTract;
+	exports.marketPrice = marketPrice;
+	exports.milesWithRoad = milesWithRoad;
+	exports.missedPenalty = missedPenalty;
+	exports.mobilization = mobilization;
+	exports.perkCount = perkCount;
+	exports.perkMult = perkMult;
+	exports.pickFromMix = pickFromMix;
+	exports.requirementProgress = requirementProgress;
+	exports.rngPick = rngPick;
+	exports.rngRange = rngRange;
+	exports.roadCost = roadCost;
+	exports.rollDraft = rollDraft;
+	exports.seasonFactor = seasonFactor;
+	exports.slopeFactor = slopeFactor;
+	exports.splitTicks = splitTicks;
+	exports.stageRate = stageRate;
+	exports.tractPrice = tractPrice;
+	exports.treeValue = treeValue;
+	return exports;
+})({});
+</script><!-- /outpost-core -->
 <script>
 (() => {
-// ---------- data
-const SP = {
-  pine:    {name:'Fogbound pine',      hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con'},
-  spruce:  {name:'Shore spruce',       hp:16, bf:160, saw:.60, sawP:.23, pulpP:.07, shape:'con'},
-  hemlock: {name:'Mist hemlock',       hp:22, bf:220, saw:.50, sawP:.18, pulpP:.06, shape:'con'},
-  maple:   {name:'Glacier maple',      hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec'},
-  oak:     {name:'Hot-spring oak',     hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec'},
-  walnut:  {name:'Giant cloudwood',    hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec'},
-};
-const treeVal = s => s.bf*(s.saw*s.sawP + (1-s.saw)*s.pulpP);
-const ERAS = [
-  {name:'Cove Landing', year:1890, cost:0},
-  {name:'Steam Camp', year:1905, cost:15000, blurb:'Steam donkeys, drag saws and a logging railroad up from the cove.'},
-  {name:'Diesel Road', year:1950, cost:1000000, blurb:'Chainsaws, crawler tractors and log trucks on roads pushed into the fog.'},
-  {name:'Into the Interior', year:1990, cost:10000000, blurb:'Feller bunchers, processors and forwarders working the deep Interior.'},
-];
-const ERA_SPECIES = [['pine','spruce','hemlock'],['pine','spruce','hemlock','maple'],['pine','spruce','hemlock','maple','oak'],['pine','spruce','hemlock','maple','oak','walnut']];
-const TRACT_BASE = [60, 1500, 15000, 120000];
-const STAGES = [
-  {id:'fell', name:'Fell',  verb:'Felling',  unit:'chops/s'},
-  {id:'buck', name:'Buck',  verb:'Bucking',  unit:'bd ft/s'},
-  {id:'skid', name:'Skid',  verb:'Skidding', unit:'bd ft/s'},
-  {id:'haul', name:'Haul',  verb:'Hauling',  unit:'bd ft/s'},
-];
-const PILES = [
-  {id:'stems', label:'stems on the ground'},
-  {id:'cut', label:'logs at the stump'},
-  {id:'landing', label:'logs at the landing'},
-];
-const EQ = [
-  {id:'axeman',    stage:'fell', era:0, name:'Axeman',                desc:'Double-bit axe, company issue, and a long day.', rate:1, cost:40, up:3},
-  {id:'crosscut',  stage:'fell', era:0, name:'Crosscut sawyers',      desc:'Two men on a six-foot felling saw, shipped out in oiled canvas.', rate:4, cost:220, up:10},
-  {id:'bucker',    stage:'buck', era:0, name:'Bucker',                desc:'Limbs stems and saws them to log lengths in the fog.', rate:12, cost:60, up:3},
-  {id:'oxen',      stage:'skid', era:0, name:'Ox team',               desc:'Landed off the first ship. Slow and steady to the landing.', rate:10, cost:90, up:5},
-  {id:'horses',    stage:'skid', era:0, name:'Horse team',            desc:'Faster than oxen. Eats more of the ship’s hay.', rate:22, cost:300, up:11},
-  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to the cove mill. Best on frozen roads.', rate:15, cost:70, up:4},
-  {id:'wagon',     stage:'haul', era:0, name:'Log wagon and teamster',desc:'Big wheels for the beach road.', rate:35, cost:600, up:12},
-  {id:'springboard',stage:'fell',era:1, name:'Springboard fallers',   desc:'Cut above the butt swell of the big coast trees from notched planks.', rate:15, cost:2500, up:45},
-  {id:'dragsaw',   stage:'buck', era:1, name:'Steam drag saw',        desc:'A reciprocating saw driven by steam.', rate:120, cost:2800, up:40},
-  {id:'donkey',    stage:'skid', era:1, name:'Steam donkey',          desc:'Winch engine that yards logs on cable.', rate:180, cost:7000, up:110},
-  {id:'shay',      stage:'haul', era:1, name:'Shay locomotive',       desc:'Geared engine on the company railroad down to the cove.', rate:300, cost:15000, up:170},
-  {id:'chainsaw',  stage:'fell', era:2, name:'Chainsaw faller',       desc:'One faller, one saw, a lot of trees.', rate:90, cost:30000, up:350},
-  {id:'slasher',   stage:'buck', era:2, name:'Slasher saw deck',      desc:'Bucks whole stems at the landing.', rate:800, cost:36000, up:320},
-  {id:'crawler',   stage:'skid', era:2, name:'Crawler tractor',       desc:'Tracks and an arch for dragging logs.', rate:1100, cost:85000, up:650},
-  {id:'cableskid', stage:'skid', era:2, name:'Cable skidder',         desc:'Rubber-tired and quick between turns.', rate:1600, cost:140000, up:900},
-  {id:'logtruck',  stage:'haul', era:2, name:'Log truck',             desc:'Hauls down company roads from deep in the fog.', rate:2000, cost:130000, up:950},
-  {id:'buncher',   stage:'fell', era:3, name:'Feller buncher',        desc:'Cuts and stacks several stems at a time.', rate:700, cost:600000, up:4000},
-  {id:'processor', stage:'buck', era:3, name:'Processor',             desc:'Delimbs and bucks a stem in seconds.', rate:7000, cost:500000, up:3200},
-  {id:'grapple',   stage:'skid', era:3, name:'Grapple skidder',       desc:'Grabs a bunched turn and goes.', rate:9000, cost:750000, up:4200},
-  {id:'forwarder', stage:'skid', era:3, name:'Forwarder',             desc:'Carries logs clear of the ground. Easy on soil.', rate:14000, cost:1300000, up:6500},
-  {id:'selfloader',stage:'haul', era:3, name:'Self-loading truck',    desc:'Loads itself at the landing.', rate:15000, cost:1200000, up:6000},
-];
-const UPG = [
-  {id:'file',     era:0, name:'Mill file',               desc:'Keep an edge on the axe. Your chop ×2. Felling game: wider green hinge zone.', cost:40, click:2, game:'fell'},
-  {id:'peavey',   era:0, name:'Peaveys and cant hooks',  desc:'Your own bucking, skidding and hauling ×2. Skid game: hang-ups free up in half the time.', cost:120, hand:2, game:'skid'},
-  {id:'gunstick', era:0, name:'Gunning stick',           desc:'Felling game: shows where the tree will really fall, wind included.', cost:350, game:'fell'},
-  {id:'scalestick',era:0,name:'Scaler’s stick',          desc:'Bucking game: see what each log is worth as you plan the cuts.', cost:450, game:'buck'},
-  {id:'swamper',  era:0, name:'Swamping crew',           desc:'Clears brush and stumps from skid trails. Skidding ×1.15. Skid game: half the stumps are gone.', cost:600, skid:1.15, game:'skid'},
-  {id:'hay',      era:0, name:'Hay on the hills',        desc:'Sled tenders spread ship’s hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.', cost:700, haul:1.1, game:'haul'},
-  {id:'wedges',   era:0, name:'Felling wedges',          desc:'Drive the tree over the hinge. Felling ×1.15. Felling game: a thick hinge no longer sits back, and falls are steadier.', cost:900, fell:1.15, game:'fell'},
-  {id:'bunks',    era:0, name:'Bigger bunks',            desc:'Longer, wider log bunks. Hauling ×1.15. Haul game: road limit +4 logs.', cost:1200, haul:1.15, game:'haul'},
-  {id:'cook',     era:0, name:'Camp cookhouse',          desc:'Fed crews work harder. Felling and bucking ×1.25.', cost:1500, fell:1.25, buck:1.25},
-  {id:'grade',    era:0, name:'Bucking for grade',       desc:'Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.', cost:2500, value:1.12, game:'buck'},
-  {id:'corduroy', era:0, name:'Corduroy roads',          desc:'Log-paved roads. Spring mud costs you half as much. Skid game: mud barely slows you. Haul game: spring road limit +2 logs.', cost:4000, game:'skid haul'},
-  {id:'icerd',    era:0, name:'Road sprinkler sled',     desc:'Ice the haul road at night. Winter hauling ×1.5. Haul game: faster, surer winter runs.', cost:6000, game:'haul'},
-  {id:'smith',    era:1, name:'Camp blacksmith',         desc:'Repairs done in camp. Upkeep ×0.85.', cost:20000, upkeep:.85},
-  {id:'scribner', era:1, name:'Scribner log rule',       desc:'A fairer scale at the mill. Sale price ×1.1.', cost:35000, scale:1.1},
-  {id:'skyline',  era:1, name:'Skyline yarding',         desc:'Overhead cable reaches steep ground. Slope barely slows skidding. Skid game: logs ride above stumps, so hits no longer scar them.', cost:60000, game:'skid'},
-  {id:'radios',   era:2, name:'Two-way radios',          desc:'Crews coordinate across the site. Every stage ×1.2. All games: pace boosts last 45 s instead of 30.', cost:500000, all:1.2, game:'fell buck skid haul'},
-  {id:'airbrakes',era:2, name:'Air brakes',              desc:'Hauling ×1.2. Haul game: brakes ×2, and the load holds to a higher speed before it runs away.', cost:350000, haul:1.2, game:'haul'},
-  {id:'shop',     era:2, name:'Diesel shop',             desc:'Rebuild engines in-house. Upkeep ×0.85.', cost:900000, upkeep:.85},
-  {id:'optimize', era:3, name:'Cut-to-length optimizer', desc:'Computer bucking for value. Log value ×1.15. Bucking game: one button places the best cuts.', cost:5e6, value:1.15, game:'buck'},
-  {id:'gps',      era:3, name:'Survey-grid harvest plan', desc:'Charted skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.', cost:9e6, all:1.25, game:'skid'},
-  {id:'telematics',era:3,name:'Fleet telematics',        desc:'Catch breakdowns early. Upkeep ×0.8.', cost:14e6, upkeep:.8},
-];
-const R = (text, cur, target) => ({text, prog: () => [cur(), target]});
-const st = k => () => (S.stats[k] || 0);
-const runs = (...g) => () => g.reduce((a,k) => a + (S.stats['run_'+k] || 0), 0);
-const ALL = ['fell','buck','skid','haul'];
-const UPG_REQ = {
-  file:       R('Finish 1 felling run', runs('fell'), 1),
-  gunstick:   R('Finish 3 felling runs', runs('fell'), 3),
-  wedges:     R('Land 3 falls in the opening', st('goodFell'), 3),
-  cook:       R('Finish 10 felling or bucking runs', runs('fell','buck'), 10),
-  scalestick: R('Finish 1 bucking run', runs('buck'), 1),
-  grade:      R('Buck 3 stems at 85% of best value or better', st('buck85'), 3),
-  scribner:   R('Buck 10 stems at 90% of best value or better', st('buck90'), 10),
-  optimize:   R('Buck 5 stems for full value', st('perfBuck'), 5),
-  peavey:     R('Finish 1 skidding run', runs('skid'), 1),
-  swamper:    R('Finish 3 skidding runs', runs('skid'), 3),
-  corduroy:   R('Finish 2 skidding or hauling runs in spring mud', st('mudRuns'), 2),
-  skyline:    R('Skid 5 clean turns', st('cleanSkid'), 5),
-  gps:        R('Skid 12 clean turns', st('cleanSkid'), 12),
-  hay:        R('Finish 1 hauling run', runs('haul'), 1),
-  bunks:      R('Deliver 3 full loads without losing a log', st('fullLoads'), 3),
-  icerd:      R('Finish 2 hauling runs in winter', st('winterHauls'), 2),
-  airbrakes:  R('Make 5 clean hauls', st('cleanHaul'), 5),
-  smith:      R('Finish 25 runs of any job', runs(...ALL), 25),
-  radios:     R('Finish 40 runs of any job', runs(...ALL), 40),
-  shop:       R('Finish 60 runs of any job', runs(...ALL), 60),
-  telematics: R('Finish 100 runs of any job', runs(...ALL), 100),
-};
-UPG.forEach(u => { u.req = UPG_REQ[u.id]; });
+// ---------- data (from packages/core via window.Core; see the outpost-core script above)
+const Core = window.Core;
+const SP = Core.SPECIES;
+const ERAS = Core.ERAS;
+const ERA_SPECIES = Core.ERA_SPECIES;
+const STAGES = Core.STAGES;
+const PILES = Core.PILES;
+const EQ = Core.EQUIPMENT;
+const UPG = Core.IMPROVEMENTS;
+const UPG_REQ = Core.IMPROVEMENT_REQS;
+const reqProg = u => Core.requirementProgress(UPG_REQ[u.id], S.stats);
 function checkUnlocks(quiet){
   const got = [];
   for (const u of UPG){
-    if (has(u.id) || !u.req || u.era > S.era) continue;
-    const [c,t] = u.req.prog(); if (c < t) continue;
+    if (has(u.id) || !UPG_REQ[u.id] || u.era > S.era) continue;
+    const [c,t] = reqProg(u); if (c < t) continue;
     S.upg.push(u.id); got.push(u); note(`Improvement unlocked: ${u.name}.`);
   }
   if (!quiet) got.forEach(u => toast({label:'Improvement unlocked', name:u.name, line:u.desc}));
   else if (got.length) toast({label:'Improvements unlocked', name:`${got.length} new`, line: got.map(u => u.name).join(', ')});
   return got.length;
 }
-const SEASONS = ['Spring','Summer','Fall','Winter'];
-const SEASON_LEN = 150;
-const SLOPES = {flat:{label:'flat', skid:1, disc:1}, rolling:{label:'rolling', skid:.8, disc:.85}, steep:{label:'steep', skid:.55, disc:.65}};
-const PLACES = ['Landfall Cove','Foghorn Point','Grey Wash','Charter Creek','Lantern Bluff','Drowned Inlet','Seal Rock Flats','Mistfall Ridge','Hollow Sound','Cairn Hill','Long Fog Meadow','Spar Gulch','Otter Slough','Surveyor’s Run','Whistle Pond','Glass Creek'];
-const MILLS = ['the Cove Sawmill','the charter ship Perseverance','Landfall Pier Works','the Admiralty spar yard','Fogline Box & Crate','the Company shipwrights','Harbor Planing Mill','the Survey Office stores'];
+const SEASONS = Core.SEASONS;
+const SEASON_LEN = Core.SEASON_LEN;
+const SLOPES = Core.SLOPES;
 const KEY = 'timberline-v2';
 
 // ---------- state
-function makeTract(name, mix, trees, miles, slope){
-  let hp=0, bf=0, val=0, w=0;
-  mix.forEach(([id,wt]) => { const s=SP[id]; hp+=s.hp*wt; bf+=s.bf*wt; val+=treeVal(s)*wt; w+=wt; });
-  return {name, mix, trees, left:trees, miles, slope, hp:hp/w, bf:bf/w, val:val/w, road:false};
-}
+const makeTract = Core.makeTract;
 const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
@@ -507,11 +1977,11 @@ let S = fresh();
 const $ = id => document.getElementById(id);
 const own = id => S.own[id] || 0;
 const has = id => S.upg.includes(id);
-const umult = key => UPG.reduce((m,u) => has(u.id) && u[key] ? m*u[key] : m, 1);
+const umult = key => Core.improvementMult(S.upg, key);
 const tract = () => S.tracts[0] || null;
 const season = () => SEASONS[S.season];
-const rnd = (a,b) => a + Math.random()*(b-a);
-const pick = a => a[Math.floor(Math.random()*a.length)];
+const rnd = (a,b) => Core.rngRange(Math.random, a, b);
+const pick = a => Core.rngPick(Math.random, a);
 function fmt(n){
   if (!isFinite(n)) return '0';
   const a = Math.abs(n);
@@ -526,44 +1996,25 @@ const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
 const bf = n => fmt(n) + ' bd ft';
 const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt(s/3600)+' h';
 
-function seasonF(stage){
-  const s = season();
-  if (s === 'Spring' && stage === 'skid' && perk('swamp')) return 1;
-  if (s === 'Spring' && (stage === 'skid' || stage === 'haul')) return has('corduroy') ? .75 : .5;
-  if (s === 'Winter'){
-    if (stage === 'fell') return .85;
-    if (stage === 'skid') return 1.25;
-    if (stage === 'haul') return 1.25 * (has('icerd') ? 1.5 : 1) * (perk('iceking') ? 1.4 : 1);
-  }
-  return 1;
-}
-const slopeF = () => { const sl = SLOPES[S.site.slope].skid; return has('skyline') ? Math.max(sl, .92) : sl; };
-const distF = () => 1.07/(1 + 0.07*S.site.miles);
-const baseRate = stage => EQ.reduce((a,e) => e.stage === stage ? a + e.rate*own(e.id) : a, 0) * umult(stage) * umult('all')
+const seasonF = stage => Core.seasonFactor(season(), stage, {swampBoots: !!perk('swamp'), corduroy: has('corduroy'), iceRoad: has('icerd'), iceKing: !!perk('iceking')});
+const slopeF = () => Core.slopeFactor(S.site.slope, has('skyline'));
+const distF = () => Core.distanceFactor(S.site.miles);
+const baseRate = stage => Core.crewRate(stage, S.own) * umult(stage) * umult('all')
   * pmult(stage) * pmult('all') * (1 + .04*S.run.snow) * (meta('foremen') ? 1.2 : 1) * (stage === 'fell' && hasMod('drought') ? .9 : 1);
 const vmult = () => umult('value') * pmult('value');
 const cmult = () => umult('click') * pmult('click');
-const boostF = () => perk('bull') ? 2 : 1.5;
+const boostF = () => Core.boostFactor(!!perk('bull'));
 const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
-function rate(stage){ // effective per second, before payroll efficiency
-  let r = baseRate(stage) * seasonF(stage) * ((S.boost[stage]||0) > S.t ? boostF() : 1);
-  if (stage === 'skid') r *= slopeF();
-  if (stage === 'haul') r *= distF();
-  return r;
-}
+// effective per second, before payroll efficiency
+const rate = stage => Core.stageRate(stage, {base: baseRate(stage), season: seasonF(stage), boost: (S.boost[stage]||0) > S.t ? boostF() : 1,
+  slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1});
 function fellBf(chops){ const t = tract(); return t ? chops / t.hp * t.bf : 0; }
 // per minute; crews with nothing to do are paid a quarter rate
-const upkeep = () => { const idle = perk('store') ? 0 : .25; return EQ.reduce((a,e) => a + e.up*own(e.id)*(idle + (1-idle)*((S.util||{})[e.stage] ?? 1)), 0) * umult('upkeep') * pmult('upkeep'); };
-const fullUpkeep = () => EQ.reduce((a,e) => a + e.up*own(e.id), 0) * umult('upkeep') * pmult('upkeep');
-const market = () => 1 + 0.18*Math.sin(S.t/300 + 1) + 0.06*Math.sin(S.t/41);
-const eqCost = e => Math.ceil(e.cost * Math.pow(1.15, own(e.id)));
-const handAmt = stage => {
-  const h = umult('hand') * pmult('hand');
-  if (stage === 'buck') return 30*h;
-  if (stage === 'skid') return 20*h*slopeF();
-  if (stage === 'haul') return 25*h*distF();
-  return 0;
-};
+const upkeep = () => Core.crewUpkeep(S.own, S.util || {}, perk('store') ? 0 : .25) * umult('upkeep') * pmult('upkeep');
+const fullUpkeep = () => Core.crewUpkeepFull(S.own) * umult('upkeep') * pmult('upkeep');
+const market = () => Core.marketPrice(S.t);
+const eqCost = e => Core.equipmentCost(e.cost, own(e.id));
+const handAmt = stage => Core.handAmount(stage, umult('hand') * pmult('hand'), slopeF(), distF());
 
 function note(text){
   S.log.unshift({at: `${season().slice(0,3)} ${S.year}`, text});
@@ -575,31 +2026,15 @@ function note(text){
 function newTree(){
   const t = tract(); if (!t){ S.hp = null; return; }
   S.hp = t.hp;
-  const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.random()*tot;
-  for (const [id,w] of t.mix){ r -= w; if (r <= 0){ S.vis = id; break; } }
+  const id = Core.pickFromMix(Math.random, t.mix); if (id) S.vis = id;
 }
 function setSite(){ const t = tract(); if (t) S.site = {miles:t.miles, slope:t.slope}; }
-function genTract(){
-  const tier = Math.max(0, S.era - (Math.random() < .3 ? 1 : 0));
-  const pool = ERA_SPECIES[S.era];
-  const a = pick(pool); let b = pick(pool); if (b === a) b = pool[(pool.indexOf(a)+1) % pool.length];
-  const wa = Math.round(rnd(5,8));
-  const mix = [[a,wa],[b,10-wa]];
-  const trees = Math.round(TRACT_BASE[tier]*rnd(.6,1.5));
-  const miles = Math.round(rnd(1,12)*2)/2;
-  const slope = pick(['flat','flat','rolling','rolling','steep']);
-  const t = makeTract(`${pick(PLACES)}, Lot ${Math.floor(rnd(2,40))}`, mix, trees, miles, slope);
-  const gross = t.trees*t.val;
-  t.price = Math.round(gross * 0.42 * Math.max(.55, 1.12 - 0.04*miles) * SLOPES[slope].disc * pmult('stump'));
-  const sz = (hasMod('beetle') ? .8 : 1) * (perk('cruiser') ? 1.25 : 1);
-  if (sz !== 1){ t.trees = t.left = Math.max(5, Math.round(t.trees*sz)); }
-  return t;
-}
+const genTract = () => Core.genTract(Math.random, S.era, {stumpMult: pmult('stump'), thinSurvey: !!hasMod('beetle'), cruiser: !!perk('cruiser')});
 function refreshSales(){ S.forSale = [genTract(), genTract(), genTract()]; S.saleT = 180; }
 function buyTract(i){
   const t = S.forSale[i]; if (!t || S.cash < t.price) return;
   S.cash -= t.price; delete t.price;
-  t.roadCost = Math.round(t.trees*t.val*0.07);
+  t.roadCost = Core.roadCost(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); }
   S.forSale[i] = genTract();
@@ -608,32 +2043,18 @@ function buyTract(i){
 }
 function buildRoad(){
   const t = tract(); if (!t || t.road || S.cash < t.roadCost) return;
-  S.cash -= t.roadCost; t.road = true; t.miles = Math.max(.5, Math.round(t.miles/2*2)/2); setSite();
+  S.cash -= t.roadCost; t.road = true; t.miles = Core.milesWithRoad(t.miles); setSite();
   note(`Built a haul road into ${t.name}. Haul is now ${t.miles} mi.`); render(true);
 }
 
 // ---------- contracts
 function genOffer(){
-  const cap = Math.max(8, baseRate('haul')*distF());
-  const dur = Math.round(rnd(240,480)/30)*30;
-  const raw = Math.max(2000, cap*dur*rnd(.4,.75));
-  const mag = Math.pow(10, Math.floor(Math.log10(raw))-1);
-  const vol = Math.round(raw/mag)*mag;
-  const t = tract(); const perBf = t ? t.val/t.bf : .2;
-  return {mill:pick(MILLS), vol, dur, prem:Math.round(rnd(.15,.4)*100)/100, penalty:Math.round(vol*perBf*.25)};
+  const t = tract();
+  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2);
 }
-function genHire(){
-  const pool = ERA_SPECIES[S.era];
-  const a = pick(pool), b = pick(pool.filter(x => x !== a));
-  const wa = Math.round(rnd(5,8));
-  const t = makeTract(`${pick(PLACES)}, Lot ${Math.floor(rnd(2,40))}`, [[a,wa],[b,10-wa]],
-    Math.round(TRACT_BASE[S.era]*rnd(1,1.5)), Math.round(rnd(1,4)*2)/2, pick(['flat','flat','rolling']));
-  t.hire = {mill: pick(MILLS), rate: .45};
-  t.val *= t.hire.rate;
-  return t;
-}
+const genHire = () => Core.genHire(Math.random, S.era);
 const hireActive = () => S.tracts.some(t => t.hire);
-const mobilization = t => Math.round(Math.max(40, Math.min(upkeep()*4, t.trees*t.val*.3)));
+const mobilization = t => Core.mobilization(t.trees, t.val, upkeep());
 function acceptHire(){
   const t = S.hireOffer; if (!t || hireActive() || scripBlock()) return;
   const mob = mobilization(t);
@@ -740,7 +2161,7 @@ function tick(dt){
     S.stems.bf *= .75; S.stems.val *= .75; note('Dry summer: a slash fire burned a quarter of the stems on the ground.'); }
   // contracts
   if (S.contract && S.t >= S.contract.end){
-    const c = S.contract; const pen = perk('handshake') ? 0 : Math.round(c.penalty*(1 - c.done/c.vol)); S.cash = Math.max(0, S.cash - pen);
+    const c = S.contract; const pen = Core.missedPenalty(c.penalty, c.done, c.vol, !!perk('handshake')); S.cash = Math.max(0, S.cash - pen);
     note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. Paid a ${money(pen)} penalty.`);
     S.contract = null;
   }
@@ -900,10 +2321,10 @@ function renderCompany(){
     const r = Math.min(1, S.cash/ec), net = (S.ema - S.upEma)*60;
     $('eraBar').style.width = (r*100).toFixed(1)+'%';
     $('eraPct').textContent = r >= 1 ? 'You can afford it now.' : `${Math.round(r*100)}% saved` + (net > 0 ? ` · about ${mins((ec - S.cash)/net*60)} at your current net income` : ''); }
-  const next = UPG.filter(u => !has(u.id) && u.req && u.era <= S.era + 1).map(u => { const [c,t] = u.req.prog(); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
+  const next = UPG.filter(u => !has(u.id) && UPG_REQ[u.id] && u.era <= S.era + 1).map(u => { const [c,t] = reqProg(u); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
     .sort((a,b) => (a.later - b.later) || (b.r - a.r)).slice(0,6);
   list('upgs', next.map(o => o.u.id + o.later).join(), next.length ? next.map(o => `<div class="goal"><div class="line"><b>${o.u.name}</b><span class="spec" data-uc="${o.u.id}"></span></div>
-    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + o.u.req.text.charAt(0).toLowerCase() + o.u.req.text.slice(1) : o.u.req.text}.</p>
+    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + UPG_REQ[o.u.id].text.charAt(0).toLowerCase() + UPG_REQ[o.u.id].text.slice(1) : UPG_REQ[o.u.id].text}.</p>
     <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this stage of the company is unlocked.</p>');
   next.forEach(o => { const b = document.querySelector(`[data-ub="${o.u.id}"]`), c = document.querySelector(`[data-uc="${o.u.id}"]`);
     if (b) b.style.width = (o.r*100).toFixed(1)+'%'; if (c) c.textContent = `${fmt(Math.min(o.c, o.t))} / ${fmt(o.t)}`; });
@@ -1013,72 +2434,18 @@ function render(force){
   renderSales(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
 }
 
-// ---------- achievements
-const crewCount = () => EQ.reduce((a,e) => a + own(e.id), 0);
-const ladder = (id, name, desc, cur, target, cash, rep=0) => ({id, name, desc, test:() => cur() >= target, prog:() => [cur(), target], cash, rep});
-const ACH = [
-  {id:'first_tree', name:'Timber!', desc:'Fell your first tree.', test:() => S.felled >= 1, cash:10},
-  {id:'first_sale', name:'First load to the cove', desc:'Deliver logs to the cove mill.', test:() => S.stats.deliv > 0, cash:15},
-  {id:'first_crew', name:'On the payroll', desc:'Bring your first crew ashore.', test:() => crewCount() >= 1, cash:25},
-  {id:'full_chain', name:'Stump to mill', desc:'Have a crew working every stage.', test:() => ['fell','buck','skid','haul'].every(st => baseRate(st) > 0), cash:100, rep:1},
-  ladder('d10k',  '10 MBF',               'Deliver 10,000 bd ft.',      () => S.stats.deliv, 1e4,   150, 1),
-  ladder('d50k',  '50 MBF',               'Deliver 50,000 bd ft.',      () => S.stats.deliv, 5e4,   500, 1),
-  ladder('d250k', 'Quarter million',      'Deliver 250,000 bd ft.',     () => S.stats.deliv, 2.5e5, 1800, 2),
-  ladder('d1m',   'A million board feet', 'Deliver 1,000,000 bd ft.',   () => S.stats.deliv, 1e6,   6000, 2),
-  ladder('d3m',   'Three million',        'Deliver 3 million bd ft.',   () => S.stats.deliv, 3e6,   20000, 1),
-  ladder('d10m',  'Ten million',          'Deliver 10 million bd ft.',  () => S.stats.deliv, 1e7,   70000, 3),
-  ladder('d30m',  'Thirty million',       'Deliver 30 million bd ft.',  () => S.stats.deliv, 3e7,   250000, 2),
-  ladder('d100m', 'A hundred million',    'Deliver 100 million bd ft.', () => S.stats.deliv, 1e8,   900000, 3),
-  ladder('d300m', 'Three hundred million','Deliver 300 million bd ft.',() => S.stats.deliv, 3e8,   3e6, 2),
-  ladder('d1b',   'A billion board feet', 'Deliver 1 billion bd ft.',   () => S.stats.deliv, 1e9,   12e6, 5),
-  ladder('e10k',  'Ten-thousand-dollar year', 'Earn $10K in sales.',  () => S.earned, 1e4,  300),
-  ladder('e100k', 'Six figures',          'Earn $100K in sales.',       () => S.earned, 1e5,  3000, 1),
-  ladder('e1m',   'Millionaire charter',   'Earn $1M in sales.',         () => S.earned, 1e6,  30000, 1),
-  ladder('e5m',   'Five million in sales','Earn $5M in sales.',         () => S.earned, 5e6,  120000, 1),
-  ladder('e25m',  'Toast of the board',         'Earn $25M in sales.',        () => S.earned, 2.5e7, 600000, 2),
-  ladder('e100m', 'Founders of Landfall',        'Earn $100M in sales.',       () => S.earned, 1e8,  2e6, 2),
-  ladder('t100',  'Hundred trees',        'Fell 100 trees.',            () => S.felled, 100,   200),
-  ladder('t1k',   'Thousand trees',       'Fell 1,000 trees.',          () => S.felled, 1000,  2500, 1),
-  ladder('t3k',   'Three thousand trees', 'Fell 3,000 trees.',          () => S.felled, 3000,  10000, 1),
-  ladder('t10k',  'Ten thousand trees',   'Fell 10,000 trees.',         () => S.felled, 1e4,   40000, 2),
-  ladder('t30k',  'Thirty thousand trees','Fell 30,000 trees.',         () => S.felled, 3e4,   200000, 1),
-  ladder('t100k', 'A hundred thousand',   'Fell 100,000 trees.',        () => S.felled, 1e5,   700000, 3),
-  ladder('tr3',   'Cut out',              'Finish 3 tracts.',           () => S.stats.tracts, 3,  300),
-  ladder('tr10',  'Ten tracts',           'Finish 10 tracts.',          () => S.stats.tracts, 10, 2500, 1),
-  ladder('tr30',  'Thirty tracts',        'Finish 30 tracts.',          () => S.stats.tracts, 30, 30000, 2),
-  ladder('tr60',  'Sixty tracts',         'Finish 60 tracts.',          () => S.stats.tracts, 60, 150000, 2),
-  ladder('hire1', 'Hired hands',          'Finish a cut-for-hire job.', () => S.stats.hires, 1, 150),
-  ladder('c1',    'Under contract',       'Fill a delivery contract.',  () => S.stats.contracts, 1,  250),
-  ladder('c5',    'Reliable supplier',    'Fill 5 delivery contracts.', () => S.stats.contracts, 5,  1500, 1),
-  ladder('c10',   'Steady supplier',      'Fill 10 delivery contracts.',() => S.stats.contracts, 10, 8000, 1),
-  ladder('c20',   'Preferred supplier',   'Fill 20 delivery contracts.',() => S.stats.contracts, 20, 25000, 2),
-  ladder('crew10','Ten-crew outfit',      'Own 10 crews or machines.',  () => crewCount(), 10, 400),
-  ladder('crew30','Big outfit',           'Own 30 crews or machines.',  () => crewCount(), 30, 4000, 1),
-  ladder('crew75','Industrial outfit',    'Own 75 crews or machines.',  () => crewCount(), 75, 80000, 2),
-  ladder('crew50','Fifty-crew outfit',    'Own 50 crews or machines.',  () => crewCount(), 50, 20000, 1),
-  ladder('crew120','Company of the Reach',       'Own 120 crews or machines.', () => crewCount(), 120, 500000, 2),
-  ladder('w1',    'Wintered over',        'Work through a winter on the Reach.',     () => S.stats.winters, 1, 250),
-  ladder('w5',    'Five winters',         'Work through five winters.', () => S.stats.winters, 5, 3500, 1),
-  ladder('w10',   'Ten winters',          'Work through ten winters.',  () => S.stats.winters, 10, 30000, 1),
-  ladder('pf1',   'Right where you wanted it', 'Land a perfect fall.',  () => S.stats.perfFell, 1, 60),
-  ladder('pf10',  'Faller of note',       'Land 10 perfect falls.',     () => S.stats.perfFell, 10, 900, 1),
-  ladder('pb1',   'Full value',           'Buck a stem for its full value.', () => S.stats.perfBuck, 1, 60),
-  ladder('pb10',  'Scaler’s favorite',    'Buck 10 stems for full value.',   () => S.stats.perfBuck, 10, 900, 1),
-  ladder('cs1',   'Clean turn',           'Skid a turn under par with no stump hits.', () => S.stats.cleanSkid, 1, 60),
-  ladder('cs10',  'Teamster',             'Skid 10 clean turns.',       () => S.stats.cleanSkid, 10, 900, 1),
-  ladder('ch1',   'Clean haul',           'Deliver a full load under par with nothing lost.', () => S.stats.cleanHaul, 1, 60),
-  ladder('ch10',  'Road boss',            'Make 10 clean hauls.',       () => S.stats.cleanHaul, 10, 900, 1),
-  {id:'allround', name:'All-around logger', desc:'Do a clean run of every mini-game.', test:() => S.stats.perfFell && S.stats.perfBuck && S.stats.cleanSkid && S.stats.cleanHaul, cash:1500, rep:2},
-  {id:'era1', name:'Full steam', desc:'Reach Steam Camp.', test:() => S.era >= 1, cash:0, rep:2},
-  {id:'era2', name:'Diesel Road', desc:'Reach Diesel Road.', test:() => S.era >= 2, cash:0, rep:2},
-  {id:'era3', name:'Into the Interior', desc:'Reach the Interior with mechanized logging.', test:() => S.era >= 3, cash:0, rep:3},
-];
+// ---------- achievements (definitions are data in packages/core)
+const crewCount = () => Core.crewCount(S.own);
+const achMetric = m => m === 'deliv' ? S.stats.deliv : m === 'earned' ? S.earned : m === 'felled' ? S.felled : m === 'crew' ? crewCount() : m === 'era' ? S.era
+  : m === 'crewedStages' ? ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length : S.stats[m];
+const ACH = Core.ACHIEVEMENTS;
+const achProg = a => Core.achievementProgress(a, achMetric);
 function checkAch(quiet){
   if (checkUnlocks(quiet)) render(true);
   const got = [];
   for (const a of ACH){
-    if (S.ach.includes(a.id) || !a.test()) continue;
-    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.cash += a.cash; S.rep += a.rep || 0; got.push(a);
+    if (S.ach.includes(a.id) || !Core.achievementMet(a, achMetric)) continue;
+    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.cash += a.cash; S.rep += a.rep; got.push(a);
     note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(a.cash)}` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
   }
   const bn = checkBounties();
@@ -1098,7 +2465,7 @@ function toast(t){
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4500);
 }
 function renderGoals(){
-  const open = ACH.filter(a => !S.ach.includes(a.id) && a.prog).map(a => { const [c,t] = a.prog(); return {a, r: Math.min(1, c/t), c, t}; })
+  const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
     .sort((x,y) => y.r - x.r).slice(0,3);
   list('goals', open.map(o => o.a.id).join(), open.map(o => `<div class="goal"><div class="line"><b>${o.a.name}</b><span class="spec">${o.a.cash ? money(o.a.cash) : ''}${o.a.rep ? ` · rep +${o.a.rep}` : ''}</span></div>
     <p>${o.a.desc}</p><div class="bar"><i data-g="${o.a.id}"></i></div></div>`).join(''));
@@ -1124,11 +2491,10 @@ function buttons(list){
   list.forEach(b => { const el = document.createElement('button'); el.type = 'button'; el.className = 'mbtn' + (b.primary ? ' primary' : '');
     el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; box.appendChild(el); });
 }
-const boostLen = () => (has('radios') ? 45 : 30) + 15*perk('pacer') + (meta('pace') ? 10 : 0);
+const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace'));
 function grantBoost(stage){ if (perk('absentee')) return; (perk('golden') ? ['fell','buck','skid','haul'] : [stage]).forEach(k => {
   S.boost[k] = Math.min(S.t + 120, Math.max(S.boost[k]||0, S.t) + boostLen()); }); }
-function mixPick(t){ const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.random()*tot;
-  for (const [id,w] of t.mix){ r -= w; if (r <= 0) return id; } return t.mix[0][0]; }
+const mixPick = t => Core.pickFromMix(Math.random, t.mix) ?? t.mix[0][0];
 const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', haul:'Drive a load'};
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
 const MG_HELP = {
@@ -1139,9 +2505,9 @@ const MG_HELP = {
 };
 function gearLine(kind){
   const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
-  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && u.req).map(u => ({u, p:u.req.prog()})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
+  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && UPG_REQ[u.id]).map(u => ({u, p:reqProg(u)})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
   const txt = (ownG.length ? `Your gear: ${ownG.map(u => u.name).join(', ')}.` : 'No gear for this job yet.') +
-    (nextG ? ` Next: ${nextG.u.name}. ${nextG.u.req.text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
+    (nextG ? ` Next: ${nextG.u.name}. ${UPG_REQ[nextG.u.id].text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
   if ($('mgGear').textContent !== txt) $('mgGear').textContent = txt;
 }
 function openMG(kind){
@@ -1701,85 +3067,32 @@ function haulDraw(){
 }
 
 // ---------- roguelite layer: perks, drafts, close camp, legacy
-// common = number tweaks (stack); rare/legendary = rule changes; curse = drawback with a bigger upside. set 2 needs the Old-timers' tales node.
-const PERKS = [
-  {id:'sharp',    r:'common', name:'Sharp crews',        desc:'Felling ×1.25.', m:{fell:1.25}},
-  {id:'buckers',  r:'common', name:'Quick buckers',      desc:'Bucking ×1.25.', m:{buck:1.25}},
-  {id:'teams',    r:'common', name:'Good teamsters',     desc:'Skidding ×1.25.', m:{skid:1.25}},
-  {id:'roadcrew', r:'common', name:'Road crew',          desc:'Hauling ×1.25.', m:{haul:1.25}},
-  {id:'frugal',   r:'common', name:'Frugal cook',        desc:'Ship’s biscuit stretches further. Upkeep ×0.85.', m:{upkeep:.85}},
-  {id:'grader',   r:'common', name:'Sharp-eyed grader',  desc:'Log value ×1.08.', m:{value:1.08}},
-  {id:'strong',   r:'common', name:'Strong back',        desc:'Your chops and hand work ×3.', m:{click:3, hand:3}},
-  {id:'bargain',  r:'common', name:'Friendly land agent', desc:'Cutting rights at the land office cost 15% less.', m:{stump:.85}},
-  {id:'pacer',    r:'common', name:'Pace-setter',        desc:'Pace boosts last 15 s longer.'},
-  {id:'widow',    r:'rare',   name:'Widowmaker’s luck',  desc:'Felling game: a barber chair has a 50% chance to swing true and count as a perfect fall.'},
-  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
-  {id:'hotsaw',   r:'rare',   name:'Hot saw',            desc:'Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you.'},
-  {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
-  {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn.'},
-  {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
-  {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
-  {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
-  {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed charter orders carry no penalty.'},
-  {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
-  {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'Land office listings carry 25% more trees for the same price.', set:2},
-  {id:'domino',   r:'legendary', name:'Domino fall',     desc:'Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6).'},
-  {id:'bull',     r:'legendary', name:'Bull of the woods', desc:'Pace boosts are ×2 instead of ×1.5.'},
-  {id:'golden',   r:'legendary', name:'Fog lifts',       desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
-  {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled charter order speeds all crews +4% for the rest of the outpost.', set:2},
-  {id:'strict',   r:'curse',  name:'Strict scaler',      desc:'Log value −15%, but charter order premiums +40 points.', m:{value:.85}},
-  {id:'scrip',    r:'curse',  name:'Company scrip',      desc:'No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.', m:{price:1.15}},
-  {id:'absentee', r:'curse',  name:'Absentee directors', desc:'The board runs things from home. Mini-games never grant pace boosts, but every crew works ×1.2.', m:{all:1.2}},
-];
-const RARITY = {common:{w:60, label:'Common'}, rare:{w:26, label:'Rare'}, legendary:{w:5, label:'Legendary'}, curse:{w:9, label:'Curse'}};
+const PERKS = Core.PERKS;
+const RARITY = Core.RARITY;
 const PMAP = Object.fromEntries(PERKS.map(p => [p.id, p]));
-const META = [
-  {id:'cash',    cost:4,  name:'Board advance',     desc:'Start each outpost with $750.'},
-  {id:'sled',    cost:5,  name:'Crew on the first boat', desc:'Start each outpost with an axeman, a bucker, an ox team and a logging sled.'},
-  {id:'pace',    cost:6,  name:'Camp fiddler',      desc:'Pace boosts last 10 s longer.'},
-  {id:'reroll',  cost:8,  name:'Lucky compass',     desc:'+1 draft reroll each outpost.'},
-  {id:'foremen', cost:8,  name:'Seasoned foremen',  desc:'Every crew and machine works ×1.2.'},
-  {id:'steam',   cost:8,  name:'Steam surveyor',    desc:'Reaching Steam Camp costs 20% less.'},
-  {id:'starter', cost:10,  name:'Camp stories',      desc:'Start each outpost with a random common perk.'},
-  {id:'nest',    cost:12,  name:'Nest egg',          desc:'Keep 10% of your cash when you close camp.'},
-  {id:'legacy',  cost:14, name:'Company chronicler', desc:'Charter Shares from closing camp +15%.'},
-  {id:'lore',    cost:14, name:'Old Reach hands',   desc:'Four more rare and legendary perks join the draft pool.'},
-  {id:'gas',     cost:12, name:'Diesel dealer',     desc:'Reaching Diesel Road costs 25% less.'},
-  {id:'four',    cost:20, name:'Wider choice',      desc:'Drafts show 4 perks instead of 3.'},
-];
-const MODS = [
-  {id:'drought', name:'Dry summer', desc:'Felling −10%, and summer slash fires can burn stems on the ground.', x:1.25},
-  {id:'market',  name:'Dividends due', desc:'Investors back home take their cut. Every sale pays 15% less.', x:1.3},
-  {id:'beetle',  name:'Thin survey',  desc:'Land office listings carry 20% fewer trees.', x:1.2},
-];
-const CLOSE_VOL = 250000;
-const perk = id => (S.run && S.run.perks ? S.run.perks.filter(x => x === id).length : 0);
-const pmult = key => { let m = 1; if (!S.run) return m; for (const id of S.run.perks){ const p = PMAP[id]; if (p && p.m && p.m[key]) m *= p.m[key]; } return m; };
+const META = Core.META;
+const MODS = Core.MODS;
+const CLOSE_VOL = Core.CLOSE_VOL;
+const perk = id => (S.run && S.run.perks ? Core.perkCount(S.run.perks, id) : 0);
+const pmult = key => S.run ? Core.perkMult(S.run.perks, key) : 1;
 const meta = id => S.meta && S.meta.nodes.includes(id);
 const hasMod = id => S.run && S.run.mods.includes(id);
 const mktMod = () => hasMod('market') ? .85 : 1;
-const modMult = mods => (mods || S.run.mods).reduce((m,id) => m * (MODS.find(x => x.id === id)?.x || 1), 1);
-const eraCost = i => ERAS[i] ? Math.round(ERAS[i].cost * (i === 1 && meta('steam') ? .8 : 1) * (i === 2 && meta('gas') ? .75 : 1)) : Infinity;
-// √(delivered ÷ 20,000) up to 10M bd ft (≈22), then +8 per tenfold beyond, so a long run pays but a fresh run pays better per minute
-const legacyBase = d => d <= 1e7 ? Math.sqrt(d/20000) : Math.sqrt(500) + 8*Math.log10(d/1e7);
-const legacyNow = () => Math.floor(legacyBase(S.run.deliv) * modMult() * (meta('legacy') ? 1.15 : 1));
-const canClose = () => S.era >= 1 || S.run.deliv >= CLOSE_VOL;
+const modMult = mods => Core.clauseMult(mods || S.run.mods);
+const eraCost = i => Core.eraCost(i, {steam: !!meta('steam'), gas: !!meta('gas')});
+const legacyNow = () => Core.legacyGain(S.run.deliv, S.run.mods, !!meta('legacy'));
+const canClose = () => Core.canCloseCamp(S.era, S.run.deliv);
 // repeat bounties: achievements already earned pay 60% of their cash again once per run when this run's own numbers reach the target
 const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul'];
 function snapBase(){ const b = {earned:S.earned, felled:S.felled}; BASEK.forEach(k => b[k] = S.stats[k] || 0); S.run.base = b; }
-function metricOf(id){
-  if (/^d\d/.test(id)) return 'deliv'; if (/^e\d/.test(id)) return 'earned'; if (/^t\d/.test(id)) return 'felled';
-  if (/^tr\d/.test(id)) return 'tracts'; if (/^hire/.test(id)) return 'hires'; if (/^c\d/.test(id)) return 'contracts'; if (/^w\d/.test(id)) return 'winters';
-  if (/^crew/.test(id)) return 'crew'; return ({pf1:'perfFell',pf10:'perfFell',pb1:'perfBuck',pb10:'perfBuck',cs1:'cleanSkid',cs10:'cleanSkid',ch1:'cleanHaul',ch10:'cleanHaul'})[id] || null;
-}
 function checkBounties(){
   const r = S.run; if (!r.base || !r.bounty) return 0; let tot = 0, n = 0;
   for (const a of ACH){
-    if (!a.cash || !a.prog || r.bounty.includes(a.id) || !S.ach.includes(a.id)) continue;
-    const k = metricOf(a.id); if (!k) continue;
-    const [cur, tgt] = a.prog(); const base = k === 'crew' ? 0 : (r.base[k] || 0);
+    if (!a.cash || !a.ladder || r.bounty.includes(a.id) || !S.ach.includes(a.id)) continue;
+    const k = Core.bountyMetric(a); if (!k) continue;
+    const [cur, tgt] = achProg(a); const base = k === 'crew' ? 0 : (r.base[k] || 0);
     if (cur - base < tgt) continue;
-    const pay = Math.round(a.cash*.6); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
+    const pay = Math.round(a.cash*Core.BOUNTY_SHARE); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
   }
   if (n) goalDrafts();
   if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (60% of the original reward).`});  }
@@ -1802,17 +3115,8 @@ function contractFilled(){
   S.run.cFilled++; if (perk('snowball')) S.run.snow++;
   if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five charter orders filled');
 }
-function perkPool(){ return PERKS.filter(p => (!p.set || meta('lore')) && (p.r === 'common' || !perk(p.id))); }
-function rollCards(q){
-  const n = 3 + (meta('four') ? 1 : 0), pool = perkPool(), out = [];
-  const w = p => RARITY[p.r].w * (p.r === 'rare' ? 1 + 1.2*q : p.r === 'legendary' ? 1 + 4*q*q : p.r === 'curse' ? 1 + .5*q : 1);
-  while (out.length < n && pool.length){
-    const tot = pool.reduce((a,p) => a + w(p), 0); let x = Math.random()*tot, i = 0;
-    for (; i < pool.length - 1; i++){ x -= w(pool[i]); if (x <= 0) break; }
-    out.push(pool[i].id); pool.splice(i,1);
-  }
-  return out;
-}
+const perkPool = () => Core.draftPool(S.run.perks, !!meta('lore'));
+const rollCards = q => Core.rollDraft(Math.random, perkPool(), 3 + (meta('four') ? 1 : 0), q);
 function currentOffer(){ const r = S.run; if (!r.dq.length) return null; if (!r.offer) r.offer = rollCards(r.dq[0]); return r.offer; }
 function pickPerk(id){
   const r = S.run, off = currentOffer(); if (!off || !off.includes(id)) return false;
