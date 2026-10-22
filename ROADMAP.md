@@ -5,7 +5,7 @@ Status values: done · in progress · next · later.
 | # | Milestone | Status | Notes |
 | --- | --- | --- | --- |
 | 1 | Roguelite prototype in Timberline (drafts, close camp, Legacy, meta tree) | done | Run 2 is 18–29% faster than run 1 in simulation; tune bounties vs perks |
-| 2 | Decisions: engine, business model, per-skill vs global prestige, working title | in progress | Decided: TypeScript + Electron; $9.99 full experience; 3-year support. Open: prestige scope, working title, Early Access vs 1.0, paid vs free expansions |
+| 2 | Decisions: engine, business model, per-skill vs global prestige, working title | in progress | Decided: TypeScript + Electron; $9.99 full experience; 3-year support. Also decided: per-skill prestige, Early Access ($7.99) then 1.0 ($9.99), all updates free. Open: working title, what the 3-year clock counts from |
 | 3 | Re-theme Logging to Outpost Company (names, regions as biomes, close-camp fiction) | next | Prototype stays playable throughout |
 | 4 | Electron + Steam go/no-go spike (achievements, cloud save on Windows, Mac, Steam Deck) | later | Week 2 of the tech plan |
 | 5 | Vertical slice: shared core + Logging + Sawmilling + Raising + roguelite layer | later | About 10 weeks after the stack decision |

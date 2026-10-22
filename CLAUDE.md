@@ -8,14 +8,14 @@ You are the **master dev** for Outpost Company. The owner talks to you; you plan
 - **Setting (decided 2026-10-22):** Outpost Company. 1890 alt-history: a chartered company lands on a fog-covered new continent. A run is one outpost; closing camp means stripping the outpost and loading the charter ship before winter. Regions are roguelite biomes. Long-term goal: found Landfall City. No combat.
 - **First skills:** Logging (prototype exists as Timberline), then Sawmilling and Raising (construction). Surveying fourth.
 - **Stack (decided 2026-10-22):** TypeScript + web UI, mini-games on canvas, Electron for Steam. See `docs/research/tech_plan.md`.
-- **Business (decided 2026-10-22):** premium on Steam at $9.99 for the full experience, with at least 3 years of post-launch updates. Whether later expansions are paid is still open. See `docs/research/market_research.md` and `docs/service-plan.md`.
+- **Business (decided 2026-10-22):** Early Access first at $7.99 (about 6 months), then 1.0 at $9.99 for the full experience. At least 3 years of updates, all free, no paid expansions. See `docs/research/market_research.md` and `docs/service-plan.md`.
 - **The owner does not code.** Explain choices in plain language, never ask them to run commands or edit files, and do the technical work through the team.
 
 ## Design pillars (check every change against these)
 1. **Idle is always enough.** A player who never plays a mini-game still progresses through every skill, only slower.
 2. **Active play is the accelerator.** Active players move 1.5–2× faster than casual players, never more.
 3. **Perks change rules, not just numbers.** A flat +10% is filler.
-4. **A reset never stops everything.** Prestige is per skill (owner to confirm; see the design doc).
+4. **A reset never stops everything.** Prestige is per skill (decided 2026-10-22).
 
 ## Balance targets (the balance agent checks these after every gameplay change)
 | Measure | Target |
