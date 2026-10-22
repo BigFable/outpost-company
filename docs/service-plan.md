@@ -1,6 +1,6 @@
 # Service Plan: Today Through Three Years After Launch
 
-*Written 2026-10-22. A plan for the owner to react to, not a set of decisions. Decided so far: $9.99 for the full experience, at least 3 years of updates, TypeScript + Electron. Still open: Early Access vs 1.0, and paid vs free expansions.*
+*Written 2026-10-22, revised after the owner's decisions. Decided: $9.99 for the full experience; Early Access first (about 6 months) at $7.99, then 1.0 at $9.99; at least 3 years of updates, all free; prestige per skill; TypeScript + Electron. Still open: what the 3-year clock counts from.*
 
 ## 1. What "the full experience at $9.99" means
 
@@ -34,26 +34,24 @@ Week 1 starts today. Dates include no buffer unless noted. The tech plan advises
 | Feb 25 to Apr 1, 2027 | 18-23 | Public demo (itch.io web build, then Steam demo) | **G4: Demo ready** |
 | Early May 2027 | - | Demo build submitted to Steam, 3 to 5 weeks ahead of the festival | **G5: Wishlist check.** 2,000 or more wishlists enter **Next Fest, June 14-21, 2027**. Under 2,000: wait for the October 2027 Next Fest |
 | Jun to Aug 2027 | - | Prospecting, Smelting, Smithing, Hauling; Glacier Valleys | |
-| Sep 2027 or later | - | First paid release (path a) | **G6: Release readiness.** Balance bots inside targets, no soft-locks, old saves load, owner signs off |
+| About Sep 2027 | - | Early Access release at $7.99 | **G6: Release readiness.** Balance bots inside targets, no soft-locks, old saves load, owner signs off |
 | About Mar 2028 | - | 1.0 | G6 again |
 
-## 3. Two launch paths
+## 3. Launch path: Early Access first (decided)
 
-Next Fest can be used only once per game.
-
-| | **(a) Early Access, then 1.0** | **(b) Straight to 1.0** |
+| | **The plan: Early Access, then 1.0** | **Fallback note: straight to 1.0** |
 | --- | --- | --- |
 | Festival | June 2027 | October 2027 |
-| First sale | About Sep 2027 (month 11), with 5 to 6 skills and 2 regions | About Feb to Mar 2028 (month 16 to 17) |
-| 1.0 | About Mar 2028, after about 6 months in Early Access | Same day as first sale |
-| The $9.99 promise | Not true during Early Access. Sell at $7.99, rising to $9.99 at 1.0, and say so on the page | True from day one |
-| Time with no income or outside feedback | About 11 months | About 16 months |
-| Main risks | Players judge an unfinished game; refunds and early reviews; pressure to update on a schedule (Steam bars promised dates) | Longer silence means wishlists fade; a launch with real bugs has no safety net; the research found underperformers spent longer in pre-release |
-| Three-year clock | Starts at 1.0 | Starts at launch |
+| First sale | About Sep 2027 (month 11), at $7.99, with 5 to 6 skills and 2 regions | About Feb to Mar 2028 (month 16 to 17) |
+| 1.0 | About Mar 2028 at $9.99, after about 6 months in Early Access | Same day as first sale |
+| The $9.99 promise | The store page says clearly that Early Access is unfinished and the price rises at 1.0 | True from day one |
+| Risk | Players judge an unfinished game; early refunds and reviews; pressure to update on a schedule (Steam bars promised dates) | Longer silence, wishlists fade, no safety net for bugs |
 
-**The clock.** "3 years after launch" is ambiguous in Early Access. I suggest counting from 1.0 in both paths, so a player who buys at 1.0 gets a full three years. Under path (a) the owner then works about 3.5 years after the first sale. Stating the wording publicly is the owner's call.
+**Gates for the plan:** G3 (the game is fun) and G5 (2,000 or more wishlists). If either fails, fall back to straight 1.0 with the October 2027 festival, or delay Early Access. Do not launch cold.
 
-**Recommendation: (a), kept short.** Six months, not Melvor's two years. It brings in money and real playtest data while the game is still easy to change, and it fits the $9.99 promise through the lower price until 1.0. Do it only if the June wishlist gate passes and the game is genuinely fun at G3. Otherwise take path (b) with the October festival.
+**Keep Early Access short.** Six months, not Melvor's two years. State the 1.0 plan and the content still to come on the store page, without promising dates.
+
+**Open: what the 3-year clock counts from.** Options: (1) from first sale in Early Access, or (2) from 1.0. **Recommendation: from 1.0**, so a player who buys at 1.0 gets a full three years. The cost is about 3.5 years of work after first sale. Worded publicly, it is the owner's call.
 
 ## 4. Three-year update cycle (Year 1 begins at 1.0)
 
@@ -66,16 +64,22 @@ Next Fest can be used only once per game.
 
 *Builds toward:* Year 1, the coast is full and the camp feels alive. Year 2, the company pushes inland and the eras advance. Year 3, Landfall City becomes the visible home of the meta tree.
 
-### Expansion variants
+### All updates free (decided)
 
-| | **A: All free** | **B: Two paid expansions, $4.99 each** |
-| --- | --- | --- |
-| Which updates | Everything above is free | Year 2 Q2 (Engineering + Petrified Wood) and Year 3 Q2 (Interior + city districts) are paid. Everything else stays free, including all fixes, quality-of-life, events and the Year 1 content |
-| Revenue logic | Only base sales and any supporter pack. Big updates cause sales spikes, but the tail is thin | Illustration only: per 1,000 base owners, $9.99 nets about $7,000 after Steam's 30% cut. If 30% buy an expansion (my assumption), each adds about $1,050 per 1,000 owners |
-| Community | Goodwill and strong reviews; a very visible "love letter" game | Accepted by this audience when the base game is complete: Melvor sells three $4.99 expansions at about 92% positive. Backlash comes from paywalling things that feel basic |
-| Risk | Three years of work funded by a single $9.99 purchase | Players feel nickel-and-dimed if expansion content was teased for free |
+The two big content drops stay on the plan as **free major updates**: Year 2 Q2 (Engineering, the third era and Petrified Wood) and Year 3 Q2 (the Interior and Landfall City districts). No paid DLC.
 
-**Recommendation: B, with firm rules.** Year 1 is all free (builds reviews and trust). Expansions add new skills, regions and perk sets and never remove or gate quality-of-life, balance or the Landfall ending. Announce the rules at 1.0. The owner decides whether to say it before Early Access.
+**Revenue logic.** Money comes from new buyers, not from existing owners. Each major update is a reason for press, streamers, a Steam front-page update slot and a wishlist bump. Sales come from three sources:
+- **Steam sales:** seasonal sales and a launch discount at 1.0. Note that raising the price blocks discounts for 30 days, so plan the $7.99 to $9.99 change and the first sale around that.
+- **The 1.0 relaunch:** the biggest single marketing moment, with a new trailer and a second round of coverage.
+- **Long tail:** each free update lifts reviews and word of mouth, which feeds the first two.
+
+**Community.** Strong goodwill and good reviews. The trade-off: three years of work is funded by about one $9.99 purchase per player. Revenue is front-loaded around Early Access, 1.0 and the first year.
+
+**What keeps three years sustainable without paid DLC:**
+- A strict content budget per skill and a cut line, so each update stays small enough to finish.
+- Agents do the recurring work (balance runs, QA, briefs), so the owner's time stays near 4 to 6 hours a week.
+- Year 1 is deliberately light on cost, and the owner can still add a cosmetic supporter pack later (not decided).
+- A quarterly review: if sales fall below the cost of continuing, scale the cadence to patches and events, which still honours "at least 3 years of updates". Any change goes to the owner.
 
 ## 5. What sustains three years
 
@@ -97,10 +101,7 @@ Next Fest can be used only once per game.
 
 | Decision | Options | Recommendation |
 | --- | --- | --- |
-| Early Access or 1.0 | (a) or (b) | (a), short, gated on G3 and G5 |
-| Paid expansions | A or B | B, with the rules above |
-| Meaning of "3 years" | From first sale, or from 1.0 | From 1.0 |
-| Prestige per skill or global | Per skill, global | Per skill (matches pillar 4) |
+| What the 3-year clock counts from | First sale, or 1.0 | From 1.0 |
 | Spending (about $1.5K to $8K: art, trailer, legal entity) | Minimum or fuller | Start minimal; spend after G5 |
 | Naming and legal (title, trademark, use of "RuneScape" and "Melvor") | Own it with a lawyer check | Check before the Steam page goes live |
 | Supporter pack and mobile | Now or later | Later, after 1.0 |
