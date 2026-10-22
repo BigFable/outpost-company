@@ -1,0 +1,2008 @@
+<title>Timberline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a logging company's operations board. Tally strip on top; left column is the active tract and the stump-to-mill chain; right column is the equipment yard, timber sales, mill contracts and company upgrades. */
+:root{
+  --bg:#E3E8DF; --panel:#F3F5F0; --ink:#1B241E; --muted:#5A685E; --line:#C3CCC1;
+  --accent:#E0560B; --accent-ink:#FFFFFF; --bark:#6B4A2F; --needle:#2E5C39; --needle2:#41794C; --sky:#D5DED3;
+  --good:#2F7A45; --warn:#B4520A; --bad:#B3261E; --pile:#B98A5E;
+  --f-display:"Zilla Slab", "Rockwell", Georgia, serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.app{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* header */
+.top{display:flex;flex-direction:column;gap:12px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
+.brand h1{font-size:2.1rem;font-weight:700;line-height:1}
+.brand p{margin:0;color:var(--muted);font-size:.88rem}
+.tally{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden}
+.tally>div{padding:10px 14px;border-left:1px solid var(--line);min-width:0}
+.tally>div:first-child{border-left:0}
+.tally small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.tally b{display:block;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:1.2rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tally .cash b{color:var(--accent)}
+.tally .sub{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner.info{border-color:var(--accent);color:var(--ink)}
+.banner.info b{color:var(--accent)}
+.chipl.rec{color:var(--accent);margin-left:6px}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.spot{display:flex;align-items:center;gap:8px}
+.spot canvas{width:72px;height:24px;flex:none}
+@media (max-width:680px){.tally{grid-template-columns:repeat(2,minmax(0,1fr))}.tally>div:nth-child(3){border-left:0}.tally>div:nth-child(n+3){border-top:1px solid var(--line)}}
+.banner{border:1px solid var(--bad);color:var(--bad);background:var(--panel);border-radius:6px;padding:8px 12px;font-size:.88rem;font-weight:600}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.panel h2{font-size:1.15rem;font-weight:700}
+.eyebrow{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 4px}
+.meta{font-size:.82rem;color:var(--muted);margin:4px 0 10px}
+.chipl{display:inline-block;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;vertical-align:middle}
+
+/* stand */
+.standgrid{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:460px){.standgrid{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;display:block;width:100%;border:0;padding:0;background:linear-gradient(var(--sky),var(--panel));border-radius:4px;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
+.stage svg{display:block;width:100%;height:auto;max-height:240px}
+#tree{transform-box:view-box;transform-origin:150px 282px}
+#tree.falling{animation:fall .7s cubic-bezier(.55,0,.9,.4) forwards}
+@keyframes fall{0%{transform:rotate(0)}85%{transform:rotate(86deg);opacity:1}100%{transform:rotate(90deg);opacity:0}}
+.chip{position:absolute;width:7px;height:4px;background:var(--bark);border-radius:1px;pointer-events:none;animation:chip .6s ease-out forwards}
+@keyframes chip{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+.pop{position:absolute;pointer-events:none;font-family:var(--f-num);font-weight:600;font-size:.85rem;color:var(--ink);translate:-50% 0;animation:pop .8s ease-out forwards;white-space:nowrap}
+.pop.big{font-family:var(--f-display);font-size:1.4rem;color:var(--accent);letter-spacing:.04em}
+@keyframes pop{to{transform:translateY(-34px);opacity:0}}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.facts{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
+.facts div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line);padding-bottom:4px}
+.facts span{color:var(--muted)}
+.facts b{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.queue{font-size:.8rem;color:var(--muted);margin-top:8px}
+
+/* chain */
+.chain{display:flex;flex-direction:column;margin-top:10px}
+.srow{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0}
+.srow .n{font-family:var(--f-display);font-weight:700;font-size:1.3rem;color:var(--muted);text-align:center}
+.srow .sm{min-width:0}
+.srow .sm b{font-weight:600}
+.srow .rate{font-family:var(--f-num);font-size:.8rem;color:var(--muted);margin-left:6px}
+.srow .cap{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:6px}
+.srow .cap i{display:block;height:100%;background:var(--needle2);width:0}
+.srow.neck .cap i{background:var(--accent)}
+.srow .neckchip{color:var(--accent);margin-left:6px;display:none}
+.srow.neck .neckchip{display:inline-block}
+.act{min-width:118px;border:1px solid var(--ink);background:transparent;border-radius:4px;padding:7px 10px;font-weight:600;font-size:.82rem}
+.act:disabled{opacity:.35;cursor:not-allowed}
+.pile{display:flex;align-items:center;gap:8px;margin-left:38px;font-size:.8rem;color:var(--muted);padding:2px 0}
+.pile .logs{display:flex;gap:2px;align-items:end;height:14px}
+.pile .logs i{display:block;width:6px;border-radius:3px 3px 1px 1px;background:var(--pile)}
+.pile b{font-family:var(--f-num);color:var(--ink);font-weight:600}
+
+/* yard + lists */
+.group+.group{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.group h3{font-size:.95rem;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.group h3 small{font-family:var(--f-num);font-weight:400;font-size:.75rem;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.row+.row{border-top:1px dotted var(--line)}
+.row .info{flex:1;min-width:0}
+.row .info b{font-weight:600}
+.row .own{font-family:var(--f-num);color:var(--muted);font-size:.82rem;margin-left:6px}
+.row p{margin:1px 0 0;font-size:.8rem;color:var(--muted)}
+.row .spec{font-family:var(--f-num);font-size:.75rem;color:var(--muted)}
+.btns{display:flex;gap:6px;flex:none}
+.buy{min-width:94px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;padding:7px 10px;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:600}
+.buy:not(:disabled):hover{background:var(--accent);color:var(--accent-ink)}
+.buy:disabled{border-color:var(--line);color:var(--muted);cursor:not-allowed}
+.sellb{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:4px;padding:7px 9px;font-size:.8rem}
+.sellb:hover{color:var(--ink);border-color:var(--ink)}
+.empty{font-size:.82rem;color:var(--muted);margin:6px 0 0}
+.contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
+.contract .bar{margin:8px 0 4px}
+.contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.era{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.era span{font-size:.75rem;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.era span.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.era span.done{color:var(--ink)}
+
+.ledger ol{list-style:none;margin:8px 0 0;padding:0;max-height:220px;overflow-y:auto;font-size:.82rem}
+.ledger li{display:flex;gap:10px;padding:4px 0;border-bottom:1px dotted var(--line)}
+.ledger time{font-family:var(--f-num);color:var(--muted);flex:none;font-size:.75rem;padding-top:1px}
+.foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.78rem;color:var(--muted)}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline}
+.linkbtn.armed{color:var(--bad);font-weight:600}
+.rbtns{display:flex;flex-direction:column;gap:6px}
+.goal{padding:8px 0}
+.goal+.goal{border-top:1px dotted var(--line)}
+.goal .line{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.goal p{margin:1px 0 6px;font-size:.8rem;color:var(--muted)}
+.goal p.req{color:var(--ink);font-weight:500;margin-top:-2px}
+#eraBar{background:var(--good)}
+.toasts{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast{background:var(--panel);border:1px solid var(--accent);border-left-width:5px;border-radius:6px;padding:10px 14px;min-width:220px;max-width:340px;box-shadow:0 6px 20px rgba(0,0,0,.18);animation:tin .35s cubic-bezier(.2,.9,.3,1.3)}
+.toast small{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent)}
+.toast b{display:block;font-family:var(--f-display);font-size:1.1rem}
+.toast span{font-size:.8rem;color:var(--muted)}
+.toast.out{opacity:0;transform:translateY(8px);transition:.35s}
+@keyframes tin{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.act.game{border-color:var(--accent);color:var(--accent)}
+.act.game:not(:disabled):hover{background:var(--accent);color:var(--accent-ink)}
+.srow .pace{color:var(--good);margin-left:6px}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(8,12,9,.6);display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;width:min(780px,100%);max-height:100%;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet header p{margin:2px 0 0;font-size:.84rem;color:var(--muted)}
+#mgGear{color:var(--ink)!important;font-size:.8rem!important}
+.closeb{border:1px solid var(--line);background:transparent;border-radius:4px;padding:5px 10px;font-size:.82rem;flex:none}
+.mgc{display:block;width:100%;max-width:100%;border-radius:4px;touch-action:none;background:var(--sky);cursor:crosshair}
+.mgbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+#mgStatus{font-size:.86rem;min-width:0;flex:1 1 260px}
+#mgBtns{display:flex;gap:8px;flex-wrap:wrap}
+.mbtn{border:1px solid var(--ink);background:transparent;border-radius:4px;padding:8px 14px;font-weight:600;font-size:.86rem}
+.mbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mbtn:disabled{opacity:.4;cursor:not-allowed}
+.runbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:.84rem;color:var(--muted);border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:8px 12px}
+.runbar .runno{font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--ink)}
+.runbar b{font-family:var(--f-num);font-weight:600;color:var(--ink)}
+.runbar .rbmods{display:flex;gap:6px;flex-wrap:wrap}
+.runbar .rbmods .chipl{color:var(--bad)}
+.draftbtn{margin-left:auto;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:6px 12px;font-weight:600;font-size:.84rem;animation:dpulse 2.4s ease-in-out infinite}
+@keyframes dpulse{50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}}
+.r-common{--rc:var(--muted)} .r-rare{--rc:var(--good)} .r-legendary{--rc:var(--accent)} .r-curse{--rc:var(--bad)}
+.rchip{color:var(--rc)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.pcard{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--line);border-top:4px solid var(--rc);background:var(--bg);border-radius:6px;padding:12px;min-height:160px}
+.pcard:hover{border-color:var(--rc);border-top-color:var(--rc)}
+.pcard b{font-family:var(--f-display);font-size:1.12rem;line-height:1.15}
+.pcard .d{font-size:.84rem}
+.pcard small{color:var(--muted);font-size:.74rem;margin-top:auto}
+.perk{display:flex;gap:10px;align-items:baseline;padding:7px 0}
+.perk+.perk{border-top:1px dotted var(--line)}
+.perk .chipl{flex:none;min-width:84px;text-align:center}
+.perk p{margin:1px 0 0;font-size:.8rem;color:var(--muted)}
+.perk .x{font-family:var(--f-num);color:var(--muted);font-size:.8rem;margin-left:4px}
+.mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.modb{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.modb b{font-family:var(--f-display);font-size:1.05rem}
+.modb span{font-size:.82rem;color:var(--muted)}
+.modb small{font-family:var(--f-num);color:var(--bad);font-size:.78rem}
+.modb[aria-pressed="true"]{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.modb[aria-pressed="true"] b::after{content:" ✓";color:var(--bad)}
+.closebox .line{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.84rem}
+.closebox .bar{margin:6px 0}
+.closebox .confirm{border:1px solid var(--bad);border-radius:4px;padding:10px 12px;margin-top:8px;font-size:.84rem}
+.closebox .cbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.mbtn.danger{background:var(--bad);border-color:var(--bad);color:var(--panel)}
+.legbig{font-family:var(--f-num);font-size:1.5rem;font-weight:600;color:var(--accent)}
+.row .ownd{font-size:.75rem;color:var(--good);border-color:var(--good)}
+.past{font-size:.8rem;color:var(--muted);display:flex;flex-direction:column}
+.past div{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dotted var(--line)}
+.past b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion: reduce){.draftbtn{animation:none}}
+@media (prefers-reduced-motion: reduce){#tree.falling,.chip,.pop{animation:none;display:none}.toast{animation:none}.toast.out{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Timberline</h1>
+      <p>Buy timber, cut it, get it to the mill. Grow from oxen to harvesters.</p>
+    </div>
+    <div class="tally">
+      <div class="cash"><small>Cash</small><b id="tCash">$0</b><div class="sub" id="tCashSub"></div></div>
+      <div><small>Net per minute</small><b id="tNet">$0</b><div class="sub" id="tNetSub"></div></div>
+      <div><small>Season</small><b id="tSeason">Fall 1880</b><div class="sub" id="tSeasonSub"></div></div>
+      <div><small>Mill-gate price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas></div><div class="sub" id="tMktSub"></div></div>
+    </div>
+    <div class="runbar" id="runbar">
+      <span class="runno" id="rbRun">Run 1</span>
+      <span class="rbmods" id="rbMods"></span>
+      <span><b id="rbPerks">0</b> perks</span>
+      <span>Close-camp value <b id="rbLegacy">0</b> Legacy</span>
+      <span>Banked <b id="rbBank">0</b></span>
+      <button class="draftbtn" id="draftBtn" type="button" hidden>Draft ready (1)</button>
+    </div>
+    <div class="banner" id="short" hidden>Payroll short: <span id="owed"></span> in wages owed. Crews work at half pace until they're paid from your next sales. Haul logs by hand or sell equipment to catch up.</div>
+    <div class="banner info" id="stuck" hidden><b>Out of timber and short on cash.</b> A mill will supply timber for a cut-for-hire job, with an advance to cover payroll. See Mill contracts.</div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel">
+        <p class="eyebrow">Active tract</p>
+        <h2 id="tName">Home woodlot</h2>
+        <p class="meta" id="tMeta"></p>
+        <div class="standgrid">
+          <button class="stage" id="stage" aria-label="Chop the tree">
+            <svg viewBox="0 0 300 300" aria-hidden="true">
+              <rect x="0" y="282" width="300" height="18" fill="var(--line)"/>
+              <rect x="136" y="262" width="28" height="20" fill="var(--bark)" opacity=".55"/>
+              <g id="tree">
+                <g id="conifer">
+                  <polygon points="150,22 104,120 196,120" fill="var(--needle2)"/>
+                  <polygon points="150,62 90,170 210,170" fill="var(--needle)"/>
+                  <polygon points="150,110 78,220 222,220" fill="var(--needle2)"/>
+                </g>
+                <g id="decid" hidden>
+                  <circle cx="150" cy="92" r="62" fill="var(--needle)"/>
+                  <circle cx="104" cy="132" r="44" fill="var(--needle2)"/>
+                  <circle cx="196" cy="132" r="44" fill="var(--needle2)"/>
+                  <circle cx="150" cy="150" r="46" fill="var(--needle)"/>
+                </g>
+                <rect x="136" y="196" width="28" height="86" fill="var(--bark)"/>
+                <polygon id="notch" points="136,250 136,262 136,274" fill="var(--sky)"/>
+              </g>
+            </svg>
+          </button>
+          <div class="facts">
+            <div><span>This tree</span><b id="fTree">Pine</b></div>
+            <div><span>Chops left</span><b id="fHp">0</b></div>
+            <div><span>Trees left</span><b id="fLeft">0</b></div>
+            <div><span>Cut out in</span><b id="fEta">—</b></div>
+            <div class="bar" style="border:0;padding:0"><i id="tBar"></i></div>
+            <button class="act" id="road" type="button" hidden></button>
+          </div>
+        </div>
+        <p class="queue" id="queue"></p>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Production chain</p>
+        <h2>Stump to mill</h2>
+        <p class="meta">Each stage moves wood to the next. The slowest stage sets your output, and wood piles up in front of it.</p>
+        <div class="chain" id="chain"></div>
+      </section>
+
+      <section class="panel" id="runPanel">
+        <p class="eyebrow">This run</p>
+        <h2 id="runTitle">Run 1</h2>
+        <p class="meta" id="runMeta"></p>
+        <div class="facts" id="runStats"></div>
+        <div class="group" style="margin-top:12px"><h3>Active perks<small id="perkCount"></small></h3><div id="perks"></div></div>
+        <div class="group"><h3>Close camp</h3><p class="meta">End this run and bank Legacy for permanent camp lore. Cash, crews, tracts, contracts and this run’s perks are left behind. Achievements, reputation and improvements stay with you.</p><div class="closebox" id="closeBox"></div></div>
+      </section>
+
+      <section class="panel ledger">
+        <p class="eyebrow">Camp ledger</p>
+        <ol id="ledger"></ol>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" id="yard">
+        <p class="eyebrow">Equipment yard</p>
+        <h2>Crews and machines</h2>
+        <div id="eq"></div>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Timber sales</p>
+        <h2>Stumpage for sale</h2>
+        <p class="meta" id="saleMeta">You pay the landowner up front for the right to cut. Farther and steeper tracts are cheaper but slower to work.</p>
+        <div id="sales"></div>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Mill contracts</p>
+        <h2>Delivery contracts</h2>
+        <div class="group"><h3>Cut for a mill</h3>
+          <p class="meta">The mill supplies the timber, so there's nothing to buy. You're paid a contract rate of 45% of market value for what you deliver, plus an advance when you sign. One job at a time.</p>
+          <div id="hire"></div></div>
+        <div class="group"><h3>Delivery contracts</h3>
+          <p class="meta">A premium on everything you haul until the volume is met. Miss the deadline and you pay a penalty for the share you didn't deliver.</p>
+          <div id="contracts"></div></div>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Company</p>
+        <h2 id="coName">Era of axe and oxen</h2>
+        <div class="era" id="eras"></div>
+        <div id="eraNext"></div>
+        <div class="group"><h3>Improvements</h3><p class="meta">Earned on the job, not bought. Finish mini-game runs to unlock them.</p><div id="upgs"></div></div>
+        <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
+      </section>
+      <section class="panel" id="legacyPanel">
+        <p class="eyebrow">Legacy</p>
+        <h2>Camp lore</h2>
+        <p class="meta" id="legMeta"></p>
+        <div id="metaList"></div>
+        <div class="group"><h3>Past runs</h3><div class="past" id="pastRuns"></div></div>
+      </section>
+      <div class="foot">
+        <span>Progress saves in this browser. <span id="saved"></span></span>
+        <button class="linkbtn" id="reset" type="button">Start a new company</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="modal" id="mg" hidden role="dialog" aria-modal="true" aria-labelledby="mgTitle">
+  <div class="sheet">
+    <header><div><h2 id="mgTitle">Place a fall</h2><p id="mgHelp"></p><p id="mgGear"></p></div><button class="closeb" id="mgClose" type="button">Close</button></header>
+    <canvas class="mgc" id="mgCanvas" width="640" height="400"></canvas>
+    <div class="mgbar"><span id="mgStatus"></span><div id="mgBtns"></div></div>
+  </div>
+</div>
+
+<div class="modal" id="draft" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <div class="sheet">
+    <header><div><h2 id="dTitle">Draft a perk</h2><p id="dHelp">Pick one. Perks last until you close camp.</p></div><button class="closeb" id="dClose" type="button">Later</button></header>
+    <div class="cards" id="dCards"></div>
+    <div class="mgbar"><span id="dStatus"></span><div id="dBtns"><button class="mbtn" id="dReroll" type="button">Reroll</button></div></div>
+  </div>
+</div>
+<div class="modal" id="newrun" hidden role="dialog" aria-modal="true" aria-labelledby="nrTitle">
+  <div class="sheet">
+    <header><div><h2 id="nrTitle">Break new ground</h2><p>Choose this year’s conditions. Each one makes the run harder and multiplies the Legacy you bank when you close camp. You can choose none.</p></div><button class="closeb" id="nrClose" type="button">Not yet</button></header>
+    <div class="mods" id="nrMods"></div>
+    <p class="meta" id="nrMeta"></p>
+    <div class="mgbar"><span id="nrStatus"></span><div><button class="mbtn primary" id="nrStart" type="button">Start run</button></div></div>
+  </div>
+</div>
+
+<script>
+(() => {
+// ---------- data
+const SP = {
+  pine:    {name:'Eastern white pine', hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con'},
+  spruce:  {name:'Red spruce',         hp:16, bf:160, saw:.60, sawP:.23, pulpP:.07, shape:'con'},
+  hemlock: {name:'Eastern hemlock',    hp:22, bf:220, saw:.50, sawP:.18, pulpP:.06, shape:'con'},
+  maple:   {name:'Sugar maple',        hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec'},
+  oak:     {name:'Northern red oak',   hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec'},
+  walnut:  {name:'Black walnut',       hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec'},
+};
+const treeVal = s => s.bf*(s.saw*s.sawP + (1-s.saw)*s.pulpP);
+const ERAS = [
+  {name:'Axe and oxen', year:1880, cost:0},
+  {name:'Steam', year:1905, cost:15000, blurb:'Steam donkeys, drag saws and logging railroads.'},
+  {name:'Gas and diesel', year:1950, cost:1000000, blurb:'Chainsaws, crawler tractors and log trucks.'},
+  {name:'Mechanized', year:1990, cost:10000000, blurb:'Feller bunchers, processors and forwarders.'},
+];
+const ERA_SPECIES = [['pine','spruce','hemlock'],['pine','spruce','hemlock','maple'],['pine','spruce','hemlock','maple','oak'],['pine','spruce','hemlock','maple','oak','walnut']];
+const TRACT_BASE = [60, 1500, 15000, 120000];
+const STAGES = [
+  {id:'fell', name:'Fell',  verb:'Felling',  unit:'chops/s'},
+  {id:'buck', name:'Buck',  verb:'Bucking',  unit:'bd ft/s'},
+  {id:'skid', name:'Skid',  verb:'Skidding', unit:'bd ft/s'},
+  {id:'haul', name:'Haul',  verb:'Hauling',  unit:'bd ft/s'},
+];
+const PILES = [
+  {id:'stems', label:'stems on the ground'},
+  {id:'cut', label:'logs at the stump'},
+  {id:'landing', label:'logs at the landing'},
+];
+const EQ = [
+  {id:'axeman',    stage:'fell', era:0, name:'Axeman',                desc:'Double-bit axe and a long day.', rate:1, cost:40, up:3},
+  {id:'crosscut',  stage:'fell', era:0, name:'Crosscut sawyers',      desc:'Two men on a six-foot felling saw.', rate:4, cost:220, up:10},
+  {id:'bucker',    stage:'buck', era:0, name:'Bucker',                desc:'Limbs stems and saws them to log lengths.', rate:12, cost:60, up:3},
+  {id:'oxen',      stage:'skid', era:0, name:'Ox team',               desc:'Slow and steady to the landing.', rate:10, cost:90, up:5},
+  {id:'horses',    stage:'skid', era:0, name:'Horse team',            desc:'Faster than oxen. Eats more.', rate:22, cost:300, up:11},
+  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to mill. Best on frozen roads.', rate:15, cost:70, up:4},
+  {id:'wagon',     stage:'haul', era:0, name:'Log wagon and teamster',desc:'Big wheels for the haul road.', rate:35, cost:600, up:12},
+  {id:'springboard',stage:'fell',era:1, name:'Springboard fallers',   desc:'Cut above the butt swell from notched planks.', rate:15, cost:2500, up:45},
+  {id:'dragsaw',   stage:'buck', era:1, name:'Steam drag saw',        desc:'A reciprocating saw driven by steam.', rate:120, cost:2800, up:40},
+  {id:'donkey',    stage:'skid', era:1, name:'Steam donkey',          desc:'Winch engine that yards logs on cable.', rate:180, cost:7000, up:110},
+  {id:'shay',      stage:'haul', era:1, name:'Shay locomotive',       desc:'Geared engine on a logging railroad.', rate:300, cost:15000, up:170},
+  {id:'chainsaw',  stage:'fell', era:2, name:'Chainsaw faller',       desc:'One faller, one saw, a lot of trees.', rate:90, cost:30000, up:350},
+  {id:'slasher',   stage:'buck', era:2, name:'Slasher saw deck',      desc:'Bucks whole stems at the landing.', rate:800, cost:36000, up:320},
+  {id:'crawler',   stage:'skid', era:2, name:'Crawler tractor',       desc:'Tracks and an arch for dragging logs.', rate:1100, cost:85000, up:650},
+  {id:'cableskid', stage:'skid', era:2, name:'Cable skidder',         desc:'Rubber-tired and quick between turns.', rate:1600, cost:140000, up:900},
+  {id:'logtruck',  stage:'haul', era:2, name:'Log truck',             desc:'Highway hauling to any mill in reach.', rate:2000, cost:130000, up:950},
+  {id:'buncher',   stage:'fell', era:3, name:'Feller buncher',        desc:'Cuts and stacks several stems at a time.', rate:700, cost:600000, up:4000},
+  {id:'processor', stage:'buck', era:3, name:'Processor',             desc:'Delimbs and bucks a stem in seconds.', rate:7000, cost:500000, up:3200},
+  {id:'grapple',   stage:'skid', era:3, name:'Grapple skidder',       desc:'Grabs a bunched turn and goes.', rate:9000, cost:750000, up:4200},
+  {id:'forwarder', stage:'skid', era:3, name:'Forwarder',             desc:'Carries logs clear of the ground. Easy on soil.', rate:14000, cost:1300000, up:6500},
+  {id:'selfloader',stage:'haul', era:3, name:'Self-loading truck',    desc:'Loads itself at the landing.', rate:15000, cost:1200000, up:6000},
+];
+const UPG = [
+  {id:'file',     era:0, name:'Mill file',               desc:'Keep an edge on the axe. Your chop ×2. Felling game: wider green hinge zone.', cost:40, click:2, game:'fell'},
+  {id:'peavey',   era:0, name:'Peaveys and cant hooks',  desc:'Your own bucking, skidding and hauling ×2. Skid game: hang-ups free up in half the time.', cost:120, hand:2, game:'skid'},
+  {id:'gunstick', era:0, name:'Gunning stick',           desc:'Felling game: shows where the tree will really fall, wind included.', cost:350, game:'fell'},
+  {id:'scalestick',era:0,name:'Scaler’s stick',          desc:'Bucking game: see what each log is worth as you plan the cuts.', cost:450, game:'buck'},
+  {id:'swamper',  era:0, name:'Swamping crew',           desc:'Clears brush and stumps from skid trails. Skidding ×1.15. Skid game: half the stumps are gone.', cost:600, skid:1.15, game:'skid'},
+  {id:'hay',      era:0, name:'Hay on the hills',        desc:'Sled tenders spread hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.', cost:700, haul:1.1, game:'haul'},
+  {id:'wedges',   era:0, name:'Felling wedges',          desc:'Drive the tree over the hinge. Felling ×1.15. Felling game: a thick hinge no longer sits back, and falls are steadier.', cost:900, fell:1.15, game:'fell'},
+  {id:'bunks',    era:0, name:'Bigger bunks',            desc:'Longer, wider log bunks. Hauling ×1.15. Haul game: road limit +4 logs.', cost:1200, haul:1.15, game:'haul'},
+  {id:'cook',     era:0, name:'Camp cookhouse',          desc:'Fed crews work harder. Felling and bucking ×1.25.', cost:1500, fell:1.25, buck:1.25},
+  {id:'grade',    era:0, name:'Bucking for grade',       desc:'Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.', cost:2500, value:1.12, game:'buck'},
+  {id:'corduroy', era:0, name:'Corduroy roads',          desc:'Log-paved roads. Spring mud costs you half as much. Skid game: mud barely slows you. Haul game: spring road limit +2 logs.', cost:4000, game:'skid haul'},
+  {id:'icerd',    era:0, name:'Road sprinkler sled',     desc:'Ice the haul road at night. Winter hauling ×1.5. Haul game: faster, surer winter runs.', cost:6000, game:'haul'},
+  {id:'smith',    era:1, name:'Camp blacksmith',         desc:'Repairs done in camp. Upkeep ×0.85.', cost:20000, upkeep:.85},
+  {id:'scribner', era:1, name:'Scribner log rule',       desc:'A fairer scale at the mill. Sale price ×1.1.', cost:35000, scale:1.1},
+  {id:'skyline',  era:1, name:'Skyline yarding',         desc:'Overhead cable reaches steep ground. Slope barely slows skidding. Skid game: logs ride above stumps, so hits no longer scar them.', cost:60000, game:'skid'},
+  {id:'radios',   era:2, name:'Two-way radios',          desc:'Crews coordinate across the site. Every stage ×1.2. All games: pace boosts last 45 s instead of 30.', cost:500000, all:1.2, game:'fell buck skid haul'},
+  {id:'airbrakes',era:2, name:'Air brakes',              desc:'Hauling ×1.2. Haul game: brakes ×2, and the load holds to a higher speed before it runs away.', cost:350000, haul:1.2, game:'haul'},
+  {id:'shop',     era:2, name:'Diesel shop',             desc:'Rebuild engines in-house. Upkeep ×0.85.', cost:900000, upkeep:.85},
+  {id:'optimize', era:3, name:'Cut-to-length optimizer', desc:'Computer bucking for value. Log value ×1.15. Bucking game: one button places the best cuts.', cost:5e6, value:1.15, game:'buck'},
+  {id:'gps',      era:3, name:'GPS harvest planning',    desc:'Tighter skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.', cost:9e6, all:1.25, game:'skid'},
+  {id:'telematics',era:3,name:'Fleet telematics',        desc:'Catch breakdowns early. Upkeep ×0.8.', cost:14e6, upkeep:.8},
+];
+const R = (text, cur, target) => ({text, prog: () => [cur(), target]});
+const st = k => () => (S.stats[k] || 0);
+const runs = (...g) => () => g.reduce((a,k) => a + (S.stats['run_'+k] || 0), 0);
+const ALL = ['fell','buck','skid','haul'];
+const UPG_REQ = {
+  file:       R('Finish 1 felling run', runs('fell'), 1),
+  gunstick:   R('Finish 3 felling runs', runs('fell'), 3),
+  wedges:     R('Land 3 falls in the opening', st('goodFell'), 3),
+  cook:       R('Finish 10 felling or bucking runs', runs('fell','buck'), 10),
+  scalestick: R('Finish 1 bucking run', runs('buck'), 1),
+  grade:      R('Buck 3 stems at 85% of best value or better', st('buck85'), 3),
+  scribner:   R('Buck 10 stems at 90% of best value or better', st('buck90'), 10),
+  optimize:   R('Buck 5 stems for full value', st('perfBuck'), 5),
+  peavey:     R('Finish 1 skidding run', runs('skid'), 1),
+  swamper:    R('Finish 3 skidding runs', runs('skid'), 3),
+  corduroy:   R('Finish 2 skidding or hauling runs in spring mud', st('mudRuns'), 2),
+  skyline:    R('Skid 5 clean turns', st('cleanSkid'), 5),
+  gps:        R('Skid 12 clean turns', st('cleanSkid'), 12),
+  hay:        R('Finish 1 hauling run', runs('haul'), 1),
+  bunks:      R('Deliver 3 full loads without losing a log', st('fullLoads'), 3),
+  icerd:      R('Finish 2 hauling runs in winter', st('winterHauls'), 2),
+  airbrakes:  R('Make 5 clean hauls', st('cleanHaul'), 5),
+  smith:      R('Finish 25 runs of any job', runs(...ALL), 25),
+  radios:     R('Finish 40 runs of any job', runs(...ALL), 40),
+  shop:       R('Finish 60 runs of any job', runs(...ALL), 60),
+  telematics: R('Finish 100 runs of any job', runs(...ALL), 100),
+};
+UPG.forEach(u => { u.req = UPG_REQ[u.id]; });
+function checkUnlocks(quiet){
+  const got = [];
+  for (const u of UPG){
+    if (has(u.id) || !u.req || u.era > S.era) continue;
+    const [c,t] = u.req.prog(); if (c < t) continue;
+    S.upg.push(u.id); got.push(u); note(`Improvement unlocked: ${u.name}.`);
+  }
+  if (!quiet) got.forEach(u => toast({label:'Improvement unlocked', name:u.name, line:u.desc}));
+  else if (got.length) toast({label:'Improvements unlocked', name:`${got.length} new`, line: got.map(u => u.name).join(', ')});
+  return got.length;
+}
+const SEASONS = ['Spring','Summer','Fall','Winter'];
+const SEASON_LEN = 150;
+const SLOPES = {flat:{label:'flat', skid:1, disc:1}, rolling:{label:'rolling', skid:.8, disc:.85}, steep:{label:'steep', skid:.55, disc:.65}};
+const PLACES = ['Beaver Creek','Moose Brook','Cold Spring Ridge','Black Pond','Indian Stream','Bald Mountain','Otter Flowage','Cedar Swamp','Kettle Hill','Pine Notch','Long Meadow','Spruce Gulch','Fox Hollow','Birch Run','Wolf Pond','Rattlesnake Ridge'];
+const MILLS = ['Hartwell Bros. Mill','Penobscot Pulp & Paper','Cedar Falls Lumber','Union Box & Shook','Great Northern Sash & Door','Ridgeway Planing Mill','Androscoggin Paper','Millers River Lumber'];
+const KEY = 'timberline-v2';
+
+// ---------- state
+function makeTract(name, mix, trees, miles, slope){
+  let hp=0, bf=0, val=0, w=0;
+  mix.forEach(([id,wt]) => { const s=SP[id]; hp+=s.hp*wt; bf+=s.bf*wt; val+=treeVal(s)*wt; w+=wt; });
+  return {name, mix, trees, left:trees, miles, slope, hp:hp/w, bf:bf/w, val:val/w, road:false};
+}
+const fresh = () => ({v:2, cash:0, era:0, year:1880, season:2, st:0, t:0,
+  stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
+  own:{}, upg:[], tracts:[makeTract('Home woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
+  site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0}, ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now()});
+function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false}; }
+function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
+let S = fresh();
+
+// ---------- helpers
+const $ = id => document.getElementById(id);
+const own = id => S.own[id] || 0;
+const has = id => S.upg.includes(id);
+const umult = key => UPG.reduce((m,u) => has(u.id) && u[key] ? m*u[key] : m, 1);
+const tract = () => S.tracts[0] || null;
+const season = () => SEASONS[S.season];
+const rnd = (a,b) => a + Math.random()*(b-a);
+const pick = a => a[Math.floor(Math.random()*a.length)];
+function fmt(n){
+  if (!isFinite(n)) return '0';
+  const a = Math.abs(n);
+  if (a < 10) return (Math.round(n*10)/10).toString();
+  if (a < 1000) return Math.round(n).toString();
+  const u = ['K','M','B','T','Qa'];
+  let i = -1, v = n;
+  while (Math.abs(v) >= 1000 && i < u.length-1){ v /= 1000; i++; }
+  return v.toFixed(Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0) + u[i];
+}
+const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
+const bf = n => fmt(n) + ' bd ft';
+const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt(s/3600)+' h';
+
+function seasonF(stage){
+  const s = season();
+  if (s === 'Spring' && stage === 'skid' && perk('swamp')) return 1;
+  if (s === 'Spring' && (stage === 'skid' || stage === 'haul')) return has('corduroy') ? .75 : .5;
+  if (s === 'Winter'){
+    if (stage === 'fell') return .85;
+    if (stage === 'skid') return 1.25;
+    if (stage === 'haul') return 1.25 * (has('icerd') ? 1.5 : 1) * (perk('iceking') ? 1.4 : 1);
+  }
+  return 1;
+}
+const slopeF = () => { const sl = SLOPES[S.site.slope].skid; return has('skyline') ? Math.max(sl, .92) : sl; };
+const distF = () => 1.07/(1 + 0.07*S.site.miles);
+const baseRate = stage => EQ.reduce((a,e) => e.stage === stage ? a + e.rate*own(e.id) : a, 0) * umult(stage) * umult('all')
+  * pmult(stage) * pmult('all') * (1 + .04*S.run.snow) * (meta('foremen') ? 1.2 : 1) * (stage === 'fell' && hasMod('drought') ? .9 : 1);
+const vmult = () => umult('value') * pmult('value');
+const cmult = () => umult('click') * pmult('click');
+const boostF = () => perk('bull') ? 2 : 1.5;
+const boostTxt = () => perk('absentee') ? 'no faster (absentee owner)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
+function rate(stage){ // effective per second, before payroll efficiency
+  let r = baseRate(stage) * seasonF(stage) * ((S.boost[stage]||0) > S.t ? boostF() : 1);
+  if (stage === 'skid') r *= slopeF();
+  if (stage === 'haul') r *= distF();
+  return r;
+}
+function fellBf(chops){ const t = tract(); return t ? chops / t.hp * t.bf : 0; }
+// per minute; crews with nothing to do are paid a quarter rate
+const upkeep = () => { const idle = perk('store') ? 0 : .25; return EQ.reduce((a,e) => a + e.up*own(e.id)*(idle + (1-idle)*((S.util||{})[e.stage] ?? 1)), 0) * umult('upkeep') * pmult('upkeep'); };
+const fullUpkeep = () => EQ.reduce((a,e) => a + e.up*own(e.id), 0) * umult('upkeep') * pmult('upkeep');
+const market = () => 1 + 0.18*Math.sin(S.t/300 + 1) + 0.06*Math.sin(S.t/41);
+const eqCost = e => Math.ceil(e.cost * Math.pow(1.15, own(e.id)));
+const handAmt = stage => {
+  const h = umult('hand') * pmult('hand');
+  if (stage === 'buck') return 30*h;
+  if (stage === 'skid') return 20*h*slopeF();
+  if (stage === 'haul') return 25*h*distF();
+  return 0;
+};
+
+function note(text){
+  S.log.unshift({at: `${season().slice(0,3)} ${S.year}`, text});
+  S.log.length = Math.min(S.log.length, 50);
+  renderLedger();
+}
+
+// ---------- tracts
+function newTree(){
+  const t = tract(); if (!t){ S.hp = null; return; }
+  S.hp = t.hp;
+  const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.random()*tot;
+  for (const [id,w] of t.mix){ r -= w; if (r <= 0){ S.vis = id; break; } }
+}
+function setSite(){ const t = tract(); if (t) S.site = {miles:t.miles, slope:t.slope}; }
+function genTract(){
+  const tier = Math.max(0, S.era - (Math.random() < .3 ? 1 : 0));
+  const pool = ERA_SPECIES[S.era];
+  const a = pick(pool); let b = pick(pool); if (b === a) b = pool[(pool.indexOf(a)+1) % pool.length];
+  const wa = Math.round(rnd(5,8));
+  const mix = [[a,wa],[b,10-wa]];
+  const trees = Math.round(TRACT_BASE[tier]*rnd(.6,1.5));
+  const miles = Math.round(rnd(1,12)*2)/2;
+  const slope = pick(['flat','flat','rolling','rolling','steep']);
+  const t = makeTract(`${pick(PLACES)}, Lot ${Math.floor(rnd(2,40))}`, mix, trees, miles, slope);
+  const gross = t.trees*t.val;
+  t.price = Math.round(gross * 0.42 * Math.max(.55, 1.12 - 0.04*miles) * SLOPES[slope].disc * pmult('stump'));
+  const sz = (hasMod('beetle') ? .8 : 1) * (perk('cruiser') ? 1.25 : 1);
+  if (sz !== 1){ t.trees = t.left = Math.max(5, Math.round(t.trees*sz)); }
+  return t;
+}
+function refreshSales(){ S.forSale = [genTract(), genTract(), genTract()]; S.saleT = 180; }
+function buyTract(i){
+  const t = S.forSale[i]; if (!t || S.cash < t.price) return;
+  S.cash -= t.price; delete t.price;
+  t.roadCost = Math.round(t.trees*t.val*0.07);
+  S.tracts.push(t);
+  if (S.tracts.length === 1){ setSite(); newTree(); }
+  S.forSale[i] = genTract();
+  note(`Bought stumpage on ${t.name}: ${fmt(t.trees)} trees.`);
+  render(true);
+}
+function buildRoad(){
+  const t = tract(); if (!t || t.road || S.cash < t.roadCost) return;
+  S.cash -= t.roadCost; t.road = true; t.miles = Math.max(.5, Math.round(t.miles/2*2)/2); setSite();
+  note(`Built a haul road into ${t.name}. Haul is now ${t.miles} mi.`); render(true);
+}
+
+// ---------- contracts
+function genOffer(){
+  const cap = Math.max(8, baseRate('haul')*distF());
+  const dur = Math.round(rnd(240,480)/30)*30;
+  const raw = Math.max(2000, cap*dur*rnd(.4,.75));
+  const mag = Math.pow(10, Math.floor(Math.log10(raw))-1);
+  const vol = Math.round(raw/mag)*mag;
+  const t = tract(); const perBf = t ? t.val/t.bf : .2;
+  return {mill:pick(MILLS), vol, dur, prem:Math.round(rnd(.15,.4)*100)/100, penalty:Math.round(vol*perBf*.25)};
+}
+function genHire(){
+  const pool = ERA_SPECIES[S.era];
+  const a = pick(pool), b = pick(pool.filter(x => x !== a));
+  const wa = Math.round(rnd(5,8));
+  const t = makeTract(`${pick(PLACES)}, Lot ${Math.floor(rnd(2,40))}`, [[a,wa],[b,10-wa]],
+    Math.round(TRACT_BASE[S.era]*rnd(1,1.5)), Math.round(rnd(1,4)*2)/2, pick(['flat','flat','rolling']));
+  t.hire = {mill: pick(MILLS), rate: .45};
+  t.val *= t.hire.rate;
+  return t;
+}
+const hireActive = () => S.tracts.some(t => t.hire);
+const mobilization = t => Math.round(Math.max(40, Math.min(upkeep()*4, t.trees*t.val*.3)));
+function acceptHire(){
+  const t = S.hireOffer; if (!t || hireActive() || scripBlock()) return;
+  const mob = mobilization(t);
+  S.cash += mob; S.tracts.push(t); S.hireOffer = genHire();
+  if (S.tracts.length === 1){ setSite(); newTree(); }
+  note(`Signed to cut ${t.name} for ${t.hire.mill}. Received a ${money(mob)} advance.`);
+  render(true);
+}
+const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, t.price), Infinity);
+const scripBlock = () => perk('scrip') && (!!tract() || S.cash >= cheapestSale());
+const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &&
+  (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
+function refreshOffers(){ S.offers = [genOffer(), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
+function accept(i){
+  if (S.contract) return;
+  const o = S.offers[i]; if (!o) return;
+  S.contract = {...o, done:0, end:S.t + o.dur};
+  S.offers.splice(i,1);
+  note(`Signed with ${o.mill}: ${bf(o.vol)} in ${mins(o.dur)} at +${Math.round(o.prem*100)}%.`);
+  render(true);
+}
+
+// ---------- simulation
+function fellK(t, k){
+  t.left -= k; S.felled += k;
+  S.stems.bf += k*t.bf; S.stems.val += k*t.val;
+}
+function finishTract(){
+  const t = S.tracts.shift();
+  S.stats.tracts++; if (t.hire) S.stats.hires++;
+  note(t.hire ? `Finished the ${t.hire.mill} job on ${t.name}.` : `Cut out ${t.name}.`);
+  setSite(); newTree();
+}
+function damage(chops){
+  let t = tract(), n = 0;
+  if (!t || chops <= 0) return 0;
+  if (S.hp == null) newTree();
+  while (chops > 0 && t){
+    if (chops < S.hp){ S.hp -= chops; break; }
+    chops -= S.hp; fellK(t,1); n++;
+    const more = Math.min(t.left, Math.floor(chops / t.hp));
+    if (more > 0){ fellK(t, more); n += more; chops -= more*t.hp; }
+    if (t.left < 1){ finishTract(); t = tract(); } else newTree();
+  }
+  return n;
+}
+function clean(p){ if (p.bf < 1e-6){ p.bf = 0; p.val = 0; } }
+function move(a, b, amt, vm=1){
+  amt = Math.min(amt, a.bf); if (amt <= 0) return 0;
+  const avg = a.val/a.bf; a.bf -= amt; a.val -= amt*avg; b.bf += amt; b.val += amt*avg*vm; clean(a);
+  return amt;
+}
+function deliver(amt){
+  const L = S.landing; amt = Math.min(amt, L.bf); if (amt <= 0) return 0;
+  const avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
+  S.stats.deliv += amt; S.run.deliv += amt;
+  const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100);
+  let rev = base;
+  const c = S.contract;
+  if (c){ const into = Math.min(amt, c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
+    if (c.done >= c.vol - 1e-6){ S.stats.contracts++; note(`Filled the ${c.mill} contract. ${bf(c.vol)} delivered.`); S.contract = null; contractFilled(c); } }
+  S.earned += rev; S.bucket += rev; S.run.earned += rev;
+  const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back;
+  if (S.owed < .01) S.owed = 0;
+  return rev;
+}
+function tick(dt){
+  S.t += dt;
+  // calendar
+  S.st += dt;
+  while (S.st >= SEASON_LEN){ S.st -= SEASON_LEN; S.season = (S.season+1) % 4; if (S.season === 0){ S.year++; S.stats.winters++; }
+    if (SEASONS[S.season] === 'Spring') note(`Mud season. Skidding and hauling slow down.`);
+    if (SEASONS[S.season] === 'Winter') note(`Ground is frozen. Good skidding and hauling.`); }
+  // payroll
+  // payroll: if you can't pay, crews keep working at half pace and the wages are owed
+  const cost = upkeep()*dt/60; let eff = 1;
+  if (cost > 0){
+    if (S.cash >= cost && S.owed <= 0) S.cash -= cost;
+    else { const paid = Math.min(S.cash, cost); S.cash -= paid;
+      if (S.owed < fullUpkeep()*5) S.owed += cost - paid; }
+  }
+  if (S.owed > 0) eff = .5;
+  S.short = S.owed > 0;
+  // chain, downstream first
+  const cap = {haul: rate('haul')*eff*dt, skid: rate('skid')*eff*dt, buck: rate('buck')*eff*dt, fell: rate('fell')*eff*dt};
+  const full = {haul: rate('haul')*dt, skid: rate('skid')*dt, buck: rate('buck')*dt, fell: rate('fell')*dt};
+  if (perk('neck') && tract()){ const bfc = k => k === 'fell' ? fellBf(full.fell) : full[k];
+    const nk = ['fell','buck','skid','haul'].reduce((a,b) => bfc(b) < bfc(a) ? b : a); cap[nk] *= 1.35; full[nk] *= 1.35; }
+  const used = {haul: Math.min(cap.haul, S.landing.bf)};
+  deliver(cap.haul);
+  used.skid = move(S.cut, S.landing, cap.skid);
+  used.buck = move(S.stems, S.cut, cap.buck, vmult());
+  used.fell = tract() ? cap.fell : 0;
+  damage(cap.fell);
+  if (baseRate('haul') <= 0 && S.landing.bf > 0){ // a local buyer carts logs off your landing
+    const L = S.landing, amt = Math.min(L.bf, 6*dt), avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
+    S.run.deliv += amt; const rev = amt*avg*.6*mktMod()*market(); S.earned += rev; S.run.earned += rev; S.bucket += rev; const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back; }
+  if (!S.util) S.util = {};
+  for (const k in cap){ const u = full[k] > 0 ? used[k]/full[k] : 1; S.util[k] = (S.util[k] ?? 1) + (u - (S.util[k] ?? 1))*Math.min(1, dt/3); }
+  // run milestones
+  if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
+    queueDraft(.65, `Entered the ${ERAS[S.run.era].name.toLowerCase()} era`); } }
+  if (hasMod('drought') && season() === 'Summer' && S.stems.bf > 50 && Math.random() < dt*.003){
+    S.stems.bf *= .75; S.stems.val *= .75; note('Drought: a slash fire burned a quarter of the stems on the ground.'); }
+  // contracts
+  if (S.contract && S.t >= S.contract.end){
+    const c = S.contract; const pen = perk('handshake') ? 0 : Math.round(c.penalty*(1 - c.done/c.vol)); S.cash = Math.max(0, S.cash - pen);
+    note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. Paid a ${money(pen)} penalty.`);
+    S.contract = null;
+  }
+  S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !S.contract)) refreshOffers();
+  S.saleT -= dt; if (S.saleT <= 0) refreshSales();
+  // income average
+  const k = Math.min(1, dt/20);
+  S.ema += (S.bucket/dt - S.ema)*k; S.bucket = 0;
+  S.upEma = upkeep()/60*eff;
+  S.phT -= dt; if (S.phT <= 0){ S.ph.push(market()); if (S.ph.length > 60) S.ph.shift(); S.phT = 4; }
+}
+
+// ---------- manual work
+const stage = $('stage');
+let falling = false;
+function chop(ev){
+  const t = tract();
+  if (!t){ pop(null, 'Buy a tract', false); return; }
+  const before = S.felled, vis = S.vis;
+  damage(cmult());
+  const rect = stage.getBoundingClientRect();
+  const x = ev && ev.clientX ? ev.clientX - rect.left : rect.width*.47;
+  const y = ev && ev.clientY ? ev.clientY - rect.top : rect.height*.85;
+  for (let i=0;i<4;i++){
+    const c = document.createElement('span'); c.className = 'chip';
+    c.style.left = x+'px'; c.style.top = y+'px';
+    c.style.setProperty('--dx', (Math.random()*-50-10)+'px');
+    c.style.setProperty('--dy', (Math.random()*-40+10)+'px');
+    c.style.setProperty('--r', (Math.random()*360)+'deg');
+    stage.appendChild(c); c.addEventListener('animationend', () => c.remove());
+  }
+  if (S.felled > before){
+    pop({x:rect.width/2, y:rect.height*.3}, 'TIMBER!', true);
+    if (S.felled - before === 1 && S.felled < 40) note(`Felled one: ${SP[vis].name}.`);
+    if (!falling){ falling = true; const tr = $('tree'); tr.classList.add('falling');
+      setTimeout(() => { tr.classList.remove('falling'); falling = false; }, 720); }
+  } else pop({x, y:y-18}, '+'+fmt(cmult()), false);
+  render();
+}
+function pop(at, text, big){
+  const p = document.createElement('span'); p.className = 'pop' + (big ? ' big' : '');
+  p.textContent = text;
+  p.style.left = (at ? at.x : stage.clientWidth/2) + 'px';
+  p.style.top = (at ? at.y : 40) + 'px';
+  stage.appendChild(p); p.addEventListener('animationend', () => p.remove());
+}
+stage.addEventListener('click', chop);
+function hand(stg){
+  const a = handAmt(stg);
+  if (stg === 'buck') move(S.stems, S.cut, a, vmult());
+  if (stg === 'skid') move(S.cut, S.landing, a);
+  if (stg === 'haul') deliver(a);
+  render();
+}
+
+// ---------- static UI
+const chainEls = {};
+function buildChain(){
+  const box = $('chain'); box.innerHTML = '';
+  STAGES.forEach((s,i) => {
+    const r = document.createElement('div'); r.className = 'srow';
+    r.innerHTML = `<span class="n">${i+1}</span><div class="sm"><b>${s.name}</b><span class="rate"></span><span class="chipl neckchip">Bottleneck</span><span class="chipl pace" hidden></span><div class="cap"><i></i></div></div><div class="rbtns"><button class="act quick" type="button"></button>${GAMES[s.id] ? `<button class="act game" type="button">${GAMES[s.id]}</button>` : ''}</div>`;
+    const btn = r.querySelector('.act.quick');
+    btn.onclick = s.id === 'fell' ? () => chop() : () => hand(s.id);
+    const gb = r.querySelector('.act.game'); if (gb) gb.onclick = () => openMG(s.id);
+    box.appendChild(r); chainEls[s.id] = r;
+    if (PILES[i]){
+      const p = document.createElement('div'); p.className = 'pile';
+      p.innerHTML = `<span class="logs"></span><span><b>0</b> ${PILES[i].label}</span>`;
+      box.appendChild(p); chainEls[PILES[i].id] = p;
+    }
+  });
+}
+const eqRows = {};
+function buildEquipment(){
+  const box = $('eq'); box.innerHTML = '';
+  STAGES.forEach(s => {
+    const g = document.createElement('div'); g.className = 'group'; g.dataset.stage = s.id;
+    g.innerHTML = `<h3>${s.verb}<small></small></h3>`;
+    EQ.filter(e => e.stage === s.id).forEach(e => {
+      const r = document.createElement('div'); r.className = 'row';
+      r.innerHTML = `<div class="info"><b>${e.name}</b><span class="own"></span><p>${e.desc}</p><span class="spec">+${fmt(e.rate)} ${s.unit} · ${money(e.up)}/min upkeep</span></div><div class="btns"><button class="sellb" type="button" title="Sell one for half its price">Sell</button><button class="buy" type="button"></button></div>`;
+      r.querySelector('.buy').onclick = () => { const c = eqCost(e); if (S.cash < c) return; S.cash -= c; S.own[e.id] = own(e.id)+1;
+        if (own(e.id) === 1) note(`First ${e.name.toLowerCase()} joined the outfit.`); render(); };
+      r.querySelector('.sellb').onclick = () => { if (!own(e.id)) return; S.own[e.id]--; S.cash += Math.floor(eqCost(e)*.5); render(); };
+      g.appendChild(r); eqRows[e.id] = r;
+    });
+    box.appendChild(g);
+  });
+}
+
+// ---------- dynamic lists
+const sig = {};
+function list(id, key, html, bind){
+  if (sig[id] === key) return false;
+  sig[id] = key; const box = $(id); box.innerHTML = html; if (bind) bind(box); return true;
+}
+function mixText(t){
+  const tot = t.mix.reduce((a,m) => a+m[1], 0);
+  return t.mix.map(([id,w]) => `${SP[id].name.split(' ').pop()} ${Math.round(w/tot*100)}%`).join(' · ');
+}
+function renderSales(){
+  const key = S.forSale.map(t => t.name+t.trees).join('|');
+  list('sales', key, S.forSale.map((t,i) => `<div class="row"><div class="info"><b>${t.name}</b>
+    <p>${fmt(t.trees)} trees · ${mixText(t)}</p><span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</span></div>
+    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(t.price)}</button></div></div>`).join(''),
+    box => box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)));
+  $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < t.price; });
+  $('saleMeta').textContent = `You pay the landowner up front for the right to cut. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.`;
+}
+function renderHire(){
+  const job = S.tracts.find(t => t.hire), o = S.hireOffer;
+  if (job){
+    list('hire', 'job'+job.name, `<div class="contract"><b>${job.name}</b><span class="spec"> · for ${job.hire.mill}</span>
+      <div class="bar"><i id="hBar"></i></div><div class="line"><span id="hLeft"></span><span>Paid 45% of market value</span></div></div>`);
+    $('hBar').style.width = ((1 - job.left/job.trees)*100).toFixed(1)+'%';
+    $('hLeft').textContent = `${fmt(job.left)} of ${fmt(job.trees)} trees left` + (job !== tract() ? ' · queued' : '');
+    return;
+  }
+  if (scripBlock()){ list('hire', 'scrip', '<p class="empty">Company scrip: no mill will hire you while you have timber or cash to buy some.</p>'); return; }
+  if (!o){ list('hire', 'none', '<p class="empty">No mill jobs right now.</p>'); return; }
+  const risk = atRisk();
+  list('hire', 'o'+o.name+risk, `<div class="row"><div class="info"><b>${o.name}</b>${risk ? '<span class="chipl rec">Recommended</span>' : ''}
+    <p>${o.hire.mill} · ${fmt(o.trees)} trees · ${mixText(o)}</p><span class="spec" id="hSpec"></span></div>
+    <div class="btns"><button class="buy" type="button" id="hireBuy">Sign</button></div></div>`,
+    box => { box.querySelector('#hireBuy').onclick = acceptHire; });
+  $('hSpec').textContent = `${o.miles} mi haul · ${SLOPES[o.slope].label} · ${money(mobilization(o))} advance on signing`;
+}
+function renderContracts(){
+  renderHire();
+  const c = S.contract;
+  const key = c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol).join('|');
+  list('contracts', key, c
+    ? `<div class="contract"><b>${c.mill}</b><span class="spec"> · +${Math.round(c.prem*100)}% on deliveries</span>
+       <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
+    : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>
+       <p>${bf(o.vol)} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p><span class="spec">Penalty if missed: up to ${money(o.penalty)}</span></div>
+       <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No offers right now.</p>'),
+    box => box.querySelectorAll('button[data-o]').forEach(b => b.onclick = () => accept(+b.dataset.o)));
+  if (c){
+    $('cBar').style.width = (c.done/c.vol*100).toFixed(1)+'%';
+    $('cDone').textContent = `${bf(c.done)} of ${bf(c.vol)}`;
+    const left = c.end - S.t, need = (c.vol - c.done)/Math.max(1e-9, rate('haul'));
+    $('cLeft').textContent = `${mins(Math.max(0,left))} left` + (need > left ? ' · behind pace' : ' · on pace');
+    $('cLeft').className = need > left ? 'neg' : 'pos';
+  }
+}
+function renderCompany(){
+  $('coName').textContent = `Era of ${ERAS[S.era].name.toLowerCase()}`;
+  list('eras', S.era, ERAS.map((e,i) => `<span class="${i===S.era?'on':i<S.era?'done':''}">${e.name} · ${e.year}</span>`).join(''));
+  const nx = ERAS[S.era+1];
+  list('eraNext', 'n'+S.era, nx ? `<div class="row"><div class="info"><b>Adopt ${nx.name.toLowerCase()} (${nx.year})</b><p>${nx.blurb} Larger timber sales open up.</p></div>
+    <div class="btns"><button class="buy" type="button" id="eraBuy">${money(eraCost(S.era+1))}</button></div></div><div class="bar"><i id="eraBar"></i></div><p class="spec" id="eraPct"></p>` : '<p class="empty">Your company runs the most modern equipment there is.</p>',
+    box => { const b = box.querySelector('#eraBuy'); if (b) b.onclick = () => { const ec = eraCost(S.era+1); if (S.cash < ec) return; S.cash -= ec; S.era++;
+      S.year = Math.max(S.year, nx.year); note(`Entered the era of ${nx.name.toLowerCase()}. It is now ${S.year}.`); refreshSales(); refreshOffers(); render(true); }; });
+  const b = $('eraBuy'); if (b && nx){ const ec = eraCost(S.era+1); b.disabled = S.cash < ec; b.textContent = money(ec);
+    const r = Math.min(1, S.cash/ec), net = (S.ema - S.upEma)*60;
+    $('eraBar').style.width = (r*100).toFixed(1)+'%';
+    $('eraPct').textContent = r >= 1 ? 'You can afford it now.' : `${Math.round(r*100)}% saved` + (net > 0 ? ` · about ${mins((ec - S.cash)/net*60)} at your current net income` : ''); }
+  const next = UPG.filter(u => !has(u.id) && u.req && u.era <= S.era + 1).map(u => { const [c,t] = u.req.prog(); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
+    .sort((a,b) => (a.later - b.later) || (b.r - a.r)).slice(0,6);
+  list('upgs', next.map(o => o.u.id + o.later).join(), next.length ? next.map(o => `<div class="goal"><div class="line"><b>${o.u.name}</b><span class="spec" data-uc="${o.u.id}"></span></div>
+    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks in the ${ERAS[o.u.era].name.toLowerCase()} era once you ` + o.u.req.text.charAt(0).toLowerCase() + o.u.req.text.slice(1) : o.u.req.text}.</p>
+    <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this era is unlocked.</p>');
+  next.forEach(o => { const b = document.querySelector(`[data-ub="${o.u.id}"]`), c = document.querySelector(`[data-uc="${o.u.id}"]`);
+    if (b) b.style.width = (o.r*100).toFixed(1)+'%'; if (c) c.textContent = `${fmt(Math.min(o.c, o.t))} / ${fmt(o.t)}`; });
+}
+function renderLedger(){
+  const ol = $('ledger'); ol.innerHTML = '';
+  S.log.forEach(e => { const li = document.createElement('li'); li.innerHTML = `<time></time><span></span>`;
+    li.firstChild.textContent = e.at; li.lastChild.textContent = e.text; ol.appendChild(li); });
+}
+let sparkColor = null;
+function drawSpark(){
+  const cv = $('spark'), ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return; const w = cv.width, h = cv.height;
+  ctx.clearRect(0,0,w,h);
+  const d = S.ph; if (d.length < 2) return;
+  const cs = getComputedStyle(document.documentElement);
+  ctx.strokeStyle = cs.getPropertyValue('--line').trim(); ctx.lineWidth = 2;
+  ctx.beginPath(); const y1 = h - (1-.72)/(.56)*h; ctx.moveTo(0,y1); ctx.lineTo(w,y1); ctx.stroke();
+  ctx.strokeStyle = cs.getPropertyValue('--accent').trim(); ctx.lineWidth = 3;
+  ctx.beginPath();
+  d.forEach((v,i) => { const x = i/(59)*w, y = h - (v-.72)/.56*h; i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+  ctx.stroke();
+}
+
+// ---------- render
+function render(force){
+  if (force) Object.keys(sig).forEach(k => delete sig[k]);
+  const t = tract();
+  // tally
+  $('tCash').textContent = money(S.cash);
+  $('tCashSub').textContent = `${fmt(S.felled)} trees felled`;
+  const net = (S.ema - S.upEma)*60;
+  $('tNet').textContent = money(net); $('tNet').className = net >= 0 ? 'pos' : 'neg';
+  $('tNetSub').textContent = `${money(S.ema*60)} in · ${money(upkeep())} upkeep` + (fullUpkeep() - upkeep() > 1 ? ` (idle crews at ¼ pay)` : '');
+  $('tSeason').textContent = `${season()} ${S.year}`;
+  const sn = season();
+  $('tSeasonSub').textContent = sn === 'Spring' ? 'Mud: skid and haul slowed' : sn === 'Winter' ? 'Frozen ground: skid and haul faster' : 'Normal conditions';
+  const mk = market(); $('tMkt').textContent = '×' + mk.toFixed(2);
+  const prev = S.ph.length > 1 ? S.ph[S.ph.length-2] : mk;
+  $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
+  $('short').hidden = !S.short; if (S.short) $('owed').textContent = money(S.owed);
+  $('stuck').hidden = !(atRisk() && !tract());
+  // tract
+  if (t){
+    $('tName').textContent = t.name;
+    $('tMeta').textContent = `${mixText(t)} · ${t.miles} mi haul · ${SLOPES[t.slope].label} ground` + (t.hire ? ` · cutting for ${t.hire.mill}` : '');
+    const s = SP[S.vis] || SP.pine;
+    $('conifer').hidden = s.shape !== 'con'; $('decid').hidden = s.shape !== 'dec';
+    $('fTree').textContent = s.name;
+    const hp = S.hp == null ? t.hp : S.hp; const prog = 1 - hp/t.hp;
+    $('fHp').textContent = fmt(Math.ceil(hp));
+    $('notch').setAttribute('points', `136,250 ${(136 + prog*26).toFixed(1)},262 136,274`);
+    $('fLeft').textContent = `${fmt(t.left)} / ${fmt(t.trees)}`;
+    $('tBar').style.width = ((1 - t.left/t.trees)*100).toFixed(1)+'%';
+    const tps = rate('fell')/t.hp;
+    const totalLeft = S.tracts.reduce((a,x) => a + x.left, 0);
+    $('fEta').textContent = tps > 0 ? mins(t.left/tps) : 'by hand';
+    const rd = $('road');
+    rd.hidden = t.road || !t.roadCost || t.miles <= 1;
+    if (!rd.hidden){ rd.textContent = `Build haul road ${money(t.roadCost)}`; rd.disabled = S.cash < t.roadCost; }
+    $('queue').textContent = S.tracts.length > 1 ? `Up next: ${S.tracts.slice(1).map(x => x.name).join(', ')} · ${fmt(totalLeft)} trees under contract in all.` : 'No tracts queued. Buy stumpage or take a mill job before this one runs out.';
+  } else {
+    $('tName').textContent = 'No timber';
+    $('tMeta').textContent = 'Buy stumpage from the timber sales list to keep cutting.';
+    $('fTree').textContent = '—'; $('fHp').textContent = '—'; $('fLeft').textContent = '0'; $('fEta').textContent = '—';
+    $('tBar').style.width = '100%'; $('road').hidden = true; $('queue').textContent = '';
+  }
+  // chain
+  const caps = {fell: fellBf(rate('fell')), buck: rate('buck'), skid: rate('skid'), haul: rate('haul')};
+  const maxCap = Math.max(1, ...Object.values(caps));
+  let neck = null, lo = Infinity;
+  STAGES.forEach(s => { const c = caps[s.id]; if (c < lo){ lo = c; neck = s.id; } });
+  STAGES.forEach(s => {
+    const r = chainEls[s.id];
+    r.classList.toggle('neck', s.id === neck && t !== null);
+    const rt = s.id === 'fell' ? `${fmt(rate('fell'))} chops/s ≈ ${bf(caps.fell)}/s` : `${bf(caps[s.id])}/s`;
+    const upstreamCrew = STAGES.slice(0, STAGES.indexOf(s)).some(x => baseRate(x.id) > 0);
+    const rEl = r.querySelector('.rate');
+    rEl.textContent = caps[s.id] > 0 ? rt : s.id === 'haul' && S.landing.bf > 0 ? 'no hauler: a local buyer takes 6 bd ft/s at 60% price' : upstreamCrew ? 'no crew here, wood is piling up' : 'by hand only';
+    rEl.style.color = caps[s.id] <= 0 && upstreamCrew ? 'var(--warn)' : '';
+    r.querySelector('.cap i').style.width = (caps[s.id]/maxCap*100).toFixed(1)+'%';
+    const gb = r.querySelector('.act.game'); if (gb) gb.disabled = s.id === 'fell' ? !t : srcPile(s.id).bf <= 0;
+    const pc = r.querySelector('.pace'); const bl = (S.boost[s.id]||0) - S.t;
+    pc.hidden = bl <= 0; if (bl > 0) pc.textContent = `Pace ×${boostF()} · ${Math.ceil(bl)} s`;
+    const btn = r.querySelector('.act.quick');
+    if (s.id === 'fell'){ btn.textContent = `Chop ×${fmt(cmult())}`; btn.disabled = !t; }
+    else { const src = s.id === 'buck' ? S.stems : s.id === 'skid' ? S.cut : S.landing;
+      btn.textContent = `${s.name} ${fmt(handAmt(s.id))} bd ft`; btn.disabled = src.bf <= 0; }
+  });
+  PILES.forEach(p => {
+    const el = chainEls[p.id]; const v = S[p.id].bf;
+    el.querySelector('b').textContent = bf(v);
+    const n = Math.min(12, Math.ceil(Math.log10(1+v)*2));
+    const logs = el.querySelector('.logs');
+    if (logs.childElementCount !== n){ logs.innerHTML = Array.from({length:n}, (_,i) => `<i style="height:${6 + (i%3)*3}px"></i>`).join(''); }
+  });
+  // equipment
+  document.querySelectorAll('#eq .group').forEach(g => {
+    const r = baseRate(g.dataset.stage);
+    g.querySelector('h3 small').textContent = r ? `${fmt(r)} ${STAGES.find(s => s.id === g.dataset.stage).unit} owned` : '';
+  });
+  EQ.forEach(e => {
+    const r = eqRows[e.id]; r.hidden = e.era > S.era;
+    r.querySelector('.own').textContent = own(e.id) ? '×'+own(e.id) : '';
+    const b = r.querySelector('.buy'); const c = eqCost(e); b.textContent = money(c); b.disabled = S.cash < c;
+    r.querySelector('.sellb').hidden = !own(e.id);
+  });
+  renderSales(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
+}
+
+// ---------- achievements
+const crewCount = () => EQ.reduce((a,e) => a + own(e.id), 0);
+const ladder = (id, name, desc, cur, target, cash, rep=0) => ({id, name, desc, test:() => cur() >= target, prog:() => [cur(), target], cash, rep});
+const ACH = [
+  {id:'first_tree', name:'Timber!', desc:'Fell your first tree.', test:() => S.felled >= 1, cash:10},
+  {id:'first_sale', name:'First load sold', desc:'Deliver logs to the mill.', test:() => S.stats.deliv > 0, cash:15},
+  {id:'first_crew', name:'On the payroll', desc:'Hire your first crew.', test:() => crewCount() >= 1, cash:25},
+  {id:'full_chain', name:'Stump to mill', desc:'Have a crew working every stage.', test:() => ['fell','buck','skid','haul'].every(st => baseRate(st) > 0), cash:100, rep:1},
+  ladder('d10k',  '10 MBF',               'Deliver 10,000 bd ft.',      () => S.stats.deliv, 1e4,   150, 1),
+  ladder('d50k',  '50 MBF',               'Deliver 50,000 bd ft.',      () => S.stats.deliv, 5e4,   500, 1),
+  ladder('d250k', 'Quarter million',      'Deliver 250,000 bd ft.',     () => S.stats.deliv, 2.5e5, 1800, 2),
+  ladder('d1m',   'A million board feet', 'Deliver 1,000,000 bd ft.',   () => S.stats.deliv, 1e6,   6000, 2),
+  ladder('d3m',   'Three million',        'Deliver 3 million bd ft.',   () => S.stats.deliv, 3e6,   20000, 1),
+  ladder('d10m',  'Ten million',          'Deliver 10 million bd ft.',  () => S.stats.deliv, 1e7,   70000, 3),
+  ladder('d30m',  'Thirty million',       'Deliver 30 million bd ft.',  () => S.stats.deliv, 3e7,   250000, 2),
+  ladder('d100m', 'A hundred million',    'Deliver 100 million bd ft.', () => S.stats.deliv, 1e8,   900000, 3),
+  ladder('d300m', 'Three hundred million','Deliver 300 million bd ft.',() => S.stats.deliv, 3e8,   3e6, 2),
+  ladder('d1b',   'A billion board feet', 'Deliver 1 billion bd ft.',   () => S.stats.deliv, 1e9,   12e6, 5),
+  ladder('e10k',  'Ten-thousand-dollar year', 'Earn $10K in sales.',  () => S.earned, 1e4,  300),
+  ladder('e100k', 'Six figures',          'Earn $100K in sales.',       () => S.earned, 1e5,  3000, 1),
+  ladder('e1m',   'Millionaire outfit',   'Earn $1M in sales.',         () => S.earned, 1e6,  30000, 1),
+  ladder('e5m',   'Five million in sales','Earn $5M in sales.',         () => S.earned, 5e6,  120000, 1),
+  ladder('e25m',  'Lumber baron',         'Earn $25M in sales.',        () => S.earned, 2.5e7, 600000, 2),
+  ladder('e100m', 'Timber tycoon',        'Earn $100M in sales.',       () => S.earned, 1e8,  2e6, 2),
+  ladder('t100',  'Hundred trees',        'Fell 100 trees.',            () => S.felled, 100,   200),
+  ladder('t1k',   'Thousand trees',       'Fell 1,000 trees.',          () => S.felled, 1000,  2500, 1),
+  ladder('t3k',   'Three thousand trees', 'Fell 3,000 trees.',          () => S.felled, 3000,  10000, 1),
+  ladder('t10k',  'Ten thousand trees',   'Fell 10,000 trees.',         () => S.felled, 1e4,   40000, 2),
+  ladder('t30k',  'Thirty thousand trees','Fell 30,000 trees.',         () => S.felled, 3e4,   200000, 1),
+  ladder('t100k', 'A hundred thousand',   'Fell 100,000 trees.',        () => S.felled, 1e5,   700000, 3),
+  ladder('tr3',   'Cut out',              'Finish 3 tracts.',           () => S.stats.tracts, 3,  300),
+  ladder('tr10',  'Ten tracts',           'Finish 10 tracts.',          () => S.stats.tracts, 10, 2500, 1),
+  ladder('tr30',  'Thirty tracts',        'Finish 30 tracts.',          () => S.stats.tracts, 30, 30000, 2),
+  ladder('tr60',  'Sixty tracts',         'Finish 60 tracts.',          () => S.stats.tracts, 60, 150000, 2),
+  ladder('hire1', 'Hired hands',          'Finish a cut-for-hire job.', () => S.stats.hires, 1, 150),
+  ladder('c1',    'Under contract',       'Fill a delivery contract.',  () => S.stats.contracts, 1,  250),
+  ladder('c5',    'Reliable supplier',    'Fill 5 delivery contracts.', () => S.stats.contracts, 5,  1500, 1),
+  ladder('c10',   'Steady supplier',      'Fill 10 delivery contracts.',() => S.stats.contracts, 10, 8000, 1),
+  ladder('c20',   'Preferred supplier',   'Fill 20 delivery contracts.',() => S.stats.contracts, 20, 25000, 2),
+  ladder('crew10','Ten-crew outfit',      'Own 10 crews or machines.',  () => crewCount(), 10, 400),
+  ladder('crew30','Big outfit',           'Own 30 crews or machines.',  () => crewCount(), 30, 4000, 1),
+  ladder('crew75','Industrial outfit',    'Own 75 crews or machines.',  () => crewCount(), 75, 80000, 2),
+  ladder('crew50','Fifty-crew outfit',    'Own 50 crews or machines.',  () => crewCount(), 50, 20000, 1),
+  ladder('crew120','Timber empire',       'Own 120 crews or machines.', () => crewCount(), 120, 500000, 2),
+  ladder('w1',    'Winter camp',          'Work through a winter.',     () => S.stats.winters, 1, 250),
+  ladder('w5',    'Five winters',         'Work through five winters.', () => S.stats.winters, 5, 3500, 1),
+  ladder('w10',   'Ten winters',          'Work through ten winters.',  () => S.stats.winters, 10, 30000, 1),
+  ladder('pf1',   'Right where you wanted it', 'Land a perfect fall.',  () => S.stats.perfFell, 1, 60),
+  ladder('pf10',  'Faller of note',       'Land 10 perfect falls.',     () => S.stats.perfFell, 10, 900, 1),
+  ladder('pb1',   'Full value',           'Buck a stem for its full value.', () => S.stats.perfBuck, 1, 60),
+  ladder('pb10',  'Scaler’s favorite',    'Buck 10 stems for full value.',   () => S.stats.perfBuck, 10, 900, 1),
+  ladder('cs1',   'Clean turn',           'Skid a turn under par with no stump hits.', () => S.stats.cleanSkid, 1, 60),
+  ladder('cs10',  'Teamster',             'Skid 10 clean turns.',       () => S.stats.cleanSkid, 10, 900, 1),
+  ladder('ch1',   'Clean haul',           'Deliver a full load under par with nothing lost.', () => S.stats.cleanHaul, 1, 60),
+  ladder('ch10',  'Road boss',            'Make 10 clean hauls.',       () => S.stats.cleanHaul, 10, 900, 1),
+  {id:'allround', name:'All-around logger', desc:'Do a clean run of every mini-game.', test:() => S.stats.perfFell && S.stats.perfBuck && S.stats.cleanSkid && S.stats.cleanHaul, cash:1500, rep:2},
+  {id:'era1', name:'Full steam', desc:'Adopt steam.', test:() => S.era >= 1, cash:0, rep:2},
+  {id:'era2', name:'Gas and diesel', desc:'Adopt gas and diesel.', test:() => S.era >= 2, cash:0, rep:2},
+  {id:'era3', name:'Fully mechanized', desc:'Adopt mechanized logging.', test:() => S.era >= 3, cash:0, rep:3},
+];
+function checkAch(quiet){
+  if (checkUnlocks(quiet)) render(true);
+  const got = [];
+  for (const a of ACH){
+    if (S.ach.includes(a.id) || !a.test()) continue;
+    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.cash += a.cash; S.rep += a.rep || 0; got.push(a);
+    note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(a.cash)}` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
+  }
+  const bn = checkBounties();
+  if (!got.length){ if (bn) render(true); return; }
+  S.run.goals = (S.run.goals||0) + got.length; goalDrafts();
+  if (quiet || got.length > 3){ toast({name: `${got.length} achievements earned`, line: `+${money(got.reduce((x,a) => x + a.cash, 0))} · reputation +${got.reduce((x,a) => x + (a.rep||0), 0)}`}); }
+  else got.forEach(a => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
+  render(true);
+}
+function toast(t){
+  const box = $('toasts'); if (!box) return;
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status');
+  el.innerHTML = '<small></small><b></b><span></span>'; el.querySelector('small').textContent = t.label || 'Achievement';
+  el.querySelector('b').textContent = t.name; el.querySelector('span').textContent = t.line;
+  box.appendChild(el);
+  while (box.childElementCount > 4) box.firstChild.remove();
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4500);
+}
+function renderGoals(){
+  const open = ACH.filter(a => !S.ach.includes(a.id) && a.prog).map(a => { const [c,t] = a.prog(); return {a, r: Math.min(1, c/t), c, t}; })
+    .sort((x,y) => y.r - x.r).slice(0,3);
+  list('goals', open.map(o => o.a.id).join(), open.map(o => `<div class="goal"><div class="line"><b>${o.a.name}</b><span class="spec">${o.a.cash ? money(o.a.cash) : ''}${o.a.rep ? ` · rep +${o.a.rep}` : ''}</span></div>
+    <p>${o.a.desc}</p><div class="bar"><i data-g="${o.a.id}"></i></div></div>`).join(''));
+  open.forEach(o => { const i = document.querySelector(`[data-g="${o.a.id}"]`); if (i) i.style.width = (o.r*100).toFixed(1)+'%'; });
+  $('repLine').textContent = `Reputation ${S.rep} · +${S.rep}% on every sale · ${S.ach.length} of ${ACH.length} achievements`;
+}
+
+// ---------- mini-games
+const mgEl = $('mg'), cv = $('mgCanvas'), cx = cv.getContext ? cv.getContext('2d') : null;
+const MG = {kind:null, raf:0, lt:0, LW:640, LH:400};
+let C = {}, F = null, B = null, K = null, H = null;
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  ['bg','panel','ink','muted','line','accent','bark','needle','needle2','sky','good','warn','bad','pile'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim()); }
+function sizeCanvas(){
+  cv.style.aspectRatio = `${MG.LW} / ${MG.LH}`;
+  const w = cv.clientWidth || MG.LW, dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(w*dpr); cv.height = Math.round(w*MG.LH/MG.LW*dpr);
+  if (cx) cx.setTransform(cv.width/MG.LW, 0, 0, cv.height/MG.LH, 0, 0);
+}
+function status(t){ $('mgStatus').textContent = t; }
+function buttons(list){
+  const box = $('mgBtns'); box.innerHTML = '';
+  list.forEach(b => { const el = document.createElement('button'); el.type = 'button'; el.className = 'mbtn' + (b.primary ? ' primary' : '');
+    el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; box.appendChild(el); });
+}
+const boostLen = () => (has('radios') ? 45 : 30) + 15*perk('pacer') + (meta('pace') ? 10 : 0);
+function grantBoost(stage){ if (perk('absentee')) return; (perk('golden') ? ['fell','buck','skid','haul'] : [stage]).forEach(k => {
+  S.boost[k] = Math.min(S.t + 120, Math.max(S.boost[k]||0, S.t) + boostLen()); }); }
+function mixPick(t){ const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.random()*tot;
+  for (const [id,w] of t.mix){ r -= w; if (r <= 0) return id; } return t.mix[0][0]; }
+const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', haul:'Drive a load'};
+const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
+const MG_HELP = {
+  fell: () => `Set the face notch toward the opening, then saw the back cut with your ${['axe','crosscut saw','chainsaw','felling head'][S.era]}. Leave a thin hinge so the tree falls where you aimed.`,
+  buck: () => 'Click along the stem to place cuts. Sawlogs must be 8, 10, 12, 14 or 16 ft, have an 8 in top and no rot. Knots and sweep lower the grade.',
+  skid: () => `Drag a turn of logs from the stump to the landing with your ${['ox team','donkey line','crawler tractor','grapple skidder'][S.era]}. Stay on the trail, miss the stumps, and go around mud.`,
+  haul: () => `Load your ${['logging sled','logging train','log truck','self-loading truck'][S.era]} and drive it to the mill. Brake on the downhills or the load runs away.`,
+};
+function gearLine(kind){
+  const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
+  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && u.req).map(u => ({u, p:u.req.prog()})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
+  const txt = (ownG.length ? `Your gear: ${ownG.map(u => u.name).join(', ')}.` : 'No gear for this job yet.') +
+    (nextG ? ` Next: ${nextG.u.name}. ${nextG.u.req.text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, ${ERAS[nextG.u.era].name.toLowerCase()} era` : ''}.` : '');
+  if ($('mgGear').textContent !== txt) $('mgGear').textContent = txt;
+}
+function openMG(kind){
+  if (kind === 'fell' && !tract()) return;
+  if (kind !== 'fell' && srcPile(kind).bf <= 0) return;
+  MG.kind = kind; MG.LW = 640; MG.LH = kind === 'buck' ? 300 : 400; MG.keys = {}; MG.ptr = null;
+  $('mgTitle').textContent = GAMES[kind];
+  $('mgHelp').textContent = MG_HELP[kind]();
+  gearLine(kind);
+  mgEl.hidden = false; readColors(); sizeCanvas();
+  ({fell:fellInit, buck:buckInit, skid:skidInit, haul:haulInit})[kind]();
+  cancelAnimationFrame(MG.raf); MG.lt = 0; MG.raf = requestAnimationFrame(frame);
+  $('mgClose').focus();
+}
+function closeMG(){ mgEl.hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = null; render(); }
+function frame(ts){
+  const dt = MG.lt ? Math.min(.05, (ts - MG.lt)/1000) : 0; MG.lt = ts;
+  try {
+    if (MG.kind === 'fell'){ fellStep(dt); fellDraw(); }
+    else if (MG.kind === 'buck') buckDraw();
+    else if (MG.kind === 'skid'){ skidStep(dt); skidDraw(); }
+    else if (MG.kind === 'haul'){ haulStep(dt); haulDraw(); }
+  } catch(err){ console.error(err); }
+  if (MG.kind){ gearLine(MG.kind); MG.raf = requestAnimationFrame(frame); }
+}
+function lpos(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left)/r.width*MG.LW, y:(e.clientY - r.top)/r.height*MG.LH}; }
+cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch(_){}
+  const p = lpos(e); MG.ptr = p; MG.down = true;
+  if (MG.kind === 'fell') fellPress(); else if (MG.kind === 'buck') buckClick(p); });
+const up = () => { MG.down = false; if (MG.kind === 'fell') fellRelease(); };
+cv.addEventListener('pointerup', up);
+cv.addEventListener('pointercancel', up);
+cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B) B.hover = p; });
+cv.addEventListener('pointerleave', () => { if (B) B.hover = null; if (MG.kind === 'fell') fellRelease(); });
+const GAME_KEYS = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'];
+window.addEventListener('keydown', e => {
+  if (!MG.kind) return;
+  if (e.key === 'Escape'){ closeMG(); return; }
+  if (MG.kind === 'fell' && e.code === 'Space'){ e.preventDefault(); if (!e.repeat) fellPress(); return; }
+  if ((MG.kind === 'skid' || MG.kind === 'haul') && GAME_KEYS.includes(e.code)){ e.preventDefault(); MG.keys[e.code] = true; }
+});
+window.addEventListener('keyup', e => {
+  if (!MG.kind) return;
+  if (MG.kind === 'fell' && e.code === 'Space'){ e.preventDefault(); fellRelease(); return; }
+  MG.keys[e.code] = false;
+});
+window.addEventListener('resize', () => { if (MG.kind){ sizeCanvas(); } });
+$('mgClose').onclick = closeMG;
+mgEl.addEventListener('click', e => { if (e.target === mgEl) closeMG(); });
+
+// --- felling
+const STUMP = {x:320, y:372};
+const polar = (a, r) => ({x: STUMP.x + r*Math.sin(a*Math.PI/180), y: STUMP.y - r*Math.cos(a*Math.PI/180)});
+function fellInit(){
+  const gap = rnd(-45,45), half = 10;
+  const windy = season() === 'Winter' || season() === 'Spring';
+  const wind = {dir: Math.random() < .5 ? -1 : 1, str: windy ? rnd(.35,1) : rnd(0,.6)};
+  const rocks = [];
+  for (let k=0; k<2; k++){ let a, n=0; do { a = rnd(-80,80); n++; } while (n < 50 && (Math.abs(a-gap) < half+12 || rocks.some(r => Math.abs(r-a) < 16))); rocks.push(a); }
+  const stand = [];
+  for (let a=-88; a<=88; a+=9){ if (Math.abs(a-gap) < half+4) continue; stand.push({a:a+rnd(-2,2), r:240+rnd(-22,22), s:rnd(13,19)}); }
+  F = {phase:'aim', sweep:Math.random()*6, aim:0, hinge:1, holding:false, armed:false, gap, half, wind, rocks, stand, fallP:0, final:0, out:null, sp:S.vis, sat:false};
+  status(`Press when the line points at the opening. Wind from the ${wind.dir > 0 ? 'left' : 'right'} will push the fall ${wind.dir > 0 ? 'right' : 'left'}, so aim against it.`);
+  buttons([{label:'Done', fn:closeMG}]);
+}
+function fellPress(){
+  if (!F) return;
+  if (F.phase === 'aim'){ F.phase = 'cut'; F.armed = false; status('Now press and hold to saw the back cut (Space works too). Let go while the hinge is green.'); return; }
+  if (F.phase === 'cut' && F.armed) F.holding = true;
+}
+function fellRelease(){
+  if (!F) return;
+  if (F.phase === 'cut'){ if (F.holding){ F.holding = false; fellResolve(); } else F.armed = true; }
+}
+function fellStep(dt){
+  if (!F) return;
+  if (F.phase === 'aim'){ F.sweep += dt*(1.4 + S.era*.25); F.aim = 75*Math.sin(F.sweep); }
+  if (F.phase === 'cut' && F.holding){ F.hinge -= dt*.42*(perk('hotsaw') ? 2 : 1); if (F.hinge <= 0){ F.hinge = 0; F.holding = false; fellResolve(); } }
+  if (F.phase === 'fall'){ F.fallP = Math.min(1, F.fallP + dt/.9); if (F.fallP >= 1) fellFinish(); }
+}
+const hingeZone = () => has('file') ? [.06, .25] : [.08, .2];
+function fellResolve(){
+  const h = F.hinge, [lo, hi] = hingeZone(); let noise, wm = 1, chair = false;
+  const steady = has('wedges') ? .55 : 1;
+  if (h <= 0){ chair = true; noise = rnd(-25,25); }
+  else if (h < lo) noise = rnd(-14,14)*steady;
+  else if (h <= hi) noise = rnd(-2.5,2.5)*steady;
+  else if (has('wedges')) noise = rnd(-3,3);
+  else { noise = rnd(-7,7); wm = 1.8; F.sat = true; }
+  F.final = F.aim + F.wind.dir*F.wind.str*14*wm + noise;
+  const err = Math.abs(F.final - F.gap);
+  const pre = F.sat ? 'The tree sat back on a thick hinge and the wind took it. ' : h < lo && !chair ? 'The hinge was too thin to steer the fall. ' : '';
+  if (chair) F.out = {k:'chair', m:.5, text:'Barber chair. The hinge failed and the trunk split up the back. Half the value is lost.'};
+  else if (err <= F.half*.45) F.out = {k:'perfect', m:1.25, text:pre+`Perfect lay, right into the opening. Log value +25% and your fallers work ${boostTxt()}.`};
+  else if (err <= F.half) F.out = {k:'good', m:1.1, text:pre+'Good fall into the opening. Log value +10%.'};
+  else if (F.rocks.some(r => Math.abs(F.final - r) < 7)) F.out = {k:'broke', m:.6, text:pre+'It landed across a rock and broke. Log value −40%.'};
+  else F.out = {k:'hung', m:.8, text:pre+'Hung up in a standing tree. Pulling it down cost you. Log value −20%.'};
+  if (chair && perk('widow') && Math.random() < .5){ F.final = F.gap + rnd(-2,2);
+    F.out = {k:'perfect', m:1.25, text:`The trunk started to split, then swung true. Widowmaker’s luck: a perfect lay. Log value +25% and your fallers work ${boostTxt()}.`}; }
+  F.phase = 'fall'; F.fallP = 0; status('Timber!');
+}
+function fellFinish(){
+  if (F.phase === 'done') return;
+  F.phase = 'done';
+  const t = tract();
+  let k = 0;
+  if (t){ k = Math.min(t.left, Math.max(1, Math.round(rate('fell')/t.hp*20)) * (perk('hotsaw') ? 2 : 1));
+    fellK(t, k); S.stems.val += t.val*k*(F.out.m - 1); if (t.left < 1) finishTract(); else newTree(); }
+  let dom = 0, chain = 0;
+  if (t && F.out.k === 'perfect' && perk('domino')){
+    do { const t2 = tract(); if (!t2) break; const k2 = Math.min(t2.left, Math.max(1, k));
+      fellK(t2, k2); S.stems.val += t2.val*k2*.25; dom += k2; chain++; if (t2.left < 1) finishTract(); else newTree();
+    } while (Math.random() < .5 && chain < 6);
+  }
+  S.stats.run_fell++; if (F.out.k === 'perfect' || F.out.k === 'good') S.stats.goodFell++;
+  if (F.out.k === 'perfect'){ grantBoost('fell'); S.stats.perfFell++; }
+  if (k > 1) F.out.text += ` Your fallers followed your lead: ${fmt(k)} trees down.`;
+  if (dom) F.out.text += ` Domino fall: it took ${fmt(dom)} more ${dom === 1 ? 'tree' : 'trees'} down with it${chain > 1 ? `, chaining ${chain} times` : ''}.`;
+  runDone('fell', {perfect:1, good:.6, hung:.3, broke:.2, chair:.1}[F.out.k] ?? .3);
+  if (F.out.k === 'perfect' || F.out.k === 'chair') note(F.out.k === 'perfect' ? 'Laid a tree perfectly into the opening.' : 'A tree barber-chaired on the back cut.');
+  status(F.out.text);
+  buttons([{label:'Fell another', primary:true, disabled:!tract(), fn:() => { fellInit(); }}, {label:'Done', fn:closeMG}]);
+  render();
+}
+function circle(x, y, r, fill){ cx.beginPath(); cx.arc(x, y, r, 0, Math.PI*2); cx.fillStyle = fill; cx.fill(); }
+function fellDraw(){
+  if (!cx || !F) return;
+  const W = MG.LW, H = MG.LH;
+  cx.clearRect(0,0,W,H); cx.fillStyle = C.sky; cx.fillRect(0,0,W,H);
+  // opening wedge
+  cx.globalAlpha = .14; cx.fillStyle = C.accent; cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y);
+  for (let a = F.gap - F.half; a <= F.gap + F.half; a += 1){ const p = polar(a, 290); cx.lineTo(p.x, p.y); }
+  cx.closePath(); cx.fill(); cx.globalAlpha = 1;
+  [F.gap - F.half, F.gap + F.half].forEach(a => { const p = polar(a, 262); cx.fillStyle = C.accent; cx.fillRect(p.x-2, p.y-14, 4, 16); });
+  // rocks
+  F.rocks.forEach(a => { const p = polar(a, 200); cx.fillStyle = C.muted; cx.beginPath();
+    cx.moveTo(p.x-16, p.y+6); cx.lineTo(p.x-10, p.y-9); cx.lineTo(p.x+5, p.y-12); cx.lineTo(p.x+16, p.y-2); cx.lineTo(p.x+11, p.y+9); cx.closePath(); cx.fill(); });
+  // standing trees
+  F.stand.forEach((s,i) => { const p = polar(s.a, s.r); circle(p.x, p.y, s.s, i % 2 ? C.needle : C.needle2); circle(p.x, p.y, 3, C.bark); });
+  // wind
+  cx.fillStyle = C.ink; cx.font = '600 13px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'right';
+  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph`, W-18, 26);
+  const wl = 20 + F.wind.str*50, wy = 42, wx = W-18-wl;
+  cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath();
+  if (F.wind.dir > 0){ cx.moveTo(wx, wy); cx.lineTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy-5); cx.moveTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy+5); }
+  else { cx.moveTo(wx+wl, wy); cx.lineTo(wx, wy); cx.lineTo(wx+7, wy-5); cx.moveTo(wx, wy); cx.lineTo(wx+7, wy+5); }
+  cx.stroke();
+  // aim line
+  if (F.phase === 'aim' || F.phase === 'cut'){
+    const p = polar(F.aim, 250);
+    cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.setLineDash(F.phase === 'aim' ? [8,6] : []);
+    cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(p.x, p.y); cx.stroke(); cx.setLineDash([]);
+    if (has('gunstick')){ const pa = F.aim + F.wind.dir*F.wind.str*14, q = polar(pa, 280);
+      cx.strokeStyle = C.good; cx.lineWidth = 3; cx.setLineDash([2,5]); cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(q.x, q.y); cx.stroke(); cx.setLineDash([]);
+      cx.fillStyle = C.good; cx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'center'; cx.fillText('fall line', q.x, q.y - 8); cx.textAlign = 'left'; }
+  }
+  // falling / fallen tree
+  if (F.phase === 'fall' || F.phase === 'done'){
+    const e = 1 - Math.pow(1 - F.fallP, 3);
+    const max = F.out.k === 'hung' ? .78 : 1;
+    const len = 280*Math.sin(Math.min(e, max)*Math.PI/2);
+    const p = polar(F.final, len);
+    cx.strokeStyle = C.bark; cx.lineWidth = 11; cx.lineCap = 'round';
+    cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(p.x, p.y); cx.stroke(); cx.lineCap = 'butt';
+    circle(p.x, p.y, 10 + 18*e, SP[F.sp] && SP[F.sp].shape === 'dec' ? C.needle : C.needle2);
+    if (F.phase === 'done' && (F.out.k === 'broke' || F.out.k === 'chair')){
+      const m = polar(F.final, F.out.k === 'chair' ? 30 : 190);
+      cx.strokeStyle = C.bad; cx.lineWidth = 3; cx.beginPath();
+      cx.moveTo(m.x-10, m.y-8); cx.lineTo(m.x+4, m.y); cx.lineTo(m.x-6, m.y+4); cx.lineTo(m.x+10, m.y+10); cx.stroke();
+    }
+  } else circle(STUMP.x, STUMP.y, 22, C.needle2);
+  circle(STUMP.x, STUMP.y, 12, C.bark);
+  // stump cross-section during the cut
+  if (F.phase === 'cut' || (F.phase !== 'aim' && F.hinge < 1)){
+    const ox = 92, oy = 100, R = 58;
+    cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(ox-R-18, oy-R-30, 2*R+36, 2*R+58); cx.globalAlpha = 1;
+    circle(ox, oy, R, C.pile);
+    cx.strokeStyle = C.bark; cx.lineWidth = 1; for (let r = 12; r < R; r += 12){ cx.beginPath(); cx.arc(ox, oy, r, 0, Math.PI*2); cx.stroke(); }
+    // notch (top, facing the fall)
+    const apex = oy - R + 35;
+    cx.fillStyle = C.sky; cx.beginPath(); cx.moveTo(ox-34, oy-R+8); cx.lineTo(ox, apex); cx.lineTo(ox+34, oy-R+8); cx.lineTo(ox+30, oy-R-4); cx.lineTo(ox-30, oy-R-4); cx.closePath(); cx.fill();
+    const lineY = apex + F.hinge*(oy + R - apex);
+    // sawn kerf from the back
+    cx.fillStyle = C.sky; cx.globalAlpha = .55; cx.fillRect(ox-R, lineY, 2*R, oy+R-lineY); cx.globalAlpha = 1;
+    const [zl, zh] = hingeZone(), good = F.hinge >= zl && F.hinge <= zh;
+    cx.fillStyle = good ? C.good : F.hinge < zl ? C.bad : C.warn; cx.globalAlpha = .75;
+    cx.fillRect(ox-R+6, apex, 2*R-12, Math.max(2, lineY - apex)); cx.globalAlpha = 1;
+    cx.strokeStyle = C.accent; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(ox-R-6, lineY); cx.lineTo(ox+R+6, lineY); cx.stroke();
+    cx.fillStyle = C.ink; cx.textAlign = 'center'; cx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
+    cx.fillText('Stump from above', ox, oy-R-14);
+    cx.fillText(`Hinge ${Math.round(F.hinge*100)}%  (aim ${Math.round(zl*100)}–${Math.round(zh*100)}%)`, ox, oy+R+20);
+  }
+  cx.textAlign = 'left';
+}
+
+// --- bucking
+const VALID = [8,10,12,14,16];
+const LENP = {8:.9, 10:1, 12:1.05, 14:1.1, 16:1.15};
+const GRADEP = {1:.9, 2:.55, 3:.35};
+function buckInit(){
+  const t = tract();
+  const L = 2*Math.round(rnd(19,31));
+  const def = {knots:[], rot:null, sweep:null};
+  const nk = 2 + Math.floor(Math.random()*3);
+  for (let k=0; k<nk; k++) def.knots.push(Math.floor(rnd(.3,.95)*L) + .5);
+  if (Math.random() < .5) def.rot = [0, Math.round(rnd(2,6))];
+  if (Math.random() < .45){ const a = Math.round(rnd(.25,.55)*L); def.sweep = [a, a + Math.round(rnd(4,8))]; }
+  B = {L, d0:rnd(20,32), dTop:6, def, cuts:[], hover:null, done:false, opt:null, sp: t ? mixPick(t) : S.vis, amt: Math.min(S.stems.bf, Math.max(t ? t.bf : 200, rate('buck')*25))};
+  B.optPre = optimal();
+  buckStatus();
+  const bb = [{label:'Clear cuts', fn:() => { if (!B.done){ B.cuts = []; buckStatus(); } }}, {label:'Send to the landing', primary:true, fn:buckSend}];
+  if (has('optimize')) bb.splice(1, 0, {label:'Run the optimizer', fn:() => { if (!B.done){ B.cuts = [...B.optPre.cuts]; buckStatus(); } }});
+  buttons(bb);
+}
+const dAt = x => B.d0 + (B.dTop - B.d0)*x/B.L;
+const overlap = (a, b, r) => r ? Math.max(0, Math.min(b, r[1]) - Math.max(a, r[0])) : 0;
+function seg(a, b){
+  const len = b - a, se = dAt(b), rot = overlap(a, b, B.def.rot);
+  if (!VALID.includes(len) || se < 8 || rot > 0){
+    const vol = Math.PI*Math.pow(dAt((a+b)/2)/24, 2)*(len - rot);
+    return {len, g:'P', bf:0, val:vol*.9};
+  }
+  let g = 1;
+  if (overlap(a, b, B.def.sweep) > 0) g = 3;
+  else if (B.def.knots.some(k => k > a && k < b)) g = 2;
+  const bf = Math.pow((se - 4)/4, 2)*len;
+  return {len, g, bf, val: bf*GRADEP[g]*LENP[len]};
+}
+function segsOf(cuts){ const pts = [0, ...[...cuts].sort((a,b) => a-b), B.L]; const out = [];
+  for (let i=0; i<pts.length-1; i++) out.push({a:pts[i], b:pts[i+1], ...seg(pts[i], pts[i+1])}); return out; }
+function optimal(){
+  const L = B.L, best = new Array(L+1).fill(-1), from = new Array(L+1).fill(0); best[0] = 0;
+  for (let i=1; i<=L; i++) for (let j=0; j<i; j++){ const v = best[j] + seg(j, i).val; if (v > best[i]){ best[i] = v; from[i] = j; } }
+  const cuts = []; let i = L; while (i > 0){ const j = from[i]; if (j > 0) cuts.push(j); i = j; }
+  return {val:best[L], cuts};
+}
+const segDollars = v => B && B.optPre && B.optPre.val > 0 && S.stems.bf > 0 ? v/B.optPre.val * B.amt*(S.stems.val/S.stems.bf)*1.2*vmult()*market() : 0;
+function buckStatus(){
+  const sg = segsOf(B.cuts), saw = sg.filter(x => x.g !== 'P');
+  status(`${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} sawlogs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft (Doyle scale)`);
+}
+const xOf = ft => 40 + ft*560/B.L;
+function buckClick(p){
+  if (!B || B.done) return;
+  const ft = Math.round((p.x - 40)/560*B.L);
+  if (ft <= 0 || ft >= B.L) return;
+  const i = B.cuts.indexOf(ft);
+  if (i >= 0) B.cuts.splice(i,1); else B.cuts.push(ft);
+  buckStatus();
+}
+function buckSend(){
+  if (!B || B.done) return;
+  const mine = segsOf(B.cuts).reduce((a,x) => a + x.val, 0);
+  B.opt = optimal(); let r = B.opt.val > 0 ? Math.min(1, mine/B.opt.val) : 1; const r0 = r;
+  if (perk('scaler') && r >= .9) r = 1;
+  const m = .5 + .7*r, before = S.cut.val;
+  move(S.stems, S.cut, B.amt, m*vmult());
+  B.done = true;
+  if (r >= .97) grantBoost('buck');
+  S.stats.run_buck++; if (r >= .85) S.stats.buck85++; if (r >= .9) S.stats.buck90++;
+  if (r >= .999){ note('Bucked a stem for its full value.'); S.stats.perfBuck++; }
+  runDone('buck', r);
+  status((r > r0 ? `You got ${Math.round(r0*100)}%, and the scaler wrote it up as 100%.` : `You got ${Math.round(r*100)}% of the best possible value.`) + ` ${money(S.cut.val - before)} of logs went to the stump pile` +
+    (r >= .97 ? `. Your buckers work ${boostTxt()}.` : '. The green dashes show the best cuts.'));
+  buttons([{label:'Buck another', primary:true, disabled:S.stems.bf <= 0, fn:buckInit}, {label:'Done', fn:closeMG}]);
+  render();
+}
+function buckDraw(){
+  if (!cx || !B) return;
+  const W = MG.LW, H = MG.LH, cy0 = 120, k = 1.6;
+  const font = getComputedStyle(document.body).fontFamily;
+  cx.clearRect(0,0,W,H); cx.fillStyle = C.sky; cx.fillRect(0,0,W,H);
+  const sw = B.def.sweep;
+  const cyAt = ft => cy0 - (sw && ft > sw[0] && ft < sw[1] ? Math.sin(Math.PI*(ft - sw[0])/(sw[1]-sw[0]))*12 : 0);
+  // stem body
+  cx.fillStyle = C.bark; cx.beginPath();
+  for (let f=0; f<=B.L; f+=.5) cx.lineTo(xOf(f), cyAt(f) - dAt(f)*k);
+  for (let f=B.L; f>=0; f-=.5) cx.lineTo(xOf(f), cyAt(f) + dAt(f)*k);
+  cx.closePath(); cx.fill();
+  // butt end
+  cx.fillStyle = C.pile; cx.beginPath(); cx.ellipse(xOf(0), cy0, 9, B.d0*k, 0, 0, Math.PI*2); cx.fill();
+  cx.textAlign = 'center'; cx.font = '600 11px ' + font; cx.fillStyle = C.ink;
+  cx.fillText(`${Math.round(B.d0)} in butt`, xOf(0)+4, cy0 + B.d0*k + 16);
+  // defects
+  if (B.def.rot){ const [a,b] = B.def.rot; cx.fillStyle = C.ink; cx.globalAlpha = .45;
+    for (let i=0; i<26; i++){ const f = rnd(a, b), y = cy0 + rnd(-.8,.8)*dAt(f)*k; cx.beginPath(); cx.arc(xOf(f), y, rnd(2,5), 0, Math.PI*2); cx.fill(); }
+    cx.globalAlpha = 1; cx.fillText('butt rot', xOf((a+b)/2)+4, cy0 - B.d0*k - 8); }
+  B.def.knots.forEach((f,i) => { const y = cyAt(f) + (i % 2 ? .45 : -.45)*dAt(f)*k; cx.fillStyle = C.ink; cx.globalAlpha = .7;
+    cx.beginPath(); cx.ellipse(xOf(f), y, 5, 3.5, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
+  if (B.def.knots.length){ cx.fillStyle = C.muted; cx.fillText('knots', xOf(B.def.knots[0]), cyAt(B.def.knots[0]) - dAt(B.def.knots[0])*k - 8); }
+  if (sw){ cx.fillStyle = C.ink; cx.fillText('sweep', xOf((sw[0]+sw[1])/2), cyAt((sw[0]+sw[1])/2) - dAt(sw[0])*k - 22); }
+  // pieces
+  const sg = segsOf(B.cuts);
+  sg.forEach(x => {
+    const xa = xOf(x.a), xb = xOf(x.b), col = x.g === 1 ? C.good : x.g === 2 ? C.ink : x.g === 3 ? C.warn : C.muted;
+    cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4);
+    if (xb - xa > 34){ cx.font = '600 12px ' + font; cx.fillText(`${x.len}′ ${x.g === 'P' ? 'pulp' : 'G' + x.g}`, (xa+xb)/2, 216);
+      cx.font = '11px ' + font; cx.fillStyle = C.muted; cx.fillText(x.g === 'P' ? 'cords' : `${Math.round(x.bf)} bd ft`, (xa+xb)/2, 231);
+      if (has('scalestick')){ cx.fillStyle = C.ink; cx.fillText(money(segDollars(x.val)), (xa+xb)/2, 245); } }
+  });
+  // best cuts after sending
+  if (B.done && B.opt){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([4,4]);
+    B.opt.cuts.forEach(f => { cx.beginPath(); cx.moveTo(xOf(f), 40); cx.lineTo(xOf(f), 186); cx.stroke(); }); cx.setLineDash([]); }
+  // cuts
+  cx.strokeStyle = C.accent; cx.lineWidth = 3;
+  B.cuts.forEach(f => { const h = dAt(f)*k + 10; cx.beginPath(); cx.moveTo(xOf(f), cyAt(f) - h); cx.lineTo(xOf(f), cyAt(f) + h); cx.stroke(); });
+  // hover ghost
+  if (B.hover && !B.done){
+    const ft = Math.round((B.hover.x - 40)/560*B.L);
+    if (ft > 0 && ft < B.L){
+      const prev = Math.max(0, ...B.cuts.filter(c => c < ft)), len = ft - prev, ok = VALID.includes(len);
+      cx.strokeStyle = C.accent; cx.globalAlpha = .55; cx.lineWidth = 2; cx.setLineDash([5,4]);
+      cx.beginPath(); cx.moveTo(xOf(ft), 40); cx.lineTo(xOf(ft), 186); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
+      let lab = `${len}′`;
+      if (has('grade')){ const sgp = seg(prev, ft); lab += sgp.g === 'P' ? ' pulp' : ` G${sgp.g}`; if (has('scalestick')) lab += ` · ${money(segDollars(sgp.val))}`; }
+      cx.fillStyle = ok ? C.good : C.muted; cx.font = '600 12px ' + font; cx.fillText(lab, xOf(ft), 32);
+    }
+  }
+  // ruler
+  cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.fillStyle = C.muted; cx.font = '11px ' + font;
+  for (let f=0; f<=B.L; f++){ const x = xOf(f), tall = f % 10 === 0; cx.beginPath(); cx.moveTo(x, 256); cx.lineTo(x, tall ? 266 : 260); cx.stroke();
+    if (tall) cx.fillText(`${f} ft`, x, 280); }
+  cx.textAlign = 'right'; cx.fillText(`${SP[B.sp] ? SP[B.sp].name : ''} · ${B.L} ft stem`, W-14, 292);
+  cx.textAlign = 'left';
+}
+
+// --- skidding
+const key = (...codes) => codes.some(c => MG.keys[c]);
+function skidInit(){
+  const winter = season() === 'Winter', spring = season() === 'Spring';
+  const WH = 1000, w = 100, ph = [rnd(0,6), rnd(0,6)], amp = [rnd(90,140), rnd(30,55)];
+  const cxAt = y => 320 + amp[0]*Math.sin(y/260 + ph[0]) + amp[1]*Math.sin(y/90 + ph[1]);
+  const stumps = []; for (let y = 230; y < WH - 190; y += rnd(105,165)) stumps.push({x: cxAt(y) + rnd(-w*.32, w*.32), y, r: rnd(9,13), cd: 0});
+  const mud = []; const nm = winter ? 0 : spring ? 5 : 2;
+  for (let i=0; i<nm; i++){ const y = rnd(260, WH - 220); mud.push({x: cxAt(y) + rnd(-20,20), y, rx: rnd(38,64), ry: rnd(24,38)}); }
+  const woods = []; for (let i=0; i<120; i++){ const y = rnd(0, WH), side = Math.random() < .5 ? -1 : 1;
+    const x = cxAt(y) + side*(w/2 + rnd(14, 260)); if (x > -20 && x < 660) woods.push({x, y, r: rnd(10,20)}); }
+  K = {phase:'pick', WH, w, cxAt, stumps: has('swamper') ? stumps.filter((_, i) => i % 2) : stumps, mud, woods, pos:{x: cxAt(40), y: 40}, hist:[], logs:2, t:0, hits:0, stopT:0, winter, spring, cam:0, msg:'', msgT:0};
+  status(`Choose a turn. Heavier turns move more wood but drag slower and swing wide.${spring ? ' Spring mud is everywhere.' : winter ? ' Frozen ground: no mud, and the team moves faster.' : ''}`);
+  const go = n => () => { K.logs = n; K.phase = 'run';
+    K.speed = (105 + S.era*18) * [1.15, 1, .78, .62][n-1] * slopeF() * (winter ? 1.15 : 1);
+    K.par = Math.round((K.WH - 110)/K.speed*1.4);
+    status('Press and hold where you want the team to go, or use the arrow keys. Reach the landing at the bottom.');
+    buttons([{label:'Done', fn:closeMG}]); };
+  buttons([{label:'Light turn · 1 log', fn:go(1)}, {label:'Full turn · 2 logs', primary:true, fn:go(2)}, {label:'Heavy turn · 3 logs', fn:go(3)}]
+    .concat(perk('four') ? [{label:'Big turn · 4 logs', fn:go(4)}] : []));
+}
+function tailPoint(d){
+  const h = K.hist; let acc = 0, prev = K.pos;
+  for (let i = h.length - 1; i >= 0; i--){ const p = h[i], seg = Math.hypot(prev.x - p.x, prev.y - p.y);
+    if (acc + seg >= d){ const f = (d - acc)/(seg || 1); return {x: prev.x + (p.x - prev.x)*f, y: prev.y + (p.y - prev.y)*f}; }
+    acc += seg; prev = p; }
+  return prev;
+}
+function skidStep(dt){
+  if (!K || K.phase !== 'run') return;
+  K.t += dt; if (K.msgT > 0) K.msgT -= dt;
+  K.stumps.forEach(s => s.cd = Math.max(0, s.cd - dt));
+  if (K.stopT > 0){ K.stopT -= dt; return; }
+  let dx = 0, dy = 0;
+  if (key('ArrowLeft','KeyA')) dx -= 1; if (key('ArrowRight','KeyD')) dx += 1;
+  if (key('ArrowUp','KeyW')) dy -= 1; if (key('ArrowDown','KeyS')) dy += 1;
+  if (!dx && !dy && MG.down && MG.ptr){ dx = MG.ptr.x - K.pos.x; dy = MG.ptr.y + K.cam - K.pos.y; if (Math.hypot(dx,dy) < 6){ dx = dy = 0; } }
+  const len = Math.hypot(dx, dy); if (!len) return;
+  dx /= len; dy /= len;
+  const off = Math.abs(K.pos.x - K.cxAt(K.pos.y)) > K.w/2;
+  const inMud = K.mud.some(m => Math.pow((K.pos.x - m.x)/m.rx, 2) + Math.pow((K.pos.y - m.y)/m.ry, 2) < 1);
+  const sp = K.speed * (off ? .32 : 1) * (inMud && !perk('swamp') ? (has('corduroy') ? .75 : .42) : 1);
+  K.pos.x = Math.max(10, Math.min(630, K.pos.x + dx*sp*dt));
+  K.pos.y = Math.max(10, Math.min(K.WH - 10, K.pos.y + dy*sp*dt));
+  const last = K.hist[K.hist.length - 1];
+  if (!last || Math.hypot(last.x - K.pos.x, last.y - K.pos.y) > 3){ K.hist.push({x:K.pos.x, y:K.pos.y}); if (K.hist.length > 400) K.hist.shift(); }
+  // collisions: team and every log in the turn
+  const pts = [K.pos]; for (let i=0; i<K.logs; i++) pts.push(tailPoint(26 + i*24));
+  for (const st of K.stumps){
+    if (st.cd > 0) continue;
+    const hit = pts.findIndex(p => Math.hypot(p.x - st.x, p.y - st.y) < st.r + (p === K.pos ? 11 : 7));
+    if (hit >= 0){ K.hits++; st.cd = 2.5; K.stopT = has('peavey') ? .55 : 1.1; K.pos.x -= dx*14; K.pos.y -= dy*14;
+      K.msg = hit === 0 ? 'Ran into a stump' : 'The turn hung up on a stump'; K.msgT = 1.4; break; }
+  }
+  K.cam = Math.max(0, Math.min(K.WH - MG.LH, K.pos.y - 150));
+  if (K.pos.y >= K.WH - 70) skidFinish();
+}
+function skidFinish(){
+  K.phase = 'done';
+  const L0 = 60 + baseRate('skid')*15, amt = Math.min(S.cut.bf, L0*[1,2,3.2,4.6][K.logs - 1]);
+  const vm = has('skyline') ? 1 : Math.max(.7, 1 - .05*K.hits), moved = move(S.cut, S.landing, amt, vm);
+  const clean = K.hits === 0 && K.t <= K.par;
+  S.stats.run_skid++; if (K.spring) S.stats.mudRuns++;
+  runDone('skid', clean ? 1 : Math.max(.1, 1 - .2*K.hits) * (K.t <= K.par ? 1 : .7));
+  if (clean) grantBoost('skid');
+  status(`Landed the turn in ${Math.round(K.t)} s (par ${K.par} s) with ${K.hits} stump ${K.hits === 1 ? 'hit' : 'hits'}. Moved ${bf(moved)} to the landing` +
+    (K.hits && !has('skyline') ? `, scarred logs lost ${Math.round((1 - vm)*100)}% of their value.` : '.') + (clean ? ` Clean run: your skidders work ${boostTxt()}.` : ''));
+  if (clean){ note('Skidded a clean turn to the landing.'); S.stats.cleanSkid++; }
+  buttons([{label:'Skid another', primary:true, disabled: S.cut.bf <= 0, fn:skidInit}, {label:'Done', fn:closeMG}]);
+  render();
+}
+function skidDraw(){
+  if (!cx || !K) return;
+  const W = MG.LW, Hh = MG.LH, cam = K.cam, font = getComputedStyle(document.body).fontFamily;
+  cx.clearRect(0,0,W,Hh); cx.fillStyle = C.sky; cx.fillRect(0,0,W,Hh);
+  cx.save(); cx.translate(0, -cam);
+  // trail
+  cx.strokeStyle = C.pile; cx.globalAlpha = .4; cx.lineWidth = K.w; cx.lineCap = 'round'; cx.beginPath();
+  for (let y = cam - 60; y <= cam + Hh + 60; y += 8) y === cam - 60 ? cx.moveTo(K.cxAt(y), y) : cx.lineTo(K.cxAt(y), y);
+  cx.stroke(); cx.globalAlpha = 1; cx.lineCap = 'butt';
+  if (has('gps')){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([6,8]); cx.beginPath();
+    for (let y = cam - 60; y <= cam + Hh + 60; y += 8) y === cam - 60 ? cx.moveTo(K.cxAt(y), y) : cx.lineTo(K.cxAt(y), y); cx.stroke(); cx.setLineDash([]); }
+  // landing
+  cx.fillStyle = C.line; cx.fillRect(0, K.WH - 70, W, 70);
+  cx.fillStyle = C.ink; cx.font = '600 14px ' + font; cx.textAlign = 'center'; cx.fillText('LANDING', W/2, K.WH - 30);
+  for (let i=0; i<6; i++) circle(W/2 + 70 + (i%3)*13, K.WH - 42 + Math.floor(i/3)*-11, 6, C.pile);
+  cx.fillStyle = C.muted; cx.font = '12px ' + font; cx.fillText('Stump area', K.cxAt(16), 18);
+  // mud
+  K.mud.forEach(m => { cx.fillStyle = C.bark; cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
+  // woods
+  K.woods.forEach((t,i) => { if (t.y > cam - 30 && t.y < cam + Hh + 30) circle(t.x, t.y, t.r, i % 2 ? C.needle : C.needle2); });
+  // stumps
+  K.stumps.forEach(st => { circle(st.x, st.y, st.r, C.bark); circle(st.x, st.y, st.r*.55, C.pile); });
+  // logs in the turn
+  cx.strokeStyle = C.bark; cx.lineCap = 'round';
+  for (let i=0; i<K.logs; i++){ const a = tailPoint(14 + i*24), b = tailPoint(34 + i*24);
+    cx.lineWidth = 9; cx.strokeStyle = C.bark; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+    cx.lineWidth = 6; cx.strokeStyle = C.pile; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); }
+  cx.lineCap = 'butt';
+  // team
+  circle(K.pos.x - 6, K.pos.y + 2, 8, C.ink); circle(K.pos.x + 6, K.pos.y + 2, 8, C.ink);
+  if (MG.down && MG.ptr && K.phase === 'run'){ cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.beginPath(); cx.arc(MG.ptr.x, MG.ptr.y + cam, 10, 0, Math.PI*2); cx.stroke(); }
+  cx.restore();
+  // HUD
+  cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(10, 10, 200, 46); cx.globalAlpha = 1;
+  cx.fillStyle = C.ink; cx.textAlign = 'left'; cx.font = '600 13px ' + font;
+  cx.fillText(K.phase === 'pick' ? 'Choose a turn below' : `Time ${Math.round(K.t)} s · par ${K.par} s`, 20, 29);
+  cx.font = '12px ' + font; cx.fillStyle = C.muted; cx.fillText(`Stump hits ${K.hits} · ${K.logs} ${K.logs === 1 ? 'log' : 'logs'}`, 20, 47);
+  if (K.msgT > 0){ cx.fillStyle = C.bad; cx.font = '600 16px ' + font; cx.textAlign = 'center'; cx.fillText(K.msg, W/2, 90); cx.textAlign = 'left'; }
+}
+
+// --- hauling
+const runaway = () => (has('airbrakes') ? 275 : 235) + (perk('daredevil') ? 40 : 0);
+function haulInit(){
+  const sn = season(), spring = sn === 'Spring', winter = sn === 'Winter';
+  const limit = (spring ? (has('corduroy') ? 9 : 7) : 10) + (has('bunks') ? 4 : 0), unit = (15 + baseRate('haul')*2) * (winter && perk('iceking') ? 2 : 1);
+  const maxN = Math.max(1, Math.min(limit + 6, Math.ceil(S.landing.bf/unit)));
+  const L = 2600, p0 = rnd(0,6), p1 = rnd(0,6), a0 = rnd(45,70), a1 = rnd(15,30);
+  const env = x => Math.min(1, x/300, (L - x)/300);
+  const road = x => 250 - Math.max(0, env(x))*(a0*Math.sin(x/260 + p0) + a1*Math.sin(x/115 + p1));
+  H = {phase:'load', n: Math.min(limit, maxN), maxN, limit, unit, spring, winter, L, road, x:40, v:0, t:0, spill:0, flash:'', flashT:0,
+       par: Math.round(L/150*1.2), rig: ['Logging sled','Logging train','Log truck','Self-loading truck'][S.era]};
+  haulLoadUI();
+}
+function haulLoadUI(){
+  const over = H.n > H.limit;
+  status(`${H.n} logs on the ${H.rig.toLowerCase()} · ${bf(Math.min(S.landing.bf, H.n*H.unit))}. Road limit ${H.limit} logs${H.spring ? ' (spring posting)' : ''}.` +
+    (over ? (H.spring ? ' Overweight: harder to stop, and the scale house will fine you.' : ' Overweight: harder to stop on hills.') : ''));
+  buttons([{label:'− Log', disabled: H.n <= 1, fn:() => { H.n--; haulLoadUI(); }},
+           {label:'+ Log', disabled: H.n >= H.maxN, fn:() => { H.n++; haulLoadUI(); }},
+           {label:'Head for the mill', primary:true, fn:haulGo}]);
+}
+function haulGo(){
+  H.phase = 'drive'; H.n0 = H.n; haulMass();
+  status('Hold the right side to give it gas and the left side to brake, or use the arrow keys. Keep the speed out of the red on downhills.');
+  buttons([{label:'Done', fn:closeMG}]);
+}
+function haulMass(){ H.m = .6 + H.n/10*.8; }
+function haulStep(dt){
+  if (!H || H.phase !== 'drive') return;
+  H.t += dt; if (H.flashT > 0) H.flashT -= dt;
+  const ptrGas = MG.down && MG.ptr && MG.ptr.x >= MG.LW/2, ptrBrk = MG.down && MG.ptr && MG.ptr.x < MG.LW/2;
+  const gas = key('ArrowRight','KeyD','ArrowUp','KeyW') || ptrGas, brk = key('ArrowLeft','KeyA','ArrowDown','KeyS','Space') || ptrBrk;
+  const sl = (H.road(H.x + 2) - H.road(H.x - 2))/4;
+  const P = 190 + S.era*15;
+  const Bk = 240*(H.winter ? (has('icerd') ? .75 : .55) : 1)*(has('airbrakes') ? 2 : 1)*(has('hay') && sl > .02 ? 1.6 : 1);
+  const drag = H.spring ? (has('corduroy') ? .7 : .9) : H.winter && has('icerd') ? .45 : .6;
+  let a = (gas ? P/H.m : 0) + 400*sl - drag*H.v - (brk ? Bk/H.m : 0);
+  H.v = Math.min(320, Math.max(0, H.v + a*dt));
+  if (gas && H.v < 18) H.v = 18; // low gear: you can always grind up a hill
+  H.x += H.v*dt;
+  if (H.v > runaway() && sl > .06){
+    const lost = Math.min(H.n, Math.max(1, Math.round(H.n*.3)) * (perk('daredevil') ? 2 : 1) * (H.spring && perk('iceking') ? 2 : 1)); H.n = Math.max(0, H.n - lost); H.spill += lost; H.v = 80; haulMass();
+    H.flash = `Runaway on the hill. Lost ${lost} ${lost === 1 ? 'log' : 'logs'} off the load.`; H.flashT = 2;
+    if (H.n === 0){ haulFinish(); return; }
+  }
+  if (H.x >= H.L) haulFinish();
+}
+function haulFinish(){
+  H.phase = 'done';
+  const lostBf = Math.min(S.landing.bf, H.spill*H.unit);
+  if (lostBf > 0) move(S.landing, {bf:0, val:0}, lostBf);
+  const amt = Math.min(S.landing.bf, H.n*H.unit);
+  const rev = deliver(amt);
+  let fine = 0;
+  if (H.spring && H.n0 > H.limit && amt > 0){ fine = Math.round(rev*.2); S.cash = Math.max(0, S.cash - fine); }
+  const clean = H.spill === 0 && H.t <= H.par && H.n0 >= Math.min(H.limit, H.maxN);
+  S.stats.run_haul++; if (H.spring) S.stats.mudRuns++; if (H.winter) S.stats.winterHauls++;
+  if (H.spill === 0 && H.n0 >= Math.min(H.limit, H.maxN) && amt > 0) S.stats.fullLoads++;
+  if (clean){ grantBoost('haul'); S.stats.cleanHaul++; }
+  runDone('haul', clean ? 1 : H.spill === 0 ? .6 : .3/(1 + H.spill));
+  status(`Delivered ${bf(amt)} for ${money(rev)} in ${Math.round(H.t)} s (par ${H.par} s).` +
+    (H.spill ? ` Lost ${H.spill} ${H.spill === 1 ? 'log' : 'logs'} on the way.` : '') + (fine ? ` Overweight fine: ${money(fine)}.` : '') +
+    (clean ? ` Clean haul: your haulers work ${boostTxt()}.` : ''));
+  if (H.spill) note(`A load ran away on the haul road. ${H.spill} logs lost.`);
+  buttons([{label:'Haul another', primary:true, disabled: S.landing.bf <= 0, fn:haulInit}, {label:'Done', fn:closeMG}]);
+  render();
+}
+function drawRig(x, y, ang, n){
+  cx.save(); cx.translate(x, y); cx.rotate(ang);
+  cx.fillStyle = C.bark; cx.fillRect(-40, -8, 80, 6);
+  cx.fillStyle = C.ink; cx.fillRect(-36, -3, 6, 4); cx.fillRect(28, -3, 6, 4);
+  if (S.era >= 2){ cx.fillStyle = C.accent; cx.fillRect(42, -26, 20, 22); cx.fillStyle = C.ink; cx.fillRect(48, -22, 9, 7); }
+  else if (S.era === 1){ cx.fillStyle = C.ink; cx.fillRect(42, -24, 24, 20); cx.fillRect(48, -32, 6, 8); }
+  else { cx.fillStyle = C.ink; cx.beginPath(); cx.ellipse(56, -14, 12, 8, 0, 0, Math.PI*2); cx.fill(); cx.fillRect(50, -6, 3, 6); cx.fillRect(60, -6, 3, 6); }
+  for (let i=0; i<n; i++){ const row = Math.floor(i/5), col = i%5; const px = -32 + col*15 + (row%2)*7, py = -15 - row*12;
+    cx.fillStyle = C.pile; cx.beginPath(); cx.arc(px, py, 6.5, 0, Math.PI*2); cx.fill(); cx.strokeStyle = C.bark; cx.lineWidth = 1.5; cx.stroke(); }
+  cx.restore();
+}
+function haulDraw(){
+  if (!cx || !H) return;
+  const W = MG.LW, Hh = MG.LH, font = getComputedStyle(document.body).fontFamily;
+  const camX = Math.max(0, Math.min(H.L + 120 - W, H.x - 170));
+  cx.clearRect(0,0,W,Hh); cx.fillStyle = C.sky; cx.fillRect(0,0,W,Hh);
+  // far ridge
+  cx.fillStyle = C.needle; cx.globalAlpha = .35; cx.beginPath(); cx.moveTo(0, Hh);
+  for (let sx=0; sx<=W; sx+=10){ const wx = camX*.4 + sx; cx.lineTo(sx, 150 + 30*Math.sin(wx/140) + 15*Math.sin(wx/53)); }
+  cx.lineTo(W, Hh); cx.closePath(); cx.fill(); cx.globalAlpha = 1;
+  // ground
+  cx.fillStyle = C.line; cx.beginPath(); cx.moveTo(0, Hh);
+  for (let sx=0; sx<=W; sx+=6) cx.lineTo(sx, H.road(camX + sx) + 4);
+  cx.lineTo(W, Hh); cx.closePath(); cx.fill();
+  cx.strokeStyle = H.winter ? C.panel : C.muted; cx.lineWidth = 4; cx.beginPath();
+  for (let sx=0; sx<=W; sx+=6) sx ? cx.lineTo(sx, H.road(camX + sx)) : cx.moveTo(sx, H.road(camX));
+  cx.stroke();
+  // mileposts and mill
+  cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.textAlign = 'center';
+  for (let m = 500; m < H.L; m += 500){ const sx = m - camX; if (sx > -20 && sx < W + 20){ const y = H.road(m); cx.fillRect(sx - 1, y - 22, 3, 22); cx.fillText(`${(m/H.L*S.site.miles).toFixed(1)} mi`, sx, y - 26); } }
+  const mx = H.L - camX + 40;
+  if (mx < W + 100){ const y = H.road(H.L); cx.fillStyle = C.bark; cx.fillRect(mx - 10, y - 70, 90, 70); cx.fillStyle = C.ink; cx.fillRect(mx + 50, y - 96, 10, 26);
+    cx.fillStyle = C.panel; cx.font = '600 12px ' + font; cx.fillText('MILL', mx + 35, y - 30); }
+  // rig
+  const sl = (H.road(H.x + 2) - H.road(H.x - 2))/4;
+  drawRig(H.x - camX, H.road(H.x) - 4, Math.atan(sl), H.n);
+  // HUD
+  cx.textAlign = 'left';
+  cx.fillStyle = C.panel; cx.globalAlpha = .92; cx.fillRect(10, 10, 230, 58); cx.globalAlpha = 1;
+  const vmax = 300, bw = 200; cx.fillStyle = C.line; cx.fillRect(20, 40, bw, 10);
+  cx.fillStyle = H.v > runaway() ? C.bad : H.v > runaway() - 60 ? C.warn : C.good; cx.fillRect(20, 40, Math.min(1, H.v/vmax)*bw, 10);
+  cx.fillStyle = C.bad; cx.fillRect(20 + runaway()/vmax*bw, 36, 2, 18);
+  cx.fillStyle = C.ink; cx.font = '600 13px ' + font;
+  cx.fillText(H.phase === 'load' ? `Loading · ${H.n} logs` : `${Math.round(H.v/6)} mph · ${Math.round(H.t)} s (par ${H.par} s)`, 20, 30);
+  cx.font = '11px ' + font; cx.fillStyle = C.muted; cx.fillText('Runaway', 20 + runaway()/vmax*bw - 20, 64);
+  if (H.phase === 'drive'){
+    cx.globalAlpha = .55; cx.fillStyle = C.panel; cx.fillRect(10, Hh - 44, 120, 34); cx.fillRect(W - 130, Hh - 44, 120, 34); cx.globalAlpha = 1;
+    cx.fillStyle = C.ink; cx.font = '600 12px ' + font; cx.textAlign = 'center';
+    cx.fillText('BRAKE  ← / A', 70, Hh - 22); cx.fillText('GAS  → / D', W - 70, Hh - 22);
+  }
+  if (H.flashT > 0){ cx.fillStyle = C.bad; cx.font = '600 16px ' + font; cx.textAlign = 'center'; cx.fillText(H.flash, W/2, 100); }
+  cx.textAlign = 'left';
+}
+
+// ---------- roguelite layer: perks, drafts, close camp, legacy
+// common = number tweaks (stack); rare/legendary = rule changes; curse = drawback with a bigger upside. set 2 needs the Old-timers' tales node.
+const PERKS = [
+  {id:'sharp',    r:'common', name:'Sharp crews',        desc:'Felling ×1.25.', m:{fell:1.25}},
+  {id:'buckers',  r:'common', name:'Quick buckers',      desc:'Bucking ×1.25.', m:{buck:1.25}},
+  {id:'teams',    r:'common', name:'Good teamsters',     desc:'Skidding ×1.25.', m:{skid:1.25}},
+  {id:'roadcrew', r:'common', name:'Road crew',          desc:'Hauling ×1.25.', m:{haul:1.25}},
+  {id:'frugal',   r:'common', name:'Frugal cook',        desc:'Upkeep ×0.85.', m:{upkeep:.85}},
+  {id:'grader',   r:'common', name:'Sharp-eyed grader',  desc:'Log value ×1.08.', m:{value:1.08}},
+  {id:'strong',   r:'common', name:'Strong back',        desc:'Your chops and hand work ×3.', m:{click:3, hand:3}},
+  {id:'bargain',  r:'common', name:'Friendly landowner', desc:'Stumpage prices −15%.', m:{stump:.85}},
+  {id:'pacer',    r:'common', name:'Pace-setter',        desc:'Pace boosts last 15 s longer.'},
+  {id:'widow',    r:'rare',   name:'Widowmaker’s luck',  desc:'Felling game: a barber chair has a 50% chance to swing true and count as a perfect fall.'},
+  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
+  {id:'hotsaw',   r:'rare',   name:'Hot saw',            desc:'Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you.'},
+  {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
+  {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn.'},
+  {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
+  {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
+  {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
+  {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed delivery contracts carry no penalty.'},
+  {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
+  {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'New timber sales carry 25% more trees for the same price.', set:2},
+  {id:'domino',   r:'legendary', name:'Domino fall',     desc:'Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6).'},
+  {id:'bull',     r:'legendary', name:'Bull of the woods', desc:'Pace boosts are ×2 instead of ×1.5.'},
+  {id:'golden',   r:'legendary', name:'Golden hour',     desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
+  {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled delivery contract speeds all crews +4% for the rest of the run.', set:2},
+  {id:'strict',   r:'curse',  name:'Strict scaler',      desc:'Log value −15%, but delivery contract premiums +40 points.', m:{value:.85}},
+  {id:'scrip',    r:'curse',  name:'Company scrip',      desc:'No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.', m:{price:1.15}},
+  {id:'absentee', r:'curse',  name:'Absentee owner',     desc:'Mini-games never grant pace boosts, but every crew works ×1.2.', m:{all:1.2}},
+];
+const RARITY = {common:{w:60, label:'Common'}, rare:{w:26, label:'Rare'}, legendary:{w:5, label:'Legendary'}, curse:{w:9, label:'Curse'}};
+const PMAP = Object.fromEntries(PERKS.map(p => [p.id, p]));
+const META = [
+  {id:'cash',    cost:4,  name:'Seed money',        desc:'Start each run with $750.'},
+  {id:'sled',    cost:5,  name:'Old sled in the barn', desc:'Start each run with an axeman, a bucker, an ox team and a logging sled.'},
+  {id:'pace',    cost:6,  name:'Camp fiddler',      desc:'Pace boosts last 10 s longer.'},
+  {id:'reroll',  cost:8,  name:'Lucky coin',        desc:'+1 draft reroll each run.'},
+  {id:'foremen', cost:8,  name:'Seasoned foremen',  desc:'Every crew and machine works ×1.2.'},
+  {id:'steam',   cost:8,  name:'Steam surveyor',    desc:'Adopting steam costs 20% less.'},
+  {id:'starter', cost:10,  name:'Camp stories',      desc:'Start each run with a random common perk.'},
+  {id:'nest',    cost:12,  name:'Nest egg',          desc:'Keep 10% of your cash when you close camp.'},
+  {id:'legacy',  cost:14, name:'Chronicler',        desc:'Legacy from closing camp +15%.'},
+  {id:'lore',    cost:14, name:'Old-timers’ tales', desc:'Four more rare and legendary perks join the draft pool.'},
+  {id:'gas',     cost:12, name:'Diesel dealer',     desc:'Adopting gas and diesel costs 25% less.'},
+  {id:'four',    cost:20, name:'Wider choice',      desc:'Drafts show 4 perks instead of 3.'},
+];
+const MODS = [
+  {id:'drought', name:'Drought year', desc:'Felling −10%, and summer slash fires can burn stems on the ground.', x:1.25},
+  {id:'market',  name:'Tight market', desc:'Every sale pays 15% less.', x:1.3},
+  {id:'beetle',  name:'Beetle year',  desc:'Timber sales carry 20% fewer trees.', x:1.2},
+];
+const CLOSE_VOL = 250000;
+const perk = id => (S.run && S.run.perks ? S.run.perks.filter(x => x === id).length : 0);
+const pmult = key => { let m = 1; if (!S.run) return m; for (const id of S.run.perks){ const p = PMAP[id]; if (p && p.m && p.m[key]) m *= p.m[key]; } return m; };
+const meta = id => S.meta && S.meta.nodes.includes(id);
+const hasMod = id => S.run && S.run.mods.includes(id);
+const mktMod = () => hasMod('market') ? .85 : 1;
+const modMult = mods => (mods || S.run.mods).reduce((m,id) => m * (MODS.find(x => x.id === id)?.x || 1), 1);
+const eraCost = i => ERAS[i] ? Math.round(ERAS[i].cost * (i === 1 && meta('steam') ? .8 : 1) * (i === 2 && meta('gas') ? .75 : 1)) : Infinity;
+// √(delivered ÷ 20,000) up to 10M bd ft (≈22), then +8 per tenfold beyond, so a long run pays but a fresh run pays better per minute
+const legacyBase = d => d <= 1e7 ? Math.sqrt(d/20000) : Math.sqrt(500) + 8*Math.log10(d/1e7);
+const legacyNow = () => Math.floor(legacyBase(S.run.deliv) * modMult() * (meta('legacy') ? 1.15 : 1));
+const canClose = () => S.era >= 1 || S.run.deliv >= CLOSE_VOL;
+// repeat bounties: achievements already earned pay 60% of their cash again once per run when this run's own numbers reach the target
+const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul'];
+function snapBase(){ const b = {earned:S.earned, felled:S.felled}; BASEK.forEach(k => b[k] = S.stats[k] || 0); S.run.base = b; }
+function metricOf(id){
+  if (/^d\d/.test(id)) return 'deliv'; if (/^e\d/.test(id)) return 'earned'; if (/^t\d/.test(id)) return 'felled';
+  if (/^tr\d/.test(id)) return 'tracts'; if (/^hire/.test(id)) return 'hires'; if (/^c\d/.test(id)) return 'contracts'; if (/^w\d/.test(id)) return 'winters';
+  if (/^crew/.test(id)) return 'crew'; return ({pf1:'perfFell',pf10:'perfFell',pb1:'perfBuck',pb10:'perfBuck',cs1:'cleanSkid',cs10:'cleanSkid',ch1:'cleanHaul',ch10:'cleanHaul'})[id] || null;
+}
+function checkBounties(){
+  const r = S.run; if (!r.base || !r.bounty) return 0; let tot = 0, n = 0;
+  for (const a of ACH){
+    if (!a.cash || !a.prog || r.bounty.includes(a.id) || !S.ach.includes(a.id)) continue;
+    const k = metricOf(a.id); if (!k) continue;
+    const [cur, tgt] = a.prog(); const base = k === 'crew' ? 0 : (r.base[k] || 0);
+    if (cur - base < tgt) continue;
+    const pay = Math.round(a.cash*.6); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
+  }
+  if (n) goalDrafts();
+  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this run: +${money(tot)}.`); toast({label:'Run bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this run (60% of the original reward).`});  }
+  return n;
+}
+const runMin = () => (S.t - S.run.t0)/60;
+
+function queueDraft(q, why){
+  S.run.dq.push(Math.max(0, Math.min(1, q))); S.run.drafts = S.run.dq.length;
+  if (S.run.dq.length === 1 || why) toast({label:'Draft ready', name: why || 'Pick a perk', line:`${S.run.dq.length} ${S.run.dq.length === 1 ? 'draft' : 'drafts'} waiting. Open it from the Draft button at the top.`});
+}
+// every mini-game run fills the draft meter; draft n from games takes n runs (1, 2, 3...), so play accelerates without flooding
+function runDone(kind, q){
+  const r = S.run; r.games = (r.games||0) + 1; r.pq = Math.max(r.pq || 0, q || 0); r.prog++;
+  const need = 1 + (r.gameDrafts||0);
+  if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
+}
+function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met this run'); } }
+function contractFilled(){
+  S.run.cFilled++; if (perk('snowball')) S.run.snow++;
+  if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five contracts filled');
+}
+function perkPool(){ return PERKS.filter(p => (!p.set || meta('lore')) && (p.r === 'common' || !perk(p.id))); }
+function rollCards(q){
+  const n = 3 + (meta('four') ? 1 : 0), pool = perkPool(), out = [];
+  const w = p => RARITY[p.r].w * (p.r === 'rare' ? 1 + 1.2*q : p.r === 'legendary' ? 1 + 4*q*q : p.r === 'curse' ? 1 + .5*q : 1);
+  while (out.length < n && pool.length){
+    const tot = pool.reduce((a,p) => a + w(p), 0); let x = Math.random()*tot, i = 0;
+    for (; i < pool.length - 1; i++){ x -= w(pool[i]); if (x <= 0) break; }
+    out.push(pool[i].id); pool.splice(i,1);
+  }
+  return out;
+}
+function currentOffer(){ const r = S.run; if (!r.dq.length) return null; if (!r.offer) r.offer = rollCards(r.dq[0]); return r.offer; }
+function pickPerk(id){
+  const r = S.run, off = currentOffer(); if (!off || !off.includes(id)) return false;
+  r.perks.push(id); r.dq.shift(); r.drafts = r.dq.length; r.offer = null;
+  const p = PMAP[id]; note(`Drafted ${RARITY[p.r].label.toLowerCase()} perk: ${p.name}.`);
+  toast({label:`${RARITY[p.r].label} perk`, name:p.name, line:p.desc});
+  return true;
+}
+function reroll(){ const r = S.run; if (r.rerolls <= 0 || !r.dq.length) return; r.rerolls--; r.offer = rollCards(r.dq[0]); }
+
+function closeCamp(){
+  if (!canClose()) return 0;
+  const gain = legacyNow(), r = S.run;
+  S.meta.legacy += gain; S.meta.total += gain;
+  S.runs.unshift({n:r.n, min:Math.round(runMin()), deliv:r.deliv, earned:r.earned, legacy:gain, era:S.era, mods:[...r.mods], perks:r.perks.length, eraT:r.eraT.map(x => x == null ? null : Math.round(x/60))});
+  S.runs.length = Math.min(S.runs.length, 12);
+  const keep = {ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, season:S.season, st:S.st};
+  const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
+  const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
+  S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
+  S.cash = kept + (meta('cash') ? 750 : 0);
+  if (meta('sled')){ S.own.axeman = 1; S.own.bucker = 1; S.own.oxen = 1; S.own.sled = 1; }
+  S.run.rerolls = meta('reroll') ? 1 : 0; snapBase(); S.run.bounty = [];
+  if (meta('starter')){ const c = PERKS.filter(p => p.r === 'common'); S.run.perks.push(pick(c).id); }
+  note(`Closed camp after run ${n-1} and banked ${gain} Legacy. Run ${n} starts on a fresh home woodlot.`);
+  refreshSales(); refreshOffers(); S.hireOffer = genHire(); setSite(); newTree();
+  return gain;
+}
+function startRun(mods){
+  const r = S.run; if (!r.setup) return;
+  r.mods = (mods || []).filter(id => MODS.some(m => m.id === id)); r.setup = false;
+  if (r.mods.length){ refreshSales(); note(`Run ${r.n} conditions: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')}. Legacy ×${modMult().toFixed(2)}.`); }
+}
+function buyMeta(id){
+  const m = META.find(x => x.id === id); if (!m || meta(id) || S.meta.legacy < m.cost) return false;
+  S.meta.legacy -= m.cost; S.meta.nodes.push(id);
+  if (id === 'reroll') S.run.rerolls++;
+  note(`Camp lore: ${m.name}.`); toast({label:'Camp lore', name:m.name, line:m.desc});
+  return true;
+}
+function normalize(){
+  S.stats = Object.assign(fresh().stats, S.stats || {});
+  S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
+  if (!Array.isArray(S.runs)) S.runs = [];
+  const r = S.run = Object.assign(freshRun(), S.run || {});
+  ['perks','dq','mods','eraT','bounty'].forEach(k => { if (!Array.isArray(r[k])) r[k] = []; });
+  if (!r.init){ // an existing company becomes run 1, already under way
+    r.init = true; r.t0 = 0; snapBase(); r.bounty = S.ach.slice(); r.deliv = S.stats.deliv || 0; r.earned = S.earned || 0; r.era = S.era; r.achMark = S.ach.length;
+  }
+  r.drafts = r.dq.length;
+}
+
+// --- UI
+const dEl = $('draft'), nrEl = $('newrun');
+let closeArmed = false, nrPick = [], lastFocus = null;
+function openDraft(){
+  if (!currentOffer()) return;
+  lastFocus = document.activeElement; dEl.hidden = false; renderDraft();
+  const f = dEl.querySelector('.pcard'); if (f) f.focus();
+}
+function closeDraft(){ dEl.hidden = true; render(true); if (lastFocus && lastFocus.focus && !lastFocus.hidden) lastFocus.focus(); }
+function renderDraft(){
+  const off = currentOffer(); if (!off){ closeDraft(); return; }
+  const q = S.run.dq[0];
+  $('dHelp').textContent = `Pick one. Perks last until you close camp. ${S.run.dq.length > 1 ? `${S.run.dq.length} drafts waiting.` : ''} Draft quality ${Math.round(q*100)}%: better runs raise the odds of rare and legendary perks.`;
+  $('dCards').innerHTML = off.map(id => { const p = PMAP[id], c = perk(id);
+    return `<button type="button" class="pcard r-${p.r}" data-p="${id}"><span class="chipl rchip">${RARITY[p.r].label}</span><b>${p.name}</b><span class="d">${p.desc}</span>${c ? `<small>You have ${c}. Stacks.</small>` : p.r === 'common' ? '<small>Stacks with copies.</small>' : '<small>One per run.</small>'}</button>`; }).join('');
+  $('dCards').querySelectorAll('.pcard').forEach(b => b.onclick = () => {
+    if (!pickPerk(b.dataset.p)) return;
+    if (S.run.dq.length){ renderDraft(); const f = dEl.querySelector('.pcard'); if (f) f.focus(); } else closeDraft(); });
+  const rr = $('dReroll'); rr.textContent = `Reroll (${S.run.rerolls})`; rr.disabled = S.run.rerolls <= 0;
+  $('dStatus').textContent = S.run.rerolls > 0 ? 'A reroll replaces all the cards.' : 'No rerolls left this run. Lucky coin in Camp lore adds one per run.';
+}
+function openNewRun(){
+  if (!S.run.setup) return; nrPick = []; lastFocus = document.activeElement; nrEl.hidden = false; renderNewRun();
+  const f = nrEl.querySelector('.modb'); if (f) f.focus();
+}
+function renderNewRun(){
+  $('nrMods').innerHTML = MODS.map(m => `<button type="button" class="modb" data-m="${m.id}" aria-pressed="${nrPick.includes(m.id)}"><b>${m.name}</b><span>${m.desc}</span><small>Legacy ×${m.x}</small></button>`).join('');
+  $('nrMods').querySelectorAll('.modb').forEach(b => b.onclick = () => { const id = b.dataset.m; nrPick = nrPick.includes(id) ? nrPick.filter(x => x !== id) : [...nrPick, id];
+    renderNewRun(); const f = nrEl.querySelector(`[data-m="${id}"]`); if (f) f.focus(); });
+  $('nrMeta').textContent = `Run ${S.run.n}. Legacy multiplier ×${modMult(nrPick).toFixed(2)}` + (nrPick.length ? '.' : ' (no conditions).') +
+    ` Starting kit: ${[S.cash ? money(S.cash) : '', meta('sled') ? 'a crew on every stage' : '', ...S.run.perks.map(id => PMAP[id].name)].filter(Boolean).join(', ') || 'an axe and a 40-tree woodlot'}.`;
+  $('nrStart').textContent = nrPick.length ? `Start run ${S.run.n} (×${modMult(nrPick).toFixed(2)})` : `Start run ${S.run.n}`;
+}
+function renderRun(){
+  const r = S.run;
+  $('rbRun').textContent = `Run ${r.n}`;
+  list('rbMods', r.mods.join(), r.mods.map(id => `<span class="chipl">${MODS.find(m => m.id === id).name}</span>`).join(''));
+  $('rbPerks').textContent = r.perks.length;
+  $('rbLegacy').textContent = canClose() ? fmt(legacyNow()) : '—';
+  $('rbBank').textContent = fmt(S.meta.legacy);
+  const db = $('draftBtn'); db.hidden = !r.dq.length; if (r.dq.length) db.textContent = `Draft ready (${r.dq.length})`;
+  $('runTitle').textContent = `Run ${r.n}`;
+  $('runMeta').textContent = (r.mods.length ? `Conditions: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')} (Legacy ×${modMult().toFixed(2)}). ` : 'No hard conditions this run. ') +
+    'Finish mini-game runs to earn perk drafts. Crews earn them too: new eras, every 5 goals met (new achievements or repeat bounties) and every 5 filled contracts.';
+  const eT = i => r.eraT[i] != null ? mins(r.eraT[i]) : '—';
+  list('runStats', [r.n, Math.floor(runMin()), Math.round(r.deliv/1000), r.eraT.join(), r.perks.length, r.setup].join('|'),
+    `<div><span>Time this run</span><b>${mins(Math.max(0, S.t - r.t0))}</b></div><div><span>Delivered this run</span><b>${bf(r.deliv)}</b></div>
+     <div><span>Earned this run</span><b>${money(r.earned)}</b></div><div><span>Steam · gas reached</span><b>${eT(1)} · ${eT(2)}</b></div>
+     ${r.setup ? `<button class="act game" type="button" id="nrOpen">Choose this run’s conditions</button>` : ''}`,
+    box => { const b = box.querySelector('#nrOpen'); if (b) b.onclick = openNewRun; });
+  const counts = {}; r.perks.forEach(id => counts[id] = (counts[id]||0) + 1);
+  const ids = Object.keys(counts).sort((a,b) => ['legendary','rare','curse','common'].indexOf(PMAP[a].r) - ['legendary','rare','curse','common'].indexOf(PMAP[b].r));
+  $('perkCount').textContent = r.perks.length ? `${r.perks.length} drafted` : '';
+  list('perks', ids.map(id => id + counts[id]).join(), ids.length ? ids.map(id => { const p = PMAP[id];
+    return `<div class="perk r-${p.r}"><span class="chipl rchip">${RARITY[p.r].label}</span><div><b>${p.name}</b>${counts[id] > 1 ? `<span class="x">×${counts[id]}</span>` : ''}<p>${p.desc}</p></div></div>`; }).join('')
+    : '<p class="empty">No perks yet. Finish a mini-game run to earn your first draft.</p>');
+  // close camp
+  const ok = canClose(), L = legacyNow();
+  const key = ok ? `ok|${L}|${closeArmed}` : `no|${Math.floor(r.deliv/CLOSE_VOL*100)}`;
+  list('closeBox', key, ok
+    ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Legacy</span></div>
+       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${r.mods.length ? ` × ${modMult().toFixed(2)} conditions` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
+       ${closeArmed ? `<div class="confirm"><b>Close camp for good?</b> You lose cash, equipment, tracts, contracts, piles, the era and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Legacy.
+         <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Close camp · bank ${fmt(L)} Legacy</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
+       : `<div class="cbtns"><button class="act" type="button" id="closeArm">Close camp…</button></div>`}`
+    : `<p class="meta">Available once you adopt steam or deliver ${bf(CLOSE_VOL)} this run.</p><div class="bar"><i style="width:${Math.min(100, r.deliv/CLOSE_VOL*100).toFixed(1)}%"></i></div><p class="spec">${bf(r.deliv)} of ${bf(CLOSE_VOL)}</p>`,
+    box => {
+      const a = box.querySelector('#closeArm'); if (a) a.onclick = () => { closeArmed = true; render(); const y = $('closeYes'); if (y) y.focus(); };
+      const n = box.querySelector('#closeNo'); if (n) n.onclick = () => { closeArmed = false; render(); const z = $('closeArm'); if (z) z.focus(); };
+      const y = box.querySelector('#closeYes'); if (y) y.onclick = () => { closeArmed = false; const g = closeCamp(); if (!g && !S.run.setup) return; save(); boot(); openNewRun(); };
+    });
+  // meta tree
+  $('legMeta').textContent = `${fmt(S.meta.legacy)} Legacy to spend · ${fmt(S.meta.total)} earned over ${S.runs.length} closed ${S.runs.length === 1 ? 'camp' : 'camps'}. Camp lore is permanent.`;
+  list('metaList', S.meta.nodes.join() + '|' + META.map(m => S.meta.legacy >= m.cost ? 1 : 0).join(''), META.map(m => `<div class="row"><div class="info"><b>${m.name}</b><p>${m.desc}</p></div>
+    <div class="btns">${meta(m.id) ? '<span class="chipl ownd">Owned</span>' : `<button class="buy" type="button" data-meta="${m.id}" ${S.meta.legacy < m.cost ? 'disabled' : ''}>${m.cost} Legacy</button>`}</div></div>`).join(''),
+    box => box.querySelectorAll('[data-meta]').forEach(b => b.onclick = () => { if (buyMeta(b.dataset.meta)){ render(true); const nx = $('metaList').querySelector('.buy:not(:disabled)'); if (nx) nx.focus(); } }));
+  list('pastRuns', S.runs.map(x => x.n + ':' + x.legacy).join(), S.runs.length ? S.runs.map(x => `<div><span>Run ${x.n}${x.mods.length ? ' · ' + x.mods.map(id => MODS.find(m => m.id === id)?.name).join(', ') : ''}</span><span><b>${x.min} min</b> · ${ERAS[x.era].name} · ${bf(x.deliv)} · <b>+${x.legacy}</b> Legacy</span></div>`).join('')
+    : '<p class="empty">No camps closed yet.</p>');
+}
+function bindRogue(){
+  $('draftBtn').onclick = openDraft;
+  $('dClose').onclick = closeDraft;
+  $('dReroll').onclick = () => { reroll(); renderDraft(); };
+  dEl.addEventListener('click', e => { if (e.target === dEl) closeDraft(); });
+  $('nrStart').onclick = () => { startRun(nrPick); nrEl.hidden = true; render(true); };
+  $('nrClose').onclick = () => { nrEl.hidden = true; render(true); };
+  nrEl.addEventListener('click', e => { if (e.target === nrEl){ nrEl.hidden = true; render(true); } });
+  window.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!dEl.hidden) closeDraft(); else if (!nrEl.hidden){ nrEl.hidden = true; render(true); } });
+}
+
+// ---------- persistence
+function save(){
+  S.last = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(S)); $('saved').textContent = 'Saved.'; } catch(e){}
+}
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (raw){ const d = JSON.parse(raw); if (d && d.v === 2) S = Object.assign(fresh(), d); } } catch(e){ S = fresh(); }
+}
+function offline(){
+  const away = Math.min(4*3600, (Date.now() - (S.last || Date.now()))/1000);
+  if (away < 30) return;
+  const c0 = S.cash, f0 = S.felled;
+  let left = away; const step = Math.max(.5, away/4000);
+  while (left > 0){ const dt = Math.min(step, left); tick(dt); left -= dt; }
+  if (S.felled > f0 || S.cash !== c0) note(`While you were away (${mins(away)}): ${fmt(S.felled-f0)} trees felled, cash ${S.cash >= c0 ? 'up' : 'down'} ${money(Math.abs(S.cash-c0))}.`);
+}
+const reset = $('reset'); let armed = null;
+reset.onclick = () => {
+  if (!armed){ reset.textContent = 'Click again to erase this company'; reset.classList.add('armed');
+    armed = setTimeout(() => { armed = null; reset.textContent = 'Start a new company'; reset.classList.remove('armed'); }, 3000); return; }
+  clearTimeout(armed); armed = null; reset.textContent = 'Start a new company'; reset.classList.remove('armed');
+  S = fresh(); normalize(); boot(); save();
+};
+$('road').onclick = buildRoad;
+
+function boot(){
+  if (!S.forSale.length) refreshSales();
+  if (!S.offers.length && !S.contract) refreshOffers();
+  if (!S.hireOffer && !hireActive()) S.hireOffer = genHire();
+  if (!S.log.length) note('Set up camp on a 40-tree home woodlot with an axe and no crew. Chop, buck, skid and haul by hand to earn your first dollars.');
+  setSite(); if (S.hp == null) newTree();
+  renderLedger(); render(true);
+}
+let loop = null;
+function start(data){
+  const hot = !!(data && data.S && data.S.v === 2);
+  if (hot) S = Object.assign(fresh(), data.S); else load();
+  normalize();
+  if (!hot) offline();
+  buildChain(); buildEquipment(); bindRogue(); boot(); checkAch(true);
+  let prev = performance.now(), sinceSave = 0, sinceRender = 0;
+  clearInterval(loop);
+  loop = setInterval(() => {
+    const now = performance.now(); const dt = Math.min(5, (now - prev)/1000); prev = now;
+    tick(dt); sinceRender += dt; sinceSave += dt;
+    if (sinceRender >= .2){ checkAch(); render(); sinceRender = 0; }
+    if (sinceSave >= 5){ save(); sinceSave = 0; }
+  }, 100);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+}
+try { window.claude?.hot?.snapshot?.(() => ({S})); } catch(e){}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>

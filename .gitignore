@@ -1,0 +1,4 @@
+node_modules/
+sim/game*.html
+sim/*.txt
+.DS_Store

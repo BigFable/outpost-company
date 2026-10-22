@@ -1,0 +1,14 @@
+{
+  "name": "outpost-company",
+  "private": true,
+  "description": "Idle roguelite skilling game. Prototype: Timberline (logging skill).",
+  "scripts": {
+    "test": "node tests/smoke_rogue.js && node tests/smoke_rogue2.js",
+    "sim:build": "python3 sim/build.py prototype/timberline.html sim/game_rogue.html",
+    "sim": "npm run sim:build && node sim/sim_rogue.js 8 gas",
+    "sim:lpm": "npm run sim:build && node sim/sim_rogue.js 8 lpm"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
