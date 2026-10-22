@@ -1,10 +1,10 @@
-<title>Timberline</title>
+<title>Outpost Company</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: a logging company's operations board. Tally strip on top; left column is the active tract and the stump-to-mill chain; right column is the equipment yard, timber sales, mill contracts and company upgrades. */
+/* Layout: Outpost Company's logging board for one outpost on the Reach. Tally strip on top; left column is the active tract and the stump-to-mill chain; right column is the equipment yard, land office, charter orders and company upgrades. */
 :root{
   --bg:#E3E8DF; --panel:#F3F5F0; --ink:#1B241E; --muted:#5A685E; --line:#C3CCC1;
   --accent:#E0560B; --accent-ink:#FFFFFF; --bark:#6B4A2F; --needle:#2E5C39; --needle2:#41794C; --sky:#D5DED3;
@@ -36,6 +36,8 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .brand{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
 .brand h1{font-size:2.1rem;font-weight:700;line-height:1}
 .brand p{margin:0;color:var(--muted);font-size:.88rem}
+.brand h1 small{display:block;font-family:var(--f-body);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
+.fogline{height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--sky) 50%,var(--line) 82%,transparent);opacity:.9}
 .tally{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden}
 .tally>div{padding:10px 14px;border-left:1px solid var(--line);min-width:0}
 .tally>div:first-child{border-left:0}
@@ -208,32 +210,33 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <div class="app">
   <header class="top">
     <div class="brand">
-      <h1>Timberline</h1>
-      <p>Buy timber, cut it, get it to the mill. Grow from oxen to harvesters.</p>
+      <h1><small>Logging · Fogbound Coast · 1890</small>Outpost Company</h1>
+      <p>Land at the cove, fell the fog-country giants, load the charter ship before winter.</p>
     </div>
+    <div class="fogline" aria-hidden="true"></div>
     <div class="tally">
       <div class="cash"><small>Cash</small><b id="tCash">$0</b><div class="sub" id="tCashSub"></div></div>
       <div><small>Net per minute</small><b id="tNet">$0</b><div class="sub" id="tNetSub"></div></div>
-      <div><small>Season</small><b id="tSeason">Fall 1880</b><div class="sub" id="tSeasonSub"></div></div>
-      <div><small>Mill-gate price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas></div><div class="sub" id="tMktSub"></div></div>
+      <div><small>Season</small><b id="tSeason">Fall 1890</b><div class="sub" id="tSeasonSub"></div></div>
+      <div><small>Cove mill price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas></div><div class="sub" id="tMktSub"></div></div>
     </div>
     <div class="runbar" id="runbar">
-      <span class="runno" id="rbRun">Run 1</span>
+      <span class="runno" id="rbRun">Outpost 1</span>
       <span class="rbmods" id="rbMods"></span>
       <span><b id="rbPerks">0</b> perks</span>
-      <span>Close-camp value <b id="rbLegacy">0</b> Legacy</span>
+      <span>Close-camp value <b id="rbLegacy">0</b> Charter Shares</span>
       <span>Banked <b id="rbBank">0</b></span>
       <button class="draftbtn" id="draftBtn" type="button" hidden>Draft ready (1)</button>
     </div>
-    <div class="banner" id="short" hidden>Payroll short: <span id="owed"></span> in wages owed. Crews work at half pace until they're paid from your next sales. Haul logs by hand or sell equipment to catch up.</div>
-    <div class="banner info" id="stuck" hidden><b>Out of timber and short on cash.</b> A mill will supply timber for a cut-for-hire job, with an advance to cover payroll. See Mill contracts.</div>
+    <div class="banner" id="short" hidden>Payroll short: <span id="owed"></span> in wages owed. Crews work at half pace until they're paid from your next sales. Haul logs by hand or sell equipment to catch up before the paymaster's ship comes.</div>
+    <div class="banner info" id="stuck" hidden><b>Out of timber and short on cash.</b> A buyer at the cove will supply timber for a cut-for-hire job, with an advance to cover payroll. See Charter orders.</div>
   </header>
 
   <div class="grid">
     <div class="col">
       <section class="panel">
-        <p class="eyebrow">Active tract</p>
-        <h2 id="tName">Home woodlot</h2>
+        <p class="eyebrow">Active tract · Fogbound Coast</p>
+        <h2 id="tName">Cove woodlot</h2>
         <p class="meta" id="tMeta"></p>
         <div class="standgrid">
           <button class="stage" id="stage" aria-label="Chop the tree">
@@ -255,10 +258,11 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
                 <rect x="136" y="196" width="28" height="86" fill="var(--bark)"/>
                 <polygon id="notch" points="136,250 136,262 136,274" fill="var(--sky)"/>
               </g>
+              <g fill="var(--panel)" pointer-events="none"><ellipse cx="60" cy="236" rx="110" ry="14" opacity=".35"/><ellipse cx="250" cy="250" rx="120" ry="12" opacity=".3"/></g>
             </svg>
           </button>
           <div class="facts">
-            <div><span>This tree</span><b id="fTree">Pine</b></div>
+            <div><span>This tree</span><b id="fTree">Fogbound pine</b></div>
             <div><span>Chops left</span><b id="fHp">0</b></div>
             <div><span>Trees left</span><b id="fLeft">0</b></div>
             <div><span>Cut out in</span><b id="fEta">—</b></div>
@@ -272,21 +276,21 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
       <section class="panel">
         <p class="eyebrow">Production chain</p>
         <h2>Stump to mill</h2>
-        <p class="meta">Each stage moves wood to the next. The slowest stage sets your output, and wood piles up in front of it.</p>
+        <p class="meta">Each stage moves wood to the next, down to the cove mill and the charter ship. The slowest stage sets your output, and wood piles up in front of it.</p>
         <div class="chain" id="chain"></div>
       </section>
 
       <section class="panel" id="runPanel">
-        <p class="eyebrow">This run</p>
-        <h2 id="runTitle">Run 1</h2>
+        <p class="eyebrow">This outpost</p>
+        <h2 id="runTitle">Outpost 1</h2>
         <p class="meta" id="runMeta"></p>
         <div class="facts" id="runStats"></div>
         <div class="group" style="margin-top:12px"><h3>Active perks<small id="perkCount"></small></h3><div id="perks"></div></div>
-        <div class="group"><h3>Close camp</h3><p class="meta">End this run and bank Legacy for permanent camp lore. Cash, crews, tracts, contracts and this run’s perks are left behind. Achievements, reputation and improvements stay with you.</p><div class="closebox" id="closeBox"></div></div>
+        <div class="group"><h3>Close camp</h3><p class="meta">Strip the outpost and load the charter ship before winter. The season’s take goes home as Charter Shares, and the board spends them on lasting support. Cash, crews, tracts, orders and this outpost’s perks stay behind. Achievements, reputation and improvements stay with you.</p><div class="closebox" id="closeBox"></div></div>
       </section>
 
       <section class="panel ledger">
-        <p class="eyebrow">Camp ledger</p>
+        <p class="eyebrow">Outpost ledger</p>
         <ol id="ledger"></ol>
       </section>
     </div>
@@ -298,35 +302,35 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
         <div id="eq"></div>
       </section>
       <section class="panel">
-        <p class="eyebrow">Timber sales</p>
-        <h2>Stumpage for sale</h2>
-        <p class="meta" id="saleMeta">You pay the landowner up front for the right to cut. Farther and steeper tracts are cheaper but slower to work.</p>
+        <p class="eyebrow">Land office</p>
+        <h2>Cutting rights for sale</h2>
+        <p class="meta" id="saleMeta">The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work.</p>
         <div id="sales"></div>
       </section>
       <section class="panel">
-        <p class="eyebrow">Mill contracts</p>
-        <h2>Delivery contracts</h2>
-        <div class="group"><h3>Cut for a mill</h3>
-          <p class="meta">The mill supplies the timber, so there's nothing to buy. You're paid a contract rate of 45% of market value for what you deliver, plus an advance when you sign. One job at a time.</p>
+        <p class="eyebrow">Charter orders</p>
+        <h2>Orders and hire work</h2>
+        <div class="group"><h3>Cut for hire</h3>
+          <p class="meta">The buyer supplies the timber, so there's nothing to buy. You're paid a contract rate of 45% of market value for what you deliver, plus an advance when you sign. One job at a time.</p>
           <div id="hire"></div></div>
-        <div class="group"><h3>Delivery contracts</h3>
-          <p class="meta">A premium on everything you haul until the volume is met. Miss the deadline and you pay a penalty for the share you didn't deliver.</p>
+        <div class="group"><h3>Charter orders</h3>
+          <p class="meta">A premium on everything you haul until the order is filled. Miss the sailing date and you pay a penalty for the share you didn't deliver.</p>
           <div id="contracts"></div></div>
       </section>
       <section class="panel">
-        <p class="eyebrow">Company</p>
-        <h2 id="coName">Era of axe and oxen</h2>
+        <p class="eyebrow">Company on the Reach</p>
+        <h2 id="coName">Cove Landing</h2>
         <div class="era" id="eras"></div>
         <div id="eraNext"></div>
         <div class="group"><h3>Improvements</h3><p class="meta">Earned on the job, not bought. Finish mini-game runs to unlock them.</p><div id="upgs"></div></div>
         <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
       </section>
       <section class="panel" id="legacyPanel">
-        <p class="eyebrow">Legacy</p>
-        <h2>Camp lore</h2>
+        <p class="eyebrow">Charter Shares</p>
+        <h2>The board back home</h2>
         <p class="meta" id="legMeta"></p>
         <div id="metaList"></div>
-        <div class="group"><h3>Past runs</h3><div class="past" id="pastRuns"></div></div>
+        <div class="group"><h3>Past outposts</h3><div class="past" id="pastRuns"></div></div>
       </section>
       <div class="foot">
         <span>Progress saves in this browser. <span id="saved"></span></span>
@@ -354,10 +358,10 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 </div>
 <div class="modal" id="newrun" hidden role="dialog" aria-modal="true" aria-labelledby="nrTitle">
   <div class="sheet">
-    <header><div><h2 id="nrTitle">Break new ground</h2><p>Choose this year’s conditions. Each one makes the run harder and multiplies the Legacy you bank when you close camp. You can choose none.</p></div><button class="closeb" id="nrClose" type="button">Not yet</button></header>
+    <header><div><h2 id="nrTitle">Sign the next charter</h2><p>Choose this outpost’s charter clauses. Each one makes the outpost harder and multiplies the Charter Shares you bank when you close camp. You can sign none.</p></div><button class="closeb" id="nrClose" type="button">Not yet</button></header>
     <div class="mods" id="nrMods"></div>
     <p class="meta" id="nrMeta"></p>
-    <div class="mgbar"><span id="nrStatus"></span><div><button class="mbtn primary" id="nrStart" type="button">Start run</button></div></div>
+    <div class="mgbar"><span id="nrStatus"></span><div><button class="mbtn primary" id="nrStart" type="button">Make landfall</button></div></div>
   </div>
 </div>
 
@@ -365,19 +369,19 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 (() => {
 // ---------- data
 const SP = {
-  pine:    {name:'Eastern white pine', hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con'},
-  spruce:  {name:'Red spruce',         hp:16, bf:160, saw:.60, sawP:.23, pulpP:.07, shape:'con'},
-  hemlock: {name:'Eastern hemlock',    hp:22, bf:220, saw:.50, sawP:.18, pulpP:.06, shape:'con'},
-  maple:   {name:'Sugar maple',        hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec'},
-  oak:     {name:'Northern red oak',   hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec'},
-  walnut:  {name:'Black walnut',       hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec'},
+  pine:    {name:'Fogbound pine',      hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con'},
+  spruce:  {name:'Shore spruce',       hp:16, bf:160, saw:.60, sawP:.23, pulpP:.07, shape:'con'},
+  hemlock: {name:'Mist hemlock',       hp:22, bf:220, saw:.50, sawP:.18, pulpP:.06, shape:'con'},
+  maple:   {name:'Glacier maple',      hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec'},
+  oak:     {name:'Hot-spring oak',     hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec'},
+  walnut:  {name:'Giant cloudwood',    hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec'},
 };
 const treeVal = s => s.bf*(s.saw*s.sawP + (1-s.saw)*s.pulpP);
 const ERAS = [
-  {name:'Axe and oxen', year:1880, cost:0},
-  {name:'Steam', year:1905, cost:15000, blurb:'Steam donkeys, drag saws and logging railroads.'},
-  {name:'Gas and diesel', year:1950, cost:1000000, blurb:'Chainsaws, crawler tractors and log trucks.'},
-  {name:'Mechanized', year:1990, cost:10000000, blurb:'Feller bunchers, processors and forwarders.'},
+  {name:'Cove Landing', year:1890, cost:0},
+  {name:'Steam Camp', year:1905, cost:15000, blurb:'Steam donkeys, drag saws and a logging railroad up from the cove.'},
+  {name:'Diesel Road', year:1950, cost:1000000, blurb:'Chainsaws, crawler tractors and log trucks on roads pushed into the fog.'},
+  {name:'Into the Interior', year:1990, cost:10000000, blurb:'Feller bunchers, processors and forwarders working the deep Interior.'},
 ];
 const ERA_SPECIES = [['pine','spruce','hemlock'],['pine','spruce','hemlock','maple'],['pine','spruce','hemlock','maple','oak'],['pine','spruce','hemlock','maple','oak','walnut']];
 const TRACT_BASE = [60, 1500, 15000, 120000];
@@ -393,22 +397,22 @@ const PILES = [
   {id:'landing', label:'logs at the landing'},
 ];
 const EQ = [
-  {id:'axeman',    stage:'fell', era:0, name:'Axeman',                desc:'Double-bit axe and a long day.', rate:1, cost:40, up:3},
-  {id:'crosscut',  stage:'fell', era:0, name:'Crosscut sawyers',      desc:'Two men on a six-foot felling saw.', rate:4, cost:220, up:10},
-  {id:'bucker',    stage:'buck', era:0, name:'Bucker',                desc:'Limbs stems and saws them to log lengths.', rate:12, cost:60, up:3},
-  {id:'oxen',      stage:'skid', era:0, name:'Ox team',               desc:'Slow and steady to the landing.', rate:10, cost:90, up:5},
-  {id:'horses',    stage:'skid', era:0, name:'Horse team',            desc:'Faster than oxen. Eats more.', rate:22, cost:300, up:11},
-  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to mill. Best on frozen roads.', rate:15, cost:70, up:4},
-  {id:'wagon',     stage:'haul', era:0, name:'Log wagon and teamster',desc:'Big wheels for the haul road.', rate:35, cost:600, up:12},
-  {id:'springboard',stage:'fell',era:1, name:'Springboard fallers',   desc:'Cut above the butt swell from notched planks.', rate:15, cost:2500, up:45},
+  {id:'axeman',    stage:'fell', era:0, name:'Axeman',                desc:'Double-bit axe, company issue, and a long day.', rate:1, cost:40, up:3},
+  {id:'crosscut',  stage:'fell', era:0, name:'Crosscut sawyers',      desc:'Two men on a six-foot felling saw, shipped out in oiled canvas.', rate:4, cost:220, up:10},
+  {id:'bucker',    stage:'buck', era:0, name:'Bucker',                desc:'Limbs stems and saws them to log lengths in the fog.', rate:12, cost:60, up:3},
+  {id:'oxen',      stage:'skid', era:0, name:'Ox team',               desc:'Landed off the first ship. Slow and steady to the landing.', rate:10, cost:90, up:5},
+  {id:'horses',    stage:'skid', era:0, name:'Horse team',            desc:'Faster than oxen. Eats more of the ship’s hay.', rate:22, cost:300, up:11},
+  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to the cove mill. Best on frozen roads.', rate:15, cost:70, up:4},
+  {id:'wagon',     stage:'haul', era:0, name:'Log wagon and teamster',desc:'Big wheels for the beach road.', rate:35, cost:600, up:12},
+  {id:'springboard',stage:'fell',era:1, name:'Springboard fallers',   desc:'Cut above the butt swell of the big coast trees from notched planks.', rate:15, cost:2500, up:45},
   {id:'dragsaw',   stage:'buck', era:1, name:'Steam drag saw',        desc:'A reciprocating saw driven by steam.', rate:120, cost:2800, up:40},
   {id:'donkey',    stage:'skid', era:1, name:'Steam donkey',          desc:'Winch engine that yards logs on cable.', rate:180, cost:7000, up:110},
-  {id:'shay',      stage:'haul', era:1, name:'Shay locomotive',       desc:'Geared engine on a logging railroad.', rate:300, cost:15000, up:170},
+  {id:'shay',      stage:'haul', era:1, name:'Shay locomotive',       desc:'Geared engine on the company railroad down to the cove.', rate:300, cost:15000, up:170},
   {id:'chainsaw',  stage:'fell', era:2, name:'Chainsaw faller',       desc:'One faller, one saw, a lot of trees.', rate:90, cost:30000, up:350},
   {id:'slasher',   stage:'buck', era:2, name:'Slasher saw deck',      desc:'Bucks whole stems at the landing.', rate:800, cost:36000, up:320},
   {id:'crawler',   stage:'skid', era:2, name:'Crawler tractor',       desc:'Tracks and an arch for dragging logs.', rate:1100, cost:85000, up:650},
   {id:'cableskid', stage:'skid', era:2, name:'Cable skidder',         desc:'Rubber-tired and quick between turns.', rate:1600, cost:140000, up:900},
-  {id:'logtruck',  stage:'haul', era:2, name:'Log truck',             desc:'Highway hauling to any mill in reach.', rate:2000, cost:130000, up:950},
+  {id:'logtruck',  stage:'haul', era:2, name:'Log truck',             desc:'Hauls down company roads from deep in the fog.', rate:2000, cost:130000, up:950},
   {id:'buncher',   stage:'fell', era:3, name:'Feller buncher',        desc:'Cuts and stacks several stems at a time.', rate:700, cost:600000, up:4000},
   {id:'processor', stage:'buck', era:3, name:'Processor',             desc:'Delimbs and bucks a stem in seconds.', rate:7000, cost:500000, up:3200},
   {id:'grapple',   stage:'skid', era:3, name:'Grapple skidder',       desc:'Grabs a bunched turn and goes.', rate:9000, cost:750000, up:4200},
@@ -421,7 +425,7 @@ const UPG = [
   {id:'gunstick', era:0, name:'Gunning stick',           desc:'Felling game: shows where the tree will really fall, wind included.', cost:350, game:'fell'},
   {id:'scalestick',era:0,name:'Scaler’s stick',          desc:'Bucking game: see what each log is worth as you plan the cuts.', cost:450, game:'buck'},
   {id:'swamper',  era:0, name:'Swamping crew',           desc:'Clears brush and stumps from skid trails. Skidding ×1.15. Skid game: half the stumps are gone.', cost:600, skid:1.15, game:'skid'},
-  {id:'hay',      era:0, name:'Hay on the hills',        desc:'Sled tenders spread hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.', cost:700, haul:1.1, game:'haul'},
+  {id:'hay',      era:0, name:'Hay on the hills',        desc:'Sled tenders spread ship’s hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.', cost:700, haul:1.1, game:'haul'},
   {id:'wedges',   era:0, name:'Felling wedges',          desc:'Drive the tree over the hinge. Felling ×1.15. Felling game: a thick hinge no longer sits back, and falls are steadier.', cost:900, fell:1.15, game:'fell'},
   {id:'bunks',    era:0, name:'Bigger bunks',            desc:'Longer, wider log bunks. Hauling ×1.15. Haul game: road limit +4 logs.', cost:1200, haul:1.15, game:'haul'},
   {id:'cook',     era:0, name:'Camp cookhouse',          desc:'Fed crews work harder. Felling and bucking ×1.25.', cost:1500, fell:1.25, buck:1.25},
@@ -435,7 +439,7 @@ const UPG = [
   {id:'airbrakes',era:2, name:'Air brakes',              desc:'Hauling ×1.2. Haul game: brakes ×2, and the load holds to a higher speed before it runs away.', cost:350000, haul:1.2, game:'haul'},
   {id:'shop',     era:2, name:'Diesel shop',             desc:'Rebuild engines in-house. Upkeep ×0.85.', cost:900000, upkeep:.85},
   {id:'optimize', era:3, name:'Cut-to-length optimizer', desc:'Computer bucking for value. Log value ×1.15. Bucking game: one button places the best cuts.', cost:5e6, value:1.15, game:'buck'},
-  {id:'gps',      era:3, name:'GPS harvest planning',    desc:'Tighter skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.', cost:9e6, all:1.25, game:'skid'},
+  {id:'gps',      era:3, name:'Survey-grid harvest plan', desc:'Charted skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.', cost:9e6, all:1.25, game:'skid'},
   {id:'telematics',era:3,name:'Fleet telematics',        desc:'Catch breakdowns early. Upkeep ×0.8.', cost:14e6, upkeep:.8},
 ];
 const R = (text, cur, target) => ({text, prog: () => [cur(), target]});
@@ -480,8 +484,8 @@ function checkUnlocks(quiet){
 const SEASONS = ['Spring','Summer','Fall','Winter'];
 const SEASON_LEN = 150;
 const SLOPES = {flat:{label:'flat', skid:1, disc:1}, rolling:{label:'rolling', skid:.8, disc:.85}, steep:{label:'steep', skid:.55, disc:.65}};
-const PLACES = ['Beaver Creek','Moose Brook','Cold Spring Ridge','Black Pond','Indian Stream','Bald Mountain','Otter Flowage','Cedar Swamp','Kettle Hill','Pine Notch','Long Meadow','Spruce Gulch','Fox Hollow','Birch Run','Wolf Pond','Rattlesnake Ridge'];
-const MILLS = ['Hartwell Bros. Mill','Penobscot Pulp & Paper','Cedar Falls Lumber','Union Box & Shook','Great Northern Sash & Door','Ridgeway Planing Mill','Androscoggin Paper','Millers River Lumber'];
+const PLACES = ['Landfall Cove','Foghorn Point','Grey Wash','Charter Creek','Lantern Bluff','Drowned Inlet','Seal Rock Flats','Mistfall Ridge','Hollow Sound','Cairn Hill','Long Fog Meadow','Spar Gulch','Otter Slough','Surveyor’s Run','Whistle Pond','Glass Creek'];
+const MILLS = ['the Cove Sawmill','the charter ship Perseverance','Landfall Pier Works','the Admiralty spar yard','Fogline Box & Crate','the Company shipwrights','Harbor Planing Mill','the Survey Office stores'];
 const KEY = 'timberline-v2';
 
 // ---------- state
@@ -490,9 +494,9 @@ function makeTract(name, mix, trees, miles, slope){
   mix.forEach(([id,wt]) => { const s=SP[id]; hp+=s.hp*wt; bf+=s.bf*wt; val+=treeVal(s)*wt; w+=wt; });
   return {name, mix, trees, left:trees, miles, slope, hp:hp/w, bf:bf/w, val:val/w, road:false};
 }
-const fresh = () => ({v:2, cash:0, era:0, year:1880, season:2, st:0, t:0,
+const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
-  own:{}, upg:[], tracts:[makeTract('Home woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
+  own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
   boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0}, ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now()});
 function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false}; }
@@ -540,7 +544,7 @@ const baseRate = stage => EQ.reduce((a,e) => e.stage === stage ? a + e.rate*own(
 const vmult = () => umult('value') * pmult('value');
 const cmult = () => umult('click') * pmult('click');
 const boostF = () => perk('bull') ? 2 : 1.5;
-const boostTxt = () => perk('absentee') ? 'no faster (absentee owner)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
+const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
 function rate(stage){ // effective per second, before payroll efficiency
   let r = baseRate(stage) * seasonF(stage) * ((S.boost[stage]||0) > S.t ? boostF() : 1);
   if (stage === 'skid') r *= slopeF();
@@ -599,7 +603,7 @@ function buyTract(i){
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); }
   S.forSale[i] = genTract();
-  note(`Bought stumpage on ${t.name}: ${fmt(t.trees)} trees.`);
+  note(`Bought cutting rights on ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
 }
 function buildRoad(){
@@ -701,8 +705,8 @@ function tick(dt){
   // calendar
   S.st += dt;
   while (S.st >= SEASON_LEN){ S.st -= SEASON_LEN; S.season = (S.season+1) % 4; if (S.season === 0){ S.year++; S.stats.winters++; }
-    if (SEASONS[S.season] === 'Spring') note(`Mud season. Skidding and hauling slow down.`);
-    if (SEASONS[S.season] === 'Winter') note(`Ground is frozen. Good skidding and hauling.`); }
+    if (SEASONS[S.season] === 'Spring') note(`Mud season on the Reach. Skidding and hauling slow down.`);
+    if (SEASONS[S.season] === 'Winter') note(`Ground is frozen and the fog is thin. Good skidding and hauling.`); }
   // payroll
   // payroll: if you can't pay, crews keep working at half pace and the wages are owed
   const cost = upkeep()*dt/60; let eff = 1;
@@ -731,9 +735,9 @@ function tick(dt){
   for (const k in cap){ const u = full[k] > 0 ? used[k]/full[k] : 1; S.util[k] = (S.util[k] ?? 1) + (u - (S.util[k] ?? 1))*Math.min(1, dt/3); }
   // run milestones
   if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
-    queueDraft(.65, `Entered the ${ERAS[S.run.era].name.toLowerCase()} era`); } }
+    queueDraft(.65, `Reached ${ERAS[S.run.era].name}`); } }
   if (hasMod('drought') && season() === 'Summer' && S.stems.bf > 50 && Math.random() < dt*.003){
-    S.stems.bf *= .75; S.stems.val *= .75; note('Drought: a slash fire burned a quarter of the stems on the ground.'); }
+    S.stems.bf *= .75; S.stems.val *= .75; note('Dry summer: a slash fire burned a quarter of the stems on the ground.'); }
   // contracts
   if (S.contract && S.t >= S.contract.end){
     const c = S.contract; const pen = perk('handshake') ? 0 : Math.round(c.penalty*(1 - c.done/c.vol)); S.cash = Math.max(0, S.cash - pen);
@@ -754,7 +758,7 @@ const stage = $('stage');
 let falling = false;
 function chop(ev){
   const t = tract();
-  if (!t){ pop(null, 'Buy a tract', false); return; }
+  if (!t){ pop(null, 'Buy cutting rights', false); return; }
   const before = S.felled, vis = S.vis;
   damage(cmult());
   const rect = stage.getBoundingClientRect();
@@ -820,7 +824,7 @@ function buildEquipment(){
       const r = document.createElement('div'); r.className = 'row';
       r.innerHTML = `<div class="info"><b>${e.name}</b><span class="own"></span><p>${e.desc}</p><span class="spec">+${fmt(e.rate)} ${s.unit} · ${money(e.up)}/min upkeep</span></div><div class="btns"><button class="sellb" type="button" title="Sell one for half its price">Sell</button><button class="buy" type="button"></button></div>`;
       r.querySelector('.buy').onclick = () => { const c = eqCost(e); if (S.cash < c) return; S.cash -= c; S.own[e.id] = own(e.id)+1;
-        if (own(e.id) === 1) note(`First ${e.name.toLowerCase()} joined the outfit.`); render(); };
+        if (own(e.id) === 1) note(`First ${e.name.toLowerCase()} came ashore and joined the outpost.`); render(); };
       r.querySelector('.sellb').onclick = () => { if (!own(e.id)) return; S.own[e.id]--; S.cash += Math.floor(eqCost(e)*.5); render(); };
       g.appendChild(r); eqRows[e.id] = r;
     });
@@ -845,7 +849,7 @@ function renderSales(){
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(t.price)}</button></div></div>`).join(''),
     box => box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)));
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < t.price; });
-  $('saleMeta').textContent = `You pay the landowner up front for the right to cut. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.`;
+  $('saleMeta').textContent = `The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.`;
 }
 function renderHire(){
   const job = S.tracts.find(t => t.hire), o = S.hireOffer;
@@ -856,8 +860,8 @@ function renderHire(){
     $('hLeft').textContent = `${fmt(job.left)} of ${fmt(job.trees)} trees left` + (job !== tract() ? ' · queued' : '');
     return;
   }
-  if (scripBlock()){ list('hire', 'scrip', '<p class="empty">Company scrip: no mill will hire you while you have timber or cash to buy some.</p>'); return; }
-  if (!o){ list('hire', 'none', '<p class="empty">No mill jobs right now.</p>'); return; }
+  if (scripBlock()){ list('hire', 'scrip', '<p class="empty">Company scrip: no buyer will hire you while you have timber or cash to buy some.</p>'); return; }
+  if (!o){ list('hire', 'none', '<p class="empty">No hire work at the cove right now.</p>'); return; }
   const risk = atRisk();
   list('hire', 'o'+o.name+risk, `<div class="row"><div class="info"><b>${o.name}</b>${risk ? '<span class="chipl rec">Recommended</span>' : ''}
     <p>${o.hire.mill} · ${fmt(o.trees)} trees · ${mixText(o)}</p><span class="spec" id="hSpec"></span></div>
@@ -874,7 +878,7 @@ function renderContracts(){
        <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
     : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>
        <p>${bf(o.vol)} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p><span class="spec">Penalty if missed: up to ${money(o.penalty)}</span></div>
-       <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No offers right now.</p>'),
+       <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No charter orders right now.</p>'),
     box => box.querySelectorAll('button[data-o]').forEach(b => b.onclick = () => accept(+b.dataset.o)));
   if (c){
     $('cBar').style.width = (c.done/c.vol*100).toFixed(1)+'%';
@@ -885,13 +889,13 @@ function renderContracts(){
   }
 }
 function renderCompany(){
-  $('coName').textContent = `Era of ${ERAS[S.era].name.toLowerCase()}`;
+  $('coName').textContent = ERAS[S.era].name;
   list('eras', S.era, ERAS.map((e,i) => `<span class="${i===S.era?'on':i<S.era?'done':''}">${e.name} · ${e.year}</span>`).join(''));
   const nx = ERAS[S.era+1];
-  list('eraNext', 'n'+S.era, nx ? `<div class="row"><div class="info"><b>Adopt ${nx.name.toLowerCase()} (${nx.year})</b><p>${nx.blurb} Larger timber sales open up.</p></div>
-    <div class="btns"><button class="buy" type="button" id="eraBuy">${money(eraCost(S.era+1))}</button></div></div><div class="bar"><i id="eraBar"></i></div><p class="spec" id="eraPct"></p>` : '<p class="empty">Your company runs the most modern equipment there is.</p>',
+  list('eraNext', 'n'+S.era, nx ? `<div class="row"><div class="info"><b>Push on to ${nx.name} (${nx.year})</b><p>${nx.blurb} Larger stands open up further inland.</p></div>
+    <div class="btns"><button class="buy" type="button" id="eraBuy">${money(eraCost(S.era+1))}</button></div></div><div class="bar"><i id="eraBar"></i></div><p class="spec" id="eraPct"></p>` : '<p class="empty">Your company works the Interior with the most modern equipment there is.</p>',
     box => { const b = box.querySelector('#eraBuy'); if (b) b.onclick = () => { const ec = eraCost(S.era+1); if (S.cash < ec) return; S.cash -= ec; S.era++;
-      S.year = Math.max(S.year, nx.year); note(`Entered the era of ${nx.name.toLowerCase()}. It is now ${S.year}.`); refreshSales(); refreshOffers(); render(true); }; });
+      S.year = Math.max(S.year, nx.year); note(`The company reached ${nx.name}. It is now ${S.year}.`); refreshSales(); refreshOffers(); render(true); }; });
   const b = $('eraBuy'); if (b && nx){ const ec = eraCost(S.era+1); b.disabled = S.cash < ec; b.textContent = money(ec);
     const r = Math.min(1, S.cash/ec), net = (S.ema - S.upEma)*60;
     $('eraBar').style.width = (r*100).toFixed(1)+'%';
@@ -899,8 +903,8 @@ function renderCompany(){
   const next = UPG.filter(u => !has(u.id) && u.req && u.era <= S.era + 1).map(u => { const [c,t] = u.req.prog(); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
     .sort((a,b) => (a.later - b.later) || (b.r - a.r)).slice(0,6);
   list('upgs', next.map(o => o.u.id + o.later).join(), next.length ? next.map(o => `<div class="goal"><div class="line"><b>${o.u.name}</b><span class="spec" data-uc="${o.u.id}"></span></div>
-    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks in the ${ERAS[o.u.era].name.toLowerCase()} era once you ` + o.u.req.text.charAt(0).toLowerCase() + o.u.req.text.slice(1) : o.u.req.text}.</p>
-    <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this era is unlocked.</p>');
+    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + o.u.req.text.charAt(0).toLowerCase() + o.u.req.text.slice(1) : o.u.req.text}.</p>
+    <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this stage of the company is unlocked.</p>');
   next.forEach(o => { const b = document.querySelector(`[data-ub="${o.u.id}"]`), c = document.querySelector(`[data-uc="${o.u.id}"]`);
     if (b) b.style.width = (o.r*100).toFixed(1)+'%'; if (c) c.textContent = `${fmt(Math.min(o.c, o.t))} / ${fmt(o.t)}`; });
 }
@@ -935,7 +939,7 @@ function render(force){
   $('tNetSub').textContent = `${money(S.ema*60)} in · ${money(upkeep())} upkeep` + (fullUpkeep() - upkeep() > 1 ? ` (idle crews at ¼ pay)` : '');
   $('tSeason').textContent = `${season()} ${S.year}`;
   const sn = season();
-  $('tSeasonSub').textContent = sn === 'Spring' ? 'Mud: skid and haul slowed' : sn === 'Winter' ? 'Frozen ground: skid and haul faster' : 'Normal conditions';
+  $('tSeasonSub').textContent = sn === 'Spring' ? 'Mud: skid and haul slowed' : sn === 'Winter' ? 'Frozen ground: skid and haul faster' : 'Fog on the water, normal work';
   const mk = market(); $('tMkt').textContent = '×' + mk.toFixed(2);
   const prev = S.ph.length > 1 ? S.ph[S.ph.length-2] : mk;
   $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
@@ -959,10 +963,10 @@ function render(force){
     const rd = $('road');
     rd.hidden = t.road || !t.roadCost || t.miles <= 1;
     if (!rd.hidden){ rd.textContent = `Build haul road ${money(t.roadCost)}`; rd.disabled = S.cash < t.roadCost; }
-    $('queue').textContent = S.tracts.length > 1 ? `Up next: ${S.tracts.slice(1).map(x => x.name).join(', ')} · ${fmt(totalLeft)} trees under contract in all.` : 'No tracts queued. Buy stumpage or take a mill job before this one runs out.';
+    $('queue').textContent = S.tracts.length > 1 ? `Up next: ${S.tracts.slice(1).map(x => x.name).join(', ')} · ${fmt(totalLeft)} trees under contract in all.` : 'No tracts queued. Buy cutting rights or take hire work before this one runs out.';
   } else {
     $('tName').textContent = 'No timber';
-    $('tMeta').textContent = 'Buy stumpage from the timber sales list to keep cutting.';
+    $('tMeta').textContent = 'Buy cutting rights from the land office to keep cutting.';
     $('fTree').textContent = '—'; $('fHp').textContent = '—'; $('fLeft').textContent = '0'; $('fEta').textContent = '—';
     $('tBar').style.width = '100%'; $('road').hidden = true; $('queue').textContent = '';
   }
@@ -977,7 +981,7 @@ function render(force){
     const rt = s.id === 'fell' ? `${fmt(rate('fell'))} chops/s ≈ ${bf(caps.fell)}/s` : `${bf(caps[s.id])}/s`;
     const upstreamCrew = STAGES.slice(0, STAGES.indexOf(s)).some(x => baseRate(x.id) > 0);
     const rEl = r.querySelector('.rate');
-    rEl.textContent = caps[s.id] > 0 ? rt : s.id === 'haul' && S.landing.bf > 0 ? 'no hauler: a local buyer takes 6 bd ft/s at 60% price' : upstreamCrew ? 'no crew here, wood is piling up' : 'by hand only';
+    rEl.textContent = caps[s.id] > 0 ? rt : s.id === 'haul' && S.landing.bf > 0 ? 'no hauler: the cove mill carts off 6 bd ft/s at 60% price' : upstreamCrew ? 'no crew here, wood is piling up' : 'by hand only';
     rEl.style.color = caps[s.id] <= 0 && upstreamCrew ? 'var(--warn)' : '';
     r.querySelector('.cap i').style.width = (caps[s.id]/maxCap*100).toFixed(1)+'%';
     const gb = r.querySelector('.act.game'); if (gb) gb.disabled = s.id === 'fell' ? !t : srcPile(s.id).bf <= 0;
@@ -1014,8 +1018,8 @@ const crewCount = () => EQ.reduce((a,e) => a + own(e.id), 0);
 const ladder = (id, name, desc, cur, target, cash, rep=0) => ({id, name, desc, test:() => cur() >= target, prog:() => [cur(), target], cash, rep});
 const ACH = [
   {id:'first_tree', name:'Timber!', desc:'Fell your first tree.', test:() => S.felled >= 1, cash:10},
-  {id:'first_sale', name:'First load sold', desc:'Deliver logs to the mill.', test:() => S.stats.deliv > 0, cash:15},
-  {id:'first_crew', name:'On the payroll', desc:'Hire your first crew.', test:() => crewCount() >= 1, cash:25},
+  {id:'first_sale', name:'First load to the cove', desc:'Deliver logs to the cove mill.', test:() => S.stats.deliv > 0, cash:15},
+  {id:'first_crew', name:'On the payroll', desc:'Bring your first crew ashore.', test:() => crewCount() >= 1, cash:25},
   {id:'full_chain', name:'Stump to mill', desc:'Have a crew working every stage.', test:() => ['fell','buck','skid','haul'].every(st => baseRate(st) > 0), cash:100, rep:1},
   ladder('d10k',  '10 MBF',               'Deliver 10,000 bd ft.',      () => S.stats.deliv, 1e4,   150, 1),
   ladder('d50k',  '50 MBF',               'Deliver 50,000 bd ft.',      () => S.stats.deliv, 5e4,   500, 1),
@@ -1029,10 +1033,10 @@ const ACH = [
   ladder('d1b',   'A billion board feet', 'Deliver 1 billion bd ft.',   () => S.stats.deliv, 1e9,   12e6, 5),
   ladder('e10k',  'Ten-thousand-dollar year', 'Earn $10K in sales.',  () => S.earned, 1e4,  300),
   ladder('e100k', 'Six figures',          'Earn $100K in sales.',       () => S.earned, 1e5,  3000, 1),
-  ladder('e1m',   'Millionaire outfit',   'Earn $1M in sales.',         () => S.earned, 1e6,  30000, 1),
+  ladder('e1m',   'Millionaire charter',   'Earn $1M in sales.',         () => S.earned, 1e6,  30000, 1),
   ladder('e5m',   'Five million in sales','Earn $5M in sales.',         () => S.earned, 5e6,  120000, 1),
-  ladder('e25m',  'Lumber baron',         'Earn $25M in sales.',        () => S.earned, 2.5e7, 600000, 2),
-  ladder('e100m', 'Timber tycoon',        'Earn $100M in sales.',       () => S.earned, 1e8,  2e6, 2),
+  ladder('e25m',  'Toast of the board',         'Earn $25M in sales.',        () => S.earned, 2.5e7, 600000, 2),
+  ladder('e100m', 'Founders of Landfall',        'Earn $100M in sales.',       () => S.earned, 1e8,  2e6, 2),
   ladder('t100',  'Hundred trees',        'Fell 100 trees.',            () => S.felled, 100,   200),
   ladder('t1k',   'Thousand trees',       'Fell 1,000 trees.',          () => S.felled, 1000,  2500, 1),
   ladder('t3k',   'Three thousand trees', 'Fell 3,000 trees.',          () => S.felled, 3000,  10000, 1),
@@ -1052,8 +1056,8 @@ const ACH = [
   ladder('crew30','Big outfit',           'Own 30 crews or machines.',  () => crewCount(), 30, 4000, 1),
   ladder('crew75','Industrial outfit',    'Own 75 crews or machines.',  () => crewCount(), 75, 80000, 2),
   ladder('crew50','Fifty-crew outfit',    'Own 50 crews or machines.',  () => crewCount(), 50, 20000, 1),
-  ladder('crew120','Timber empire',       'Own 120 crews or machines.', () => crewCount(), 120, 500000, 2),
-  ladder('w1',    'Winter camp',          'Work through a winter.',     () => S.stats.winters, 1, 250),
+  ladder('crew120','Company of the Reach',       'Own 120 crews or machines.', () => crewCount(), 120, 500000, 2),
+  ladder('w1',    'Wintered over',        'Work through a winter on the Reach.',     () => S.stats.winters, 1, 250),
   ladder('w5',    'Five winters',         'Work through five winters.', () => S.stats.winters, 5, 3500, 1),
   ladder('w10',   'Ten winters',          'Work through ten winters.',  () => S.stats.winters, 10, 30000, 1),
   ladder('pf1',   'Right where you wanted it', 'Land a perfect fall.',  () => S.stats.perfFell, 1, 60),
@@ -1065,9 +1069,9 @@ const ACH = [
   ladder('ch1',   'Clean haul',           'Deliver a full load under par with nothing lost.', () => S.stats.cleanHaul, 1, 60),
   ladder('ch10',  'Road boss',            'Make 10 clean hauls.',       () => S.stats.cleanHaul, 10, 900, 1),
   {id:'allround', name:'All-around logger', desc:'Do a clean run of every mini-game.', test:() => S.stats.perfFell && S.stats.perfBuck && S.stats.cleanSkid && S.stats.cleanHaul, cash:1500, rep:2},
-  {id:'era1', name:'Full steam', desc:'Adopt steam.', test:() => S.era >= 1, cash:0, rep:2},
-  {id:'era2', name:'Gas and diesel', desc:'Adopt gas and diesel.', test:() => S.era >= 2, cash:0, rep:2},
-  {id:'era3', name:'Fully mechanized', desc:'Adopt mechanized logging.', test:() => S.era >= 3, cash:0, rep:3},
+  {id:'era1', name:'Full steam', desc:'Reach Steam Camp.', test:() => S.era >= 1, cash:0, rep:2},
+  {id:'era2', name:'Diesel Road', desc:'Reach Diesel Road.', test:() => S.era >= 2, cash:0, rep:2},
+  {id:'era3', name:'Into the Interior', desc:'Reach the Interior with mechanized logging.', test:() => S.era >= 3, cash:0, rep:3},
 ];
 function checkAch(quiet){
   if (checkUnlocks(quiet)) render(true);
@@ -1128,16 +1132,16 @@ function mixPick(t){ const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.
 const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', haul:'Drive a load'};
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
 const MG_HELP = {
-  fell: () => `Set the face notch toward the opening, then saw the back cut with your ${['axe','crosscut saw','chainsaw','felling head'][S.era]}. Leave a thin hinge so the tree falls where you aimed.`,
+  fell: () => `Set the face notch toward the opening in the fog, then saw the back cut with your ${['axe','crosscut saw','chainsaw','felling head'][S.era]}. Leave a thin hinge so the tree falls where you aimed.`,
   buck: () => 'Click along the stem to place cuts. Sawlogs must be 8, 10, 12, 14 or 16 ft, have an 8 in top and no rot. Knots and sweep lower the grade.',
   skid: () => `Drag a turn of logs from the stump to the landing with your ${['ox team','donkey line','crawler tractor','grapple skidder'][S.era]}. Stay on the trail, miss the stumps, and go around mud.`,
-  haul: () => `Load your ${['logging sled','logging train','log truck','self-loading truck'][S.era]} and drive it to the mill. Brake on the downhills or the load runs away.`,
+  haul: () => `Load your ${['logging sled','logging train','log truck','self-loading truck'][S.era]} and drive it down to the cove mill. Brake on the downhills or the load runs away.`,
 };
 function gearLine(kind){
   const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
   const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && u.req).map(u => ({u, p:u.req.prog()})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
   const txt = (ownG.length ? `Your gear: ${ownG.map(u => u.name).join(', ')}.` : 'No gear for this job yet.') +
-    (nextG ? ` Next: ${nextG.u.name}. ${nextG.u.req.text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, ${ERAS[nextG.u.era].name.toLowerCase()} era` : ''}.` : '');
+    (nextG ? ` Next: ${nextG.u.name}. ${nextG.u.req.text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
   if ($('mgGear').textContent !== txt) $('mgGear').textContent = txt;
 }
 function openMG(kind){
@@ -1594,7 +1598,7 @@ function haulLoadUI(){
     (over ? (H.spring ? ' Overweight: harder to stop, and the scale house will fine you.' : ' Overweight: harder to stop on hills.') : ''));
   buttons([{label:'− Log', disabled: H.n <= 1, fn:() => { H.n--; haulLoadUI(); }},
            {label:'+ Log', disabled: H.n >= H.maxN, fn:() => { H.n++; haulLoadUI(); }},
-           {label:'Head for the mill', primary:true, fn:haulGo}]);
+           {label:'Head for the cove', primary:true, fn:haulGo}]);
 }
 function haulGo(){
   H.phase = 'drive'; H.n0 = H.n; haulMass();
@@ -1674,7 +1678,7 @@ function haulDraw(){
   for (let m = 500; m < H.L; m += 500){ const sx = m - camX; if (sx > -20 && sx < W + 20){ const y = H.road(m); cx.fillRect(sx - 1, y - 22, 3, 22); cx.fillText(`${(m/H.L*S.site.miles).toFixed(1)} mi`, sx, y - 26); } }
   const mx = H.L - camX + 40;
   if (mx < W + 100){ const y = H.road(H.L); cx.fillStyle = C.bark; cx.fillRect(mx - 10, y - 70, 90, 70); cx.fillStyle = C.ink; cx.fillRect(mx + 50, y - 96, 10, 26);
-    cx.fillStyle = C.panel; cx.font = '600 12px ' + font; cx.fillText('MILL', mx + 35, y - 30); }
+    cx.fillStyle = C.panel; cx.font = '600 12px ' + font; cx.fillText('COVE', mx + 35, y - 30); }
   // rig
   const sl = (H.road(H.x + 2) - H.road(H.x - 2))/4;
   drawRig(H.x - camX, H.road(H.x) - 4, Math.atan(sl), H.n);
@@ -1703,50 +1707,50 @@ const PERKS = [
   {id:'buckers',  r:'common', name:'Quick buckers',      desc:'Bucking ×1.25.', m:{buck:1.25}},
   {id:'teams',    r:'common', name:'Good teamsters',     desc:'Skidding ×1.25.', m:{skid:1.25}},
   {id:'roadcrew', r:'common', name:'Road crew',          desc:'Hauling ×1.25.', m:{haul:1.25}},
-  {id:'frugal',   r:'common', name:'Frugal cook',        desc:'Upkeep ×0.85.', m:{upkeep:.85}},
+  {id:'frugal',   r:'common', name:'Frugal cook',        desc:'Ship’s biscuit stretches further. Upkeep ×0.85.', m:{upkeep:.85}},
   {id:'grader',   r:'common', name:'Sharp-eyed grader',  desc:'Log value ×1.08.', m:{value:1.08}},
   {id:'strong',   r:'common', name:'Strong back',        desc:'Your chops and hand work ×3.', m:{click:3, hand:3}},
-  {id:'bargain',  r:'common', name:'Friendly landowner', desc:'Stumpage prices −15%.', m:{stump:.85}},
+  {id:'bargain',  r:'common', name:'Friendly land agent', desc:'Cutting rights at the land office cost 15% less.', m:{stump:.85}},
   {id:'pacer',    r:'common', name:'Pace-setter',        desc:'Pace boosts last 15 s longer.'},
   {id:'widow',    r:'rare',   name:'Widowmaker’s luck',  desc:'Felling game: a barber chair has a 50% chance to swing true and count as a perfect fall.'},
-  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
+  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
   {id:'hotsaw',   r:'rare',   name:'Hot saw',            desc:'Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you.'},
   {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
   {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn.'},
   {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
   {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
   {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
-  {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed delivery contracts carry no penalty.'},
+  {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed charter orders carry no penalty.'},
   {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
-  {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'New timber sales carry 25% more trees for the same price.', set:2},
+  {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'Land office listings carry 25% more trees for the same price.', set:2},
   {id:'domino',   r:'legendary', name:'Domino fall',     desc:'Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6).'},
   {id:'bull',     r:'legendary', name:'Bull of the woods', desc:'Pace boosts are ×2 instead of ×1.5.'},
-  {id:'golden',   r:'legendary', name:'Golden hour',     desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
-  {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled delivery contract speeds all crews +4% for the rest of the run.', set:2},
-  {id:'strict',   r:'curse',  name:'Strict scaler',      desc:'Log value −15%, but delivery contract premiums +40 points.', m:{value:.85}},
+  {id:'golden',   r:'legendary', name:'Fog lifts',       desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
+  {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled charter order speeds all crews +4% for the rest of the outpost.', set:2},
+  {id:'strict',   r:'curse',  name:'Strict scaler',      desc:'Log value −15%, but charter order premiums +40 points.', m:{value:.85}},
   {id:'scrip',    r:'curse',  name:'Company scrip',      desc:'No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.', m:{price:1.15}},
-  {id:'absentee', r:'curse',  name:'Absentee owner',     desc:'Mini-games never grant pace boosts, but every crew works ×1.2.', m:{all:1.2}},
+  {id:'absentee', r:'curse',  name:'Absentee directors', desc:'The board runs things from home. Mini-games never grant pace boosts, but every crew works ×1.2.', m:{all:1.2}},
 ];
 const RARITY = {common:{w:60, label:'Common'}, rare:{w:26, label:'Rare'}, legendary:{w:5, label:'Legendary'}, curse:{w:9, label:'Curse'}};
 const PMAP = Object.fromEntries(PERKS.map(p => [p.id, p]));
 const META = [
-  {id:'cash',    cost:4,  name:'Seed money',        desc:'Start each run with $750.'},
-  {id:'sled',    cost:5,  name:'Old sled in the barn', desc:'Start each run with an axeman, a bucker, an ox team and a logging sled.'},
+  {id:'cash',    cost:4,  name:'Board advance',     desc:'Start each outpost with $750.'},
+  {id:'sled',    cost:5,  name:'Crew on the first boat', desc:'Start each outpost with an axeman, a bucker, an ox team and a logging sled.'},
   {id:'pace',    cost:6,  name:'Camp fiddler',      desc:'Pace boosts last 10 s longer.'},
-  {id:'reroll',  cost:8,  name:'Lucky coin',        desc:'+1 draft reroll each run.'},
+  {id:'reroll',  cost:8,  name:'Lucky compass',     desc:'+1 draft reroll each outpost.'},
   {id:'foremen', cost:8,  name:'Seasoned foremen',  desc:'Every crew and machine works ×1.2.'},
-  {id:'steam',   cost:8,  name:'Steam surveyor',    desc:'Adopting steam costs 20% less.'},
-  {id:'starter', cost:10,  name:'Camp stories',      desc:'Start each run with a random common perk.'},
+  {id:'steam',   cost:8,  name:'Steam surveyor',    desc:'Reaching Steam Camp costs 20% less.'},
+  {id:'starter', cost:10,  name:'Camp stories',      desc:'Start each outpost with a random common perk.'},
   {id:'nest',    cost:12,  name:'Nest egg',          desc:'Keep 10% of your cash when you close camp.'},
-  {id:'legacy',  cost:14, name:'Chronicler',        desc:'Legacy from closing camp +15%.'},
-  {id:'lore',    cost:14, name:'Old-timers’ tales', desc:'Four more rare and legendary perks join the draft pool.'},
-  {id:'gas',     cost:12, name:'Diesel dealer',     desc:'Adopting gas and diesel costs 25% less.'},
+  {id:'legacy',  cost:14, name:'Company chronicler', desc:'Charter Shares from closing camp +15%.'},
+  {id:'lore',    cost:14, name:'Old Reach hands',   desc:'Four more rare and legendary perks join the draft pool.'},
+  {id:'gas',     cost:12, name:'Diesel dealer',     desc:'Reaching Diesel Road costs 25% less.'},
   {id:'four',    cost:20, name:'Wider choice',      desc:'Drafts show 4 perks instead of 3.'},
 ];
 const MODS = [
-  {id:'drought', name:'Drought year', desc:'Felling −10%, and summer slash fires can burn stems on the ground.', x:1.25},
-  {id:'market',  name:'Tight market', desc:'Every sale pays 15% less.', x:1.3},
-  {id:'beetle',  name:'Beetle year',  desc:'Timber sales carry 20% fewer trees.', x:1.2},
+  {id:'drought', name:'Dry summer', desc:'Felling −10%, and summer slash fires can burn stems on the ground.', x:1.25},
+  {id:'market',  name:'Dividends due', desc:'Investors back home take their cut. Every sale pays 15% less.', x:1.3},
+  {id:'beetle',  name:'Thin survey',  desc:'Land office listings carry 20% fewer trees.', x:1.2},
 ];
 const CLOSE_VOL = 250000;
 const perk = id => (S.run && S.run.perks ? S.run.perks.filter(x => x === id).length : 0);
@@ -1778,7 +1782,7 @@ function checkBounties(){
     const pay = Math.round(a.cash*.6); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
   }
   if (n) goalDrafts();
-  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this run: +${money(tot)}.`); toast({label:'Run bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this run (60% of the original reward).`});  }
+  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (60% of the original reward).`});  }
   return n;
 }
 const runMin = () => (S.t - S.run.t0)/60;
@@ -1793,10 +1797,10 @@ function runDone(kind, q){
   const need = 1 + (r.gameDrafts||0);
   if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
 }
-function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met this run'); } }
+function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met this outpost'); } }
 function contractFilled(){
   S.run.cFilled++; if (perk('snowball')) S.run.snow++;
-  if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five contracts filled');
+  if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five charter orders filled');
 }
 function perkPool(){ return PERKS.filter(p => (!p.set || meta('lore')) && (p.r === 'common' || !perk(p.id))); }
 function rollCards(q){
@@ -1833,20 +1837,20 @@ function closeCamp(){
   if (meta('sled')){ S.own.axeman = 1; S.own.bucker = 1; S.own.oxen = 1; S.own.sled = 1; }
   S.run.rerolls = meta('reroll') ? 1 : 0; snapBase(); S.run.bounty = [];
   if (meta('starter')){ const c = PERKS.filter(p => p.r === 'common'); S.run.perks.push(pick(c).id); }
-  note(`Closed camp after run ${n-1} and banked ${gain} Legacy. Run ${n} starts on a fresh home woodlot.`);
+  note(`Closed camp on outpost ${n-1} and loaded the charter ship: ${gain} Charter Shares sent home. Outpost ${n} makes landfall at a fresh cove.`);
   refreshSales(); refreshOffers(); S.hireOffer = genHire(); setSite(); newTree();
   return gain;
 }
 function startRun(mods){
   const r = S.run; if (!r.setup) return;
   r.mods = (mods || []).filter(id => MODS.some(m => m.id === id)); r.setup = false;
-  if (r.mods.length){ refreshSales(); note(`Run ${r.n} conditions: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')}. Legacy ×${modMult().toFixed(2)}.`); }
+  if (r.mods.length){ refreshSales(); note(`Outpost ${r.n} charter clauses: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')}. Charter Shares ×${modMult().toFixed(2)}.`); }
 }
 function buyMeta(id){
   const m = META.find(x => x.id === id); if (!m || meta(id) || S.meta.legacy < m.cost) return false;
   S.meta.legacy -= m.cost; S.meta.nodes.push(id);
   if (id === 'reroll') S.run.rerolls++;
-  note(`Camp lore: ${m.name}.`); toast({label:'Camp lore', name:m.name, line:m.desc});
+  note(`The board grants: ${m.name}.`); toast({label:'From the board', name:m.name, line:m.desc});
   return true;
 }
 function normalize(){
@@ -1880,36 +1884,36 @@ function renderDraft(){
     if (!pickPerk(b.dataset.p)) return;
     if (S.run.dq.length){ renderDraft(); const f = dEl.querySelector('.pcard'); if (f) f.focus(); } else closeDraft(); });
   const rr = $('dReroll'); rr.textContent = `Reroll (${S.run.rerolls})`; rr.disabled = S.run.rerolls <= 0;
-  $('dStatus').textContent = S.run.rerolls > 0 ? 'A reroll replaces all the cards.' : 'No rerolls left this run. Lucky coin in Camp lore adds one per run.';
+  $('dStatus').textContent = S.run.rerolls > 0 ? 'A reroll replaces all the cards.' : 'No rerolls left this outpost. Lucky compass from the board adds one per outpost.';
 }
 function openNewRun(){
   if (!S.run.setup) return; nrPick = []; lastFocus = document.activeElement; nrEl.hidden = false; renderNewRun();
   const f = nrEl.querySelector('.modb'); if (f) f.focus();
 }
 function renderNewRun(){
-  $('nrMods').innerHTML = MODS.map(m => `<button type="button" class="modb" data-m="${m.id}" aria-pressed="${nrPick.includes(m.id)}"><b>${m.name}</b><span>${m.desc}</span><small>Legacy ×${m.x}</small></button>`).join('');
+  $('nrMods').innerHTML = MODS.map(m => `<button type="button" class="modb" data-m="${m.id}" aria-pressed="${nrPick.includes(m.id)}"><b>${m.name}</b><span>${m.desc}</span><small>Shares ×${m.x}</small></button>`).join('');
   $('nrMods').querySelectorAll('.modb').forEach(b => b.onclick = () => { const id = b.dataset.m; nrPick = nrPick.includes(id) ? nrPick.filter(x => x !== id) : [...nrPick, id];
     renderNewRun(); const f = nrEl.querySelector(`[data-m="${id}"]`); if (f) f.focus(); });
-  $('nrMeta').textContent = `Run ${S.run.n}. Legacy multiplier ×${modMult(nrPick).toFixed(2)}` + (nrPick.length ? '.' : ' (no conditions).') +
-    ` Starting kit: ${[S.cash ? money(S.cash) : '', meta('sled') ? 'a crew on every stage' : '', ...S.run.perks.map(id => PMAP[id].name)].filter(Boolean).join(', ') || 'an axe and a 40-tree woodlot'}.`;
-  $('nrStart').textContent = nrPick.length ? `Start run ${S.run.n} (×${modMult(nrPick).toFixed(2)})` : `Start run ${S.run.n}`;
+  $('nrMeta').textContent = `Outpost ${S.run.n}. Charter Shares ×${modMult(nrPick).toFixed(2)}` + (nrPick.length ? '.' : ' (no clauses).') +
+    ` Starting kit: ${[S.cash ? money(S.cash) : '', meta('sled') ? 'a crew on every stage' : '', ...S.run.perks.map(id => PMAP[id].name)].filter(Boolean).join(', ') || 'an axe and a 40-tree cove woodlot'}.`;
+  $('nrStart').textContent = nrPick.length ? `Make landfall: outpost ${S.run.n} (×${modMult(nrPick).toFixed(2)})` : `Make landfall: outpost ${S.run.n}`;
 }
 function renderRun(){
   const r = S.run;
-  $('rbRun').textContent = `Run ${r.n}`;
+  $('rbRun').textContent = `Outpost ${r.n}`;
   list('rbMods', r.mods.join(), r.mods.map(id => `<span class="chipl">${MODS.find(m => m.id === id).name}</span>`).join(''));
   $('rbPerks').textContent = r.perks.length;
   $('rbLegacy').textContent = canClose() ? fmt(legacyNow()) : '—';
   $('rbBank').textContent = fmt(S.meta.legacy);
   const db = $('draftBtn'); db.hidden = !r.dq.length; if (r.dq.length) db.textContent = `Draft ready (${r.dq.length})`;
-  $('runTitle').textContent = `Run ${r.n}`;
-  $('runMeta').textContent = (r.mods.length ? `Conditions: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')} (Legacy ×${modMult().toFixed(2)}). ` : 'No hard conditions this run. ') +
-    'Finish mini-game runs to earn perk drafts. Crews earn them too: new eras, every 5 goals met (new achievements or repeat bounties) and every 5 filled contracts.';
+  $('runTitle').textContent = `Outpost ${r.n}`;
+  $('runMeta').textContent = (r.mods.length ? `Charter clauses: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')} (Charter Shares ×${modMult().toFixed(2)}). ` : 'No hard charter clauses on this outpost. ') +
+    'Finish mini-game runs to earn perk drafts. Crews earn them too: each push inland, every 5 goals met (new achievements or repeat bounties) and every 5 filled charter orders.';
   const eT = i => r.eraT[i] != null ? mins(r.eraT[i]) : '—';
   list('runStats', [r.n, Math.floor(runMin()), Math.round(r.deliv/1000), r.eraT.join(), r.perks.length, r.setup].join('|'),
-    `<div><span>Time this run</span><b>${mins(Math.max(0, S.t - r.t0))}</b></div><div><span>Delivered this run</span><b>${bf(r.deliv)}</b></div>
-     <div><span>Earned this run</span><b>${money(r.earned)}</b></div><div><span>Steam · gas reached</span><b>${eT(1)} · ${eT(2)}</b></div>
-     ${r.setup ? `<button class="act game" type="button" id="nrOpen">Choose this run’s conditions</button>` : ''}`,
+    `<div><span>Time at this outpost</span><b>${mins(Math.max(0, S.t - r.t0))}</b></div><div><span>Delivered this outpost</span><b>${bf(r.deliv)}</b></div>
+     <div><span>Earned this outpost</span><b>${money(r.earned)}</b></div><div><span>Steam · diesel reached</span><b>${eT(1)} · ${eT(2)}</b></div>
+     ${r.setup ? `<button class="act game" type="button" id="nrOpen">Sign this outpost’s charter</button>` : ''}`,
     box => { const b = box.querySelector('#nrOpen'); if (b) b.onclick = openNewRun; });
   const counts = {}; r.perks.forEach(id => counts[id] = (counts[id]||0) + 1);
   const ids = Object.keys(counts).sort((a,b) => ['legendary','rare','curse','common'].indexOf(PMAP[a].r) - ['legendary','rare','curse','common'].indexOf(PMAP[b].r));
@@ -1921,24 +1925,24 @@ function renderRun(){
   const ok = canClose(), L = legacyNow();
   const key = ok ? `ok|${L}|${closeArmed}` : `no|${Math.floor(r.deliv/CLOSE_VOL*100)}`;
   list('closeBox', key, ok
-    ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Legacy</span></div>
-       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${r.mods.length ? ` × ${modMult().toFixed(2)} conditions` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
-       ${closeArmed ? `<div class="confirm"><b>Close camp for good?</b> You lose cash, equipment, tracts, contracts, piles, the era and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Legacy.
-         <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Close camp · bank ${fmt(L)} Legacy</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
+    ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Charter Shares</span></div>
+       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
+       ${closeArmed ? `<div class="confirm"><b>Strip the outpost and sail?</b> You leave behind cash, equipment, tracts, orders, piles, the company stage and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Charter Shares.
+         <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Load the ship · send ${fmt(L)} shares home</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
        : `<div class="cbtns"><button class="act" type="button" id="closeArm">Close camp…</button></div>`}`
-    : `<p class="meta">Available once you adopt steam or deliver ${bf(CLOSE_VOL)} this run.</p><div class="bar"><i style="width:${Math.min(100, r.deliv/CLOSE_VOL*100).toFixed(1)}%"></i></div><p class="spec">${bf(r.deliv)} of ${bf(CLOSE_VOL)}</p>`,
+    : `<p class="meta">The charter ship will take a cargo once you reach Steam Camp or deliver ${bf(CLOSE_VOL)} from this outpost.</p><div class="bar"><i style="width:${Math.min(100, r.deliv/CLOSE_VOL*100).toFixed(1)}%"></i></div><p class="spec">${bf(r.deliv)} of ${bf(CLOSE_VOL)}</p>`,
     box => {
       const a = box.querySelector('#closeArm'); if (a) a.onclick = () => { closeArmed = true; render(); const y = $('closeYes'); if (y) y.focus(); };
       const n = box.querySelector('#closeNo'); if (n) n.onclick = () => { closeArmed = false; render(); const z = $('closeArm'); if (z) z.focus(); };
       const y = box.querySelector('#closeYes'); if (y) y.onclick = () => { closeArmed = false; const g = closeCamp(); if (!g && !S.run.setup) return; save(); boot(); openNewRun(); };
     });
   // meta tree
-  $('legMeta').textContent = `${fmt(S.meta.legacy)} Legacy to spend · ${fmt(S.meta.total)} earned over ${S.runs.length} closed ${S.runs.length === 1 ? 'camp' : 'camps'}. Camp lore is permanent.`;
+  $('legMeta').textContent = `${fmt(S.meta.legacy)} Charter Shares to spend · ${fmt(S.meta.total)} sent home over ${S.runs.length} closed ${S.runs.length === 1 ? 'camp' : 'camps'}. What the board grants is permanent, and every grant is a step toward founding Landfall City.`;
   list('metaList', S.meta.nodes.join() + '|' + META.map(m => S.meta.legacy >= m.cost ? 1 : 0).join(''), META.map(m => `<div class="row"><div class="info"><b>${m.name}</b><p>${m.desc}</p></div>
-    <div class="btns">${meta(m.id) ? '<span class="chipl ownd">Owned</span>' : `<button class="buy" type="button" data-meta="${m.id}" ${S.meta.legacy < m.cost ? 'disabled' : ''}>${m.cost} Legacy</button>`}</div></div>`).join(''),
+    <div class="btns">${meta(m.id) ? '<span class="chipl ownd">Owned</span>' : `<button class="buy" type="button" data-meta="${m.id}" ${S.meta.legacy < m.cost ? 'disabled' : ''}>${m.cost} shares</button>`}</div></div>`).join(''),
     box => box.querySelectorAll('[data-meta]').forEach(b => b.onclick = () => { if (buyMeta(b.dataset.meta)){ render(true); const nx = $('metaList').querySelector('.buy:not(:disabled)'); if (nx) nx.focus(); } }));
-  list('pastRuns', S.runs.map(x => x.n + ':' + x.legacy).join(), S.runs.length ? S.runs.map(x => `<div><span>Run ${x.n}${x.mods.length ? ' · ' + x.mods.map(id => MODS.find(m => m.id === id)?.name).join(', ') : ''}</span><span><b>${x.min} min</b> · ${ERAS[x.era].name} · ${bf(x.deliv)} · <b>+${x.legacy}</b> Legacy</span></div>`).join('')
-    : '<p class="empty">No camps closed yet.</p>');
+  list('pastRuns', S.runs.map(x => x.n + ':' + x.legacy).join(), S.runs.length ? S.runs.map(x => `<div><span>Outpost ${x.n}${x.mods.length ? ' · ' + x.mods.map(id => MODS.find(m => m.id === id)?.name).join(', ') : ''}</span><span><b>${x.min} min</b> · ${ERAS[x.era].name} · ${bf(x.deliv)} · <b>+${x.legacy}</b> shares</span></div>`).join('')
+    : '<p class="empty">No camps closed yet. The charter ship is waiting at the cove.</p>');
 }
 function bindRogue(){
   $('draftBtn').onclick = openDraft;
@@ -1980,7 +1984,7 @@ function boot(){
   if (!S.forSale.length) refreshSales();
   if (!S.offers.length && !S.contract) refreshOffers();
   if (!S.hireOffer && !hireActive()) S.hireOffer = genHire();
-  if (!S.log.length) note('Set up camp on a 40-tree home woodlot with an axe and no crew. Chop, buck, skid and haul by hand to earn your first dollars.');
+  if (!S.log.length) note('Made landfall on the Fogbound Coast with an axe and no crew. Forty trees stand behind the cove. Chop, buck, skid and haul by hand to earn the company its first dollars.');
   setSite(); if (S.hp == null) newTree();
   renderLedger(); render(true);
 }
