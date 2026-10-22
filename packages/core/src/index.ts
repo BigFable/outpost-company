@@ -1,8 +1,17 @@
 /**
- * @outpost/core — pure game rules. Empty until tech plan stage M2, when the
- * prototype's formulas move here. Keep this package free of DOM, wall-clock
- * time and unseeded randomness.
+ * @outpost/core — pure game rules. No DOM, no wall-clock time, no unseeded
+ * randomness (lint enforced).
+ *
+ * Stage M2: the prototype's formulas and content tables live here. The
+ * prototype consumes this package as `window.Core`, a bundle inlined into
+ * prototype/timberline.html by `pnpm run core:inline` (see packages/core/README.md).
  */
+export * from './content';
+export * from './achievements';
+export * from './formulas';
+export * from './generators';
+export * from './rng';
+export { deepFreeze } from './freeze';
 
 /** Clamp a number into [min, max]. */
 export function clamp(value: number, min: number, max: number): number {
