@@ -49,6 +49,8 @@ Each step prints PASS/FAIL. You should see `ALL PASS` and `BALANCE CHECK PASSED`
 | `npm run balance:check` | Re-runs the bot and compares it with the golden baseline (`tests/balance/baseline.json`), PASS/FAIL per metric |
 | `npm run balance:record` | Re-records the baseline. Only after the owner accepts a balance change |
 | `npm run desktop:smoke` | Launches the desktop app hidden and checks it loads |
+| `npm run core:inline` | Rebuilds `packages/core` into the prototype's inlined `window.Core` region (run after changing core) |
+| `npm run core:check` | Fails if the prototype's inlined core is out of date |
 | `npm run check` | Everything above that CI runs |
 
 This is a pnpm workspace: install with `pnpm install` (plain `npm install` stops with a message saying so). Every other command works with either `npm run` or `pnpm run`.
@@ -59,10 +61,11 @@ Open a Claude Code session on this repo and talk to the **master dev** (`CLAUDE.
 ## Layout
 | Path | What |
 | --- | --- |
-| `prototype/` | The single-file browser prototype (served unchanged as the `legacy` entry) |
+| `prototype/` | The single-file browser prototype (served unchanged as the `legacy` entry). Its formulas and data come from `packages/core`, inlined as `window.Core` |
 | `apps/web/` | Vite app for the browser |
 | `apps/desktop/` | Electron shell (Steam integration comes in week 2) |
-| `packages/core`, `skills`, `ui`, `platform` | New TypeScript packages, empty until the logic moves out of the prototype (tech plan M2+) |
+| `packages/core` | Pure rules: Logging formulas, generators and content as data (tech plan M2; see its README) |
+| `packages/skills`, `ui`, `platform` | New TypeScript packages, empty until later stages (M3+) |
 | `sim/` | Headless balance simulation |
 | `tests/` | Smoke tests, `tests/web` (legacy entry), `tests/balance` (golden baseline and check) |
 | `docs/research/` | Market, setting and skills, tech plan, simulation results |

@@ -22,6 +22,8 @@ jobs:
         run: pnpm run lint
       - name: Unit tests (vitest)
         run: pnpm run test:unit
+      - name: Prototype's inlined core matches packages/core
+        run: pnpm run core:check
       - name: Smoke tests (prototype in jsdom)
         run: pnpm test
       - name: Web build serves the legacy prototype

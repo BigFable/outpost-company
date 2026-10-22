@@ -13,6 +13,8 @@
     "desktop": "pnpm run build && pnpm --filter @outpost/desktop start",
     "desktop:smoke": "pnpm run build && pnpm --filter @outpost/desktop smoke",
     "typecheck": "tsc -b",
+    "core:inline": "node scripts/inline-core.mjs",
+    "core:check": "node scripts/inline-core.mjs --check",
     "lint": "eslint .",
     "test": "node tests/smoke_rogue.js && node tests/smoke_rogue2.js",
     "test:unit": "vitest run",
@@ -22,7 +24,7 @@
     "sim:lpm": "npm run sim:build && node sim/sim_rogue.js 8 lpm",
     "balance:check": "node tests/balance/check.cjs",
     "balance:record": "node tests/balance/record.cjs",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm test && pnpm run test:web && pnpm run balance:check"
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm run core:check && pnpm test && pnpm run test:web && pnpm run balance:check"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
