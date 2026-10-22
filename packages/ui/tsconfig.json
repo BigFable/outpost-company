@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "../../node_modules/.cache/tsc/ui", "rootDir": "src", "lib": ["ES2022", "DOM", "DOM.Iterable"] },
+  "include": ["src"]
+}

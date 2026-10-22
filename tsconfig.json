@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/skills" },
+    { "path": "packages/ui" },
+    { "path": "packages/platform" },
+    { "path": "apps/web" }
+  ]
+}

@@ -3,3 +3,6 @@ sim/game*.html
 sim/*.txt
 .DS_Store
 .claude/worktrees/
+dist/
+*.tsbuildinfo
+.claude/worktrees/

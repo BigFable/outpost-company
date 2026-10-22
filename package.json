@@ -2,13 +2,38 @@
   "name": "outpost-company",
   "private": true,
   "description": "Idle roguelite skilling game. Prototype: Timberline (logging skill).",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
+    "preinstall": "node scripts/check-package-manager.cjs",
+    "dev": "pnpm --filter @outpost/web dev",
+    "build": "pnpm --filter @outpost/web build",
+    "desktop": "pnpm run build && pnpm --filter @outpost/desktop start",
+    "desktop:smoke": "pnpm run build && pnpm --filter @outpost/desktop smoke",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
     "test": "node tests/smoke_rogue.js && node tests/smoke_rogue2.js",
+    "test:unit": "vitest run",
+    "test:web": "pnpm run build && node tests/web/serve_legacy.cjs",
     "sim:build": "python3 sim/build.py prototype/timberline.html sim/game_rogue.html",
     "sim": "npm run sim:build && node sim/sim_rogue.js 8 gas",
-    "sim:lpm": "npm run sim:build && node sim/sim_rogue.js 8 lpm"
+    "sim:lpm": "npm run sim:build && node sim/sim_rogue.js 8 lpm",
+    "balance:check": "node tests/balance/check.cjs",
+    "balance:record": "node tests/balance/record.cjs",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm test && pnpm run test:web && pnpm run balance:check"
   },
   "devDependencies": {
-    "jsdom": "24.1.3"
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.12.0",
+    "eslint-plugin-boundaries": "7.2.0",
+    "globals": "17.13.0",
+    "jsdom": "24.1.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vite": "8.1.6",
+    "vitest": "5.0.3"
   }
 }
