@@ -12,7 +12,7 @@ Status values: done · in progress · next · later.
 | 6 | Playtest round with a small group | later | Bot checks balance targets on every change |
 | 7 | Steam page, trailer, demo; aim for a 2027 Next Fest (June or October) | later | Needs 2,000+ wishlists going in |
 | 8 | Launch on Steam at $9.99 | later | Months 10–14 by the research estimate |
-| 9 | Three-year update cycle | later | Plan in `docs/service-plan.md` |
+| 9 | Three-year update cycle | later | Draft plan in `docs/service-plan.md`: 8-skill 1.0 scope, pre-launch gates, Early Access vs 1.0, quarterly cadence for years 1-3. Awaiting owner calls on launch path and paid vs free expansions |
 
 ## Open tuning items
 - Run bounties drive much of the run-2 speed-up; lower the 60% rate so perks and meta matter more.
