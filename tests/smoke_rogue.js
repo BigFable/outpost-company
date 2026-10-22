@@ -15,8 +15,10 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  let dom=mk({'timberline-v2':JSON.stringify(old)}); await sleep(300);
  let w=dom.window,d=w.document;
  const keyS=()=>JSON.parse(w.localStorage.getItem('timberline-v2')||'null');
- ok(d.getElementById('rbRun').textContent==='Run 1','old save loads as Run 1');
+ ok(d.getElementById('rbRun').textContent==='Outpost 1','old save loads as Outpost 1');
  ok(/12\.3K/.test(d.getElementById('runStats').textContent),'old save delivered carried into run stats');
+ ok(d.title==='Outpost Company' && /Outpost Company/.test(d.querySelector('.brand h1').textContent),'re-theme: title and brand are Outpost Company');
+ ok(/Charter Shares/.test(d.getElementById('legacyPanel').textContent) && !/Timberline/.test(d.body.textContent),'re-theme: Charter Shares wording, no Timberline left');
  dom.window.close();
 
  // 2. fresh game: drive the felling game with pointer events
@@ -52,17 +54,17 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(!!d.getElementById('closeYes'),'two-step confirm appears');
  d.getElementById('closeYes').click(); await sleep(300);
  ok(!d.getElementById('newrun').hidden,'new-run modifier modal opens');
- ok(d.getElementById('rbRun').textContent==='Run 2','run counter = Run 2');
+ ok(d.getElementById('rbRun').textContent==='Outpost 2','run counter = Outpost 2');
  ok(/^6$/.test(d.getElementById("rbBank").textContent),'legacy banked: '+d.getElementById('rbBank').textContent);
  ok(d.getElementById('tCash').textContent==='$0','cash reset');
- ok(/Home woodlot/.test(d.getElementById('tName').textContent),'fresh home woodlot');
+ ok(/Cove woodlot/.test(d.getElementById('tName').textContent),'fresh cove woodlot');
  // pick modifiers
  const mods=[...d.querySelectorAll('#nrMods .modb')]; ok(mods.length===3,'3 modifiers');
  mods[1].click(); d.querySelector('#nrMods [data-m="beetle"]').click();
  ok(/1\.56/.test(d.getElementById('nrStart').textContent),'modifier multiplier shown: '+d.getElementById('nrStart').textContent);
  d.getElementById('nrStart').click(); await sleep(250);
  ok(d.getElementById('newrun').hidden,'run started');
- ok(/Tight market/.test(d.getElementById('rbMods').textContent)&&/Beetle/.test(d.getElementById('rbMods').textContent),'modifiers shown in run bar');
+ ok(/Dividends due/.test(d.getElementById('rbMods').textContent)&&/Thin survey/.test(d.getElementById('rbMods').textContent),'modifiers shown in run bar');
  // buy meta node
  const buy=d.querySelector('#metaList [data-meta="sled"]'); ok(buy && !buy.disabled,'meta node affordable');
  buy.click(); await sleep(250);
