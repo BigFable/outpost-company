@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "../../node_modules/.cache/tsc/web", "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": ["node"] },
+  "include": ["src", "vite.config.ts", "legacy-plugin.ts"]
+}
