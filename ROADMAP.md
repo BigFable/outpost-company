@@ -8,6 +8,7 @@ Status values: done · in progress · next · later.
 | 2 | Decisions: engine, business model, per-skill vs global prestige, working title | in progress | Decided: TypeScript + Electron; $9.99 full experience; 3-year support. Also decided: per-skill prestige, Early Access ($7.99) then 1.0 ($9.99), all updates free. Open: working title, what the 3-year clock counts from |
 | 3 | Re-theme Logging to Outpost Company (names, regions as biomes, close-camp fiction) | done | Display text only; balance identical. Owner to confirm era years, Charter Shares, species names |
 | 3b | Build foundation (tech plan M0–M1): balance baseline, TypeScript workspace, Vite, Electron shell, CI | done | `pnpm run check` runs everything CI runs |
+| 4a | Core extraction (tech plan M2): formulas, generators and content data in packages/core, inlined into the prototype | done | Behavior byte-identical; 58 unit tests. Next: M3 (game state, tick, seeded RNG streams) |
 | 4 | Electron + Steam go/no-go spike (achievements, cloud save on Windows, Mac, Steam Deck) | later | Week 2 of the tech plan |
 | 5 | Vertical slice: shared core + Logging + Sawmilling + Raising + roguelite layer | later | About 10 weeks after the stack decision |
 | 6 | Playtest round with a small group | later | Bot checks balance targets on every change |
