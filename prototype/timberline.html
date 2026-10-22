@@ -469,12 +469,38 @@ const UPG_REQ = {
   shop:       R('Finish 60 runs of any job', runs(...ALL), 60),
   telematics: R('Finish 100 runs of any job', runs(...ALL), 100),
 };
-UPG.forEach(u => { u.req = UPG_REQ[u.id]; });
+// the crews' route: a slower idle path to the same improvements, from milestones the company reaches without mini-games.
+// mini-game targets stay the faster route; improvements whose only effect is inside a mini-game have no crews' route.
+const achN = () => S.ach.length;
+const UPG_ALT = {
+  swamper:    R('Fill 6 charter orders', st('contracts'), 6),
+  hay:        R('Work through 3 winters', st('winters'), 3),
+  wedges:     R('Finish 12 tracts', st('tracts'), 12),
+  cook:       R('Fill 30 charter orders', st('contracts'), 30),
+  grade:      R('Earn 36 achievements', achN, 36),
+  bunks:      R('Finish 60 tracts', st('tracts'), 60),
+  corduroy:   R('Work through 15 winters', st('winters'), 15),
+  icerd:      R('Work through 22 winters', st('winters'), 22),
+  smith:      R('Deliver 8 million bd ft in all', st('deliv'), 8e6),
+  scribner:   R('Fill 60 charter orders', st('contracts'), 60),
+  skyline:    R('Finish 120 tracts', st('tracts'), 120),
+  airbrakes:  R('Deliver 75 million bd ft in all', st('deliv'), 7.5e7),
+  radios:     R('Earn 46 achievements', achN, 46),
+  shop:       R('Fill 100 charter orders', st('contracts'), 100),
+  optimize:   R('Deliver 500 million bd ft in all', st('deliv'), 5e8),
+  gps:        R('Finish 400 tracts', st('tracts'), 400),
+  telematics: R('Fill 250 charter orders', st('contracts'), 250),
+};
+// best progress across both routes, as [current, target] of whichever is closer to done
+const reqProg = u => { const a = u.req ? u.req.prog() : [0,1], b = u.alt ? u.alt.prog() : null;
+  return b && b[0]/b[1] > a[0]/a[1] ? b : a; };
+const reqText = u => u.req.text + (u.alt ? ', or ' + u.alt.text.charAt(0).toLowerCase() + u.alt.text.slice(1) : '');
+UPG.forEach(u => { u.req = UPG_REQ[u.id]; u.alt = UPG_ALT[u.id] || null; });
 function checkUnlocks(quiet){
   const got = [];
   for (const u of UPG){
     if (has(u.id) || !u.req || u.era > S.era) continue;
-    const [c,t] = u.req.prog(); if (c < t) continue;
+    const [c,t] = reqProg(u); if (c < t) continue;
     S.upg.push(u.id); got.push(u); note(`Improvement unlocked: ${u.name}.`);
   }
   if (!quiet) got.forEach(u => toast({label:'Improvement unlocked', name:u.name, line:u.desc}));
@@ -544,7 +570,7 @@ const baseRate = stage => EQ.reduce((a,e) => e.stage === stage ? a + e.rate*own(
 const vmult = () => umult('value') * pmult('value');
 const cmult = () => umult('click') * pmult('click');
 const boostF = () => perk('bull') ? 2 : 1.5;
-const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
+const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : ` (up to ${BOOST_STAGES} stages at a time)`);
 function rate(stage){ // effective per second, before payroll efficiency
   let r = baseRate(stage) * seasonF(stage) * ((S.boost[stage]||0) > S.t ? boostF() : 1);
   if (stage === 'skid') r *= slopeF();
@@ -900,10 +926,10 @@ function renderCompany(){
     const r = Math.min(1, S.cash/ec), net = (S.ema - S.upEma)*60;
     $('eraBar').style.width = (r*100).toFixed(1)+'%';
     $('eraPct').textContent = r >= 1 ? 'You can afford it now.' : `${Math.round(r*100)}% saved` + (net > 0 ? ` · about ${mins((ec - S.cash)/net*60)} at your current net income` : ''); }
-  const next = UPG.filter(u => !has(u.id) && u.req && u.era <= S.era + 1).map(u => { const [c,t] = u.req.prog(); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
+  const next = UPG.filter(u => !has(u.id) && u.req && u.era <= S.era + 1).map(u => { const [c,t] = reqProg(u); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
     .sort((a,b) => (a.later - b.later) || (b.r - a.r)).slice(0,6);
   list('upgs', next.map(o => o.u.id + o.later).join(), next.length ? next.map(o => `<div class="goal"><div class="line"><b>${o.u.name}</b><span class="spec" data-uc="${o.u.id}"></span></div>
-    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + o.u.req.text.charAt(0).toLowerCase() + o.u.req.text.slice(1) : o.u.req.text}.</p>
+    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + reqText(o.u).charAt(0).toLowerCase() + reqText(o.u).slice(1) : reqText(o.u)}.</p>
     <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this stage of the company is unlocked.</p>');
   next.forEach(o => { const b = document.querySelector(`[data-ub="${o.u.id}"]`), c = document.querySelector(`[data-uc="${o.u.id}"]`);
     if (b) b.style.width = (o.r*100).toFixed(1)+'%'; if (c) c.textContent = `${fmt(Math.min(o.c, o.t))} / ${fmt(o.t)}`; });
@@ -1125,8 +1151,14 @@ function buttons(list){
     el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; box.appendChild(el); });
 }
 const boostLen = () => (has('radios') ? 45 : 30) + 15*perk('pacer') + (meta('pace') ? 10 : 0);
-function grantBoost(stage){ if (perk('absentee')) return; (perk('golden') ? ['fell','buck','skid','haul'] : [stage]).forEach(k => {
-  S.boost[k] = Math.min(S.t + 120, Math.max(S.boost[k]||0, S.t) + boostLen()); }); }
+// pace boosts: at most BOOST_STAGES stages run boosted at once (Fog lifts ignores the limit), and a stage banks at most BOOST_BANK s,
+// so active play stays an accelerator (1.5–2× a casual player) rather than a multiplier on everything
+const BOOST_STAGES = 2, BOOST_BANK = 120;
+function grantBoost(stage){ if (perk('absentee')) return;
+  if (!perk('golden')){ const on = ['fell','buck','skid','haul'].filter(k => k !== stage && (S.boost[k]||0) > S.t).sort((a,b) => S.boost[a] - S.boost[b]);
+    while (on.length >= BOOST_STAGES) S.boost[on.shift()] = S.t; }
+  (perk('golden') ? ['fell','buck','skid','haul'] : [stage]).forEach(k => {
+  S.boost[k] = Math.min(S.t + BOOST_BANK, Math.max(S.boost[k]||0, S.t) + boostLen()); }); }
 function mixPick(t){ const tot = t.mix.reduce((a,m) => a+m[1], 0); let r = Math.random()*tot;
   for (const [id,w] of t.mix){ r -= w; if (r <= 0) return id; } return t.mix[0][0]; }
 const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', haul:'Drive a load'};
@@ -1139,9 +1171,9 @@ const MG_HELP = {
 };
 function gearLine(kind){
   const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
-  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && u.req).map(u => ({u, p:u.req.prog()})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
+  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && u.req).map(u => ({u, p:reqProg(u)})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
   const txt = (ownG.length ? `Your gear: ${ownG.map(u => u.name).join(', ')}.` : 'No gear for this job yet.') +
-    (nextG ? ` Next: ${nextG.u.name}. ${nextG.u.req.text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
+    (nextG ? ` Next: ${nextG.u.name}. ${reqText(nextG.u)} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
   if ($('mgGear').textContent !== txt) $('mgGear').textContent = txt;
 }
 function openMG(kind){
@@ -1762,9 +1794,14 @@ const modMult = mods => (mods || S.run.mods).reduce((m,id) => m * (MODS.find(x =
 const eraCost = i => ERAS[i] ? Math.round(ERAS[i].cost * (i === 1 && meta('steam') ? .8 : 1) * (i === 2 && meta('gas') ? .75 : 1)) : Infinity;
 // √(delivered ÷ 20,000) up to 10M bd ft (≈22), then +8 per tenfold beyond, so a long run pays but a fresh run pays better per minute
 const legacyBase = d => d <= 1e7 ? Math.sqrt(d/20000) : Math.sqrt(500) + 8*Math.log10(d/1e7);
-const legacyNow = () => Math.floor(legacyBase(S.run.deliv) * modMult() * (meta('legacy') ? 1.15 : 1));
+// every push inland this outpost adds ERA_SHARES before multipliers, so closing after more eras pays fairly even on a short outpost
+const ERA_SHARES = 8;
+const legacyNow = () => Math.floor((legacyBase(S.run.deliv) + ERA_SHARES*S.era) * modMult() * (meta('legacy') ? 1.15 : 1));
 const canClose = () => S.era >= 1 || S.run.deliv >= CLOSE_VOL;
-// repeat bounties: achievements already earned pay 60% of their cash again once per run when this run's own numbers reach the target
+// repeat bounties: achievements already earned pay BOUNTY_RATE of their cash again once per run when this run's own numbers reach the target,
+// up to BOUNTY_CAP of this outpost's next push inland, so perks and the board's support (not old rewards) drive most of the run-to-run speed-up
+const BOUNTY_RATE = .25, BOUNTY_CAP = .2;
+const bountyCap = () => Math.round(BOUNTY_CAP * (ERAS[S.era+1] ? eraCost(S.era+1) : eraCost(S.era)));
 const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul'];
 function snapBase(){ const b = {earned:S.earned, felled:S.felled}; BASEK.forEach(k => b[k] = S.stats[k] || 0); S.run.base = b; }
 function metricOf(id){
@@ -1779,10 +1816,11 @@ function checkBounties(){
     const k = metricOf(a.id); if (!k) continue;
     const [cur, tgt] = a.prog(); const base = k === 'crew' ? 0 : (r.base[k] || 0);
     if (cur - base < tgt) continue;
-    const pay = Math.round(a.cash*.6); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
+    const pay = Math.max(0, Math.min(Math.round(a.cash*BOUNTY_RATE), bountyCap() - (r.bountyPaid||0)));
+    r.bounty.push(a.id); r.goals = (r.goals||0) + 1; r.bountyPaid = (r.bountyPaid||0) + pay; S.cash += pay; tot += pay; n++;
   }
   if (n) goalDrafts();
-  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (60% of the original reward).`});  }
+  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (${Math.round(BOUNTY_RATE*100)}% of the original reward, up to ${money(bountyCap())} an outpost at this stage).`});  }
   return n;
 }
 const runMin = () => (S.t - S.run.t0)/60;
@@ -1926,7 +1964,7 @@ function renderRun(){
   const key = ok ? `ok|${L}|${closeArmed}` : `no|${Math.floor(r.deliv/CLOSE_VOL*100)}`;
   list('closeBox', key, ok
     ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Charter Shares</span></div>
-       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
+       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${S.era ? ` + ${ERA_SHARES*S.era} for ${S.era} ${S.era === 1 ? 'push' : 'pushes'} inland` : ''}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
        ${closeArmed ? `<div class="confirm"><b>Strip the outpost and sail?</b> You leave behind cash, equipment, tracts, orders, piles, the company stage and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Charter Shares.
          <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Load the ship · send ${fmt(L)} shares home</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
        : `<div class="cbtns"><button class="act" type="button" id="closeArm">Close camp…</button></div>`}`

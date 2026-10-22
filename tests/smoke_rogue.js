@@ -49,13 +49,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  w.dispatchEvent(new w.Event('pagehide')); const st=keyS(); st.run.deliv=900000; st.stats.deliv=900000; st.cash=12345; st.era=1; st.run.era=1;
  dom.window.close();
  dom=mk({'timberline-v2':JSON.stringify(st)}); await sleep(400); w=dom.window; d=w.document;
- ok(/^6$/.test(d.getElementById("rbLegacy").textContent),'projected legacy shown: '+d.getElementById('rbLegacy').textContent);
+ ok(/^14$/.test(d.getElementById("rbLegacy").textContent),'projected legacy shown: '+d.getElementById('rbLegacy').textContent);
  d.getElementById('closeArm').click(); await sleep(250);
  ok(!!d.getElementById('closeYes'),'two-step confirm appears');
  d.getElementById('closeYes').click(); await sleep(300);
  ok(!d.getElementById('newrun').hidden,'new-run modifier modal opens');
  ok(d.getElementById('rbRun').textContent==='Outpost 2','run counter = Outpost 2');
- ok(/^6$/.test(d.getElementById("rbBank").textContent),'legacy banked: '+d.getElementById('rbBank').textContent);
+ ok(/^14$/.test(d.getElementById("rbBank").textContent),'legacy banked: '+d.getElementById('rbBank').textContent);
  ok(d.getElementById('tCash').textContent==='$0','cash reset');
  ok(/Cove woodlot/.test(d.getElementById('tName').textContent),'fresh cove woodlot');
  // pick modifiers
@@ -72,7 +72,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const s2=JSON.parse(w.localStorage.getItem('timberline-v2')); // may be stale until save; force pagehide
  w.dispatchEvent(new w.Event('pagehide'));
  const s3=JSON.parse(w.localStorage.getItem('timberline-v2'));
- ok(s3.meta.nodes.includes('sled') && s3.meta.legacy===6-5 && s3.run.mods.length===2 && s3.v===2,'saved meta+mods, v=2');
+ ok(s3.meta.nodes.includes('sled') && s3.meta.legacy===14-5 && s3.run.mods.length===2 && s3.v===2,'saved meta+mods, v=2');
  ok(s3.ach.length>0 && s3.upg.includes !== undefined,'achievements kept');
  // skid game smoke with 4-log perk absent: just open + choose + keys
  dom.window.close();
