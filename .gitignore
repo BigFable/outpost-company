@@ -5,4 +5,3 @@ sim/*.txt
 .claude/worktrees/
 dist/
 *.tsbuildinfo
-.claude/worktrees/
