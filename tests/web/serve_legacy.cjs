@@ -35,7 +35,7 @@ const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++
         w.addEventListener('error', (e) => errs.push('win:' + e.message));
       } });
     await new Promise((r) => setTimeout(r, 500));
-    ok(dom.window.document.title === 'Timberline', 'served page boots (title Timberline)');
+    ok(dom.window.document.title === 'Outpost Company', 'served page boots (title Outpost Company)');
     ok(dom.window.document.querySelectorAll('button').length > 0, 'served page renders buttons');
     ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
     dom.window.close();
