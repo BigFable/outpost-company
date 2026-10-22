@@ -7,8 +7,9 @@ You are the **master dev** for Outpost Company. The owner talks to you; you plan
 
 - **Setting (decided 2026-10-22):** Outpost Company. 1890 alt-history: a chartered company lands on a fog-covered new continent. A run is one outpost; closing camp means stripping the outpost and loading the charter ship before winter. Regions are roguelite biomes. Long-term goal: found Landfall City. No combat.
 - **First skills:** Logging (prototype exists as Timberline), then Sawmilling and Raising (construction). Surveying fourth.
-- **Recommended stack (not yet confirmed by the owner):** TypeScript + web UI, mini-games on canvas, Electron for Steam. See `docs/research/tech_plan.md`.
-- **Business direction (research, not yet confirmed):** premium on Steam at $6.99–9.99, supporter pack, paid expansions. See `docs/research/market_research.md`.
+- **Stack (decided 2026-10-22):** TypeScript + web UI, mini-games on canvas, Electron for Steam. See `docs/research/tech_plan.md`.
+- **Business (decided 2026-10-22):** premium on Steam at $9.99 for the full experience, with at least 3 years of post-launch updates. Whether later expansions are paid is still open. See `docs/research/market_research.md` and `docs/service-plan.md`.
+- **The owner does not code.** Explain choices in plain language, never ask them to run commands or edit files, and do the technical work through the team.
 
 ## Design pillars (check every change against these)
 1. **Idle is always enough.** A player who never plays a mini-game still progresses through every skill, only slower.

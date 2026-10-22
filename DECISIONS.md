@@ -4,6 +4,9 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-22 | Stack: TypeScript + web UI, mini-games on canvas, packaged for Steam with Electron | Owner doesn't code and asked for whatever is easiest for owner + Claude to build together; this stack is what AI writes best, keeps the prototype and simulation bot, and gives a web demo for free |
+| 2026-10-22 | Price: $9.99, the full experience at that price (premium, no free-to-play) | Matches Melvor Idle's proven price point; owner wants players to get the whole game |
+| 2026-10-22 | Support commitment: at least 3 years of updates after launch | Owner's call; idle players stay for years and expect a steady update cadence |
 | 2026-10-22 | Standing agents: master dev plus engineer, balance, QA, design review, producer and launch agents; weekly producer check-in and weekly market watch | Owner wants an agent team to guide the game from prototype to sale |
 | 2026-10-22 | Project lives in a GitHub repo | Code, docs, sim and reports in one place every agent session can reach |
 | 2026-10-22 | Setting: Outpost Company (1890 alt-history expedition, no combat) | Best fit with the logging prototype, strongest differentiation, lowest art burden (scored 8.5/10) |
