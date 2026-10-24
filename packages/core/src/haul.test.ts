@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Season } from './content';
 import {
   genHaulTrack, haulBonus, haulDrive, haulGhostAt, haulGrade, haulPar, haulRules, haulSpill, haulStepCar, newHaulCar,
-  HAUL_FLAT, HAUL_LEN, HAUL_MAX_GRADE, HAUL_START, HAUL_STORE_RUNAWAY,
+  HAUL_CLEAN_BONUS, HAUL_FLAT, HAUL_LEN, HAUL_LOAD_BONUS, HAUL_PACE_MAX, HAUL_PACE_MIN, HAUL_MAX_GRADE, HAUL_START, HAUL_STORE_RUNAWAY,
 } from './haul';
 import { scripted, simLcg } from './test-rng';
 
@@ -106,14 +106,22 @@ describe('haul bonus', () => {
     const base = { limit: 10, spill: 0, par: 20 };
     const half = haulBonus({ ...base, n0: 5, n: 5, t: 25 }), full = haulBonus({ ...base, n0: 10, n: 10, t: 25 });
     expect(full.total).toBeGreaterThan(half.total);
-    expect(full.load).toBe(0.25);
+    expect(full.load).toBe(0.15);
     const fast = haulBonus({ ...base, n0: 10, n: 10, t: 16 }), par = haulBonus({ ...base, n0: 10, n: 10, t: 20 });
-    expect(par.pace).toBeCloseTo(0.1, 12);
-    expect(fast.pace).toBeCloseTo(0.3, 12);
+    expect(par.pace).toBeCloseTo(0.06, 12);
+    expect(fast.pace).toBeCloseTo(0.18, 12);
     expect(fast.total).toBeGreaterThan(par.total);
     const spilled = haulBonus({ ...base, n0: 10, n: 7, spill: 3, t: 16 });
     expect(spilled.clean).toBe(0);
-    expect(spilled.pace).toBeCloseTo(0.15, 12);
+    expect(spilled.pace).toBeCloseTo(0.09, 12);
+  });
+  it('caps trimmed to about 60% (owner 2026-10-24): full load +15%, under par +6% to +18%, clean +10% unchanged', () => {
+    expect([HAUL_LOAD_BONUS, HAUL_PACE_MIN, HAUL_PACE_MAX, HAUL_CLEAN_BONUS]).toEqual([0.15, 0.06, 0.18, 0.1]);
+    const best = haulBonus({ n0: 10, n: 10, limit: 10, spill: 0, t: 10, par: 20 });
+    expect(best.total).toBeCloseTo(0.15 + 0.1 + 0.18, 12);
+    // same curve, scaled: halfway to the cap pays the midpoint
+    expect(haulBonus({ n0: 10, n: 10, limit: 10, spill: 0, t: 18, par: 20 }).pace).toBeCloseTo(0.12, 12);
+    expect(haulBonus({ n0: 5, n: 5, limit: 10, spill: 0, t: 20, par: 20 }).load).toBeCloseTo(0.15 * 0.25, 12);
   });
   it('overweight is a chosen risk with a visible premium, only when the whole load arrives', () => {
     const whole = haulBonus({ n0: 14, n: 14, limit: 10, spill: 0, t: 30, par: 20 });

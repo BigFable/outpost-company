@@ -37,7 +37,7 @@ describe('content tables', () => {
     expect(ERAS.map((e) => e.cost)).toEqual([0, 15000, 1000000, 10000000]);
     expect(EQUIPMENT.find((e) => e.id === 'axeman')).toMatchObject({ rate: 1, cost: 40, up: 3 });
     expect(IMPROVEMENTS.find((u) => u.id === 'cook')?.mult).toEqual({ fell: 1.25, buck: 1.25 });
-    expect(ACHIEVEMENTS).toHaveLength(55);
+    expect(ACHIEVEMENTS).toHaveLength(56);
   });
 });
 
@@ -45,6 +45,17 @@ describe('achievements', () => {
   const reader = (vals: Partial<Record<AchMetric, number>>) => (m: AchMetric) => vals[m];
   const byId = (id: string) => must(ACHIEVEMENTS.find((a) => a.id === id));
 
+  it('d2m sits between the 1M and 3M delivery ladders: 2M bd ft, $10K', () => {
+    const ids = ACHIEVEMENTS.map((x) => x.id), a = byId('d2m');
+    expect(ids.indexOf('d1m')).toBeLessThan(ids.indexOf('d2m'));
+    expect(ids.indexOf('d2m')).toBeLessThan(ids.indexOf('d3m'));
+    expect(a).toMatchObject({ cash: 10000, ladder: true, when: [{ metric: 'deliv', op: '>=', value: 2e6 }] });
+    expect(byId('d1m').cash).toBeLessThan(a.cash);
+    expect(a.cash).toBeLessThan(byId('d3m').cash);
+    expect(achievementMet(a, reader({ deliv: 1999999 }))).toBe(false);
+    expect(achievementMet(a, reader({ deliv: 2e6 }))).toBe(true);
+    expect(bountyMetric(a)).toBe('deliv');
+  });
   it('ladders compare >= target and report progress', () => {
     const a = byId('d10k');
     expect(achievementMet(a, reader({ deliv: 9999 }))).toBe(false);

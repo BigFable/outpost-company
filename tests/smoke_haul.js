@@ -32,7 +32,7 @@ const DRIVE=`(pol => { let i=0; while(H && H.phase==='drive' && i++<40000){
  const r=E('H.result');
  ok(E('H.spill')===0 && E('H.t')<=E('H.par'),'competent driver beats par with nothing lost: '+E('H.t').toFixed(1)+' vs '+E('H.par'));
  ok(Math.abs(E('S.cash')-(r.rev+r.bonus))<1e-6 && r.bonus>0,'cash = sale + bonus, nothing deducted: '+Math.round(E('S.cash')));
- ok(/Full load \+25%/.test(st()) && /Nothing lost \+10%/.test(st()) && /Under par \+\d+%/.test(st()) && /Total/.test(st()),'end ticket explains the pay: '+st().slice(0,200));
+ ok(/Full load \+15%/.test(st()) && /Nothing lost \+10%/.test(st()) && /Under par \+([6-9]|1[0-8])%/.test(st()) && /Total/.test(st()),'end ticket explains the pay: '+st().slice(0,200));
  ok(!/fine/i.test(st()),'no fine on the end ticket');
  ok(E('S.stats.parHaul')===1 && E('S.stats.cleanHaul')===1,'par and clean haul counted');
 

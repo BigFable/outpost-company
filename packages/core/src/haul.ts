@@ -177,6 +177,14 @@ export function haulGhostAt(ghost: readonly number[], x: number): number {
 
 // ---------- pay
 
+/** Most a full legal load adds to the load's sale price (fill² × this). Trimmed from 0.25 (owner, 2026-10-24). */
+export const HAUL_LOAD_BONUS = 0.15;
+/** Delivered whole (nothing lost). */
+export const HAUL_CLEAN_BONUS = 0.1;
+/** Under-par bonus at par, and at its cap (20% of par ahead). Trimmed from 0.10–0.30 (owner, 2026-10-24). */
+export const HAUL_PACE_MIN = 0.06;
+export const HAUL_PACE_MAX = 0.18;
+
 export interface HaulResult { readonly n0: number; readonly n: number; readonly limit: number; readonly spill: number; readonly t: number; readonly par: number; readonly overPay?: number }
 export interface HaulBonus {
   /** Delivered logs over the legal limit (0..1). */
@@ -195,10 +203,10 @@ export interface HaulBonus {
 export function haulBonus(r: HaulResult): HaulBonus {
   const fill = r.limit > 0 ? Math.min(r.n, r.limit) / r.limit : 0, over = Math.max(0, r.n0 - r.limit);
   const whole = r.spill === 0 && r.n > 0;
-  const load = r.n > 0 ? 0.25 * fill * fill : 0;
+  const load = r.n > 0 ? HAUL_LOAD_BONUS * fill * fill : 0;
   const overweight = whole ? (r.overPay ?? 0.05) * over : 0;
-  const clean = whole ? 0.1 : 0;
+  const clean = whole ? HAUL_CLEAN_BONUS : 0;
   const ahead = r.par - r.t;
-  const pace = r.n > 0 && ahead >= 0 ? (0.1 + 0.2 * Math.min(1, ahead / (0.2 * r.par))) * (whole ? 1 : 0.5) : 0;
+  const pace = r.n > 0 && ahead >= 0 ? (HAUL_PACE_MIN + (HAUL_PACE_MAX - HAUL_PACE_MIN) * Math.min(1, ahead / (0.2 * r.par))) * (whole ? 1 : 0.5) : 0;
   return { fill, over, load, overweight, clean, pace, total: load + overweight + clean + pace, ahead };
 }

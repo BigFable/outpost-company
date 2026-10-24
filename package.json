@@ -16,7 +16,7 @@
     "core:inline": "node scripts/inline-core.mjs",
     "core:check": "node scripts/inline-core.mjs --check",
     "lint": "eslint .",
-    "test": "node tests/smoke_rogue.js && node tests/smoke_rogue2.js && node tests/smoke_tuning.js && node tests/smoke_playtest1.js && node tests/smoke_haul.js && node tests/smoke_haul_mouse.js",
+    "test": "node tests/smoke_rogue.js && node tests/smoke_rogue2.js && node tests/smoke_tuning.js && node tests/smoke_playtest1.js && node tests/smoke_haul.js && node tests/smoke_haul_mouse.js && node tests/smoke_round2_fixes.js",
     "test:unit": "vitest run",
     "test:web": "pnpm run build && node tests/web/serve_legacy.cjs",
     "sim:build": "python3 sim/build.py prototype/timberline.html sim/game_rogue.html",

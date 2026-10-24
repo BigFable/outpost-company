@@ -1735,6 +1735,7 @@ var Core = (function(exports) {
 		ladder("d50k", "50 MBF", "Deliver 50,000 bd ft.", "deliv", 5e4, 500, 1),
 		ladder("d250k", "Quarter million", "Deliver 250,000 bd ft.", "deliv", 25e4, 1800, 2),
 		ladder("d1m", "A million board feet", "Deliver 1,000,000 bd ft.", "deliv", 1e6, 6e3, 2),
+		ladder("d2m", "Second shift at the cove", "Deliver 2 million bd ft. The cove mill runs its saws past dark.", "deliv", 2e6, 1e4, 1),
 		ladder("d3m", "Three million", "Deliver 3 million bd ft.", "deliv", 3e6, 2e4, 1),
 		ladder("d10m", "Ten million", "Deliver 10 million bd ft.", "deliv", 1e7, 7e4, 3),
 		ladder("d30m", "Thirty million", "Deliver 30 million bd ft.", "deliv", 3e7, 25e4, 2),
@@ -2148,6 +2149,57 @@ var Core = (function(exports) {
 		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
 		return t;
 	}
+	/**
+	* After a push inland the land office always lists at least one tract priced
+	* at or under this share of that push's price, so a camp that spent its cash
+	* on the push can still buy timber (Steam Camp cash trap fix).
+	*/
+	var PUSH_TRACT_SHARE = .5;
+	/** Price ceiling for the guaranteed listing after pushing to an era that cost `pushCost`. */
+	function pushTractCap(pushCost) {
+		return Math.floor(pushCost * PUSH_TRACT_SHARE);
+	}
+	/**
+	* The same listing with fewer trees, so its price is at most `maxPrice`. No
+	* draws. Price is linear in trees, so price per tree is kept; at least 1 tree.
+	* Returns the tract unchanged when it already fits.
+	*/
+	function fitTractPrice(t, maxPrice) {
+		const price = t.price ?? 0;
+		if (price <= maxPrice || t.trees <= 0) return t;
+		const trees = Math.max(1, Math.floor(t.trees * maxPrice / price));
+		return {
+			...t,
+			trees,
+			left: trees,
+			price: Math.min(Math.round(price * trees / t.trees), Math.max(0, Math.floor(maxPrice)))
+		};
+	}
+	/**
+	* Make sure at least one listing is priced at or under `maxPrice`: when none is,
+	* the cheapest listing (lowest index on a tie) is shrunk with fitTractPrice.
+	* No draws, so it never changes the rng sequence.
+	*/
+	function ensureAffordableListing(listings, maxPrice) {
+		const out = listings.slice();
+		if (!out.length || out.some((t) => (t.price ?? 0) <= maxPrice)) return out;
+		let j = 0;
+		out.forEach((t, i) => {
+			if ((t.price ?? 0) < (out[j].price ?? 0)) j = i;
+		});
+		out[j] = fitTractPrice(out[j], maxPrice);
+		return out;
+	}
+	/**
+	* A full land-office board of `n` listings. Draws: n × genTract, in slot order
+	* (the old three genTract() calls). With `maxPrice` set, ensureAffordableListing
+	* runs afterwards and draws nothing more.
+	*/
+	function genListings(rng, era, o, n = 3, maxPrice) {
+		const out = [];
+		for (let i = 0; i < n; i++) out.push(genTract(rng, era, o));
+		return maxPrice === void 0 ? out : ensureAffordableListing(out, maxPrice);
+	}
 	/** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
 	function tractPrice(gross, miles, slope, stumpMult) {
 		return Math.round(gross * .42 * Math.max(.55, 1.12 - .04 * miles) * SLOPES[slope].disc * stumpMult);
@@ -2404,6 +2456,13 @@ var Core = (function(exports) {
 		const a = ghost[i] ?? 0;
 		return a + ((ghost[i + 1] ?? a) - a) * (f - i);
 	}
+	/** Most a full legal load adds to the load's sale price (fill² × this). Trimmed from 0.25 (owner, 2026-10-24). */
+	var HAUL_LOAD_BONUS = .15;
+	/** Delivered whole (nothing lost). */
+	var HAUL_CLEAN_BONUS = .1;
+	/** Under-par bonus at par, and at its cap (20% of par ahead). Trimmed from 0.10–0.30 (owner, 2026-10-24). */
+	var HAUL_PACE_MIN = .06;
+	var HAUL_PACE_MAX = .18;
 	/**
 	* The haul bonus, as shares of the load's sale price. Never negative: a full
 	* legal load earns the most load bonus, an overweight load delivered whole
@@ -2412,11 +2471,11 @@ var Core = (function(exports) {
 	function haulBonus(r) {
 		const fill = r.limit > 0 ? Math.min(r.n, r.limit) / r.limit : 0, over = Math.max(0, r.n0 - r.limit);
 		const whole = r.spill === 0 && r.n > 0;
-		const load = r.n > 0 ? .25 * fill * fill : 0;
+		const load = r.n > 0 ? HAUL_LOAD_BONUS * fill * fill : 0;
 		const overweight = whole ? (r.overPay ?? .05) * over : 0;
-		const clean = whole ? .1 : 0;
+		const clean = whole ? HAUL_CLEAN_BONUS : 0;
 		const ahead = r.par - r.t;
-		const pace = r.n > 0 && ahead >= 0 ? (.1 + .2 * Math.min(1, ahead / (.2 * r.par))) * (whole ? 1 : .5) : 0;
+		const pace = r.n > 0 && ahead >= 0 ? (HAUL_PACE_MIN + (HAUL_PACE_MAX - HAUL_PACE_MIN) * Math.min(1, ahead / (.2 * r.par))) * (whole ? 1 : .5) : 0;
 		return {
 			fill,
 			over,
@@ -2459,11 +2518,15 @@ var Core = (function(exports) {
 	exports.ERAS = ERAS;
 	exports.ERA_SHARES = ERA_SHARES;
 	exports.ERA_SPECIES = ERA_SPECIES;
+	exports.HAUL_CLEAN_BONUS = HAUL_CLEAN_BONUS;
 	exports.HAUL_FLAT = HAUL_FLAT;
 	exports.HAUL_GHOST_STEP = HAUL_GHOST_STEP;
 	exports.HAUL_LEN = HAUL_LEN;
+	exports.HAUL_LOAD_BONUS = HAUL_LOAD_BONUS;
 	exports.HAUL_MAX_GRADE = HAUL_MAX_GRADE;
 	exports.HAUL_MAX_OVER = HAUL_MAX_OVER;
+	exports.HAUL_PACE_MAX = HAUL_PACE_MAX;
+	exports.HAUL_PACE_MIN = HAUL_PACE_MIN;
 	exports.HAUL_PAR_MARGIN = HAUL_PAR_MARGIN;
 	exports.HAUL_RAMP = HAUL_RAMP;
 	exports.HAUL_START = HAUL_START;
@@ -2480,6 +2543,7 @@ var Core = (function(exports) {
 	exports.PERKS = PERKS;
 	exports.PILES = PILES;
 	exports.PLACES = PLACES;
+	exports.PUSH_TRACT_SHARE = PUSH_TRACT_SHARE;
 	exports.RARITY = RARITY;
 	exports.SEASONS = SEASONS;
 	exports.SEASON_LEN = SEASON_LEN;
@@ -2507,12 +2571,15 @@ var Core = (function(exports) {
 	exports.distanceFactor = distanceFactor;
 	exports.draftPool = draftPool;
 	exports.draftWeight = draftWeight;
+	exports.ensureAffordableListing = ensureAffordableListing;
 	exports.equipmentCost = equipmentCost;
 	exports.equipmentCostTotal = equipmentCostTotal;
 	exports.equipmentMaxAffordable = equipmentMaxAffordable;
 	exports.eraCost = eraCost;
+	exports.fitTractPrice = fitTractPrice;
 	exports.genHaulTrack = genHaulTrack;
 	exports.genHire = genHire;
+	exports.genListings = genListings;
 	exports.genOffer = genOffer;
 	exports.genTract = genTract;
 	exports.grantBoost = grantBoost;
@@ -2543,6 +2610,7 @@ var Core = (function(exports) {
 	exports.perkCount = perkCount;
 	exports.perkMult = perkMult;
 	exports.pickFromMix = pickFromMix;
+	exports.pushTractCap = pushTractCap;
 	exports.requirementProgress = requirementProgress;
 	exports.rngPick = rngPick;
 	exports.rngRange = rngRange;
@@ -2662,8 +2730,11 @@ function newTree(){
   const id = Core.pickFromMix(Math.random, t.mix); if (id) S.vis = id;
 }
 function setSite(){ const t = tract(); if (t) S.site = {miles:t.miles, slope:t.slope}; }
-const genTract = () => Core.genTract(Math.random, S.era, {stumpMult: pmult('stump'), thinSurvey: !!hasMod('beetle'), cruiser: !!perk('cruiser')});
-function refreshSales(){ S.forSale = [genTract(), genTract(), genTract()]; S.saleT = 180; }
+const saleOpts = () => ({stumpMult: pmult('stump'), thinSurvey: !!hasMod('beetle'), cruiser: !!perk('cruiser')});
+const genTract = () => Core.genTract(Math.random, S.era, saleOpts());
+// after a push inland the board always lists a tract at or under half that push's price (Steam Camp cash trap)
+const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
+function refreshSales(){ S.forSale = Core.genListings(Math.random, S.era, saleOpts(), 3, saleCap()); S.saleT = 180; }
 function buyTract(i){
   const t = S.forSale[i]; if (!t || S.cash < t.price) return;
   S.cash -= t.price; delete t.price;
@@ -2671,6 +2742,7 @@ function buyTract(i){
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); }
   S.forSale[i] = genTract();
+  const cap = saleCap(); if (cap !== undefined && !S.forSale.some(x => x.price <= cap)) S.forSale[i] = Core.fitTractPrice(S.forSale[i], cap);
   note(`Bought cutting rights on ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
 }
@@ -3735,6 +3807,7 @@ function haulInit(){
        car:null, x:Core.HAUL_START, v:0, t:0, spill:0, flash:'', flashT:0, par:0, ghost:[0], delta:0, rig: ['Logging sled','Logging train','Log truck','Self-loading truck'][S.era]};
   haulLoadUI();
 }
+const pct100 = f => Math.round(f*100);
 function haulParNow(){ const p = Core.haulPar(H.track, H.rules, H.n); H.par = p.par; H.ghost = p.ghost; }
 function haulLoadUI(){
   haulParNow();
@@ -3742,8 +3815,8 @@ function haulLoadUI(){
   const b = Core.haulBonus({n0:H.n, n:H.n, limit:full, spill:0, t:H.par, par:H.par, overPay:H.rules.overPay});
   status(`${H.n} logs on the ${H.rig.toLowerCase()} · ${bf(Math.min(S.landing.bf, H.n*H.unit))} · ${pct}% of a full load. Road limit ${H.limit} logs${H.spring ? ' (spring posting)' : ''}. Par ${H.par} s for this road and load.` +
     (over > 0 ? ` Overweight by ${over}: +${Math.round(over*H.rules.overPay*100)}% pay if every log reaches the cove, but it is harder to stop and a runaway spills more.`
-      : H.n < full ? ' A full load pays up to +25%.' : ` Full load: +${Math.round(b.load*100)}% pay.`) +
-    ' Deliver it whole for +10%, under par for +10 to +30%.');
+      : H.n < full ? ` A full load pays up to +${pct100(Core.HAUL_LOAD_BONUS)}%.` : ` Full load: +${Math.round(b.load*100)}% pay.`) +
+    ` Deliver it whole for +${pct100(Core.HAUL_CLEAN_BONUS)}%, under par for +${pct100(Core.HAUL_PACE_MIN)} to +${pct100(Core.HAUL_PACE_MAX)}%.`);
   buttons([{label:'− Log', disabled: H.n <= 1, fn:() => { H.n--; haulLoadUI(); }},
            {label:'+ Log', disabled: H.n >= H.maxN, fn:() => { H.n++; haulLoadUI(); }},
            {label:'Head for the cove', primary:true, fn:haulGo}]);
@@ -3806,7 +3879,7 @@ function haulFinish(){
   H.result = {rev, bonus, b, parts, amt};
   const ah = Math.abs(H.par - H.t), aheadTxt = underPar ? `${ah.toFixed(1)} s under par` : `${ah.toFixed(1)} s over par`;
   const tip = H.spill ? 'Next time: brake before the speed reaches the red line on downgrades.' : !underPar ? 'Next time: stay on the gas on the flats and climbs, and brake late on the downgrades.'
-    : H.n0 < full ? `Next time: a full load of ${full} pays up to +25%.` : '';
+    : H.n0 < full ? `Next time: a full load of ${full} pays up to +${pct100(Core.HAUL_LOAD_BONUS)}%.` : '';
   const el = $('mgStatus'); el.textContent = '';
   const head = document.createElement('b');
   head.textContent = `Delivered ${H.n} of ${H.n0} logs (${Math.round(b.fill*100)}% of a full load) · ${bf(amt)} in ${H.t.toFixed(1)} s, par ${H.par} s: ${aheadTxt}.`;
