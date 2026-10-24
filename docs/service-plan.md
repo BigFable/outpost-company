@@ -1,6 +1,6 @@
 # Service Plan: Today Through Three Years After Launch
 
-*Written 2026-10-22, revised after the owner's decisions. Decided: $9.99 for the full experience; Early Access first (about 6 months) at $7.99, then 1.0 at $9.99; at least 3 years of updates, all free; prestige per skill; TypeScript + Electron. Still open: what the 3-year clock counts from.*
+*Written 2026-10-22, revised after the owner's decisions (1.0 roster updated 2026-10-24: 9 skills, Sawmill second, Fishing added). Decided: $9.99 for the full experience; Early Access first (about 6 months) at $7.99, then 1.0 at $9.99; at least 3 years of updates, all free; prestige per skill; TypeScript + Electron. Still open: what the 3-year clock counts from.*
 
 ## 1. What "the full experience at $9.99" means
 
@@ -8,18 +8,18 @@ A player who buys at 1.0 should be able to play from a first outpost to founding
 
 | Area | In 1.0 |
 | --- | --- |
-| Skills (8) | Gathering: **Logging, Prospecting**. Refining: **Sawmilling, Smelting & Charcoal**. Crafting: **Raising, Smithing**. Support: **Surveying, Hauling** |
+| Skills (9) | Gathering: **Logging, Fishing, Prospecting**. Refining: **Sawmilling, Smelting & Charcoal**. Crafting: **Raising, Smithing**. Support: **Surveying, Hauling**. Unlock order: Logging, then the **Sawmill** (opens on the first Logging close camp, `docs/design/sawmill-camp.md`), then **Fishing** (recommended: opens on the first Sawmill close camp, `docs/design/fishing-camp.md`), then the rest |
 | Regions (3) | Fogbound Coast (starter), Giant Groves, Glacier Valleys |
-| Run system | Drafted perks in every skill (about 12 each, plus about 15 shared, so roughly 110), about 10 charter clauses (difficulty modifiers), a Legacy tree per skill plus a company-wide one |
-| Mini-games | 10 to 12, no more than 2 per skill, all optional (idle always works) |
+| Run system | Drafted perks in every skill (about 12 each, plus about 15 shared, so roughly 125), about 10 charter clauses (difficulty modifiers), a Legacy tree per skill plus a company-wide one |
+| Mini-games | 12 to 14, no more than 2 per skill, all optional (idle always works) |
 | Shared systems | Fog map, camp grid, seasons, two eras (hand tools, then steam), offline progress, about 100 achievements |
 | Ending | Clearing all three regions founds Landfall City (stage one). The credits moment is real, and the city keeps growing in later updates |
 | Platform | Steam Cloud saves, Windows, Mac, Linux, Steam Deck playable with a controller, English text |
 | Length | About 25 to 40 hours to the ending, with replay value (my estimate, to be checked in playtests) |
 
-**Cut line, if time runs short:** Prospecting and Hauling move to the first update. The minimum 1.0 is six skills (Logging, Sawmilling, Raising, Surveying, Smelting, Smithing), still with all three regions. The design reviewer should confirm that six still closes the tool loop.
+**Cut line, if time runs short:** Prospecting and Hauling move to the first update, then Fishing. The minimum 1.0 is six skills (Logging, Sawmilling, Raising, Surveying, Smelting, Smithing), still with all three regions. The design reviewer should confirm that six still closes the tool loop.
 
-**Deliberately left for updates:** Provisioning, Fishing & Foraging, Hunting & Trapping, Engineering (later eras), regions four to six (Hot-Spring Basin, Petrified Wood, the Interior), Landfall City districts, challenge modes, more languages, mobile.
+**Deliberately left for updates:** Provisioning, Foraging, Hunting & Trapping, Engineering (later eras), regions four to six (Hot-Spring Basin, Petrified Wood, the Interior), Landfall City districts, challenge modes, more languages, mobile.
 
 ## 2. Pre-launch timeline
 
@@ -58,7 +58,7 @@ Week 1 starts today. Dates include no buffer unless noted. The tech plan advises
 | Quarter | Year 1: Settling in | Year 2: Inland | Year 3: Landfall |
 | --- | --- | --- | --- |
 | **Q1** | Patches; Deck Verified push; quality-of-life (offline summary, filters, accessibility) | Quality-of-life; weekly challenge run (seeded) | Quality-of-life; mastery polish |
-| **Q2** | **Major:** Provisioning + Fishing & Foraging; morale system; Hot-Spring Basin (region 4) | **Major:** Engineering and the third era; Petrified Wood (region 5) | **Major:** the Interior (region 6); Landfall City districts |
+| **Q2** | **Major:** Provisioning + Foraging; morale system; Hot-Spring Basin (region 4) | **Major:** Engineering and the third era; Petrified Wood (region 5) | **Major:** the Interior (region 6); Landfall City districts |
 | **Q3** | Summer event; new perk set for older skills; patch | Event; Hunting & Trapping; new mini-games for old skills | Event; final era; Landfall City expansion |
 | **Q4** | Winter event; more languages; patch | Challenge modes (harder clauses); balance pass from player data | Anniversary event; Landfall City complete; decide what comes next |
 

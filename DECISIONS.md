@@ -4,6 +4,13 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Second camp is the Sawmill, not Fishing: the game goes Logging → Sawmill, and the Sawmill opens after the first Logging close camp. Supersedes the Fishing-second decision earlier today | Owner: "I want the game to go from logging to sawmill" |
+| 2026-10-24 | Fishing stays in the game as a later camp; 1.0 has 9 skills | Owner chose to add Fishing rather than cut a skill |
+| 2026-10-24 | Camp structures stay built when a camp closes camp | Owner's call: camps get easier every run |
+| 2026-10-24 | Build now for playtest round 2: warehouse, Prime timber drops, and the second camp (Sawmill), after the current mini-game fixes land | Owner approved the build |
+| 2026-10-24 | Assumed, owner to confirm: each camp keeps its own cash | Owner didn't pick; recommended so a big Logging run can't instantly buy out a new camp |
+| 2026-10-24 | After the first prestige the game widens: a Fishing camp opens as the second skill. Logging produces progressive item drops (fine/Prime logs) used to build and improve other camps, e.g. the fishing dock and poles | Owner's call from playtest 1; Fishing fits the fogbound coast and gives logging drops a purpose |
+| 2026-10-24 | Playtest 1 fixes: hauling overhaul (no stall-outs, no max-load fine, par from the track, better haul perks and improvements); bucking guides and hint; skid mud-boost legendary perk and huge log trains; equipment buy multiplier | Feedback from the owner and friends |
 | 2026-10-24 | Prime timber build waits for playtest feedback from the owner and friends | Owner wants player feedback before more gameplay changes |
 | 2026-10-24 | No new currency: keep cash and Charter Shares only (Old silver cut) | Fewer currencies to track |
 | 2026-10-24 | Missed special orders come back later with no penalty | Friendly to idle and casual players |
