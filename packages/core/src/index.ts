@@ -10,6 +10,7 @@ export * from './content';
 export * from './achievements';
 export * from './formulas';
 export * from './generators';
+export * from './haul';
 export * from './rng';
 export { deepFreeze } from './freeze';
 
