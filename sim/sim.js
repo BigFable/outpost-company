@@ -12,8 +12,9 @@ function run(profile, seed, hours=4){
   const cap = st => st==='fell' ? G.fellBf(G.rate('fell')) : G.rate(st);
   const STG=['fell','buck','skid','haul'];
   const bought=(what)=>{ const gap=S.t-lastBuy; if(gap>longest.gap) longest={gap, at:S.t, era:S.era, what}; lastBuy=S.t; };
-  // manual work model: clicks/s applied to the stage with the biggest relative shortfall
-  const clickRate = profile==='idle' ? (t=>t<300?2:0) : profile==='clicker' ? (()=>2) : (()=>0);
+  // manual work model: clicks/s applied to the stage with the biggest relative shortfall.
+  // every profile clicks 2/s for the first 5 minutes (a fair opening); 'clicker' keeps clicking.
+  const clickRate = profile==='clicker' ? (()=>2) : (t=>t<300?2:0);
   const mg = profile==='minigame';
   let mgClock=0;
   for(let t=0;t<T;t+=dt){
