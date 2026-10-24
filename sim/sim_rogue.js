@@ -14,7 +14,7 @@ function run(profile, seed, hours=4, opt={}){
       if(S.run.rerolls>0 && score(best)<2){ G.reroll(); continue; } G.pickPerk(best); curDrafts++; n++; } };
   const P=id=>G.perk(id);
   const IDLE_RULES={neck:4,store:3,snowball:4,handshake:2,cruiser:3,scrip:3,absentee:profile==='idle'?4:1,iceking:2,swamp:2};
-  const GAME_RULES={domino:5,bull:4,golden:5,hotsaw:4,widow:3,scaler:3,four:4,daredevil:2,iceking:3,swamp:3,pacer:2,absentee:-5};
+  const GAME_RULES={domino:5,bull:4,golden:5,hotsaw:4,widow:3,scaler:3,four:4,daredevil:2,iceking:3,swamp:3,pacer:2,absentee:-5,gravity:4,overload:3,highball:3};
   function score(id){ const p=G.PMAP[id]; const base={legendary:3,rare:2,common:1.5,curse:1}[p.r];
     if(profile==='idle') return (IDLE_RULES[id]||0) + (p.m && !p.m.click ? 2 : 0) + base*.1;
     if(profile==='minigame') return (GAME_RULES[id]||0) + (IDLE_RULES[id]||0)*.3 + (p.m && !p.m.click ? 1.5 : 0) + base*.2;
@@ -67,9 +67,19 @@ function run(profile, seed, hours=4, opt={}){
       else if(pick==='skid' && S.cut.bf>0){ const pClean = .3 + (has('swamper')?.2:0) + (has('peavey')?.05:0) + (has('gps')?.2:0);
         const clean=rnd()<pClean*(P('four')?.85:1); G.move(S.cut,S.landing,(60+G.baseRate('skid')*15)*(P('four')?4.6:2)*(sea==='Spring'&&!P('swamp')?.8:1), clean||has('skyline')?1:.9); G.runDone('skid', clean?1:.4);
         st.run_skid++; if(sea==='Spring') st.mudRuns++; if(clean){ st.cleanSkid++; G.grantBoost('skid'); } mgClock=16+rest; }
-      else if(pick==='haul' && S.landing.bf>0){ const pClean = .35 + (has('hay')?.15:0) + (has('airbrakes')?.2:0) + (has('bunks')?.05:0);
-        const clean=rnd()<pClean+(P('daredevil')?.1:0), full = clean || rnd()<(P('daredevil')?.45:.5); G.deliver(Math.min(S.landing.bf,(15+G.baseRate('haul')*2)*(sea==='Winter'&&P('iceking')?2:1)*(10+(has('bunks')?4:0))*(full?1:(P('daredevil')?.4:.7)))); G.runDone('haul', clean?1:full?.6:.25);
-        st.run_haul++; if(sea==='Spring') st.mudRuns++; if(sea==='Winter') st.winterHauls++; if(full) st.fullLoads++; if(clean){ st.cleanHaul++; G.grantBoost('haul'); } mgClock=24+rest; }
+      else if(pick==='haul' && S.landing.bf>0){
+        // haul game model (packages/core/src/haul.ts): seasonal road limit, overweight only with Overload artist,
+        // pay = sale + Core.haulBonus (full load, overweight premium, nothing lost, under par). No extra rnd() draws.
+        const C=dom.window.Core, R=C.haulRules({era:S.era, season:sea, upg:S.upg, perks:S.run.perks}), hb=P('highball');
+        const pClean = (.35 + (has('hay')?.15:0) + (has('airbrakes')?.2:0) + (has('bunks')?.05:0) + (has('roughlock')?.05:0) + (has('hillhitch')?.05:0) + (has('lookout')?.08:0) + (P('gravity')?.15:0)) * (hb?.9:1);
+        const clean=rnd()<pClean+(P('daredevil')?.1:0), full = clean || rnd()<(P('daredevil')?.45:.5);
+        const unit=(15+G.baseRate('haul')*2)*(sea==='Winter'&&P('iceking')?2:1), n0=R.limit+(P('overload')?4:0);
+        const keep = full ? 1 : P('gravity') ? .9 : has('binders') ? .85 : (P('daredevil')?.4:.7), n=full?n0:Math.max(1,Math.round(n0*keep));
+        const t = clean ? .85 : full ? 1.05 : .95, under = t<=1;
+        const rev=G.deliver(Math.min(S.landing.bf,unit*n));
+        const b=C.haulBonus({n0, n, limit:R.limit, spill:n0-n, t, par:1, overPay:R.overPay}); G.haulPay(rev*b.total);
+        const q=clean?1:full?.6:.25; G.runDone('haul', q); if(hb && under) G.runDone('haul', q);
+        st.run_haul++; if(sea==='Spring') st.mudRuns++; if(sea==='Winter') st.winterHauls++; if(full) st.fullLoads++; if(under) st.parHaul=(st.parHaul||0)+1; if(clean){ st.cleanHaul++; G.grantBoost('haul'); } mgClock=24+rest; }
       else mgClock=5;
     }}
     // stats

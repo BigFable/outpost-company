@@ -92,7 +92,7 @@ describe('repeat bounties', () => {
 describe("improvements' crews' route", () => {
   it('17 improvements have an idle route, each for a real improvement', () => {
     const ids = IMPROVEMENTS.map((u) => u.id);
-    expect(Object.keys(IMPROVEMENT_ALT_REQS)).toHaveLength(17);
+    expect(Object.keys(IMPROVEMENT_ALT_REQS)).toHaveLength(21);
     for (const id of Object.keys(IMPROVEMENT_ALT_REQS)) expect(ids).toContain(id);
     expect(IMPROVEMENT_ALT_REQS.gunstick).toBeUndefined();
     expect(must(IMPROVEMENT_ALT_REQS.wedges).target).toBe(20);

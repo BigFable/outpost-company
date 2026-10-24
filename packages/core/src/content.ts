@@ -97,6 +97,10 @@ export const IMPROVEMENTS: readonly ImprovementDef[] = deepFreeze([
   {id:'grade',    era:0, name:'Bucking for grade',       desc:'Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.', cost:2500, mult:{value:1.12}, game:'buck'},
   {id:'corduroy', era:0, name:'Corduroy roads',          desc:'Log-paved roads. Spring mud costs you half as much. Skid game: mud barely slows you. Haul game: spring road limit +2 logs.', cost:4000, mult:{}, game:'skid haul'},
   {id:'icerd',    era:0, name:'Road sprinkler sled',     desc:'Ice the haul road at night. Winter hauling ×1.5. Haul game: faster, surer winter runs.', cost:6000, mult:{}, game:'haul'},
+  {id:'hillhitch',era:0, name:'Hill hitch',              desc:'A spare team waits at the foot of every climb (later rigs get low gearing). Haul game: climbs pull 1.5× harder and the rig never crawls below 7 mph.', cost:800, mult:{}, game:'haul'},
+  {id:'roughlock',era:0, name:'Rough-lock chains',       desc:'Chains under the runners drag on downgrades (later rigs get engine brakes). Haul game: off the gas on a downgrade, the rig holds itself back.', cost:1000, mult:{}, game:'haul'},
+  {id:'lookout',  era:0, name:'Road lookout',            desc:'A lookout on the ridge flags the road ahead. Haul game: shows the grade coming up and marks where to brake.', cost:1400, mult:{}, game:'haul'},
+  {id:'binders',  era:0, name:'Load binders',            desc:'Chains and binders cinch the load down. Haul game: road limit +2 logs, and a runaway spills half as many.', cost:3000, mult:{}, game:'haul'},
   {id:'smith',    era:1, name:'Camp blacksmith',         desc:'Repairs done in camp. Upkeep ×0.85.', cost:20000, mult:{upkeep:.85}},
   {id:'scribner', era:1, name:'Scribner log rule',       desc:'A fairer scale at the mill. Sale price ×1.1.', cost:35000, mult:{scale:1.1}},
   {id:'skyline',  era:1, name:'Skyline yarding',         desc:'Overhead cable reaches steep ground. Slope barely slows skidding. Skid game: logs ride above stumps, so hits no longer scar them.', cost:60000, mult:{}, game:'skid'},
@@ -127,6 +131,10 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
   bunks: {text:'Deliver 3 full loads without losing a log', stats:['fullLoads'], target:3},
   icerd: {text:'Finish 2 hauling runs in winter', stats:['winterHauls'], target:2},
   airbrakes: {text:'Make 5 clean hauls', stats:['cleanHaul'], target:5},
+  hillhitch: {text:'Finish 4 hauling runs', stats:['run_haul'], target:4},
+  roughlock: {text:'Beat par on 2 hauls', stats:['parHaul'], target:2},
+  lookout: {text:'Make 3 clean hauls', stats:['cleanHaul'], target:3},
+  binders: {text:'Deliver 6 full loads without losing a log', stats:['fullLoads'], target:6},
   smith: {text:'Finish 25 runs of any job', stats:RUNS_ANY, target:25},
   radios: {text:'Finish 40 runs of any job', stats:RUNS_ANY, target:40},
   shop: {text:'Finish 60 runs of any job', stats:RUNS_ANY, target:60},
@@ -136,7 +144,8 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
 /**
  * The crews' route: a slower idle path to the same improvements, from milestones
  * the company reaches without mini-games. The mini-game route stays faster;
- * improvements whose only effect is inside a mini-game have no crews' route.
+ * most improvements whose only effect is inside a mini-game have no crews'
+ * route; the haul-game ones all do (playtest 1).
  * `achievements` is a derived stat: the number of achievements earned.
  */
 export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
@@ -148,6 +157,10 @@ export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = d
   bunks: {text:'Finish 60 tracts', stats:['tracts'], target:60},
   corduroy: {text:'Work through 15 winters', stats:['winters'], target:15},
   icerd: {text:'Work through 22 winters', stats:['winters'], target:22},
+  hillhitch: {text:'Work through 6 winters', stats:['winters'], target:6},
+  roughlock: {text:'Fill 12 charter orders', stats:['contracts'], target:12},
+  lookout: {text:'Earn 24 achievements', stats:['achievements'], target:24},
+  binders: {text:'Finish 40 tracts', stats:['tracts'], target:40},
   smith: {text:'Deliver 8 million bd ft in all', stats:['deliv'], target:8e6},
   scribner: {text:'Fill 60 charter orders', stats:['contracts'], target:60},
   skyline: {text:'Finish 120 tracts', stats:['tracts'], target:120},
@@ -183,12 +196,15 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
   {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn.'},
   {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
+  {id:'overload', r:'rare',   name:'Overload artist',    desc:'Haul game: load 4 more logs over the road limit, an overweight rig handles like a legal one, and each extra log pays +8% instead of +5%.'},
+  {id:'highball', r:'rare',   name:'Highballer',         desc:'Haul game: par is 10% tighter, but a haul under par counts as two runs toward your next draft.'},
   {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
   {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
   {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed charter orders carry no penalty.'},
   {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
   {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'Land office listings carry 25% more trees for the same price.', set:2},
   {id:'domino',   r:'legendary', name:'Domino fall',     desc:'Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6).'},
+  {id:'gravity',  r:'legendary', name:'Gravity road',    desc:'Haul game: speed you brake off on downgrades is stored and pushes you up the next climb. A full store rides out a runaway instead of spilling logs.'},
   {id:'bull',     r:'legendary', name:'Bull of the woods', desc:'Pace boosts are ×2 instead of ×1.5.'},
   {id:'golden',   r:'legendary', name:'Fog lifts',       desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
   {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled charter order speeds all crews +4% for the rest of the outpost.', set:2},
