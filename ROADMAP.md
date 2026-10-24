@@ -4,7 +4,7 @@ Status values: done · in progress · next · later.
 
 | # | Milestone | Status | Notes |
 | --- | --- | --- | --- |
-| 1 | Roguelite prototype in Timberline (drafts, close camp, Legacy, meta tree) | done | Run 2 is 18–29% faster than run 1 in simulation; tune bounties vs perks |
+| 1 | Roguelite prototype in Timberline (drafts, close camp, Legacy, meta tree) | done | Interim balance fixes landed 2026-10-24; see open tuning items below |
 | 2 | Decisions: engine, business model, per-skill vs global prestige, working title | in progress | Decided: TypeScript + Electron; $9.99 full experience; 3-year support. Also decided: per-skill prestige, Early Access ($7.99) then 1.0 ($9.99), all updates free. Open: working title, what the 3-year clock counts from |
 | 3 | Re-theme Logging to Outpost Company (names, regions as biomes, close-camp fiction) | done | Display text only; balance identical. Owner to confirm era years, Charter Shares, species names |
 | 3b | Build foundation (tech plan M0–M1): balance baseline, TypeScript workspace, Vite, Electron shell, CI | done | `pnpm run check` runs everything CI runs |
@@ -17,7 +17,7 @@ Status values: done · in progress · next · later.
 | 9 | Three-year update cycle | later | Draft plan in `docs/service-plan.md`: 8-skill 1.0 scope, pre-launch gates, Early Access vs 1.0, quarterly cadence for years 1-3. Decided: Early Access ($7.99) then 1.0 ($9.99), all updates free, prestige per skill. Open: what the 3-year clock counts from |
 
 ## Open tuning items
-- Run bounties drive much of the run-2 speed-up; lower the 60% rate so perks and meta matter more.
-- Mini-game players earn the least Legacy when closing at the gas era; add a per-era bonus.
-- Idle players stall in the steam era without an idle path to improvements.
-- Cap pace boosts so active players stay within 1.5–2× of casual.
+Landed 2026-10-24: bounty rate .25 with a 20% per-outpost cap, +8 Charter Shares per era, idle unlock routes for 17 improvements, at most 2 boosted stages; the bot now gives every profile the same opening clicks, and the balance baseline is re-recorded. Further tuning waits for playtest feedback (owner, 2026-10-24). Remaining misses (6 seeds, 3 runs, 8 h):
+- Active play pays too little: mini-game vs casual is 1.29× by time to Diesel Road (gas policy) and 1.10–1.37× by Charter Shares per minute (target 1.5–2×). The owner picked Prime timber + special charter orders to address this (DECISIONS.md, 2026-10-24).
+- Mini-game players' run 2 is only 15% faster than run 1 (gas policy; target 25–40%). Idle 25%, casual 39% pass. Under the shares-per-minute policy, run 2 barely beats run 1 for idle and mini-game players.
+- Achievement/unlock gaps run 28–48 min, longest late in run 3 when early ladders are already held (target under 20 min). Counting perk drafts as events, every profile stays under 16 min.
