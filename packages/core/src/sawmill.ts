@@ -124,7 +124,7 @@ export const FOUNDING_CRATE = deepFreeze({
   logsBf:20000, cash:60,
 });
 /** Share of Logging deliveries sent to the log pond: default and bounds of the slider. */
-export const MILL_SHARE_DEFAULT = 0.2;
+export const MILL_SHARE_DEFAULT = 0.1;
 export const MILL_SHARE_MAX = 0.5;
 
 /** The mill's board (spent with Sawmill Charter Shares). */

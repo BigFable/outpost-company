@@ -346,8 +346,8 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
         <h2>Stump to mill</h2>
         <p class="meta">Each stage moves wood to the next, down to the cove and the charter ship. The slowest stage sets your output, and wood piles up in front of it.</p>
         <div class="chain" id="chain"></div>
-        <div class="millsl" id="millSl" hidden><label for="millShare"><span>Send logs to the company mill</span><b class="num" id="millShareV">20%</b></label>
-          <input type="range" id="millShare" min="0" max="50" step="5" value="20" aria-describedby="millSlMeta"><p class="meta" id="millSlMeta"></p></div>
+        <div class="millsl" id="millSl" hidden><label for="millShare"><span>Send logs to the company mill</span><b class="num" id="millShareV">10%</b></label>
+          <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millSlMeta"><p class="meta" id="millSlMeta"></p></div>
       </section>
 
       <section class="panel" id="runPanel">
@@ -2882,9 +2882,9 @@ var Core = (function(exports) {
 			id: "logging.buck",
 			skill: "logging",
 			game: "buck",
-			baseChance: .2,
+			baseChance: .35,
 			tierMult: TIER_MULT,
-			idlePerMin: .02,
+			idlePerMin: .06,
 			idleRareMult: .1,
 			entries: [{
 				item: "logging.amber_pitch",
@@ -3007,10 +3007,10 @@ var Core = (function(exports) {
 		text: "The Admiralty wants Prime spars for a new squadron’s masts, and pitch to seal them.",
 		needs: [{
 			item: "logging.prime_spar",
-			qty: 24
+			qty: 16
 		}, {
 			item: "logging.amber_pitch",
-			qty: 4
+			qty: 2
 		}],
 		bonusPct: .15,
 		unlockPerk: "sparman",
@@ -3025,7 +3025,7 @@ var Core = (function(exports) {
 		text: "The charter ship is leaking at the seams. Her captain needs pitch and bronze fittings before the next sailing.",
 		needs: [{
 			item: "logging.amber_pitch",
-			qty: 10
+			qty: 6
 		}, {
 			item: "logging.ships_fitting",
 			qty: 3
@@ -3278,7 +3278,7 @@ var Core = (function(exports) {
 		cash: 60
 	});
 	/** Share of Logging deliveries sent to the log pond: default and bounds of the slider. */
-	var MILL_SHARE_DEFAULT = .2;
+	var MILL_SHARE_DEFAULT = .1;
 	var MILL_SHARE_MAX = .5;
 	/** The mill's board (spent with Sawmill Charter Shares). */
 	var MILL_META = deepFreeze([
@@ -4070,10 +4070,10 @@ function deliver(amt){
   const L = S.landing; amt = Math.min(amt, L.bf); if (amt <= 0) return 0;
   const avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
   S.stats.deliv += amt; S.run.deliv += amt;
-  // the log slider: a share of every delivery floats to the company mill's log pond instead of being sold
+  // the log slider: a share of every delivery floats to the company mill's log pond; the company pays half price for the logs it takes
   const sh = S.camps.sawmill && S.millShare > 0 ? S.millShare : 0;
   if (sh > 0){ S.bulk.logs += amt*sh; S.run.toMill = (S.run.toMill || 0) + amt*sh; }
-  const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100)*(sh > 0 ? 1 - sh : 1);
+  const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100)*(sh > 0 ? 1 - sh*.5 : 1);
   let rev = base;
   const c = S.contract;
   if (c){ const into = Math.min(amt, c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
@@ -5990,7 +5990,7 @@ function renderSlider(){
   const pct = Math.round(S.millShare*100), inp = $('millShare'); if (document.activeElement !== inp && +inp.value !== pct) inp.value = pct;
   $('millShareV').textContent = pct + '%';
   const r = millRateNow()*60;
-  $('millSlMeta').textContent = (pct ? `${pct}% of every delivery floats to the company mill’s log pond instead of being sold here.` : 'Every delivery is sold here; the mill buys its logs at the cove.') +
+  $('millSlMeta').textContent = (pct ? `${pct}% of every delivery floats to the company mill’s log pond; the company pays half price for those logs.` : 'Every delivery is sold here; the mill buys its logs at the cove.') +
     ` Log pond ${bf(S.bulk.logs)}` + (r > 0 ? `, about ${mins(S.bulk.logs/r*60)} of sawing at ${bf(r)}/min.` : '.');
 }
 function renderSpecials(){

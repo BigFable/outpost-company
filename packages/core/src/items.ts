@@ -144,7 +144,7 @@ export const DROP_TABLES: Readonly<Record<GameId, DropTable>> = deepFreeze({
     {item:'logging.burl', qty:[1, 1], weight:50, minTier:0},
     {item:'logging.fog_glass', qty:[1, 1], weight:10, minTier:2, rare:true},
   ]},
-  buck: {id:'logging.buck', skill:'logging', game:'buck', baseChance:0.2, tierMult:TIER_MULT, idlePerMin:0.02, idleRareMult:0.1, entries:[
+  buck: {id:'logging.buck', skill:'logging', game:'buck', baseChance:0.35, tierMult:TIER_MULT, idlePerMin:0.06, idleRareMult:0.1, entries:[
     {item:'logging.amber_pitch', qty:[1, 1], weight:70, minTier:0},
     {item:'logging.burl', qty:[1, 1], weight:20, minTier:0},
   ]},
@@ -222,11 +222,11 @@ export interface SpecialOrderDef {
 export const SPECIAL_ORDERS: readonly SpecialOrderDef[] = deepFreeze([
   {id:'admiralty_spar', skill:'logging', client:'The Admiralty', name:'Admiralty spar order', short:'Admiralty',
     text:'The Admiralty wants Prime spars for a new squadron’s masts, and pitch to seal them.',
-    needs:[{item:'logging.prime_spar', qty:24}, {item:'logging.amber_pitch', qty:4}], bonusPct:0.15, unlockPerk:'sparman',
+    needs:[{item:'logging.prime_spar', qty:16}, {item:'logging.amber_pitch', qty:2}], bonusPct:0.15, unlockPerk:'sparman',
     trigger:['logging.prime_spar'], dueOutposts:2},
   {id:'caulk_perseverance', skill:'logging', client:'the captain of the Perseverance', name:'Caulk the Perseverance', short:'Perseverance',
     text:'The charter ship is leaking at the seams. Her captain needs pitch and bronze fittings before the next sailing.',
-    needs:[{item:'logging.amber_pitch', qty:10}, {item:'logging.ships_fitting', qty:3}], bonusPct:0.08,
+    needs:[{item:'logging.amber_pitch', qty:6}, {item:'logging.ships_fitting', qty:3}], bonusPct:0.08,
     rewardItems:[{item:'logging.burl', qty:2}], unlockPerk:'pitchboiler',
     trigger:['logging.amber_pitch', 'logging.ships_fitting'], dueOutposts:2},
 ]);

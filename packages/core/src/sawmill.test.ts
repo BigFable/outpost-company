@@ -4,10 +4,17 @@ import { streamRng } from './rng';
 import {
   boardGradeName, boardValue, bundlesStillNeeded, bunkhouseMult, canCloseMill, cantSquared, coveLogPrice, freeSawyers, genSawLog, GRADE_MIX,
   knotShows, lumberPrice, maxSawyers, millLegacyGain, millPower, millRate, newSawCut, nextBoard, quarterSawn, sawAdvice, sawBest, sawBoard,
-  sawBestPlan, sawCellBf, sawDraftPool, sawPar, sawQuality, sawSpeedBonus, sawValue, sawyerCost, SAW_PERKS, structureNext, STRUCTURES, turnLog, type SawLog,
+  MILL_SHARE_DEFAULT, MILL_SHARE_MAX, sawBestPlan, sawCellBf, sawDraftPool, sawPar, sawQuality, sawSpeedBonus, sawValue, sawyerCost, SAW_PERKS, structureNext, STRUCTURES, turnLog, type SawLog,
 } from './sawmill';
 
 const logs = (n: number, o = {}): SawLog[] => { const st: Record<string, number> = {}, r = streamRng(st, 's', 7); return Array.from({ length: n }, () => genSawLog(r, o)); };
+
+describe('log slider', () => {
+  it('defaults to 10%, up to 50%', () => {
+    expect(MILL_SHARE_DEFAULT).toBe(0.1);
+    expect(MILL_SHARE_MAX).toBe(0.5);
+  });
+});
 
 describe('structures', () => {
   it('saw pit, pond, headrig and a three-level bunkhouse; next level and bundles', () => {

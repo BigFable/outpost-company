@@ -67,6 +67,14 @@ describe('finds', () => {
     expect(rollDrop(DROP_TABLES.haul, 0, scripted([0.001, 0.5]))).toBeNull();
     expect(rollDrop(DROP_TABLES.haul, 2, scripted([0.1, 0.7]))).toEqual({ item: 'logging.ships_fitting', qty: 2 });
   });
+  it('buck finds more amber pitch: 35% base, 6% an idle roll', () => {
+    expect(DROP_TABLES.buck.baseChance).toBe(0.35);
+    expect(DROP_TABLES.buck.idlePerMin).toBe(0.06);
+    expect(rollDrop(DROP_TABLES.buck, 2, scripted([0.34, 0.1]))?.item).toBe('logging.amber_pitch');
+    expect(rollDrop(DROP_TABLES.buck, 2, scripted([0.35]))).toBeNull();
+    expect(rollIdleDrop(DROP_TABLES.buck, scripted([0.059, 0.1]))?.item).toBe('logging.amber_pitch');
+    expect(rollIdleDrop(DROP_TABLES.buck, scripted([0.06]))).toBeNull();
+  });
   it('rollIdleDrop: 2% a roll, rares at a tenth of their weight', () => {
     expect(rollIdleDrop(DROP_TABLES.fell, scripted([0.03]))).toBeNull();
     // fell idle pool: burl 50, fog-glass 10 × 0.1 = 1
@@ -92,8 +100,11 @@ describe('special orders', () => {
   });
   it('remaining needs after partial hand-ins', () => {
     const o = must(SPECIAL_ORDERS[0]);
-    expect(orderRemaining(o, { 'logging.prime_spar': 20 })).toEqual([{ item: 'logging.prime_spar', qty: 4 }, { item: 'logging.amber_pitch', qty: 4 }]);
-    expect(orderRemaining(o, { 'logging.prime_spar': 30, 'logging.amber_pitch': 4 })).toEqual([]);
+    expect(orderRemaining(o, { 'logging.prime_spar': 12 })).toEqual([{ item: 'logging.prime_spar', qty: 4 }, { item: 'logging.amber_pitch', qty: 2 }]);
+    expect(orderRemaining(o, { 'logging.prime_spar': 30, 'logging.amber_pitch': 2 })).toEqual([]);
+  });
+  it('owner-approved sizes: Admiralty 16 spars + 2 pitch, Caulk 6 pitch + 3 fittings', () => {
+    expect(SPECIAL_ORDERS.map((o) => o.needs.map((n) => n.qty))).toEqual([[16, 2], [6, 3]]);
   });
 });
 
