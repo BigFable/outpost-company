@@ -4,6 +4,10 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Prime timber build waits for playtest feedback from the owner and friends | Owner wants player feedback before more gameplay changes |
+| 2026-10-24 | No new currency: keep cash and Charter Shares only (Old silver cut) | Fewer currencies to track |
+| 2026-10-24 | Missed special orders come back later with no penalty | Friendly to idle and casual players |
+| 2026-10-24 | Balance agent may raise the special-order bonus cap from 25% to 35% only if active play stays below 1.5× casual | Room to reach the active-play target |
 | 2026-10-24 | Mini-game value: build Prime timber + special charter orders, extended with item drops, an inventory, and tracking for additional currencies. Named hands is rejected | Owner's pick from docs/design/minigame-value-options.md; gives active play an output idle can't easily make |
 | 2026-10-24 | Accept the interim balance fixes (bounty rate .6→.25 with a per-outpost cap, +8 Charter Shares per era, idle unlock routes for 17 improvements, max 2 boosted stages) with the Felling wedges idle route raised from 12 to 20 tracts | Removes the idle stall and keeps run 2 25–40% faster; verified on 6 seeds, no soft-locks |
 | 2026-10-24 | Fix the simulation bot so every player type gets the same opening clicks, then record a new official balance baseline | The idle bot's head start distorted the speed comparisons |
