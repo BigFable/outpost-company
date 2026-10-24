@@ -4,6 +4,8 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Before round 2: fix the Steam Camp cash trap (pushing to Steam Camp always lists a tract priced at or under half the push price), add a mid-game delivery achievement around 2M bd ft (~$10K), and trim haul bonuses to about 60% (full load +25%→+15%, under par +10–30%→+6–18%) | Balance check of the playtest 1 fixes: up to 21 min stuck without timber after a windfall push; haul pay pulled big achievements into the first minutes of run 2 |
+| 2026-10-24 | Domino fall stays as playtesters have it; its balancing is cut short | Owner: more playtesting first |
 | 2026-10-24 | Second camp is the Sawmill, not Fishing: the game goes Logging → Sawmill, and the Sawmill opens after the first Logging close camp. Supersedes the Fishing-second decision earlier today | Owner: "I want the game to go from logging to sawmill" |
 | 2026-10-24 | Fishing stays in the game as a later camp; 1.0 has 9 skills | Owner chose to add Fishing rather than cut a skill |
 | 2026-10-24 | Camp structures stay built when a camp closes camp | Owner's call: camps get easier every run |
