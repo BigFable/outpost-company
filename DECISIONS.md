@@ -4,6 +4,9 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Accept the interim balance fixes (bounty rate .6→.25 with a per-outpost cap, +8 Charter Shares per era, idle unlock routes for 17 improvements, max 2 boosted stages) with the Felling wedges idle route raised from 12 to 20 tracts | Removes the idle stall and keeps run 2 25–40% faster; verified on 6 seeds, no soft-locks |
+| 2026-10-24 | Fix the simulation bot so every player type gets the same opening clicks, then record a new official balance baseline | The idle bot's head start distorted the speed comparisons |
+| 2026-10-24 | Design reviewer proposes ways mini-games give something idle can't; options come to the owner before anything is built. Further gameplay changes wait for playtest feedback from the owner and friends | Number tweaks alone can't make active play pay off; owner wants player feedback first |
 | 2026-10-22 | Prestige is per skill: closing camp resets only that skill | Other outposts keep running during a reset (design pillar 4) |
 | 2026-10-22 | All updates during the 3-year cycle are free; no paid expansions | Owner's call: maximum goodwill; revenue comes from new buyers |
 | 2026-10-22 | Launch path: Early Access first (about 6 months), then 1.0 | Player feedback before 1.0; producer's recommendation |
