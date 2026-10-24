@@ -66,7 +66,7 @@ export const EQUIPMENT: readonly EquipmentDef[] = deepFreeze([
   {id:'bucker',    stage:'buck', era:0, name:'Bucker',                desc:'Limbs stems and saws them to log lengths in the fog.', rate:12, cost:60, up:3},
   {id:'oxen',      stage:'skid', era:0, name:'Ox team',               desc:'Landed off the first ship. Slow and steady to the landing.', rate:10, cost:90, up:5},
   {id:'horses',    stage:'skid', era:0, name:'Horse team',            desc:'Faster than oxen. Eats more of the ship’s hay.', rate:22, cost:300, up:11},
-  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to the cove mill. Best on frozen roads.', rate:15, cost:70, up:4},
+  {id:'sled',      stage:'haul', era:0, name:'Logging sled',          desc:'Landing to the cove. Best on frozen roads.', rate:15, cost:70, up:4},
   {id:'wagon',     stage:'haul', era:0, name:'Log wagon and teamster',desc:'Big wheels for the beach road.', rate:35, cost:600, up:12},
   {id:'springboard',stage:'fell',era:1, name:'Springboard fallers',   desc:'Cut above the butt swell of the big coast trees from notched planks.', rate:15, cost:2500, up:45},
   {id:'dragsaw',   stage:'buck', era:1, name:'Steam drag saw',        desc:'A reciprocating saw driven by steam.', rate:120, cost:2800, up:40},
@@ -188,7 +188,7 @@ export const SEASONS: readonly Season[] = deepFreeze(['Spring','Summer','Fall','
 export const SEASON_LEN = 150;
 export const SLOPES: Readonly<Record<SlopeId, SlopeDef>> = deepFreeze({flat:{label:'flat', skid:1, disc:1}, rolling:{label:'rolling', skid:.8, disc:.85}, steep:{label:'steep', skid:.55, disc:.65}});
 export const PLACES: readonly string[] = deepFreeze(['Landfall Cove','Foghorn Point','Grey Wash','Charter Creek','Lantern Bluff','Drowned Inlet','Seal Rock Flats','Mistfall Ridge','Hollow Sound','Cairn Hill','Long Fog Meadow','Spar Gulch','Otter Slough','Surveyor’s Run','Whistle Pond','Glass Creek']);
-export const MILLS: readonly string[] = deepFreeze(['the Cove Sawmill','the charter ship Perseverance','Landfall Pier Works','the Admiralty spar yard','Fogline Box & Crate','the Company shipwrights','Harbor Planing Mill','the Survey Office stores']);
+export const MILLS: readonly string[] = deepFreeze(['the Cove timber merchant','the charter ship Perseverance','Landfall Pier Works','the Admiralty spar yard','Fogline Box & Crate','the Company shipwrights','Harbor Planing Mill','the Survey Office stores']);
 
 // common = number tweaks (stack); rare/legendary = rule changes; curse = drawback with a bigger upside. set 2 needs the Old Reach hands node.
 export const PERKS: readonly PerkDef[] = deepFreeze([

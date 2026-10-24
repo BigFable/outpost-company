@@ -39,7 +39,7 @@ const atLeast = (metric: AchMetric, value: number): AchCondition => ({ metric, o
 
 export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   once('first_tree', 'Timber!', 'Fell your first tree.', [atLeast('felled', 1)], 10),
-  once('first_sale', 'First load to the cove', 'Deliver logs to the cove mill.', [{ metric: 'deliv', op: '>', value: 0 }], 15),
+  once('first_sale', 'First load to the cove', 'Deliver logs to the cove.', [{ metric: 'deliv', op: '>', value: 0 }], 15),
   once('first_crew', 'On the payroll', 'Bring your first crew ashore.', [atLeast('crew', 1)], 25),
   once('full_chain', 'Stump to mill', 'Have a crew working every stage.', [atLeast('crewedStages', 4)], 100, 1),
   ladder('d10k', '10 MBF', 'Deliver 10,000 bd ft.', 'deliv', 1e4, 150, 1),
