@@ -93,7 +93,7 @@ Why: the warehouse is the company's store at Landfall, and it is shared with Saw
 
 **No new currency (owner ruling).** Everything else the player collects is an item in the warehouse, where it can be counted, sold, locked and handed in. "Additional currencies" are tracked as item counts in the same ledger, so a future skill that needs a trade good adds an item, not a wallet.
 
-**Calling up a chosen order** (the old silver sink) becomes **Send for an order**: hand in 6 Prime spars to post the special order of your choice now, with one extra outpost on its deadline. Once per outpost. This gives surplus Prime a use besides selling. Deferred past the first playtest.
+**Calling up a chosen order** is now **Send for an order**: hand in 6 Prime spars to post the special order of your choice now, with one extra outpost on its deadline. Once per outpost. This gives surplus Prime a use besides selling. Deferred past the first playtest.
 
 **Ledger strip:** `Cash $12,400 · Charter Shares 38 · Warehouse 57 (3 new) · Orders: Admiralty 18/24`.
 - Cash and Charter Shares are the two currencies.
