@@ -1,6 +1,8 @@
 # Prime timber, finds, the company warehouse and special orders
 
-*Design reviewer, 2026-10-24. Build spec for the owner's pick (option 1 in `minigame-value-options.md`, extended). Named hands is out. All numbers are starting values for the balance agent.*
+**Status: Approved design, build on hold for playtest feedback.**
+
+*Design reviewer, 2026-10-24. Build spec for the owner's pick (option 1 in `minigame-value-options.md`, extended). Named hands is out. Owner rulings of 2026-10-24 are folded in (no new currency; missed orders return with no penalty; the cap rule in section 6). All numbers are starting values for the balance agent.*
 
 ## What the player sees (for the owner)
 
@@ -10,7 +12,7 @@ Every mini-game can also turn up a **find**: a burl on a stump, a lump of amber 
 
 Everything goes into the **company warehouse**, one shared store for every skill. It never fills up. It shows what each item is for, what the open orders still need, and a collection log of everything you have ever found. The warehouse belongs to the company, not the outpost, so it **stays when you close camp**.
 
-The order board now sometimes carries a **special order**: "The Admiralty wants 24 Prime spars and 4 casks of pitch within two outposts." Filling one adds bonus Charter Shares when you close camp (at most +25% on top of that outpost's shares), unlocks a new perk for your drafts, and pays a little **Old silver**: coins from the 1840s expedition that never came home, turned up in the fog. A single ledger at the top of the screen shows cash, Charter Shares and Old silver.
+The order board now sometimes carries a **special order**: "The Admiralty wants 24 Prime spars and 4 casks of pitch within two outposts." Filling one adds bonus Charter Shares when you close camp (at most +25% on top of that outpost's shares), and unlocks a new perk for your drafts. If you miss the deadline, nothing bad happens; the client writes again a couple of outposts later. A single ledger strip at the top of the screen shows your two currencies, cash and Charter Shares, next to a warehouse count and the progress of your open special orders.
 
 Idle players fill special orders too, more slowly: roughly one every two outposts instead of one or two every outpost.
 
@@ -47,7 +49,7 @@ Base chance per game: fell 25%, buck 20%, skid 20%, haul 25%. Good play raises b
 | Fell | Burl (50), Lost axe-head (35), Fog-glass (10, rare), Petrified knot (5, rare, Interior tracts only) |
 | Buck | Amber pitch (70), Burl (20), Petrified knot (10, rare, Interior tracts only) |
 | Skid | Survey marker (50), Lost axe-head (40), Fog-glass (10, rare) |
-| Haul | Ship's fitting (60), Old silver ×1–2 (30, top tier only), Fog-glass (10, rare) |
+| Haul | Ship's fitting (60), Ship's fitting ×2 (30, top tier only), Fog-glass (10, rare) |
 
 ## Items
 
@@ -78,7 +80,7 @@ Ten items. Every one has a sink, a sale price, or a collection slot, and every s
 
 | Kept | Lost |
 | --- | --- |
-| Warehouse contents, collection log, Old silver, Charter Shares, special-order progress and deadlines, unlocked order perks | Log piles, cash (except Nest egg), crews and equipment, the regular charter order, survey-marker rerolls used this outpost |
+| Warehouse contents, collection log, Charter Shares, special-order progress and deadlines, unlocked order perks | Log piles, cash (except Nest egg), crews and equipment, the regular charter order, survey-marker rerolls used this outpost |
 
 Why: the warehouse is the company's store at Landfall, and it is shared with Sawmilling and Raising. If closing Logging emptied it, a Logging reset would stall the other skills, which is exactly what pillar 4 forbids. Each skill's prestige wipes only that skill's outpost state.
 
@@ -88,11 +90,16 @@ Why: the warehouse is the company's store at Landfall, and it is shared with Saw
 | --- | --- | --- | --- |
 | Cash | Outpost (resets) | Log sales, item sales | Crews, equipment, tracts, eras |
 | Charter Shares | Per skill (Logging now) | Closing camp, plus the special-order bonus | Meta nodes |
-| **Old silver** (new) | Company-wide | Top-tier haul finds; special orders (1–3) | Commission a special order (3): post the order of your choice now with one extra outpost on its deadline. Later: the curio cabinet and Landfall City |
 
-**Why exactly one new currency.** Shares are long-term power and cash is this outpost's working money. Silver is the active player's say over *which* order and *when*. It is never sold, it is never lost, and it lives in the ledger, not the warehouse. Everything else stays an item. No scrip: the name is already taken by the *Company scrip* curse perk, and it would only duplicate cash.
+**No new currency (owner ruling).** Everything else the player collects is an item in the warehouse, where it can be counted, sold, locked and handed in. "Additional currencies" are tracked as item counts in the same ledger, so a future skill that needs a trade good adds an item, not a wallet.
 
-**Ledger:** one HUD strip showing Cash · Charter Shares · Old silver. Click it for this outpost's earned and spent, lifetime totals, and the special-order bonus pending at close camp ("+12% of 25%").
+**Calling up a chosen order** (the old silver sink) becomes **Send for an order**: hand in 6 Prime spars to post the special order of your choice now, with one extra outpost on its deadline. Once per outpost. This gives surplus Prime a use besides selling. Deferred past the first playtest.
+
+**Ledger strip:** `Cash $12,400 · Charter Shares 38 · Warehouse 57 (3 new) · Orders: Admiralty 18/24`.
+- Cash and Charter Shares are the two currencies.
+- The warehouse figure is the total item count, with a "new" badge for unseen finds. Clicking it opens the warehouse.
+- The order chip shows the closest open special order. Clicking it opens the order board.
+- Clicking either currency opens the ledger: this outpost's earned and spent, lifetime totals, and the special-order bonus pending at close camp ("+12% of 25%").
 
 ## 5. Special charter orders
 
@@ -100,10 +107,10 @@ They show on the order board next to the regular order, **two open at most**. Ea
 
 | Order | Needs | Reward | Appears | Due |
 | --- | --- | --- | --- | --- |
-| Admiralty spar order | 24 Prime spars, 4 amber pitch | +15% shares, 1 silver, unlocks *Spar man* | First Prime spar | 2 outposts |
-| Caulk the *Perseverance* | 10 amber pitch, 3 ship's fittings | +8% shares, 1 silver, unlocks *Pitch boiler* | First pitch and first fitting | 2 outposts |
-| Lantern Bluff light | 2 fog-glass, 4 fittings, 6 Prime spars | +10% shares, 2 silver, unlocks *Lamp-lighter* | First fog-glass | 3 outposts |
-| Landfall cornerstone | 4 cloudwood heartwood, 12 Prime hardwood, 2 petrified knots | +25% shares, 3 silver, lights a building on the Landfall screen (cosmetic) | Into the Interior era | 3 outposts |
+| Admiralty spar order | 24 Prime spars, 4 amber pitch | +15% shares, unlocks *Spar man* | First Prime spar | 2 outposts |
+| Caulk the *Perseverance* | 10 amber pitch, 3 ship's fittings | +8% shares, 2 burls back as offcuts, unlocks *Pitch boiler* | First pitch and first fitting | 2 outposts |
+| Lantern Bluff light | 2 fog-glass, 4 fittings, 6 Prime spars | +10% shares, 1 survey marker, unlocks *Lamp-lighter* | First fog-glass | 3 outposts |
+| Landfall cornerstone | 4 cloudwood heartwood, 12 Prime hardwood, 2 petrified knots | +25% shares, lights a building on the Landfall screen (cosmetic) | Into the Interior era | 3 outposts |
 
 **Bonus cap:** at close camp, `gain = legacyGain(...) × (1 + min(0.25, sum of bonus% filled this outpost))`. Orders repeat after they are filled. The perk unlock happens once.
 
@@ -116,17 +123,18 @@ They show on the order board next to the regular order, **two open at most**. Ea
 
 ## 6. Balance guardrails
 
-- **Every new reward is capped or finite.** The share bonus is at most +25% per outpost. Marker rerolls: at most 2 per outpost. Order perks: unlocked once, and drafted, not granted. Silver: one sink that only changes timing.
+- **Every new reward is capped or finite.** The share bonus is at most +25% per outpost. Marker rerolls: at most 2 per outpost. Order perks: unlocked once, and drafted, not granted. Missed orders cost nothing and return two outposts later.
+- **Cap rule (owner ruling):** the cap is 25%. The balance agent may raise it, up to 35%, **only if** the sim shows active play below 1.5× casual with the cap at 25%. Any other change to the cap goes to the owner.
 - **Prime adds no board feet** and does not count toward delivered volume or `CLOSE_VOL`.
 - **Item sales stay below 5% of an active outpost's earnings.** The balance agent tunes `sell` to hold this.
 - **Idle has every path:** the Prime trickle, idle finds, auto-fill and long deadlines.
 - **Run 2:** carried-over stock lets an order land early in run 2. That pull is capped by the same +25%, so check that run 2 stays inside 25–40% faster.
-- **Honest risk:** the +25% bonus may not lift active play from 1.2× to 1.5× on its own. If the sim says so, the first lever is the cap (up to 35%, owner question 3), not more drops.
+- **Honest risk:** the +25% bonus may not lift active play from 1.2× to 1.5× on its own. If the sim says so, the first lever is the cap (per the cap rule above), not more drops.
 
 **What the sim bot must model (`sim/sim_rogue.js`):**
 1. Prime from perfect falls (its existing pPerf) by tract species. From bucks: if r ≥ .9, the count of grade-1 logs of 12 ft or longer is Binomial(3, .45), capped at 2. The idle trickle comes from crew-felled trees.
 2. The drop roll per game by tier, and idle rolls per stage-minute, on a **separate seeded stream** so existing draws stay byte-exact.
-3. Order posting, auto-fill hand-ins, deadlines, the bonus cap, perk unlocks entering the pool, survey-marker rerolls, and commissioning with silver at 3.
+3. Order posting, auto-fill hand-ins, deadlines, the bonus cap, perk unlocks entering the pool, survey-marker rerolls, and missed orders returning two outposts later.
 4. Sell surplus at close camp.
 
 **Report per profile (idle, casual, minigame) over 3 outposts × 6 seeds:**
@@ -135,7 +143,6 @@ They show on the order board next to the regular order, **two open at most**. Ea
 - Special orders filled per outpost (idle ≥ 0.5)
 - Share of Charter Shares from the bonus
 - Item sales as % of earnings
-- Silver earned and spent
 - Warehouse stock at the end (hoarding check)
 - The standard targets: active/casual 1.5–2×, run 2 vs run 1, longest gap, soft-locks
 
@@ -143,7 +150,7 @@ They show on the order board next to the regular order, **two open at most**. Ea
 
 ```ts
 export type ItemId = string;            // namespaced: 'logging.prime_spar'
-export type CurrencyId = 'cash' | 'shares.logging' | 'silver' | string;
+export type CurrencyId = 'cash' | 'shares.logging';   // owner ruling: no others; new value goes in items
 export type ItemRarity = 'made' | 'common' | 'uncommon' | 'rare';
 export interface ItemDef {
   readonly id: ItemId; readonly name: string; readonly desc: string; readonly flavor?: string;
@@ -152,7 +159,7 @@ export interface ItemDef {
   readonly uses: readonly ('order' | 'reroll' | 'sell' | 'collection' | `future:${string}`)[];
 }
 export interface CurrencyDef { readonly id: CurrencyId; readonly name: string; readonly scope: 'outpost' | 'skill' | 'company'; readonly skill?: SkillId }
-export interface DropEntry { readonly item?: ItemId; readonly currency?: CurrencyId; readonly qty: readonly [number, number]; readonly weight: number; readonly minTier: 0 | 1 | 2; readonly when?: string }
+export interface DropEntry { readonly item: ItemId; readonly qty: readonly [number, number]; readonly weight: number; readonly minTier: 0 | 1 | 2; readonly when?: string }
 export interface DropTable {
   readonly id: string; readonly skill: SkillId; readonly game: string;   // 'fell' | 'buck' | ...
   readonly baseChance: number; readonly tierMult: readonly [number, number, number];
@@ -161,7 +168,7 @@ export interface DropTable {
 export interface PrimeRule { readonly species: SpeciesId; readonly item: ItemId; readonly perfectFall: number }
 export interface SpecialOrderDef {
   readonly id: string; readonly skill: SkillId | 'company'; readonly client: string; readonly text: string;
-  readonly needs: readonly ItemStack[]; readonly bonusPct: number; readonly silver: number;
+  readonly needs: readonly ItemStack[]; readonly bonusPct: number; readonly rewardItems?: readonly ItemStack[];
   readonly unlockPerk?: string; readonly trigger: string; readonly dueOutposts: number; readonly minEra?: number;
 }
 export const ORDER_BONUS_CAP = 0.25;
@@ -175,7 +182,6 @@ export const ORDER_BONUS_CAP = 0.25;
 bank: {} as Record<ItemId, number>,
 found: {} as Record<ItemId, { first: number; total: number }>,
 locks: [] as ItemId[],
-wallet: { silver: 0 },                  // cash stays S.cash, shares stay S.meta.legacy; the ledger reads them through a currency adapter
 orders: { open: [] as { id: string; posted: number; due: number; given: Record<ItemId, number> }[],
           filled: {} as Record<string, number>, bonusPct: 0, autoFill: true },
 run.markerRerolls: 0
@@ -183,7 +189,7 @@ run.markerRerolls: 0
 
 Two traps for the engineer:
 1. `load()` does a **shallow** `Object.assign(fresh(), d)`. Merge each new nested object with its defaults.
-2. `closeCamp()` deletes every key that is not in `keep`. Add `bank`, `found`, `locks`, `wallet` and `orders` to `keep`, and reset `orders.bonusPct` to 0 after applying it.
+2. `closeCamp()` deletes every key that is not in `keep`. Add `bank`, `found`, `locks` and `orders` to `keep`, and reset `orders.bonusPct` to 0 after applying it.
 
 **Future skills plug in** through `SkillContent`: `items`, `dropTables`, `primeRules`, `specialOrders`. The bank is shared, and ids are namespaced by skill. An order's `needs` can mix skills (Sawmilling's "quarter-sawn deck planks" needs `sawmilling.clear_board` plus `logging.prime_spar`), and that is how active play in one skill speeds up the next.
 
@@ -193,16 +199,17 @@ Two traps for the engineer:
 2. **Five finds:** burl, amber pitch, survey marker, ship's fitting, fog-glass, with the tier rule and idle rolls.
 3. **Warehouse panel:** list, sell, sell surplus, lock, order tags, collection log.
 4. **Two special orders:** Admiralty spar and Caulk the *Perseverance*, with the bonus cap and the *Spar man* and *Pitch boiler* perks.
-5. **Old silver** from haul finds and orders, with the one Commission sink.
-6. **The ledger strip.**
-7. **Sim support** and a balance run.
+5. **The ledger strip** (cash, Charter Shares, warehouse count, closest order). Cash stays `S.cash` and shares stay `S.meta.legacy`, read through a small currency adapter.
+6. **Sim support** and a balance run.
 
-**Deferred:** Prime hardwood and heartwood, lost axe-head, petrified knot, the Lighthouse and Cornerstone orders, *Lamp-lighter*, the curio cabinet, Prime riding the pile chain, and cross-skill uses.
+**Deferred:** Prime hardwood and heartwood, lost axe-head, petrified knot, the Lighthouse and Cornerstone orders, *Lamp-lighter*, Send for an order, Prime riding the pile chain, and cross-skill uses.
 
 Playtest question: "Did a find ever make you play one more round?"
 
-## 9. Owner questions
+## 9. Owner decisions (2026-10-24)
 
-1. **Old silver and the lost 1840s expedition.** This adds a small mystery to the setting that Surveying can pay off later. *Recommend yes.*
-2. **Missed special orders come back later with no penalty.** The alternative is a cost to your standing with the client. *Recommend no penalty* (pillar 1, cozy tone).
-3. **If the sim shows active play below 1.5×, may the balance agent raise the order bonus cap from 25% up to 35%** without coming back to you? *Recommend yes,* still inside the 2× ceiling.
+1. **No Old silver.** Only cash and Charter Shares; everything else is an item.
+2. **Missed special orders come back later with no penalty.**
+3. **Bonus cap rule:** 25%, raised by the balance agent up to 35% only if active play stays below 1.5× casual.
+
+No open questions. The build waits for playtest feedback.
