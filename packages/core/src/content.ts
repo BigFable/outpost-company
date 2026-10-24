@@ -88,15 +88,19 @@ export const IMPROVEMENTS: readonly ImprovementDef[] = deepFreeze([
   {id:'file',     era:0, name:'Mill file',               desc:'Keep an edge on the axe. Your chop ×2. Felling game: wider green hinge zone.', cost:40, mult:{click:2}, game:'fell'},
   {id:'peavey',   era:0, name:'Peaveys and cant hooks',  desc:'Your own bucking, skidding and hauling ×2. Skid game: hang-ups free up in half the time.', cost:120, mult:{hand:2}, game:'skid'},
   {id:'gunstick', era:0, name:'Gunning stick',           desc:'Felling game: shows where the tree will really fall, wind included.', cost:350, mult:{}, game:'fell'},
-  {id:'scalestick',era:0,name:'Scaler’s stick',          desc:'Bucking game: see what each log is worth as you plan the cuts.', cost:450, mult:{}, game:'buck'},
+  {id:'scalestick',era:0,name:'Scaler’s stick',          desc:'Bucking game: see what each log is worth as you plan the cuts, and the length marks show the grade each cut would make.', cost:450, mult:{}, game:'buck'},
   {id:'swamper',  era:0, name:'Swamping crew',           desc:'Clears brush and stumps from skid trails. Skidding ×1.15. Skid game: half the stumps are gone.', cost:600, mult:{skid:1.15}, game:'skid'},
   {id:'hay',      era:0, name:'Hay on the hills',        desc:'Sled tenders spread ship’s hay on downgrades. Hauling ×1.1. Haul game: brakes ×1.6 going downhill.', cost:700, mult:{haul:1.1}, game:'haul'},
   {id:'wedges',   era:0, name:'Felling wedges',          desc:'Drive the tree over the hinge. Felling ×1.15. Felling game: a thick hinge no longer sits back, and falls are steadier.', cost:900, mult:{fell:1.15}, game:'fell'},
   {id:'bunks',    era:0, name:'Bigger bunks',            desc:'Longer, wider log bunks. Hauling ×1.15. Haul game: road limit +4 logs.', cost:1200, mult:{haul:1.15}, game:'haul'},
   {id:'cook',     era:0, name:'Camp cookhouse',          desc:'Fed crews work harder. Felling and bucking ×1.25.', cost:1500, mult:{fell:1.25, buck:1.25}},
-  {id:'grade',    era:0, name:'Bucking for grade',       desc:'Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.', cost:2500, mult:{value:1.12}, game:'buck'},
+  {id:'grade',    era:0, name:'Bucking for grade',       desc:'Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: Suggest a cut costs half as much.', cost:2500, mult:{value:1.12}, game:'buck'},
   {id:'corduroy', era:0, name:'Corduroy roads',          desc:'Log-paved roads. Spring mud costs you half as much. Skid game: mud barely slows you. Haul game: spring road limit +2 logs.', cost:4000, mult:{}, game:'skid haul'},
   {id:'icerd',    era:0, name:'Road sprinkler sled',     desc:'Ice the haul road at night. Winter hauling ×1.5. Haul game: faster, surer winter runs.', cost:6000, mult:{}, game:'haul'},
+  {id:'hillhitch',era:0, name:'Hill hitch',              desc:'A spare team waits at the foot of every climb (later rigs get low gearing). Haul game: climbs pull 1.5× harder and the rig never crawls below 7 mph.', cost:800, mult:{}, game:'haul'},
+  {id:'roughlock',era:0, name:'Rough-lock chains',       desc:'Chains under the runners drag on downgrades (later rigs get engine brakes). Haul game: off the gas on a downgrade, the rig holds itself back.', cost:1000, mult:{}, game:'haul'},
+  {id:'lookout',  era:0, name:'Road lookout',            desc:'A lookout on the ridge flags the road ahead. Haul game: shows the grade coming up and marks where to brake.', cost:1400, mult:{}, game:'haul'},
+  {id:'binders',  era:0, name:'Load binders',            desc:'Chains and binders cinch the load down. Haul game: road limit +2 logs, and a runaway spills half as many.', cost:3000, mult:{}, game:'haul'},
   {id:'smith',    era:1, name:'Camp blacksmith',         desc:'Repairs done in camp. Upkeep ×0.85.', cost:20000, mult:{upkeep:.85}},
   {id:'scribner', era:1, name:'Scribner log rule',       desc:'A fairer scale at the mill. Sale price ×1.1.', cost:35000, mult:{scale:1.1}},
   {id:'skyline',  era:1, name:'Skyline yarding',         desc:'Overhead cable reaches steep ground. Slope barely slows skidding. Skid game: logs ride above stumps, so hits no longer scar them.', cost:60000, mult:{}, game:'skid'},
@@ -106,7 +110,12 @@ export const IMPROVEMENTS: readonly ImprovementDef[] = deepFreeze([
   {id:'optimize', era:3, name:'Cut-to-length optimizer', desc:'Computer bucking for value. Log value ×1.15. Bucking game: one button places the best cuts.', cost:5e6, mult:{value:1.15}, game:'buck'},
   {id:'gps',      era:3, name:'Survey-grid harvest plan', desc:'Charted skid trails and haul routes. Every stage ×1.25. Skid game: shows the ideal line.', cost:9e6, mult:{all:1.25}, game:'skid'},
   {id:'telematics',era:3,name:'Fleet telematics',        desc:'Catch breakdowns early. Upkeep ×0.8.', cost:14e6, mult:{upkeep:.8}},
+  {id:'chokers',  era:0, name:'Choker chains',           desc:'Wire chokers hook more logs to one turn. Skidding ×1.1. Skid game: turns of up to 5 logs.', cost:1800, mult:{skid:1.1}, game:'skid'},
+  {id:'arch',     era:1, name:'Logging arch',            desc:'A wheeled arch lifts the log ends clear of the ground. Skidding ×1.1. Skid game: turns of up to 8 logs.', cost:45000, mult:{skid:1.1}, game:'skid'},
+  {id:'bundle',   era:2, name:'Bundle yarding',          desc:'Whole bundles go out on one line. Skidding ×1.1. Skid game: log trains of up to 12 logs.', cost:700000, mult:{skid:1.1}, game:'skid'},
 ]);
+/** Largest skid-game turn each improvement allows (3 logs without any). */
+export const SKID_TURN_RUNGS: Readonly<Record<string, number>> = deepFreeze({chokers:5, arch:8, bundle:12});
 
 const RUNS_ANY = ['run_fell','run_buck','run_skid','run_haul'];
 export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
@@ -127,16 +136,24 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
   bunks: {text:'Deliver 3 full loads without losing a log', stats:['fullLoads'], target:3},
   icerd: {text:'Finish 2 hauling runs in winter', stats:['winterHauls'], target:2},
   airbrakes: {text:'Make 5 clean hauls', stats:['cleanHaul'], target:5},
+  hillhitch: {text:'Finish 4 hauling runs', stats:['run_haul'], target:4},
+  roughlock: {text:'Beat par on 2 hauls', stats:['parHaul'], target:2},
+  lookout: {text:'Make 3 clean hauls', stats:['cleanHaul'], target:3},
+  binders: {text:'Deliver 6 full loads without losing a log', stats:['fullLoads'], target:6},
   smith: {text:'Finish 25 runs of any job', stats:RUNS_ANY, target:25},
   radios: {text:'Finish 40 runs of any job', stats:RUNS_ANY, target:40},
   shop: {text:'Finish 60 runs of any job', stats:RUNS_ANY, target:60},
   telematics: {text:'Finish 100 runs of any job', stats:RUNS_ANY, target:100},
+  chokers: {text:'Skid 12 logs in skid-game turns', stats:['skidLogs'], target:12},
+  arch: {text:'Skid 60 logs in skid-game turns', stats:['skidLogs'], target:60},
+  bundle: {text:'Skid 250 logs in skid-game turns', stats:['skidLogs'], target:250},
 });
 
 /**
  * The crews' route: a slower idle path to the same improvements, from milestones
  * the company reaches without mini-games. The mini-game route stays faster;
- * improvements whose only effect is inside a mini-game have no crews' route.
+ * most improvements whose only effect is inside a mini-game have no crews'
+ * route; the haul-game ones all do (playtest 1).
  * `achievements` is a derived stat: the number of achievements earned.
  */
 export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
@@ -148,6 +165,10 @@ export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = d
   bunks: {text:'Finish 60 tracts', stats:['tracts'], target:60},
   corduroy: {text:'Work through 15 winters', stats:['winters'], target:15},
   icerd: {text:'Work through 22 winters', stats:['winters'], target:22},
+  hillhitch: {text:'Work through 6 winters', stats:['winters'], target:6},
+  roughlock: {text:'Fill 12 charter orders', stats:['contracts'], target:12},
+  lookout: {text:'Earn 24 achievements', stats:['achievements'], target:24},
+  binders: {text:'Finish 40 tracts', stats:['tracts'], target:40},
   smith: {text:'Deliver 8 million bd ft in all', stats:['deliv'], target:8e6},
   scribner: {text:'Fill 60 charter orders', stats:['contracts'], target:60},
   skyline: {text:'Finish 120 tracts', stats:['tracts'], target:120},
@@ -157,6 +178,9 @@ export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = d
   optimize: {text:'Deliver 500 million bd ft in all', stats:['deliv'], target:5e8},
   gps: {text:'Finish 400 tracts', stats:['tracts'], target:400},
   telematics: {text:'Fill 250 charter orders', stats:['contracts'], target:250},
+  chokers: {text:'Finish 40 tracts', stats:['tracts'], target:40},
+  arch: {text:'Deliver 25 million bd ft in all', stats:['deliv'], target:2.5e7},
+  bundle: {text:'Fill 150 charter orders', stats:['contracts'], target:150},
 });
 
 export const SEASONS: readonly Season[] = deepFreeze(['Spring','Summer','Fall','Winter']);
@@ -181,14 +205,18 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
   {id:'hotsaw',   r:'rare',   name:'Hot saw',            desc:'Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you.'},
   {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
-  {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn.'},
+  {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: one more log on your biggest turn (4 logs without chokers). Slow and wide, but it moves the most wood.'},
   {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
+  {id:'overload', r:'rare',   name:'Overload artist',    desc:'Haul game: load 4 more logs over the road limit, an overweight rig handles like a legal one, and each extra log pays +8% instead of +5%.'},
+  {id:'highball', r:'rare',   name:'Highballer',         desc:'Haul game: par is 10% tighter, but a haul under par counts as two runs toward your next draft.'},
   {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
   {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
   {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed charter orders carry no penalty.'},
   {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
   {id:'cruiser',  r:'rare',   name:'Timber cruiser',     desc:'Land office listings carry 25% more trees for the same price.', set:2},
   {id:'domino',   r:'legendary', name:'Domino fall',     desc:'Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6).'},
+  {id:'greased',  r:'legendary', name:'Greased runners',  desc:'Skid game: mud speeds the team up instead of slowing it, and logs slide through it. Idle: spring mud speeds skidding ×1.2 instead of slowing it.'},
+  {id:'gravity',  r:'legendary', name:'Gravity road',    desc:'Haul game: speed you brake off on downgrades is stored and pushes you up the next climb. A full store rides out a runaway instead of spilling logs.'},
   {id:'bull',     r:'legendary', name:'Bull of the woods', desc:'Pace boosts are ×2 instead of ×1.5.'},
   {id:'golden',   r:'legendary', name:'Fog lifts',       desc:'Any pace boost from a mini-game boosts every stage at once.', set:2},
   {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled charter order speeds all crews +4% for the rest of the outpost.', set:2},

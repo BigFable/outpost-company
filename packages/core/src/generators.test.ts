@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { GOLDEN } from './__fixtures__/prototype-golden';
-import { ERA_SPECIES, PERKS, TRACT_BASE } from './content';
+import { ERA_SPECIES, ERAS, PERKS, TRACT_BASE } from './content';
+import { eraCost } from './formulas';
 import {
-  draftPool, draftWeight, genHire, genOffer, genTract, makeTract, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
+  draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genTract, makeTract, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
 } from './generators';
 import { rngPick, rngRange } from './rng';
 import { must, scripted, simLcg } from './test-rng';
@@ -146,5 +147,57 @@ describe('drafts', () => {
   it('a draw of 0.999 picks the last card', () => {
     const pool = draftPool([], false);
     expect(rollDraft(scripted([0.999999]), pool, 1, 0)).toEqual([must(pool[pool.length - 1]).id]);
+  });
+});
+
+describe('push-inland listing guarantee (Steam Camp cash trap)', () => {
+  const O = { stumpMult: 1, thinSurvey: false, cruiser: false };
+  it('caps at half the push price', () => {
+    expect(PUSH_TRACT_SHARE).toBe(0.5);
+    expect(pushTractCap(15000)).toBe(7500);
+    expect(pushTractCap(12000)).toBe(6000);
+  });
+  it('genListings draws exactly like n genTract calls and only adds no-draw fitting', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const a = simLcg(seed), b = simLcg(seed);
+      const plain = [0, 1, 2].map(() => genTract(a, 1, O));
+      expect(genListings(b, 1, O)).toEqual(plain);
+      const c = simLcg(seed), d = simLcg(seed);
+      genListings(c, 1, O, 3, 7500); [0, 1, 2].forEach(() => genTract(d, 1, O));
+      expect(c()).toBe(d()); // same position in the sequence afterwards
+    }
+  });
+  it('every board after any push lists a tract at or under half the push price', () => {
+    const variants = [O, { stumpMult: 0.85, thinSurvey: true, cruiser: false }, { stumpMult: 1, thinSurvey: false, cruiser: true }];
+    let fitted = 0;
+    for (let era = 1; era < ERAS.length; era++) for (const steam of [false, true]) for (const o of variants) {
+      const cap = pushTractCap(eraCost(era, { steam, gas: false }));
+      for (let seed = 1; seed <= 300; seed++) {
+        const plain = genListings(simLcg(seed), era, o);
+        const got = genListings(simLcg(seed), era, o, 3, cap);
+        expect(Math.min(...got.map((t) => must(t.price)))).toBeLessThanOrEqual(cap);
+        const changed = got.filter((t, i) => JSON.stringify(t) !== JSON.stringify(plain[i]));
+        expect(changed.length).toBeLessThanOrEqual(1);
+        if (changed.length) fitted++;
+        for (const t of got) { expect(t.trees).toBeGreaterThanOrEqual(1); expect(t.left).toBe(t.trees); }
+      }
+    }
+    expect(fitted).toBeGreaterThan(0); // era 1 hits the trap often without the guarantee
+  });
+  it('fitTractPrice keeps price per tree and leaves fitting tracts alone', () => {
+    const t = { ...makeTract('X', [['pine', 6], ['spruce', 4]], 1000, 2, 'flat'), price: 20000 };
+    expect(fitTractPrice(t, 25000)).toBe(t);
+    const f = fitTractPrice(t, 7500);
+    expect(f).toMatchObject({ trees: 375, left: 375, price: 7500, name: 'X', miles: 2 });
+    expect(t.trees).toBe(1000); // not mutated
+  });
+  it('ensureAffordableListing shrinks only the cheapest listing when none fits', () => {
+    const mk = (price: number) => ({ ...makeTract('L' + price, [['pine', 5], ['spruce', 5]], 100, 1, 'flat'), price });
+    const board = [mk(30000), mk(9000), mk(12000)];
+    const out = ensureAffordableListing(board, 7500);
+    expect(out[0]).toBe(board[0]); expect(out[2]).toBe(board[2]);
+    expect(must(out[1]).price).toBeLessThanOrEqual(7500);
+    const ok = [mk(30000), mk(7000)];
+    expect(ensureAffordableListing(ok, 7500)).toEqual(ok);
   });
 });

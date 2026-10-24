@@ -28,79 +28,79 @@
   "summary": {
     "idle": {
       "run1": {
-        "steam": 29.67,
-        "gas": 77.67,
-        "min": 78.33,
-        "L": 34.33,
-        "drafts": 11.33,
+        "steam": 30.33,
+        "gas": 68.67,
+        "min": 69,
+        "L": 32.33,
+        "drafts": 11,
         "unfinished": 0
       },
       "run2": {
-        "steam": 13.67,
-        "gas": 51.33,
-        "min": 51.67,
-        "L": 29.67,
-        "drafts": 10,
+        "steam": 12,
+        "gas": 47,
+        "min": 47.67,
+        "L": 29,
+        "drafts": 9.67,
         "unfinished": 0
       },
       "run3": {
-        "steam": 15.67,
-        "gas": 47.33,
-        "min": 47.67,
+        "steam": 23.33,
+        "gas": 55.33,
+        "min": 55.67,
         "L": 30.33,
-        "drafts": 9,
+        "drafts": 10,
         "unfinished": 0
       }
     },
     "casual": {
       "run1": {
-        "steam": 26,
-        "gas": 52.33,
-        "min": 52.67,
-        "L": 28.33,
-        "drafts": 16.67,
+        "steam": 27.67,
+        "gas": 58,
+        "min": 59,
+        "L": 30.33,
+        "drafts": 19.33,
         "unfinished": 0
       },
       "run2": {
-        "steam": 11.67,
-        "gas": 33,
-        "min": 33.67,
-        "L": 26.67,
-        "drafts": 14.67,
+        "steam": 3.67,
+        "gas": 27.33,
+        "min": 27.33,
+        "L": 26.33,
+        "drafts": 13.67,
         "unfinished": 0
       },
       "run3": {
-        "steam": 7.67,
-        "gas": 34,
-        "min": 34.33,
-        "L": 27,
-        "drafts": 14,
+        "steam": 8.67,
+        "gas": 29.33,
+        "min": 29.67,
+        "L": 26,
+        "drafts": 14.67,
         "unfinished": 0
       }
     },
     "minigame": {
       "run1": {
-        "steam": 15.67,
-        "gas": 35,
-        "min": 35.33,
+        "steam": 17,
+        "gas": 36.67,
+        "min": 37.33,
         "L": 26,
-        "drafts": 25,
+        "drafts": 27.33,
         "unfinished": 0
       },
       "run2": {
-        "steam": 9.33,
-        "gas": 29,
-        "min": 29.67,
-        "L": 27,
-        "drafts": 22.67,
+        "steam": 8.67,
+        "gas": 31,
+        "min": 31.67,
+        "L": 26.67,
+        "drafts": 26.33,
         "unfinished": 0
       },
       "run3": {
-        "steam": 6.67,
-        "gas": 26.33,
-        "min": 27,
-        "L": 25,
-        "drafts": 20.33,
+        "steam": 12.33,
+        "gas": 30,
+        "min": 30.67,
+        "L": 24.67,
+        "drafts": 23.67,
         "unfinished": 0
       }
     }
@@ -110,36 +110,65 @@
       "1": [
         {
           "run": 1,
-          "steam": 34,
-          "gas": 73,
-          "min": 74,
-          "L": 33,
+          "steam": 31,
+          "gas": 72,
+          "min": 72,
+          "L": 31,
           "drafts": 11,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 9,
-          "gas": 51,
-          "min": 52,
-          "L": 33,
-          "drafts": 11,
+          "steam": 20,
+          "gas": 58,
+          "min": 58,
+          "L": 30,
+          "drafts": 10,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 25,
-          "gas": 68,
-          "min": 68,
-          "L": 34,
-          "drafts": 11,
+          "steam": 21,
+          "gas": 53,
+          "min": 53,
+          "L": 32,
+          "drafts": 10,
           "unfinished": false
         }
       ],
       "2": [
         {
           "run": 1,
+          "steam": 32,
+          "gas": 71,
+          "min": 72,
+          "L": 34,
+          "drafts": 11,
+          "unfinished": false
+        },
+        {
+          "run": 2,
+          "steam": 8,
+          "gas": 42,
+          "min": 43,
+          "L": 29,
+          "drafts": 10,
+          "unfinished": false
+        },
+        {
+          "run": 3,
           "steam": 27,
+          "gas": 59,
+          "min": 59,
+          "L": 32,
+          "drafts": 10,
+          "unfinished": false
+        }
+      ],
+      "3": [
+        {
+          "run": 1,
+          "steam": 28,
           "gas": 63,
           "min": 63,
           "L": 32,
@@ -148,49 +177,20 @@
         },
         {
           "run": 2,
-          "steam": 7,
+          "steam": 8,
           "gas": 41,
-          "min": 41,
+          "min": 42,
           "L": 28,
+          "drafts": 9,
+          "unfinished": false
+        },
+        {
+          "run": 3,
+          "steam": 22,
+          "gas": 54,
+          "min": 55,
+          "L": 27,
           "drafts": 10,
-          "unfinished": false
-        },
-        {
-          "run": 3,
-          "steam": 6,
-          "gas": 24,
-          "min": 24,
-          "L": 26,
-          "drafts": 7,
-          "unfinished": false
-        }
-      ],
-      "3": [
-        {
-          "run": 1,
-          "steam": 28,
-          "gas": 97,
-          "min": 98,
-          "L": 38,
-          "drafts": 12,
-          "unfinished": false
-        },
-        {
-          "run": 2,
-          "steam": 25,
-          "gas": 62,
-          "min": 62,
-          "L": 28,
-          "drafts": 9,
-          "unfinished": false
-        },
-        {
-          "run": 3,
-          "steam": 16,
-          "gas": 50,
-          "min": 51,
-          "L": 31,
-          "drafts": 9,
           "unfinished": false
         }
       ]
@@ -200,28 +200,28 @@
         {
           "run": 1,
           "steam": 26,
-          "gas": 52,
-          "min": 53,
+          "gas": 53,
+          "min": 54,
           "L": 29,
-          "drafts": 16,
+          "drafts": 19,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 15,
-          "gas": 36,
-          "min": 37,
+          "steam": 4,
+          "gas": 27,
+          "min": 27,
           "L": 26,
-          "drafts": 15,
+          "drafts": 14,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 5,
-          "gas": 29,
-          "min": 29,
+          "steam": 14,
+          "gas": 39,
+          "min": 40,
           "L": 27,
-          "drafts": 13,
+          "drafts": 16,
           "unfinished": false
         }
       ],
@@ -229,44 +229,15 @@
         {
           "run": 1,
           "steam": 28,
-          "gas": 57,
-          "min": 57,
-          "L": 28,
-          "drafts": 17,
+          "gas": 61,
+          "min": 62,
+          "L": 31,
+          "drafts": 20,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 15,
-          "gas": 36,
-          "min": 37,
-          "L": 28,
-          "drafts": 16,
-          "unfinished": false
-        },
-        {
-          "run": 3,
-          "steam": 1,
-          "gas": 27,
-          "min": 27,
-          "L": 27,
-          "drafts": 13,
-          "unfinished": false
-        }
-      ],
-      "3": [
-        {
-          "run": 1,
-          "steam": 24,
-          "gas": 48,
-          "min": 48,
-          "L": 28,
-          "drafts": 17,
-          "unfinished": false
-        },
-        {
-          "run": 2,
-          "steam": 5,
+          "steam": 4,
           "gas": 27,
           "min": 27,
           "L": 26,
@@ -275,11 +246,40 @@
         },
         {
           "run": 3,
-          "steam": 17,
-          "gas": 46,
-          "min": 47,
+          "steam": 6,
+          "gas": 25,
+          "min": 25,
+          "L": 25,
+          "drafts": 14,
+          "unfinished": false
+        }
+      ],
+      "3": [
+        {
+          "run": 1,
+          "steam": 29,
+          "gas": 60,
+          "min": 61,
+          "L": 31,
+          "drafts": 19,
+          "unfinished": false
+        },
+        {
+          "run": 2,
+          "steam": 3,
+          "gas": 28,
+          "min": 28,
           "L": 27,
-          "drafts": 16,
+          "drafts": 14,
+          "unfinished": false
+        },
+        {
+          "run": 3,
+          "steam": 6,
+          "gas": 24,
+          "min": 24,
+          "L": 26,
+          "drafts": 14,
           "unfinished": false
         }
       ]
@@ -288,87 +288,87 @@
       "1": [
         {
           "run": 1,
-          "steam": 18,
-          "gas": 36,
-          "min": 37,
+          "steam": 17,
+          "gas": 33,
+          "min": 33,
           "L": 26,
-          "drafts": 25,
+          "drafts": 27,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 9,
-          "gas": 36,
-          "min": 36,
-          "L": 27,
-          "drafts": 24,
+          "steam": 8,
+          "gas": 32,
+          "min": 32,
+          "L": 28,
+          "drafts": 27,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 10,
-          "gas": 26,
-          "min": 27,
+          "steam": 16,
+          "gas": 31,
+          "min": 32,
           "L": 25,
-          "drafts": 21,
+          "drafts": 25,
           "unfinished": false
         }
       ],
       "2": [
         {
           "run": 1,
-          "steam": 12,
-          "gas": 36,
-          "min": 36,
-          "L": 26,
-          "drafts": 25,
+          "steam": 16,
+          "gas": 32,
+          "min": 33,
+          "L": 27,
+          "drafts": 29,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 14,
-          "gas": 27,
-          "min": 28,
+          "steam": 10,
+          "gas": 35,
+          "min": 36,
           "L": 26,
-          "drafts": 23,
+          "drafts": 28,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 9,
+          "steam": 11,
           "gas": 30,
-          "min": 30,
-          "L": 25,
-          "drafts": 23,
+          "min": 31,
+          "L": 23,
+          "drafts": 25,
           "unfinished": false
         }
       ],
       "3": [
         {
           "run": 1,
-          "steam": 17,
-          "gas": 33,
-          "min": 33,
-          "L": 26,
-          "drafts": 25,
+          "steam": 18,
+          "gas": 45,
+          "min": 46,
+          "L": 25,
+          "drafts": 26,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 5,
-          "gas": 24,
-          "min": 25,
-          "L": 28,
-          "drafts": 21,
+          "steam": 8,
+          "gas": 26,
+          "min": 27,
+          "L": 26,
+          "drafts": 24,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 1,
-          "gas": 23,
-          "min": 24,
-          "L": 25,
-          "drafts": 17,
+          "steam": 10,
+          "gas": 29,
+          "min": 29,
+          "L": 26,
+          "drafts": 21,
           "unfinished": false
         }
       ]

@@ -5,7 +5,7 @@ function run(profile, seed, hours=4, opt={}){
   // seeded random
   let x=seed*9301+49297; const rnd=()=>{x=(x*9301+49297)%233280; return x/233280;};
   const dom=new JSDOM(html,{runScripts:'dangerously',beforeParse(w){w.Math.random=rnd; w.__SIM=true;}});
-  const G=dom.window.__G; const S=G.S;
+  const G=dom.window.__G; const S=G.S; const Core=dom.window.Core;
   G.normalize(); G.refreshSales(); G.refreshOffers(); S.hireOffer=G.genHire(); G.setSite(); G.newTree();
   const RANK={legendary:0,rare:1,common:2,curse:3}; let achCash=0, achSeen=0;
   const runsOut=[]; let peakLpm=0, runStart=0, runT=0, curDrafts=0;
@@ -13,8 +13,8 @@ function run(profile, seed, hours=4, opt={}){
   const draftAll=()=>{ if(NOPERK){ S.run.dq.length=0; return; } let n=0; while(S.run.dq.length && n<50){ const off=G.currentOffer(); if(!off) break; const best=off.slice().sort((a,b)=>score(b)-score(a))[0];
       if(S.run.rerolls>0 && score(best)<2){ G.reroll(); continue; } G.pickPerk(best); curDrafts++; n++; } };
   const P=id=>G.perk(id);
-  const IDLE_RULES={neck:4,store:3,snowball:4,handshake:2,cruiser:3,scrip:3,absentee:profile==='idle'?4:1,iceking:2,swamp:2};
-  const GAME_RULES={domino:5,bull:4,golden:5,hotsaw:4,widow:3,scaler:3,four:4,daredevil:2,iceking:3,swamp:3,pacer:2,absentee:-5};
+  const IDLE_RULES={neck:4,store:3,snowball:4,handshake:2,cruiser:3,scrip:3,absentee:profile==='idle'?4:1,iceking:2,swamp:2,greased:3};
+  const GAME_RULES={domino:5,bull:4,golden:5,hotsaw:4,widow:3,scaler:3,four:4,daredevil:2,iceking:3,swamp:3,pacer:2,greased:4,absentee:-5,gravity:4,overload:3,highball:3};
   function score(id){ const p=G.PMAP[id]; const base={legendary:3,rare:2,common:1.5,curse:1}[p.r];
     if(profile==='idle') return (IDLE_RULES[id]||0) + (p.m && !p.m.click ? 2 : 0) + base*.1;
     if(profile==='minigame') return (GAME_RULES[id]||0) + (IDLE_RULES[id]||0)*.3 + (p.m && !p.m.click ? 1.5 : 0) + base*.2;
@@ -62,14 +62,30 @@ function run(profile, seed, hours=4, opt={}){
         G.runDone('fell', {1.25:1,1.1:.6,.8:.3,.6:.15}[m]);
         mgClock=8+rest; }
       else if(pick==='buck' && S.stems.bf>0){ const skill = (has('scalestick')?.06:0)+(has('grade')?.06:0);
-        let r=Math.min(1, .72 + rnd()*.3 + skill); if(P('scaler') && r>=.9) r=1; G.runDone('buck', r); G.move(S.stems,S.cut,Math.min(S.stems.bf,Math.max(G.tract()?G.tract().bf:200, G.rate('buck')*25)),(0.5+0.7*r)*G.umult('value'));
-        st.run_buck++; if(r>=.85) st.buck85++; if(r>=.9) st.buck90++; if(r>=.999) st.perfBuck++; if(r>=.97) G.grantBoost('buck'); mgClock=20+rest; }
+        // Scaler's friend pays 90%+ as 100% but full value (perfBuck) needs the raw score (playtest 1 exploit fix)
+        const r0=Math.min(1, .72 + rnd()*.3 + skill); let r=r0; if(P('scaler') && r>=.9) r=1; G.runDone('buck', r); G.move(S.stems,S.cut,Math.min(S.stems.bf,Math.max(G.tract()?G.tract().bf:200, G.rate('buck')*25)),(0.5+0.7*r)*G.umult('value'));
+        st.run_buck++; if(r>=.85) st.buck85++; if(r>=.9) st.buck90++; if(r0>=.999) st.perfBuck++; if(r>=.97) G.grantBoost('buck'); mgClock=20+rest; }
       else if(pick==='skid' && S.cut.bf>0){ const pClean = .3 + (has('swamper')?.2:0) + (has('peavey')?.05:0) + (has('gps')?.2:0);
-        const clean=rnd()<pClean*(P('four')?.85:1); G.move(S.cut,S.landing,(60+G.baseRate('skid')*15)*(P('four')?4.6:2)*(sea==='Spring'&&!P('swamp')?.8:1), clean||has('skyline')?1:.9); G.runDone('skid', clean?1:.4);
-        st.run_skid++; if(sea==='Spring') st.mudRuns++; if(clean){ st.cleanSkid++; G.grantBoost('skid'); } mgClock=16+rest; }
-      else if(pick==='haul' && S.landing.bf>0){ const pClean = .35 + (has('hay')?.15:0) + (has('airbrakes')?.2:0) + (has('bunks')?.05:0);
-        const clean=rnd()<pClean+(P('daredevil')?.1:0), full = clean || rnd()<(P('daredevil')?.45:.5); G.deliver(Math.min(S.landing.bf,(15+G.baseRate('haul')*2)*(sea==='Winter'&&P('iceking')?2:1)*(10+(has('bunks')?4:0))*(full?1:(P('daredevil')?.4:.7)))); G.runDone('haul', clean?1:full?.6:.25);
-        st.run_haul++; if(sea==='Spring') st.mudRuns++; if(sea==='Winter') st.winterHauls++; if(full) st.fullLoads++; if(clean){ st.cleanHaul++; G.grantBoost('haul'); } mgClock=24+rest; }
+        // turn size: a full 2-log turn, or the biggest turn once perks or improvements allow 4+ logs (4 logs is the old Four-log turns case)
+        const top=Core.maxSkidLogs(S.upg, !!P('four')), n=top>3?top:2;
+        const clean=rnd()<pClean*(n>=4?.85*Math.sqrt(4/n):1);
+        const mud=sea==='Spring'?(P('greased')?1.1:P('swamp')?1:.8):1;
+        G.move(S.cut,S.landing,(60+G.baseRate('skid')*15)*Core.skidTurnLoad(n)*mud, clean||has('skyline')?1:.9); G.runDone('skid', clean?1:.4);
+        st.run_skid++; st.skidLogs=(st.skidLogs||0)+n; if(sea==='Spring') st.mudRuns++; if(clean){ st.cleanSkid++; G.grantBoost('skid'); }
+        mgClock=16*(n>4?Core.skidTurnSpeed(4)/Core.skidTurnSpeed(n):1)+rest; }
+      else if(pick==='haul' && S.landing.bf>0){
+        // haul game model (packages/core/src/haul.ts): seasonal road limit, overweight only with Overload artist,
+        // pay = sale + Core.haulBonus (full load, overweight premium, nothing lost, under par). No extra rnd() draws.
+        const C=dom.window.Core, R=C.haulRules({era:S.era, season:sea, upg:S.upg, perks:S.run.perks}), hb=P('highball');
+        const pClean = (.35 + (has('hay')?.15:0) + (has('airbrakes')?.2:0) + (has('bunks')?.05:0) + (has('roughlock')?.05:0) + (has('hillhitch')?.05:0) + (has('lookout')?.08:0) + (P('gravity')?.15:0)) * (hb?.9:1);
+        const clean=rnd()<pClean+(P('daredevil')?.1:0), full = clean || rnd()<(P('daredevil')?.45:.5);
+        const unit=(15+G.baseRate('haul')*2)*(sea==='Winter'&&P('iceking')?2:1), n0=R.limit+(P('overload')?4:0);
+        const keep = full ? 1 : P('gravity') ? .9 : has('binders') ? .85 : (P('daredevil')?.4:.7), n=full?n0:Math.max(1,Math.round(n0*keep));
+        const t = clean ? .85 : full ? 1.05 : .95, under = t<=1;
+        const rev=G.deliver(Math.min(S.landing.bf,unit*n));
+        const b=C.haulBonus({n0, n, limit:R.limit, spill:n0-n, t, par:1, overPay:R.overPay}); G.haulPay(rev*b.total);
+        const q=clean?1:full?.6:.25; G.runDone('haul', q); if(hb && under) G.runDone('haul', q);
+        st.run_haul++; if(sea==='Spring') st.mudRuns++; if(sea==='Winter') st.winterHauls++; if(full) st.fullLoads++; if(under) st.parHaul=(st.parHaul||0)+1; if(clean){ st.cleanHaul++; G.grantBoost('haul'); } mgClock=24+rest; }
       else mgClock=5;
     }}
     // stats

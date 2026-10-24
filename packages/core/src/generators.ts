@@ -77,6 +77,55 @@ export function genTract(rng: Rng, era: number, o: TractListingOpts): Tract {
   return t;
 }
 
+/**
+ * After a push inland the land office always lists at least one tract priced
+ * at or under this share of that push's price, so a camp that spent its cash
+ * on the push can still buy timber (Steam Camp cash trap fix).
+ */
+export const PUSH_TRACT_SHARE = 0.5;
+
+/** Price ceiling for the guaranteed listing after pushing to an era that cost `pushCost`. */
+export function pushTractCap(pushCost: number): number {
+  return Math.floor(pushCost * PUSH_TRACT_SHARE);
+}
+
+/**
+ * The same listing with fewer trees, so its price is at most `maxPrice`. No
+ * draws. Price is linear in trees, so price per tree is kept; at least 1 tree.
+ * Returns the tract unchanged when it already fits.
+ */
+export function fitTractPrice(t: Tract, maxPrice: number): Tract {
+  const price = t.price ?? 0;
+  if (price <= maxPrice || t.trees <= 0) return t;
+  const trees = Math.max(1, Math.floor(t.trees * maxPrice / price));
+  return { ...t, trees, left: trees, price: Math.min(Math.round(price * trees / t.trees), Math.max(0, Math.floor(maxPrice))) };
+}
+
+/**
+ * Make sure at least one listing is priced at or under `maxPrice`: when none is,
+ * the cheapest listing (lowest index on a tie) is shrunk with fitTractPrice.
+ * No draws, so it never changes the rng sequence.
+ */
+export function ensureAffordableListing(listings: readonly Tract[], maxPrice: number): Tract[] {
+  const out = listings.slice();
+  if (!out.length || out.some((t) => (t.price ?? 0) <= maxPrice)) return out;
+  let j = 0;
+  out.forEach((t, i) => { if ((t.price ?? 0) < ((out[j] as Tract).price ?? 0)) j = i; });
+  out[j] = fitTractPrice(out[j] as Tract, maxPrice);
+  return out;
+}
+
+/**
+ * A full land-office board of `n` listings. Draws: n × genTract, in slot order
+ * (the old three genTract() calls). With `maxPrice` set, ensureAffordableListing
+ * runs afterwards and draws nothing more.
+ */
+export function genListings(rng: Rng, era: number, o: TractListingOpts, n = 3, maxPrice?: number): Tract[] {
+  const out: Tract[] = [];
+  for (let i = 0; i < n; i++) out.push(genTract(rng, era, o));
+  return maxPrice === undefined ? out : ensureAffordableListing(out, maxPrice);
+}
+
 /** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
 export function tractPrice(gross: number, miles: number, slope: SlopeId, stumpMult: number): number {
   return Math.round(gross * 0.42 * Math.max(0.55, 1.12 - 0.04 * miles) * SLOPES[slope].disc * stumpMult);

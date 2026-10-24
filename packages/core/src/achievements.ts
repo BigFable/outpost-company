@@ -46,6 +46,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   ladder('d50k', '50 MBF', 'Deliver 50,000 bd ft.', 'deliv', 5e4, 500, 1),
   ladder('d250k', 'Quarter million', 'Deliver 250,000 bd ft.', 'deliv', 2.5e5, 1800, 2),
   ladder('d1m', 'A million board feet', 'Deliver 1,000,000 bd ft.', 'deliv', 1e6, 6000, 2),
+  ladder('d2m', 'Second shift at the cove', 'Deliver 2 million bd ft. The cove mill runs its saws past dark.', 'deliv', 2e6, 10000, 1),
   ladder('d3m', 'Three million', 'Deliver 3 million bd ft.', 'deliv', 3e6, 20000, 1),
   ladder('d10m', 'Ten million', 'Deliver 10 million bd ft.', 'deliv', 1e7, 70000, 3),
   ladder('d30m', 'Thirty million', 'Deliver 30 million bd ft.', 'deliv', 3e7, 250000, 2),
