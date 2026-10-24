@@ -2603,7 +2603,7 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
 function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen
-function freshUi(){ return {buyN:1, buckGuide:true, buckIntro:false}; }
+function freshUi(){ return {buyN:1, buckGuide:true, buckIntro:false, haulHint:false}; }
 let S = fresh();
 
 // ---------- helpers
@@ -3187,8 +3187,8 @@ function frame(ts){
 function lpos(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left)/r.width*MG.LW, y:(e.clientY - r.top)/r.height*MG.LH}; }
 cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch(_){}
   const p = lpos(e); MG.ptr = p; MG.down = true;
-  if (MG.kind === 'fell') fellPress(); else if (MG.kind === 'buck') buckClick(p); });
-const up = () => { MG.down = false; if (MG.kind === 'fell') fellRelease(); };
+  if (MG.kind === 'fell') fellPress(); else if (MG.kind === 'buck') buckClick(p); else if (MG.kind === 'haul') haulPress(p); });
+const up = () => { MG.down = false; if (MG.kind === 'fell') fellRelease(); if (MG.kind === 'haul') haulRelease(); };
 cv.addEventListener('pointerup', up);
 cv.addEventListener('pointercancel', up);
 cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B){ B.hover = p; buckPeek(); } });
@@ -3748,18 +3748,33 @@ function haulLoadUI(){
            {label:'+ Log', disabled: H.n >= H.maxN, fn:() => { H.n++; haulLoadUI(); }},
            {label:'Head for the cove', primary:true, fn:haulGo}]);
 }
+// one-button controls (primary): hold the mouse button or a finger anywhere on the road = gas, let go = coast;
+// brake by holding the on-screen brake pedal or by dragging down while held. No right-click. Arrow keys / WASD still work.
+const HAUL_PEDAL = {x0:10, y0:-74, w:140, h:64};
+const inPedal = p => p.x >= HAUL_PEDAL.x0 && p.x <= HAUL_PEDAL.x0 + HAUL_PEDAL.w && p.y >= MG.LH + HAUL_PEDAL.y0 && p.y <= MG.LH + HAUL_PEDAL.y0 + HAUL_PEDAL.h;
+function haulPress(p){ if (!H || H.phase !== 'drive') return; H.press = inPedal(p) ? 'pedal' : 'hold'; H.pressY = p.y; }
+function haulRelease(){ if (H) H.press = null; }
+function haulControl(){
+  const kg = key('ArrowRight','KeyD','ArrowUp','KeyW'), kb = key('ArrowLeft','KeyA','ArrowDown','KeyS','Space');
+  if (kg || kb) return {gas:kg, brk:kb, src:'keys'};
+  if (MG.down && MG.ptr && H.press){
+    if (H.press === 'pedal' || inPedal(MG.ptr)) return {gas:false, brk:true, src:'pedal'};
+    return MG.ptr.y - H.pressY > 40 ? {gas:false, brk:true, src:'drag'} : {gas:true, brk:false, src:'hold'};
+  }
+  return {gas:false, brk:false, src:'coast'};
+}
 function haulGo(){
-  H.phase = 'drive'; H.n0 = H.n; haulParNow(); H.car = Core.newHaulCar(H.n); haulSync();
-  status('Hold the right side to give it gas and the left side to brake, or use the arrow keys. Keep the speed out of the red on downgrades.');
+  H.phase = 'drive'; H.n0 = H.n; haulParNow(); H.car = Core.newHaulCar(H.n); haulSync(); H.press = null; H.ctl = {gas:false, brk:false, src:'coast'};
+  H.hint = !S.ui.haulHint; S.ui.haulHint = true; // first drive shows the controls on the road
+  status('Hold the mouse button (or your finger) on the road for gas, let go to coast. To brake, hold the brake pedal at the bottom left or drag down while holding. Arrow keys work too. Keep the speed out of the red on downgrades.');
   buttons([{label:'Done', fn:closeMG}]);
 }
 function haulSync(){ const c = H.car; H.x = c.x; H.v = c.v; H.n = c.n; H.spill = c.spill; }
 function haulStep(dt){
   if (!H || H.phase !== 'drive') return;
   H.t += dt; if (H.flashT > 0) H.flashT -= dt;
-  const ptrGas = MG.down && MG.ptr && MG.ptr.x >= MG.LW/2, ptrBrk = MG.down && MG.ptr && MG.ptr.x < MG.LW/2;
-  const gas = key('ArrowRight','KeyD','ArrowUp','KeyW') || ptrGas, brk = key('ArrowLeft','KeyA','ArrowDown','KeyS','Space') || ptrBrk;
-  const ev = Core.haulStepCar(H.track, H.rules.phys, H.car, gas, brk, dt); haulSync();
+  const ctl = H.ctl = haulControl();
+  const ev = Core.haulStepCar(H.track, H.rules.phys, H.car, ctl.gas, ctl.brk, dt); haulSync();
   H.delta = H.t - Core.haulGhostAt(H.ghost, H.x);
   if (ev > 0){ H.flash = `Runaway on the hill. Lost ${ev} ${ev === 1 ? 'log' : 'logs'} off the load.`; H.flashT = 2; }
   else if (ev < 0){ H.flash = 'Gravity road: the store rode out the runaway.'; H.flashT = 2; }
@@ -3888,9 +3903,21 @@ function haulDraw(){
     cx.fillText(steep.length ? `Lookout: brake in ${Math.max(0, Math.round((steep[0] - H.x)/H.L*S.site.miles*1760))} yd` : 'Lookout: road clear', px + 10, 24);
   }
   if (H.phase === 'drive'){
-    cx.globalAlpha = .55; cx.fillStyle = C.panel; cx.fillRect(10, Hh - 44, 120, 34); cx.fillRect(W - 130, Hh - 44, 120, 34); cx.globalAlpha = 1;
-    cx.fillStyle = C.ink; cx.font = '600 12px ' + font; cx.textAlign = 'center';
-    cx.fillText('BRAKE  ← / A', 70, Hh - 22); cx.fillText('GAS  → / D', W - 70, Hh - 22);
+    const ctl = H.ctl || {gas:false, brk:false};
+    // brake pedal (hold it to brake)
+    const py = Hh + HAUL_PEDAL.y0;
+    cx.fillStyle = ctl.brk ? C.bad : C.panel; cx.globalAlpha = ctl.brk ? .85 : .8; cx.fillRect(HAUL_PEDAL.x0, py, HAUL_PEDAL.w, HAUL_PEDAL.h); cx.globalAlpha = 1;
+    cx.strokeStyle = C.bad; cx.lineWidth = 2; cx.strokeRect(HAUL_PEDAL.x0, py, HAUL_PEDAL.w, HAUL_PEDAL.h);
+    cx.fillStyle = ctl.brk ? C.panel : C.ink; cx.font = '600 13px ' + font; cx.textAlign = 'center';
+    cx.fillText('BRAKE', HAUL_PEDAL.x0 + HAUL_PEDAL.w/2, py + 28); cx.font = '11px ' + font; cx.fillText('hold · or ← / A', HAUL_PEDAL.x0 + HAUL_PEDAL.w/2, py + 46);
+    // what the rig is doing now
+    cx.font = '600 12px ' + font; cx.textAlign = 'right'; cx.fillStyle = ctl.gas ? C.good : ctl.brk ? C.bad : C.muted;
+    cx.fillText(ctl.gas ? 'GAS' : ctl.brk ? 'BRAKING' : 'COASTING', W - 16, Hh - 16);
+    // first drive: a short hint on the road, until you have driven a little way
+    if (H.hint && H.t < 8){ const bx = W/2 - 170, by = 128;
+      cx.fillStyle = C.panel; cx.globalAlpha = .94; cx.fillRect(bx, by, 340, 66); cx.globalAlpha = 1; cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.strokeRect(bx, by, 340, 66);
+      cx.textAlign = 'center'; cx.fillStyle = C.ink; cx.font = '600 13px ' + font; cx.fillText('Hold the button anywhere for gas · let go to coast', W/2, by + 26);
+      cx.font = '12px ' + font; cx.fillText('Brake: hold the pedal, or drag down while holding', W/2, by + 48); }
   }
   if (H.flashT > 0){ cx.fillStyle = C.bad; cx.font = '600 16px ' + font; cx.textAlign = 'center'; cx.fillText(H.flash, W/2, 100); }
   cx.textAlign = 'left';
