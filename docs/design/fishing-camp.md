@@ -1,12 +1,12 @@
-# Fishing camp: the second skill, and how camps feed each other
+# Fishing camp: a later camp, after the Sawmill
 
-**Status: Draft for owner review.** *Design reviewer, 2026-10-24. Needs the warehouse, drops and special orders from `prime-timber-drops-inventory.md` first. All numbers are starting values for the balance agent.*
+**Status: Approved later camp (after Sawmill).** *Design reviewer, 2026-10-24. The owner made the Sawmill the second camp (`sawmill-camp.md`); Fishing stays in the game and in the 1.0 roster of 9 skills. Owner rulings folded in: structures stay built; each camp keeps its own cash (assumed, owner to confirm). Needs the warehouse, drops and special orders from `prime-timber-drops-inventory.md`. All numbers are starting values for the balance agent.*
 
 ## What the player sees (for the owner)
 
-The first time you close camp on Logging, the charter ship's captain reports: "Silver fish so thick off Gull Spit you could walk on them, if you could see them through the fog." A **Fishing** tab opens. Logging starts its next run as usual; the two camps run side by side and each closes camp on its own.
+The first time you close camp on the Sawmill, the charter ship's captain reports: "Silver fish so thick off Gull Spit you could walk on them, if you could see them through the fog." A **Fishing** tab opens. Logging and the Sawmill keep running; every camp closes camp on its own.
 
-The fishing camp starts as two hands with hand-lines on a shingle beach. Everything else you **build from what Logging sends you**: Prime spars become a jetty and poles, amber pitch tars the nets, burls smoke the fish, ship's fittings rig the boats. Your best felling now pays off in a second camp.
+The fishing camp starts as two hands with hand-lines on a shingle beach. Everything else you **build from what Logging and the Sawmill send you**: Prime spars become a jetty and poles, amber pitch tars the nets, burls smoke the fish, ship's fittings rig the boats. Your best felling now pays off in a third camp.
 
 It works both ways. The **smokehouse** makes **smoked rations**; while Logging has rations in the warehouse, its crews cost 15% less upkeep. So you choose where your Prime spars go: an Admiralty order for Charter Shares, or a boat slip that doubles your catch.
 
@@ -14,20 +14,20 @@ Fishing's twist is **tide and fog**. The tide turns every few minutes and each f
 
 The mini-game, **Strike and land**, takes about 15 seconds. You see the fish's shadows before you strike and choose how big to go. Bigger fish are harder and pay more; a landed giant is a **Prize fish**, Fishing's Prime timber.
 
-**Roster change:** Fishing was planned for the first update. It now joins 1.0, and I recommend it takes the **Hauling skill's** slot (question 1).
+**Roster:** Fishing was planned for the first update. The owner added it to 1.0, which now has 9 skills (`docs/service-plan.md`).
 
 ---
 
 ## 1. When and how it opens
 
-- **Trigger:** the first Logging close camp. A one-time story card, then the Fishing tab with a "new" badge.
-- **Founding crate:** 4 Prime spars and 2 amber pitch arrive with the card, enough for the first two structures even for an idle player. No soft-lock.
-- **Per-skill prestige:** Fishing has its own outpost state, till, Charter Shares (`shares.fishing`), drafts and meta branch. Closing either camp resets only that camp. The warehouse is shared and never resets.
+- **Trigger (recommended):** the first Sawmill close camp. A one-time story card, then the Fishing tab with a "new" badge. This spaces new camps one prestige apart, and by then the Sawmill makes plank bundles for the jetty and dories. Alternative: a fixed number of Logging close camps (for example 3), which would not depend on the Sawmill (question 1).
+- **Founding crate:** 4 Prime spars, 2 amber pitch and 2 plank bundles arrive with the card, enough for the first two structures even for an idle player. No soft-lock.
+- **Per-skill prestige:** Fishing has its own outpost state, till, Charter Shares (`shares.fishing`), drafts and meta branch. Closing any camp resets only that camp. Structures and the warehouse never reset.
 - **Separate tills:** items cross between camps, cash does not. A player with $1M from Domino fall must not buy out the fishing camp in a minute.
 
 ## 2. Structures (built from Logging items)
 
-Instant builds: items from the warehouse, cash from the Fishing till. When Raising ships, it takes over construction (build time, upgrades).
+Instant builds: items from the warehouse, cash from the Fishing till. **Structures stay built through close camp** (owner ruling). When Raising ships, it takes over construction. Once the Sawmill is live, the jetty and the Dory slip also take plank bundles (2 and 6), which the balance agent sets when Fishing is built.
 
 | # | Structure | Cost | Unlocks / does |
 | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ Instant builds: items from the warehouse, cash from the Fishing till. When Raisi
 | 6 | **Tide board** | 2 Prime spars, 1 fog-glass, 1 survey marker, $1,500 | Forecasts fog; boats follow the best tide on their own |
 | 7 | **Steam cannery** | 8 Prime hardwood, 6 ship's fittings, $15,000 | Advances Fishing to the Steam Cannery era |
 
-**Closing a Fishing camp strips the structures**, and half their items (rounded down) go back to the warehouse as salvage. That is the fiction, it keeps Logging drops in demand every Fishing run, and rebuilding stays cheap. A meta node, *Standing jetty*, keeps the jetty.
+Because structures are permanent, Logging items keep their value through structure **upgrades** (levels 2 and 3 at 2× and 4× the item cost, +25% effect, the same rule as the Sawmill), special orders, and Prize-fish orders that also want Prime spars.
 
 **Two-way flow (one item back, on purpose):**
 
@@ -126,13 +126,13 @@ Finds use Logging's roll rule (tier from `q`; idle rolls at 2% per 60 s of work)
 ## 7. Balance guardrails
 
 - **First structure** under 5 minutes after Fishing opens (the crate); idle reaches the smokehouse in under 20.
-- **Idle is enough:** an idle player closes Fishing camp every run. Every required item has an idle source (Prime trickle, idle finds, salvage); only the optional Tide board needs fog-glass.
+- **Idle is enough:** an idle player closes Fishing camp every run. Every required item has an idle source (Prime trickle, idle finds, Sawmill planks); only the optional Tide board needs fog-glass.
 - **Active 1.5–2×** per skill and for both camps together.
-- **Rations:** ×0.85 upkeep at most, no stacking. Logging run 2 stays 25–40% faster than run 1 with rations in.
+- **Rations:** ×0.85 upkeep at most, no stacking. Together with the Sawmill's bunkhouse, Logging upkeep never drops below ×0.7. Logging run 2 stays 25–40% faster than run 1 with both in.
 - **Contention:** the idle bot still fills at least one Admiralty order per 2 outposts while Fishing competes for spars.
 - **Item sales** under 5% of each camp's earnings; **unlock gap** under 20 minutes across both camps.
 
-**Sim bot must model:** both skills ticking at once on their own RNG streams (`fishing.catch`, `fishing.drops`); the shared warehouse; the crate; a build policy (jetty, poles, smokehouse, dory slip, net loft, then orders); salvage; ration making and eating, offline too; tide/fog averages for idle and real cycles for active; Strike and land `simulate(botSkill)` with size choice (casual picks M, mini-game bot picks L/Giant); independent close camp per skill. Report per profile: time to each structure, Fishing outposts per 8 h, Logging speed with and without rations, spars spent on structures vs orders, and the standard targets.
+**Sim bot must model:** both skills ticking at once on their own RNG streams (`fishing.catch`, `fishing.drops`); the shared warehouse; the crate; a build policy (jetty, poles, smokehouse, dory slip, net loft, then upgrades and orders); permanent structures; ration making and eating, offline too; tide/fog averages for idle and real cycles for active; Strike and land `simulate(botSkill)` with size choice (casual picks M, mini-game bot picks L/Giant); independent close camp per skill. Report per profile: time to each structure, Fishing outposts per 8 h, Logging speed with and without rations, spars spent on structures vs orders, and the standard targets.
 
 ## 8. Data model
 
@@ -144,8 +144,7 @@ export interface StructureDef {
   readonly cost: { readonly items: readonly ItemStack[]; readonly cash: number };
   readonly requires?: UnlockExpr; readonly modifiers?: readonly ModifierSpec[];
   readonly unlocks?: readonly string[];   // 'minigame:fishing.net', 'ground:fishing.deep_gully'
-  readonly salvage: number;               // share of item cost returned at close camp
-}
+}   // the Sawmill spec's StructureDef (with levels) supersedes this one
 export interface GroundDef { readonly id: string; readonly region: string;
   readonly bestTide: 'flood' | 'ebb' | 'either'; readonly tideSwing: number;
   readonly fogRate: number; readonly findMult: number; readonly requires?: UnlockExpr }
@@ -156,14 +155,14 @@ export interface SupplyDef { readonly item: ItemId; readonly consumer: SkillId; 
 
 - Generalize `PrimeRule` to `MadeItemRule` (Prime spar, Prize fish).
 - Items both camps make move to a `company.` namespace (`company.ship_fitting`), with a save migration.
-- Save: `camps.fishing = { cash, hands, built, ground, era, run }`, `shares.fishing`, `story.fishingOpened`; `bank` stays top-level. Deep-merge nested defaults on load; Fishing close camp clears `camps.fishing` only.
+- Save: `camps.fishing = { cash, hands, ground, era, run }`, `shares.fishing`, `story.fishingOpened`; `bank` and `structures` stay top-level and never reset. Deep-merge nested defaults on load; Fishing close camp clears `camps.fishing` only.
 - Build Fishing in `packages/skills`, not inside `timberline.html`; the playtest page can still be bundled as one file.
 
 ## 9. Build order
 
-**Second playtest (smallest version that proves camps feed each other):**
-1. Warehouse, Prime spars and five finds (Prime timber spec, section 8). Prerequisite.
-2. Fishing opens on first close camp: story card, founding crate, separate till.
+**First Fishing playtest (after the Sawmill has shipped):**
+1. Warehouse, Prime timber and the Sawmill already in place.
+2. Fishing opens on first Sawmill close camp: story card, founding crate, separate till.
 3. **Jetty, Pole rack, Smokehouse.**
 4. Idle loop with the tide (no fog yet), one ground (Gull Spit Bar), close camp at 40,000 lb.
 5. **Strike and land** with size choice, par and the assist.
@@ -177,6 +176,6 @@ Playtest questions: "Did you play a felling round to get spars for the fishing c
 
 ## 10. Owner questions
 
-1. **What makes room for Fishing in 1.0?** (a) It replaces the Hauling skill, (b) it replaces Prospecting, or (c) 1.0 grows to 9 skills. **Recommendation: (a).** Hauling already lives in Logging as a mini-game and was on the cut line. The slice becomes Logging and Fishing, then Sawmilling and Raising.
-2. **Do structures reset at Fishing close camp?** **Recommendation: yes, with half the items back as salvage.** That matches "strip the outpost," keeps Logging drops useful, and leaves permanent buildings as meta rewards.
-3. **Separate cash per camp?** **Recommendation: yes.** Shared cash lets one big Logging run buy out every new camp.
+1. **When does Fishing open?** (a) On the first Sawmill close camp, (b) after 3 Logging close camps, (c) at a Landfall milestone. **Recommendation: (a).** It spaces the camps one prestige apart, and the Sawmill's planks are ready for the jetty and dories.
+
+Settled 2026-10-24: Fishing is in 1.0 (9 skills); structures stay built; each camp keeps its own cash (assumed, owner to confirm).
