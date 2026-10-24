@@ -8,6 +8,8 @@ const mk=(store)=>new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:tru
   w.addEventListener('error',e=>errs.push('win:'+e.message));
 }});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// Poll a condition instead of racing fixed sleeps against the game loop (jsdom timers slow down under CPU load).
+const waitFor=async(f,ms=15000)=>{ const t0=Date.now(); while(Date.now()-t0<ms){ try{ if(f()) return true; }catch(e){} await sleep(20); } return false; };
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++;};
 (async()=>{
  // 1. legacy save loads (v2 without run fields)
@@ -27,19 +29,23 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // 2. fresh game: drive the felling game with pointer events
  dom=mk(); await sleep(300); w=dom.window; d=w.document;
+ // Record every toast as it is added: toasts expire after 4.5s and are capped at 4, so reading the DOM later races them.
+ const seenToasts=[]; new w.MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>seenToasts.push(n.textContent)))).observe(d.getElementById('toasts'),{childList:true});
  const g=[...d.querySelectorAll('#chain .act.game')];
  g[0].click(); ok(!d.getElementById('mg').hidden,'felling game opens');
  const cv=d.getElementById('mgCanvas'); const pe=(t)=>cv.dispatchEvent(new w.MouseEvent(t,{bubbles:true,clientX:5,clientY:5}));
  pe('pointerdown'); pe('pointerup');           // aim
  pe('pointerdown'); pe('pointerup');           // arm
  pe('pointerdown'); await sleep(2000); pe('pointerup'); // saw
- await sleep(1500);
+ await waitFor(()=>/Fell another/.test(d.getElementById('mgBtns').textContent));
  ok(/Fell another/.test(d.getElementById('mgBtns').textContent),'felling run finished: '+d.getElementById('mgStatus').textContent.slice(0,60));
- d.getElementById('mgClose').click();
- await sleep(300);
  const db=d.getElementById('draftBtn');
+ // the toast lives 4.5s, so check it the moment the draft is queued, before closing the mini-game
+ await waitFor(()=>!db.hidden);
+ await sleep(0); ok(seenToasts.some(t=>/Draft ready/.test(t)),'draft toast shown');
+ d.getElementById('mgClose').click();
+ await waitFor(()=>d.getElementById('mg').hidden);
  ok(!db.hidden && /Draft ready \(1\)/.test(db.textContent),'draft queued after mini-game: '+db.textContent);
- ok(d.querySelectorAll('.toast').length>0 && /Draft ready/.test(d.getElementById('toasts').textContent),'draft toast shown');
  db.click(); ok(!d.getElementById('draft').hidden,'draft modal opens');
  const cards=[...d.querySelectorAll('#dCards .pcard')]; ok(cards.length===3,'3 cards offered');
  const pid=cards[0].dataset.p; cards[0].click();

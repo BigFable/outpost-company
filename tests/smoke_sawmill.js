@@ -22,6 +22,9 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const base=await baseSave();
  let dom=mk({'timberline-v2':JSON.stringify(base)}); await sleep(300); let w=dom.window, d=w.document, E=s=>w.__eval(s);
  const $=id=>d.getElementById(id);
+ // The game seeds its drops/saw streams from Date.now() (freshRng), so log rolls differed every run. Pin them.
+ const SEED=+process.env.SAW_SEED||1234567;
+ E(`S.rng.drops=${SEED}; S.rng.saw=${SEED*7+13}`);
  // ---------- 1. warehouse
  ok(E('bankTotal()')===0 && $('lsWhV').textContent==='0 items' && $('lsOrdV').textContent==='None open' && $('campTabs').hidden,'new company: empty warehouse in the ledger strip, no camp tabs yet');
  ok(E('Core.ITEMS.length')===8 && E(`Core.ITEMS.every(i=>i.id.includes('.'))`),'item definitions are data in core, namespaced by skill');
