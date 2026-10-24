@@ -1060,6 +1060,99 @@ var Core = (function(exports) {
 			target: 100
 		}
 	});
+	/**
+	* The crews' route: a slower idle path to the same improvements, from milestones
+	* the company reaches without mini-games. The mini-game route stays faster;
+	* improvements whose only effect is inside a mini-game have no crews' route.
+	* `achievements` is a derived stat: the number of achievements earned.
+	*/
+	var IMPROVEMENT_ALT_REQS = deepFreeze({
+		swamper: {
+			text: "Fill 6 charter orders",
+			stats: ["contracts"],
+			target: 6
+		},
+		hay: {
+			text: "Work through 3 winters",
+			stats: ["winters"],
+			target: 3
+		},
+		wedges: {
+			text: "Finish 20 tracts",
+			stats: ["tracts"],
+			target: 20
+		},
+		cook: {
+			text: "Fill 30 charter orders",
+			stats: ["contracts"],
+			target: 30
+		},
+		grade: {
+			text: "Earn 36 achievements",
+			stats: ["achievements"],
+			target: 36
+		},
+		bunks: {
+			text: "Finish 60 tracts",
+			stats: ["tracts"],
+			target: 60
+		},
+		corduroy: {
+			text: "Work through 15 winters",
+			stats: ["winters"],
+			target: 15
+		},
+		icerd: {
+			text: "Work through 22 winters",
+			stats: ["winters"],
+			target: 22
+		},
+		smith: {
+			text: "Deliver 8 million bd ft in all",
+			stats: ["deliv"],
+			target: 8e6
+		},
+		scribner: {
+			text: "Fill 60 charter orders",
+			stats: ["contracts"],
+			target: 60
+		},
+		skyline: {
+			text: "Finish 120 tracts",
+			stats: ["tracts"],
+			target: 120
+		},
+		airbrakes: {
+			text: "Deliver 75 million bd ft in all",
+			stats: ["deliv"],
+			target: 75e6
+		},
+		radios: {
+			text: "Earn 46 achievements",
+			stats: ["achievements"],
+			target: 46
+		},
+		shop: {
+			text: "Fill 100 charter orders",
+			stats: ["contracts"],
+			target: 100
+		},
+		optimize: {
+			text: "Deliver 500 million bd ft in all",
+			stats: ["deliv"],
+			target: 5e8
+		},
+		gps: {
+			text: "Finish 400 tracts",
+			stats: ["tracts"],
+			target: 400
+		},
+		telematics: {
+			text: "Fill 250 charter orders",
+			stats: ["contracts"],
+			target: 250
+		}
+	});
 	var SEASONS = deepFreeze([
 		"Spring",
 		"Summer",
@@ -1530,10 +1623,40 @@ var Core = (function(exports) {
 		return def.ladder && def.when[0] ? def.when[0].metric : null;
 	}
 	/** Repeat bounties pay this share of the original cash reward. */
-	var BOUNTY_SHARE = .6;
+	var BOUNTY_RATE = .25;
+	/** Repeat bounties pay an outpost at most this share of the cost of its next push inland. */
+	var BOUNTY_CAP = .2;
+	/**
+	* Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's
+	* cost, or of the current era's cost once the last era is reached.
+	*/
+	function bountyCap(nextEraCost, currentEraCost) {
+		return Math.round(BOUNTY_CAP * (Number.isFinite(nextEraCost) ? nextEraCost : currentEraCost));
+	}
+	/** Cash one repeat bounty pays: BOUNTY_RATE of the reward, limited by what the cap has left (never negative). */
+	function bountyPay(cash, cap, paidSoFar) {
+		return Math.max(0, Math.min(Math.round(cash * BOUNTY_RATE), cap - paidSoFar));
+	}
 	/** [current, target] for an improvement unlock: the sum of the named run stats. */
 	function requirementProgress(req, stats) {
 		return [req.stats.reduce((a, k) => a + (stats[k] || 0), 0), req.target];
+	}
+	/**
+	* [current, target] of whichever unlock route (mini-game or crews') is closer
+	* to done. The crews' route may read the derived stat `achievements` (count of
+	* achievements earned), which the caller adds to `stats`.
+	*/
+	function improvementProgress(id, stats) {
+		const req = IMPROVEMENT_REQS[id], alt = IMPROVEMENT_ALT_REQS[id];
+		const a = req ? requirementProgress(req, stats) : [0, 1];
+		const b = alt ? requirementProgress(alt, stats) : null;
+		return b && b[0] / b[1] > a[0] / a[1] ? b : a;
+	}
+	/** Unlock text naming both routes: "Finish 3 skidding runs, or fill 6 charter orders". */
+	function improvementReqText(id) {
+		const req = IMPROVEMENT_REQS[id], alt = IMPROVEMENT_ALT_REQS[id];
+		if (!req) return alt ? alt.text : "";
+		return req.text + (alt ? ", or " + alt.text.charAt(0).toLowerCase() + alt.text.slice(1) : "");
 	}
 	//#endregion
 	//#region packages/core/src/formulas.ts
@@ -1626,6 +1749,32 @@ var Core = (function(exports) {
 	function boostLength(radios, pacerCopies, fiddler) {
 		return (radios ? 45 : 30) + 15 * pacerCopies + (fiddler ? 10 : 0);
 	}
+	/** At most this many stages run pace-boosted at once (Fog lifts ignores the limit). */
+	var BOOST_STAGES = 2;
+	/** A stage banks at most this many seconds of pace boost. */
+	var BOOST_BANK = 120;
+	var BOOST_ORDER = [
+		"fell",
+		"buck",
+		"skid",
+		"haul"
+	];
+	/**
+	* Pace-boost end times after a mini-game grants a boost to `stage` at time `t`.
+	* Without Fog lifts (`golden`), the stages already boosted that ended soonest
+	* drop (end time set to `t`) until fewer than BOOST_STAGES others remain; with
+	* it, every stage is boosted. Each boosted stage banks at most BOOST_BANK s.
+	* Returns a new object; the input is not changed.
+	*/
+	function grantBoost(boost, t, stage, len, golden) {
+		const b = { ...boost };
+		if (!golden) {
+			const on = BOOST_ORDER.filter((k) => k !== stage && (b[k] || 0) > t).sort((x, y) => b[x] - b[y]);
+			while (on.length >= 2) b[on.shift()] = t;
+		}
+		for (const k of golden ? BOOST_ORDER : [stage]) b[k] = Math.min(t + 120, Math.max(b[k] || 0, t) + len);
+		return b;
+	}
 	/** Effective per-second rate of a stage (before payroll efficiency). */
 	function stageRate(stage, i) {
 		let r = i.base * i.season * i.boost;
@@ -1669,9 +1818,15 @@ var Core = (function(exports) {
 	function clauseMult(mods) {
 		return mods.reduce((m, id) => m * (MODS.find((x) => x.id === id)?.x || 1), 1);
 	}
-	/** Charter Shares banked by closing camp now. */
-	function legacyGain(delivered, mods, chronicler) {
-		return Math.floor(legacyBase(delivered) * clauseMult(mods) * (chronicler ? 1.15 : 1));
+	/** Charter Shares added per push inland (era reached) this outpost, before multipliers. */
+	var ERA_SHARES = 8;
+	/**
+	* Charter Shares banked by closing camp now: (legacyBase + ERA_SHARES × era)
+	* × clauses × 1.15 with the chronicler, so closing after more eras pays fairly
+	* even on a short outpost.
+	*/
+	function legacyGain(delivered, era, mods, chronicler) {
+		return Math.floor((legacyBase(delivered) + 8 * era) * clauseMult(mods) * (chronicler ? 1.15 : 1));
 	}
 	/** The charter ship takes a cargo once the outpost reaches Steam Camp or delivers CLOSE_VOL. */
 	function canCloseCamp(era, delivered) {
@@ -1864,13 +2019,18 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
-	exports.BOUNTY_SHARE = BOUNTY_SHARE;
+	exports.BOOST_BANK = BOOST_BANK;
+	exports.BOOST_STAGES = BOOST_STAGES;
+	exports.BOUNTY_CAP = BOUNTY_CAP;
+	exports.BOUNTY_RATE = BOUNTY_RATE;
 	exports.CLOSE_VOL = CLOSE_VOL;
 	exports.EQUIPMENT = EQUIPMENT;
 	exports.ERAS = ERAS;
+	exports.ERA_SHARES = ERA_SHARES;
 	exports.ERA_SPECIES = ERA_SPECIES;
 	exports.HIRE_RATE = HIRE_RATE;
 	exports.IMPROVEMENTS = IMPROVEMENTS;
+	exports.IMPROVEMENT_ALT_REQS = IMPROVEMENT_ALT_REQS;
 	exports.IMPROVEMENT_REQS = IMPROVEMENT_REQS;
 	exports.META = META;
 	exports.MILLS = MILLS;
@@ -1890,7 +2050,9 @@ var Core = (function(exports) {
 	exports.applyMults = applyMults;
 	exports.boostFactor = boostFactor;
 	exports.boostLength = boostLength;
+	exports.bountyCap = bountyCap;
 	exports.bountyMetric = bountyMetric;
+	exports.bountyPay = bountyPay;
 	exports.canCloseCamp = canCloseCamp;
 	exports.clamp = clamp;
 	exports.clauseMult = clauseMult;
@@ -1907,8 +2069,11 @@ var Core = (function(exports) {
 	exports.genHire = genHire;
 	exports.genOffer = genOffer;
 	exports.genTract = genTract;
+	exports.grantBoost = grantBoost;
 	exports.handAmount = handAmount;
 	exports.improvementMult = improvementMult;
+	exports.improvementProgress = improvementProgress;
+	exports.improvementReqText = improvementReqText;
 	exports.legacyBase = legacyBase;
 	exports.legacyGain = legacyGain;
 	exports.makeTract = makeTract;
@@ -1945,11 +2110,15 @@ const PILES = Core.PILES;
 const EQ = Core.EQUIPMENT;
 const UPG = Core.IMPROVEMENTS;
 const UPG_REQ = Core.IMPROVEMENT_REQS;
-const reqProg = u => Core.requirementProgress(UPG_REQ[u.id], S.stats);
+// two unlock routes: mini-game targets (faster) or the crews' route of idle milestones (Core.IMPROVEMENT_ALT_REQS)
+const UPG_ALT = Core.IMPROVEMENT_ALT_REQS;
+const hasReq = u => !!(UPG_REQ[u.id] || UPG_ALT[u.id]);
+const reqProg = u => Core.improvementProgress(u.id, Object.assign({achievements: S.ach.length}, S.stats));
+const reqText = u => Core.improvementReqText(u.id);
 function checkUnlocks(quiet){
   const got = [];
   for (const u of UPG){
-    if (has(u.id) || !UPG_REQ[u.id] || u.era > S.era) continue;
+    if (has(u.id) || !hasReq(u) || u.era > S.era) continue;
     const [c,t] = reqProg(u); if (c < t) continue;
     S.upg.push(u.id); got.push(u); note(`Improvement unlocked: ${u.name}.`);
   }
@@ -1969,7 +2138,7 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
   boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0}, ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now()});
-function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false}; }
+function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 let S = fresh();
 
@@ -2004,7 +2173,7 @@ const baseRate = stage => Core.crewRate(stage, S.own) * umult(stage) * umult('al
 const vmult = () => umult('value') * pmult('value');
 const cmult = () => umult('click') * pmult('click');
 const boostF = () => Core.boostFactor(!!perk('bull'));
-const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : '');
+const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : ` (up to ${Core.BOOST_STAGES} stages at a time)`);
 // effective per second, before payroll efficiency
 const rate = stage => Core.stageRate(stage, {base: baseRate(stage), season: seasonF(stage), boost: (S.boost[stage]||0) > S.t ? boostF() : 1,
   slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1});
@@ -2321,10 +2490,10 @@ function renderCompany(){
     const r = Math.min(1, S.cash/ec), net = (S.ema - S.upEma)*60;
     $('eraBar').style.width = (r*100).toFixed(1)+'%';
     $('eraPct').textContent = r >= 1 ? 'You can afford it now.' : `${Math.round(r*100)}% saved` + (net > 0 ? ` · about ${mins((ec - S.cash)/net*60)} at your current net income` : ''); }
-  const next = UPG.filter(u => !has(u.id) && UPG_REQ[u.id] && u.era <= S.era + 1).map(u => { const [c,t] = reqProg(u); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
+  const next = UPG.filter(u => !has(u.id) && hasReq(u) && u.era <= S.era + 1).map(u => { const [c,t] = reqProg(u); return {u, c, t, r: Math.min(1, c/t), later: u.era > S.era}; })
     .sort((a,b) => (a.later - b.later) || (b.r - a.r)).slice(0,6);
   list('upgs', next.map(o => o.u.id + o.later).join(), next.length ? next.map(o => `<div class="goal"><div class="line"><b>${o.u.name}</b><span class="spec" data-uc="${o.u.id}"></span></div>
-    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + UPG_REQ[o.u.id].text.charAt(0).toLowerCase() + UPG_REQ[o.u.id].text.slice(1) : UPG_REQ[o.u.id].text}.</p>
+    <p>${o.u.desc}</p><p class="req">${o.later ? `Unlocks at ${ERAS[o.u.era].name} once you ` + reqText(o.u).charAt(0).toLowerCase() + reqText(o.u).slice(1) : reqText(o.u)}.</p>
     <div class="bar"><i data-ub="${o.u.id}"></i></div></div>`).join('') : '<p class="empty">Every improvement for this stage of the company is unlocked.</p>');
   next.forEach(o => { const b = document.querySelector(`[data-ub="${o.u.id}"]`), c = document.querySelector(`[data-uc="${o.u.id}"]`);
     if (b) b.style.width = (o.r*100).toFixed(1)+'%'; if (c) c.textContent = `${fmt(Math.min(o.c, o.t))} / ${fmt(o.t)}`; });
@@ -2492,8 +2661,8 @@ function buttons(list){
     el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; box.appendChild(el); });
 }
 const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace'));
-function grantBoost(stage){ if (perk('absentee')) return; (perk('golden') ? ['fell','buck','skid','haul'] : [stage]).forEach(k => {
-  S.boost[k] = Math.min(S.t + 120, Math.max(S.boost[k]||0, S.t) + boostLen()); }); }
+// at most Core.BOOST_STAGES stages run boosted at once (the oldest drops; Fog lifts ignores the limit)
+function grantBoost(stage){ if (perk('absentee')) return; S.boost = Core.grantBoost(S.boost, S.t, stage, boostLen(), !!perk('golden')); }
 const mixPick = t => Core.pickFromMix(Math.random, t.mix) ?? t.mix[0][0];
 const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', haul:'Drive a load'};
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
@@ -2505,9 +2674,9 @@ const MG_HELP = {
 };
 function gearLine(kind){
   const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
-  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && UPG_REQ[u.id]).map(u => ({u, p:reqProg(u)})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
+  const ownG = gear.filter(u => has(u.id)), nextG = gear.filter(u => !has(u.id) && hasReq(u)).map(u => ({u, p:reqProg(u)})).sort((a,b) => (a.u.era - b.u.era) || (b.p[0]/b.p[1] - a.p[0]/a.p[1]))[0];
   const txt = (ownG.length ? `Your gear: ${ownG.map(u => u.name).join(', ')}.` : 'No gear for this job yet.') +
-    (nextG ? ` Next: ${nextG.u.name}. ${UPG_REQ[nextG.u.id].text} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
+    (nextG ? ` Next: ${nextG.u.name}. ${reqText(nextG.u)} (${fmt(Math.min(nextG.p[0], nextG.p[1]))}/${fmt(nextG.p[1])})${nextG.u.era > S.era ? `, at ${ERAS[nextG.u.era].name}` : ''}.` : '');
   if ($('mgGear').textContent !== txt) $('mgGear').textContent = txt;
 }
 function openMG(kind){
@@ -3080,9 +3249,11 @@ const hasMod = id => S.run && S.run.mods.includes(id);
 const mktMod = () => hasMod('market') ? .85 : 1;
 const modMult = mods => Core.clauseMult(mods || S.run.mods);
 const eraCost = i => Core.eraCost(i, {steam: !!meta('steam'), gas: !!meta('gas')});
-const legacyNow = () => Core.legacyGain(S.run.deliv, S.run.mods, !!meta('legacy'));
+const legacyNow = () => Core.legacyGain(S.run.deliv, S.era, S.run.mods, !!meta('legacy'));
 const canClose = () => Core.canCloseCamp(S.era, S.run.deliv);
-// repeat bounties: achievements already earned pay 60% of their cash again once per run when this run's own numbers reach the target
+// repeat bounties: achievements already earned pay Core.BOUNTY_RATE of their cash again once per run when this run's own numbers reach the target,
+// up to Core.BOUNTY_CAP of this outpost's next push inland, so perks and the board's support (not old rewards) drive most of the run-to-run speed-up
+const bountyCap = () => Core.bountyCap(eraCost(S.era+1), eraCost(S.era));
 const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul'];
 function snapBase(){ const b = {earned:S.earned, felled:S.felled}; BASEK.forEach(k => b[k] = S.stats[k] || 0); S.run.base = b; }
 function checkBounties(){
@@ -3092,10 +3263,11 @@ function checkBounties(){
     const k = Core.bountyMetric(a); if (!k) continue;
     const [cur, tgt] = achProg(a); const base = k === 'crew' ? 0 : (r.base[k] || 0);
     if (cur - base < tgt) continue;
-    const pay = Math.round(a.cash*Core.BOUNTY_SHARE); r.bounty.push(a.id); r.goals = (r.goals||0) + 1; S.cash += pay; tot += pay; n++;
+    const pay = Core.bountyPay(a.cash, bountyCap(), r.bountyPaid||0);
+    r.bounty.push(a.id); r.goals = (r.goals||0) + 1; r.bountyPaid = (r.bountyPaid||0) + pay; S.cash += pay; tot += pay; n++;
   }
   if (n) goalDrafts();
-  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (60% of the original reward).`});  }
+  if (n){ note(`Repeat ${n === 1 ? 'bounty' : 'bounties'} this outpost: +${money(tot)}.`); toast({label:'Outpost bounty', name:`+${money(tot)}`, line:`${n} ${n === 1 ? 'goal' : 'goals'} you already hold, met again this outpost (${Math.round(Core.BOUNTY_RATE*100)}% of the original reward, up to ${money(bountyCap())} an outpost at this stage).`});  }
   return n;
 }
 const runMin = () => (S.t - S.run.t0)/60;
@@ -3230,7 +3402,7 @@ function renderRun(){
   const key = ok ? `ok|${L}|${closeArmed}` : `no|${Math.floor(r.deliv/CLOSE_VOL*100)}`;
   list('closeBox', key, ok
     ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Charter Shares</span></div>
-       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
+       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${S.era ? ` + ${Core.ERA_SHARES*S.era} for ${S.era} ${S.era === 1 ? 'push' : 'pushes'} inland` : ''}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
        ${closeArmed ? `<div class="confirm"><b>Strip the outpost and sail?</b> You leave behind cash, equipment, tracts, orders, piles, the company stage and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Charter Shares.
          <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Load the ship · send ${fmt(L)} shares home</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
        : `<div class="cbtns"><button class="act" type="button" id="closeArm">Close camp…</button></div>`}`

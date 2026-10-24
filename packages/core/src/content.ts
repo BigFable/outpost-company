@@ -133,6 +133,32 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
   telematics: {text:'Finish 100 runs of any job', stats:RUNS_ANY, target:100},
 });
 
+/**
+ * The crews' route: a slower idle path to the same improvements, from milestones
+ * the company reaches without mini-games. The mini-game route stays faster;
+ * improvements whose only effect is inside a mini-game have no crews' route.
+ * `achievements` is a derived stat: the number of achievements earned.
+ */
+export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
+  swamper: {text:'Fill 6 charter orders', stats:['contracts'], target:6},
+  hay: {text:'Work through 3 winters', stats:['winters'], target:3},
+  wedges: {text:'Finish 20 tracts', stats:['tracts'], target:20},
+  cook: {text:'Fill 30 charter orders', stats:['contracts'], target:30},
+  grade: {text:'Earn 36 achievements', stats:['achievements'], target:36},
+  bunks: {text:'Finish 60 tracts', stats:['tracts'], target:60},
+  corduroy: {text:'Work through 15 winters', stats:['winters'], target:15},
+  icerd: {text:'Work through 22 winters', stats:['winters'], target:22},
+  smith: {text:'Deliver 8 million bd ft in all', stats:['deliv'], target:8e6},
+  scribner: {text:'Fill 60 charter orders', stats:['contracts'], target:60},
+  skyline: {text:'Finish 120 tracts', stats:['tracts'], target:120},
+  airbrakes: {text:'Deliver 75 million bd ft in all', stats:['deliv'], target:7.5e7},
+  radios: {text:'Earn 46 achievements', stats:['achievements'], target:46},
+  shop: {text:'Fill 100 charter orders', stats:['contracts'], target:100},
+  optimize: {text:'Deliver 500 million bd ft in all', stats:['deliv'], target:5e8},
+  gps: {text:'Finish 400 tracts', stats:['tracts'], target:400},
+  telematics: {text:'Fill 250 charter orders', stats:['contracts'], target:250},
+});
+
 export const SEASONS: readonly Season[] = deepFreeze(['Spring','Summer','Fall','Winter']);
 /** Seconds per season. */
 export const SEASON_LEN = 150;

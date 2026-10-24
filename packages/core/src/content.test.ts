@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { must } from './test-rng';
 import {
-  achievementMet, achievementProgress, ACHIEVEMENTS, bountyMetric, requirementProgress, type AchMetric,
+  achievementMet, achievementProgress, ACHIEVEMENTS, BOUNTY_CAP, BOUNTY_RATE, bountyCap, bountyMetric, bountyPay,
+  improvementProgress, improvementReqText, requirementProgress, type AchMetric,
 } from './achievements';
 import {
-  EQUIPMENT, ERA_SPECIES, ERAS, IMPROVEMENT_REQS, IMPROVEMENTS, META, MODS, PERKS, RARITY, SPECIES, STAGES, TRACT_BASE,
+  EQUIPMENT, ERA_SPECIES, ERAS, IMPROVEMENT_ALT_REQS, IMPROVEMENT_REQS, IMPROVEMENTS, META, MODS, PERKS, RARITY, SPECIES, STAGES, TRACT_BASE,
 } from './content';
 
 describe('content tables', () => {
@@ -71,5 +72,40 @@ describe('achievements', () => {
   it('improvement requirements sum their stats and treat missing ones as 0', () => {
     expect(requirementProgress(must(IMPROVEMENT_REQS.cook), { run_fell: 4, run_buck: 3 })).toEqual([7, 10]);
     expect(requirementProgress(must(IMPROVEMENT_REQS.smith), {})).toEqual([0, 25]);
+  });
+});
+
+describe('repeat bounties', () => {
+  it('pay 25% of the reward, capped at 20% of the next era per outpost', () => {
+    expect(BOUNTY_RATE).toBe(0.25);
+    expect(BOUNTY_CAP).toBe(0.2);
+    expect(bountyCap(15000, 0)).toBe(3000);
+    expect(bountyCap(Infinity, 10000000)).toBe(2000000);
+    expect(bountyPay(500, 3000, 0)).toBe(125);
+    expect(bountyPay(150, 3000, 0)).toBe(38);
+    expect(bountyPay(20000, 3000, 2837)).toBe(163);
+    expect(bountyPay(20000, 3000, 3000)).toBe(0);
+    expect(bountyPay(20000, 3000, 3500)).toBe(0);
+  });
+});
+
+describe("improvements' crews' route", () => {
+  it('17 improvements have an idle route, each for a real improvement', () => {
+    const ids = IMPROVEMENTS.map((u) => u.id);
+    expect(Object.keys(IMPROVEMENT_ALT_REQS)).toHaveLength(17);
+    for (const id of Object.keys(IMPROVEMENT_ALT_REQS)) expect(ids).toContain(id);
+    expect(IMPROVEMENT_ALT_REQS.gunstick).toBeUndefined();
+    expect(must(IMPROVEMENT_ALT_REQS.wedges).target).toBe(20);
+  });
+  it('progress reports whichever route is closer to done', () => {
+    expect(improvementProgress('swamper', { run_skid: 1 })).toEqual([1, 3]);
+    expect(improvementProgress('swamper', { run_skid: 1, contracts: 5 })).toEqual([5, 6]);
+    expect(improvementProgress('grade', { buck85: 0, achievements: 30 })).toEqual([30, 36]);
+    expect(improvementProgress('gunstick', { contracts: 99 })).toEqual([0, 3]);
+  });
+  it('text names both routes', () => {
+    expect(improvementReqText('swamper')).toBe('Finish 3 skidding runs, or fill 6 charter orders');
+    expect(improvementReqText('wedges')).toBe('Land 3 falls in the opening, or finish 20 tracts');
+    expect(improvementReqText('gunstick')).toBe('Finish 3 felling runs');
   });
 });

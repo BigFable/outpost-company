@@ -129,6 +129,32 @@ export function boostLength(radios: boolean, pacerCopies: number, fiddler: boole
   return (radios ? 45 : 30) + 15 * pacerCopies + (fiddler ? 10 : 0);
 }
 
+/** At most this many stages run pace-boosted at once (Fog lifts ignores the limit). */
+export const BOOST_STAGES = 2;
+/** A stage banks at most this many seconds of pace boost. */
+export const BOOST_BANK = 120;
+const BOOST_ORDER: readonly Stage[] = ['fell', 'buck', 'skid', 'haul'];
+
+/** Pace-boost end times by stage, in sim seconds (a stage is boosted while its end time is after now). */
+export type BoostState = Partial<Record<Stage, number>>;
+
+/**
+ * Pace-boost end times after a mini-game grants a boost to `stage` at time `t`.
+ * Without Fog lifts (`golden`), the stages already boosted that ended soonest
+ * drop (end time set to `t`) until fewer than BOOST_STAGES others remain; with
+ * it, every stage is boosted. Each boosted stage banks at most BOOST_BANK s.
+ * Returns a new object; the input is not changed.
+ */
+export function grantBoost(boost: Readonly<BoostState>, t: number, stage: Stage, len: number, golden: boolean): BoostState {
+  const b: BoostState = { ...boost };
+  if (!golden) {
+    const on = BOOST_ORDER.filter((k) => k !== stage && (b[k] || 0) > t).sort((x, y) => (b[x] as number) - (b[y] as number));
+    while (on.length >= BOOST_STAGES) b[on.shift() as Stage] = t;
+  }
+  for (const k of golden ? BOOST_ORDER : [stage]) b[k] = Math.min(t + BOOST_BANK, Math.max(b[k] || 0, t) + len);
+  return b;
+}
+
 export interface StageRateInput {
   /** crewRate × improvement/perk/meta multipliers. */
   readonly base: number;
@@ -200,9 +226,16 @@ export function clauseMult(mods: readonly string[]): number {
   return mods.reduce((m, id) => m * (MODS.find((x) => x.id === id)?.x || 1), 1);
 }
 
-/** Charter Shares banked by closing camp now. */
-export function legacyGain(delivered: number, mods: readonly string[], chronicler: boolean): number {
-  return Math.floor(legacyBase(delivered) * clauseMult(mods) * (chronicler ? 1.15 : 1));
+/** Charter Shares added per push inland (era reached) this outpost, before multipliers. */
+export const ERA_SHARES = 8;
+
+/**
+ * Charter Shares banked by closing camp now: (legacyBase + ERA_SHARES × era)
+ * × clauses × 1.15 with the chronicler, so closing after more eras pays fairly
+ * even on a short outpost.
+ */
+export function legacyGain(delivered: number, era: number, mods: readonly string[], chronicler: boolean): number {
+  return Math.floor((legacyBase(delivered) + ERA_SHARES * era) * clauseMult(mods) * (chronicler ? 1.15 : 1));
 }
 
 /** The charter ship takes a cargo once the outpost reaches Steam Camp or delivers CLOSE_VOL. */

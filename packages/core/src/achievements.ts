@@ -4,7 +4,7 @@
  * the numbers come from (the prototype reads its save state; M3 reads GameState).
  */
 import { deepFreeze } from './freeze';
-import type { StatRequirement } from './content';
+import { IMPROVEMENT_ALT_REQS, IMPROVEMENT_REQS, type StatRequirement } from './content';
 
 /** Numbers an achievement condition can test. `crewedStages` = stages with a working crew (0-4). */
 export type AchMetric =
@@ -119,9 +119,43 @@ export function bountyMetric(def: AchievementDef): AchMetric | null {
 }
 
 /** Repeat bounties pay this share of the original cash reward. */
-export const BOUNTY_SHARE = 0.6;
+export const BOUNTY_RATE = 0.25;
+/** Repeat bounties pay an outpost at most this share of the cost of its next push inland. */
+export const BOUNTY_CAP = 0.2;
+
+/**
+ * Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's
+ * cost, or of the current era's cost once the last era is reached.
+ */
+export function bountyCap(nextEraCost: number, currentEraCost: number): number {
+  return Math.round(BOUNTY_CAP * (Number.isFinite(nextEraCost) ? nextEraCost : currentEraCost));
+}
+
+/** Cash one repeat bounty pays: BOUNTY_RATE of the reward, limited by what the cap has left (never negative). */
+export function bountyPay(cash: number, cap: number, paidSoFar: number): number {
+  return Math.max(0, Math.min(Math.round(cash * BOUNTY_RATE), cap - paidSoFar));
+}
 
 /** [current, target] for an improvement unlock: the sum of the named run stats. */
 export function requirementProgress(req: StatRequirement, stats: Readonly<Record<string, number | undefined>>): [number, number] {
   return [req.stats.reduce((a, k) => a + (stats[k] || 0), 0), req.target];
+}
+
+/**
+ * [current, target] of whichever unlock route (mini-game or crews') is closer
+ * to done. The crews' route may read the derived stat `achievements` (count of
+ * achievements earned), which the caller adds to `stats`.
+ */
+export function improvementProgress(id: string, stats: Readonly<Record<string, number | undefined>>): [number, number] {
+  const req = IMPROVEMENT_REQS[id], alt = IMPROVEMENT_ALT_REQS[id];
+  const a: [number, number] = req ? requirementProgress(req, stats) : [0, 1];
+  const b = alt ? requirementProgress(alt, stats) : null;
+  return b && b[0] / b[1] > a[0] / a[1] ? b : a;
+}
+
+/** Unlock text naming both routes: "Finish 3 skidding runs, or fill 6 charter orders". */
+export function improvementReqText(id: string): string {
+  const req = IMPROVEMENT_REQS[id], alt = IMPROVEMENT_ALT_REQS[id];
+  if (!req) return alt ? alt.text : '';
+  return req.text + (alt ? ', or ' + alt.text.charAt(0).toLowerCase() + alt.text.slice(1) : '');
 }

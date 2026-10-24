@@ -3,8 +3,8 @@ import { must } from './test-rng';
 import { GOLDEN } from './__fixtures__/prototype-golden';
 import { EQUIPMENT, SPECIES } from './content';
 import {
-  applyMults, boostFactor, boostLength, canCloseCamp, clauseMult, crewCount, crewRate, crewUpkeep, crewUpkeepFull,
-  distanceFactor, equipmentCost, eraCost, handAmount, improvementMult, legacyBase, legacyGain, marketPrice,
+  applyMults, BOOST_BANK, BOOST_STAGES, boostFactor, boostLength, canCloseCamp, clauseMult, crewCount, crewRate, crewUpkeep, crewUpkeepFull,
+  distanceFactor, equipmentCost, ERA_SHARES, eraCost, grantBoost, handAmount, improvementMult, legacyBase, legacyGain, marketPrice,
   missedPenalty, mobilization, perkCount, perkMult, seasonFactor, slopeFactor, stageRate, treeValue,
 } from './formulas';
 
@@ -123,6 +123,24 @@ describe('site factors', () => {
     expect(boostLength(false, 0, false)).toBe(30);
     expect(boostLength(true, 2, true)).toBe(45 + 30 + 10);
   });
+  it('grantBoost boosts at most two stages at once, dropping the one ending soonest', () => {
+    expect(BOOST_STAGES).toBe(2);
+    let b = grantBoost({}, 0, 'fell', 30, false);
+    b = grantBoost(b, 5, 'buck', 30, false);
+    b = grantBoost(b, 10, 'skid', 30, false);
+    expect(b).toEqual({ fell: 10, buck: 35, skid: 40 });
+    // re-boosting a boosted stage drops nobody
+    expect(grantBoost(b, 12, 'skid', 30, false)).toEqual({ fell: 10, buck: 35, skid: 70 });
+  });
+  it('grantBoost banks at most BOOST_BANK seconds and does not mutate its input', () => {
+    const start = { haul: 100 };
+    const b = grantBoost(start, 0, 'haul', 45, false);
+    expect(b.haul).toBe(BOOST_BANK);
+    expect(start).toEqual({ haul: 100 });
+  });
+  it('Fog lifts (golden) boosts every stage and ignores the limit', () => {
+    expect(grantBoost({ fell: 50 }, 0, 'buck', 30, true)).toEqual({ fell: 80, buck: 30, skid: 30, haul: 30 });
+  });
 });
 
 describe('marketPrice', () => {
@@ -172,8 +190,15 @@ describe('close camp', () => {
   });
   it('legacyGain matches the prototype for captured runs', () => {
     for (const { deliv, mods, nodes, L } of GOLDEN.legacy as { deliv: number; mods: string[]; nodes: string[]; L: number }[]) {
-      expect(legacyGain(deliv, mods, nodes.includes('legacy'))).toBe(L);
+      expect(legacyGain(deliv, 0, mods, nodes.includes('legacy'))).toBe(L);
     }
+  });
+  it('legacyGain adds ERA_SHARES per era before multipliers', () => {
+    expect(ERA_SHARES).toBe(8);
+    expect(legacyGain(180000, 0, [], false)).toBe(3);
+    expect(legacyGain(180000, 2, [], false)).toBe(19);
+    // (3 + 8) * 1.25 * 1.15 = 15.8 -> 15
+    expect(legacyGain(180000, 1, ['drought'], true)).toBe(15);
   });
   it('clause multiplier multiplies known clauses and ignores unknown ones', () => {
     expect(clauseMult([])).toBe(1);
