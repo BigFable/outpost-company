@@ -4,8 +4,8 @@ import { GOLDEN } from './__fixtures__/prototype-golden';
 import { EQUIPMENT, SPECIES } from './content';
 import {
   applyMults, BOOST_BANK, BOOST_STAGES, boostFactor, boostLength, canCloseCamp, clauseMult, crewCount, crewRate, crewUpkeep, crewUpkeepFull,
-  distanceFactor, equipmentCost, ERA_SHARES, eraCost, grantBoost, handAmount, improvementMult, legacyBase, legacyGain, marketPrice,
-  missedPenalty, mobilization, perkCount, perkMult, seasonFactor, slopeFactor, stageRate, treeValue,
+  distanceFactor, equipmentCost, equipmentCostTotal, equipmentMaxAffordable, ERA_SHARES, eraCost, grantBoost, handAmount, improvementMult, legacyBase, legacyGain, marketPrice,
+  maxSkidLogs, missedPenalty, mobilization, perkCount, perkMult, seasonFactor, skidTurnLoad, skidTurnSizes, skidTurnSpeed, slopeFactor, stageRate, treeValue,
 } from './formulas';
 
 const NO_SEASON_OPTS = { swampBoots: false, corduroy: false, iceRoad: false, iceKing: false };
@@ -71,7 +71,53 @@ describe('multipliers', () => {
   });
 });
 
+describe('equipmentCostTotal and equipmentMaxAffordable', () => {
+  it('totals exactly the sum of buying one at a time', () => {
+    const owned = 3; let sum = 0;
+    for (let i = 0; i < 25; i++) sum += equipmentCost(90, owned + i);
+    expect(equipmentCostTotal(90, owned, 25)).toBe(sum);
+    expect(equipmentCostTotal(90, owned, 1)).toBe(equipmentCost(90, owned));
+    expect(equipmentCostTotal(90, owned, 0)).toBe(0);
+  });
+  it('Max buys as many as cash allows and no more', () => {
+    const { count, total } = equipmentMaxAffordable(40, 2, 1000);
+    expect(total).toBe(equipmentCostTotal(40, 2, count));
+    expect(total).toBeLessThanOrEqual(1000);
+    expect(total + equipmentCost(40, 2 + count)).toBeGreaterThan(1000);
+    expect(equipmentMaxAffordable(40, 0, 39)).toEqual({ count: 0, total: 0 });
+    expect(equipmentMaxAffordable(40, 0, 40)).toEqual({ count: 1, total: 40 });
+    expect(equipmentMaxAffordable(1, 0, 1e300, 50).count).toBe(50);
+  });
+});
+
+describe('skid-game turns', () => {
+  it('max turn is 3 logs, raised by rungs, +1 with Four-log turns', () => {
+    expect(maxSkidLogs([], false)).toBe(3);
+    expect(maxSkidLogs([], true)).toBe(4);
+    expect(maxSkidLogs(['chokers'], false)).toBe(5);
+    expect(maxSkidLogs(['chokers', 'arch', 'bundle'], true)).toBe(13);
+  });
+  it('offers 1-3 logs, each rung and the largest turn', () => {
+    expect(skidTurnSizes([], false)).toEqual([1, 2, 3]);
+    expect(skidTurnSizes([], true)).toEqual([1, 2, 3, 4]);
+    expect(skidTurnSizes(['chokers', 'arch'], false)).toEqual([1, 2, 3, 5, 8]);
+    expect(skidTurnSizes(['chokers', 'arch', 'bundle'], true)).toEqual([1, 2, 3, 5, 8, 13]);
+  });
+  it('keeps the old 1-4 log loads and speeds, then scales load with logs and slows with weight', () => {
+    expect([1, 2, 3, 4].map(skidTurnLoad)).toEqual([1, 2, 3.2, 4.6]);
+    expect([1, 2, 3, 4].map(skidTurnSpeed)).toEqual([1.15, 1, 0.78, 0.62]);
+    expect(skidTurnLoad(12)).toBeCloseTo(13.8, 12);
+    for (let n = 2; n <= 13; n++) { expect(skidTurnLoad(n)).toBeGreaterThan(skidTurnLoad(n - 1)); expect(skidTurnSpeed(n)).toBeLessThan(skidTurnSpeed(n - 1)); }
+  });
+});
+
 describe('seasonFactor', () => {
+  it('greased runners turn spring mud into a skidding boost', () => {
+    expect(seasonFactor('Spring', 'skid', { ...NO_SEASON_OPTS, greased: true })).toBe(1.2);
+    expect(seasonFactor('Spring', 'skid', { ...NO_SEASON_OPTS, greased: true, swampBoots: true })).toBe(1.2);
+    expect(seasonFactor('Spring', 'haul', { ...NO_SEASON_OPTS, greased: true })).toBe(0.5);
+    expect(seasonFactor('Summer', 'skid', { ...NO_SEASON_OPTS, greased: true })).toBe(1);
+  });
   it('slows skid and haul in spring mud, less with corduroy, not skid with swamp boots', () => {
     expect(seasonFactor('Spring', 'skid', NO_SEASON_OPTS)).toBe(0.5);
     expect(seasonFactor('Spring', 'haul', { ...NO_SEASON_OPTS, corduroy: true })).toBe(0.75);

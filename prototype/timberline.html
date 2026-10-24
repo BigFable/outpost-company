@@ -121,6 +121,10 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .sellb{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:4px;padding:7px 9px;font-size:.8rem}
 .sellb:hover{color:var(--ink);border-color:var(--ink)}
 .empty{font-size:.82rem;color:var(--muted);margin:6px 0 0}
+.buyn{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;font-size:.8rem;color:var(--muted)}
+.buyn button{min-width:46px;border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:600}
+.buyn button:hover{border-color:var(--ink)}
+.buyn button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
 .contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
@@ -158,8 +162,15 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .sheet header p{margin:2px 0 0;font-size:.84rem;color:var(--muted)}
 #mgGear{color:var(--ink)!important;font-size:.8rem!important}
+.hbtns{display:flex;gap:6px;flex:none}
+#mgGuideBtn{min-width:34px;font-weight:700}
+.guide{border:1px solid var(--accent);border-left-width:5px;border-radius:6px;background:var(--bg);padding:10px 14px;font-size:.84rem}
+.guide ol{margin:6px 0 10px;padding-left:20px}
+.guide li+li{margin-top:4px}
+.peek{margin:0;font-size:.82rem;color:var(--muted);min-height:1.2em}
 .closeb{border:1px solid var(--line);background:transparent;border-radius:4px;padding:5px 10px;font-size:.82rem;flex:none}
 .mgc{display:block;width:100%;max-width:100%;border-radius:4px;touch-action:none;background:var(--sky);cursor:crosshair}
+.mgc:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .mgbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
 #mgStatus{font-size:.86rem;min-width:0;flex:1 1 260px}
 #mgBtns{display:flex;gap:8px;flex-wrap:wrap}
@@ -299,6 +310,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
       <section class="panel" id="yard">
         <p class="eyebrow">Equipment yard</p>
         <h2>Crews and machines</h2>
+        <div class="buyn" id="buyN" role="group" aria-label="How many to buy at a time"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
         <div id="eq"></div>
       </section>
       <section class="panel">
@@ -343,8 +355,14 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="modal" id="mg" hidden role="dialog" aria-modal="true" aria-labelledby="mgTitle">
   <div class="sheet">
-    <header><div><h2 id="mgTitle">Place a fall</h2><p id="mgHelp"></p><p id="mgGear"></p></div><button class="closeb" id="mgClose" type="button">Close</button></header>
-    <canvas class="mgc" id="mgCanvas" width="640" height="400"></canvas>
+    <header><div><h2 id="mgTitle">Place a fall</h2><p id="mgHelp"></p><p id="mgGear"></p></div><div class="hbtns"><button class="closeb" id="mgGuideBtn" type="button" aria-label="How to buck a stem" title="How to buck a stem" hidden>?</button><button class="closeb" id="mgClose" type="button">Close</button></div></header>
+    <div class="guide" id="mgGuide" hidden role="note" aria-labelledby="mgGuideT"><b id="mgGuideT">How to buck a stem</b>
+      <ol><li><b>Point along the stem.</b> The orange marks show where a sawlog can end: 8, 10, 12, 14 or 16 ft from your last cut.</li>
+        <li><b>Read the piece before you cut.</b> It turns green for a grade 1 sawlog, dark for grade 2 (knots), amber for grade 3 (sweep) and grey for pulp, with the reason and what it is worth. Tap or click to cut; arrow keys and Enter work too.</li>
+        <li><b>Send it to the landing.</b> Cut the rot off the butt, keep knots and sweep out of your best logs, and leave the top under 8 in as pulp. Stuck? Suggest a cut shows the next cut of the best plan, for a few points off the score.</li></ol>
+      <button class="mbtn primary" id="mgGuideOk" type="button">Got it</button></div>
+    <canvas class="mgc" id="mgCanvas" width="640" height="400" tabindex="0" aria-label="Mini-game field"></canvas>
+    <p class="peek" id="mgPeek" aria-live="polite" hidden></p>
     <div class="mgbar"><span id="mgStatus"></span><div id="mgBtns"></div></div>
   </div>
 </div>
@@ -790,7 +808,7 @@ var Core = (function(exports) {
 			id: "scalestick",
 			era: 0,
 			name: "Scaler’s stick",
-			desc: "Bucking game: see what each log is worth as you plan the cuts.",
+			desc: "Bucking game: see what each log is worth as you plan the cuts, and the length marks show the grade each cut would make.",
 			cost: 450,
 			mult: {},
 			game: "buck"
@@ -846,7 +864,7 @@ var Core = (function(exports) {
 			id: "grade",
 			era: 0,
 			name: "Bucking for grade",
-			desc: "Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: see the grade of a log before you cut.",
+			desc: "Cut lengths to the mill’s grade rules. Log value ×1.12. Bucking game: Suggest a cut costs half as much.",
 			cost: 2500,
 			mult: { value: 1.12 },
 			game: "buck"
@@ -945,8 +963,41 @@ var Core = (function(exports) {
 			desc: "Catch breakdowns early. Upkeep ×0.8.",
 			cost: 14e6,
 			mult: { upkeep: .8 }
+		},
+		{
+			id: "chokers",
+			era: 0,
+			name: "Choker chains",
+			desc: "Wire chokers hook more logs to one turn. Skidding ×1.1. Skid game: turns of up to 5 logs.",
+			cost: 1800,
+			mult: { skid: 1.1 },
+			game: "skid"
+		},
+		{
+			id: "arch",
+			era: 1,
+			name: "Logging arch",
+			desc: "A wheeled arch lifts the log ends clear of the ground. Skidding ×1.1. Skid game: turns of up to 8 logs.",
+			cost: 45e3,
+			mult: { skid: 1.1 },
+			game: "skid"
+		},
+		{
+			id: "bundle",
+			era: 2,
+			name: "Bundle yarding",
+			desc: "Whole bundles go out on one line. Skidding ×1.1. Skid game: log trains of up to 12 logs.",
+			cost: 7e5,
+			mult: { skid: 1.1 },
+			game: "skid"
 		}
 	]);
+	/** Largest skid-game turn each improvement allows (3 logs without any). */
+	var SKID_TURN_RUNGS = deepFreeze({
+		chokers: 5,
+		arch: 8,
+		bundle: 12
+	});
 	var RUNS_ANY = [
 		"run_fell",
 		"run_buck",
@@ -1058,6 +1109,21 @@ var Core = (function(exports) {
 			text: "Finish 100 runs of any job",
 			stats: RUNS_ANY,
 			target: 100
+		},
+		chokers: {
+			text: "Skid 12 logs in skid-game turns",
+			stats: ["skidLogs"],
+			target: 12
+		},
+		arch: {
+			text: "Skid 60 logs in skid-game turns",
+			stats: ["skidLogs"],
+			target: 60
+		},
+		bundle: {
+			text: "Skid 250 logs in skid-game turns",
+			stats: ["skidLogs"],
+			target: 250
 		}
 	});
 	/**
@@ -1151,6 +1217,21 @@ var Core = (function(exports) {
 			text: "Fill 250 charter orders",
 			stats: ["contracts"],
 			target: 250
+		},
+		chokers: {
+			text: "Finish 40 tracts",
+			stats: ["tracts"],
+			target: 40
+		},
+		arch: {
+			text: "Deliver 25 million bd ft in all",
+			stats: ["deliv"],
+			target: 25e6
+		},
+		bundle: {
+			text: "Fill 150 charter orders",
+			stats: ["contracts"],
+			target: 150
 		}
 	});
 	var SEASONS = deepFreeze([
@@ -1300,7 +1381,7 @@ var Core = (function(exports) {
 			id: "four",
 			r: "rare",
 			name: "Four-log turns",
-			desc: "Skid game: a 4-log turn is allowed. Slow and wide, but it moves 4.6× a light turn."
+			desc: "Skid game: one more log on your biggest turn (4 logs without chokers). Slow and wide, but it moves the most wood."
 		},
 		{
 			id: "daredevil",
@@ -1345,6 +1426,12 @@ var Core = (function(exports) {
 			r: "legendary",
 			name: "Domino fall",
 			desc: "Felling game: a perfect fall also fells as many trees again, and has a 50% chance to chain again (up to 6)."
+		},
+		{
+			id: "greased",
+			r: "legendary",
+			name: "Greased runners",
+			desc: "Skid game: mud speeds the team up instead of slowing it, and logs slide through it. Idle: spring mud speeds skidding ×1.2 instead of slowing it."
 		},
 		{
 			id: "bull",
@@ -1681,6 +1768,26 @@ var Core = (function(exports) {
 	function equipmentCost(baseCost, owned) {
 		return Math.ceil(baseCost * Math.pow(1.15, owned));
 	}
+	/** Total price of buying `count` more units one after another (exactly the sum of each next-unit price). */
+	function equipmentCostTotal(baseCost, owned, count) {
+		let total = 0;
+		for (let i = 0; i < count; i++) total += equipmentCost(baseCost, owned + i);
+		return total;
+	}
+	/** Most units `cash` can buy in a row (at most `cap`), and what they cost in all. */
+	function equipmentMaxAffordable(baseCost, owned, cash, cap = 1e4) {
+		let count = 0, total = 0;
+		while (count < cap) {
+			const next = equipmentCost(baseCost, owned + count);
+			if (total + next > cash) break;
+			total += next;
+			count++;
+		}
+		return {
+			count,
+			total
+		};
+	}
 	/** Summed rate of every crew and machine owned for one stage, before multipliers. */
 	function crewRate(stage, own) {
 		return EQUIPMENT.reduce((a, e) => e.stage === stage ? a + e.rate * (own[e.id] || 0) : a, 0);
@@ -1723,6 +1830,7 @@ var Core = (function(exports) {
 	}
 	/** Seasonal speed factor for a stage. Spring mud slows skid and haul; winter freezes the ground. */
 	function seasonFactor(season, stage, o) {
+		if (season === "Spring" && stage === "skid" && o.greased) return 1.2;
 		if (season === "Spring" && stage === "skid" && o.swampBoots) return 1;
 		if (season === "Spring" && (stage === "skid" || stage === "haul")) return o.corduroy ? .75 : .5;
 		if (season === "Winter") {
@@ -1731,6 +1839,43 @@ var Core = (function(exports) {
 			if (stage === "haul") return 1.25 * (o.iceRoad ? 1.5 : 1) * (o.iceKing ? 1.4 : 1);
 		}
 		return 1;
+	}
+	/** Largest skid-game turn: 3 logs, raised by choker, arch and bundle improvements; Four-log turns adds one more. */
+	function maxSkidLogs(improvements, fourLog) {
+		let n = 3;
+		for (const id of improvements) n = Math.max(n, SKID_TURN_RUNGS[id] ?? 0);
+		return n + (fourLog ? 1 : 0);
+	}
+	/** Turn sizes offered: 1, 2 and 3 logs, the lower improvement rungs owned, and the largest turn (which replaces the top rung). */
+	function skidTurnSizes(improvements, fourLog) {
+		const top = maxSkidLogs(improvements, fourLog);
+		const rungs = Object.keys(SKID_TURN_RUNGS).filter((id) => improvements.includes(id)).map((id) => SKID_TURN_RUNGS[id]);
+		const topRung = Math.max(3, ...rungs);
+		return [.../* @__PURE__ */ new Set([
+			1,
+			2,
+			3,
+			...rungs.filter((n) => n < topRung),
+			top
+		])].sort((a, b) => a - b);
+	}
+	/** Wood a turn moves, in light-turn loads: 1, 2, 3.2, 4.6, then 1.15 per log. */
+	function skidTurnLoad(logs) {
+		return logs <= 4 ? [
+			1,
+			2,
+			3.2,
+			4.6
+		][Math.max(1, logs) - 1] : 1.15 * logs;
+	}
+	/** Team speed factor for a turn: heavier turns drag slower (0.62 at 4 logs, then falling with √(4/n)). */
+	function skidTurnSpeed(logs) {
+		return logs <= 4 ? [
+			1.15,
+			1,
+			.78,
+			.62
+		][Math.max(1, logs) - 1] : .62 * Math.sqrt(4 / logs);
 	}
 	/** Skidding factor for ground slope; skyline yarding floors it at 0.92. */
 	function slopeFactor(slope, skyline) {
@@ -2041,6 +2186,7 @@ var Core = (function(exports) {
 	exports.RARITY = RARITY;
 	exports.SEASONS = SEASONS;
 	exports.SEASON_LEN = SEASON_LEN;
+	exports.SKID_TURN_RUNGS = SKID_TURN_RUNGS;
 	exports.SLOPES = SLOPES;
 	exports.SPECIES = SPECIES;
 	exports.STAGES = STAGES;
@@ -2065,6 +2211,8 @@ var Core = (function(exports) {
 	exports.draftPool = draftPool;
 	exports.draftWeight = draftWeight;
 	exports.equipmentCost = equipmentCost;
+	exports.equipmentCostTotal = equipmentCostTotal;
+	exports.equipmentMaxAffordable = equipmentMaxAffordable;
 	exports.eraCost = eraCost;
 	exports.genHire = genHire;
 	exports.genOffer = genOffer;
@@ -2078,6 +2226,7 @@ var Core = (function(exports) {
 	exports.legacyGain = legacyGain;
 	exports.makeTract = makeTract;
 	exports.marketPrice = marketPrice;
+	exports.maxSkidLogs = maxSkidLogs;
 	exports.milesWithRoad = milesWithRoad;
 	exports.missedPenalty = missedPenalty;
 	exports.mobilization = mobilization;
@@ -2090,6 +2239,9 @@ var Core = (function(exports) {
 	exports.roadCost = roadCost;
 	exports.rollDraft = rollDraft;
 	exports.seasonFactor = seasonFactor;
+	exports.skidTurnLoad = skidTurnLoad;
+	exports.skidTurnSizes = skidTurnSizes;
+	exports.skidTurnSpeed = skidTurnSpeed;
 	exports.slopeFactor = slopeFactor;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
@@ -2137,9 +2289,11 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0}, ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now()});
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now()});
 function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
+// per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen
+function freshUi(){ return {buyN:1, buckGuide:true, buckIntro:false}; }
 let S = fresh();
 
 // ---------- helpers
@@ -2165,7 +2319,7 @@ const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
 const bf = n => fmt(n) + ' bd ft';
 const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt(s/3600)+' h';
 
-const seasonF = stage => Core.seasonFactor(season(), stage, {swampBoots: !!perk('swamp'), corduroy: has('corduroy'), iceRoad: has('icerd'), iceKing: !!perk('iceking')});
+const seasonF = stage => Core.seasonFactor(season(), stage, {swampBoots: !!perk('swamp'), corduroy: has('corduroy'), iceRoad: has('icerd'), iceKing: !!perk('iceking'), greased: !!perk('greased')});
 const slopeF = () => Core.slopeFactor(S.site.slope, has('skyline'));
 const distF = () => Core.distanceFactor(S.site.miles);
 const baseRate = stage => Core.crewRate(stage, S.own) * umult(stage) * umult('all')
@@ -2405,7 +2559,22 @@ function buildChain(){
   });
 }
 const eqRows = {};
+// buy amount toggle: ×1, ×10, ×25 or Max; totals follow the same +15%-per-unit curve as buying one at a time
+const BUY_NS = [1, 10, 25, 'max'];
+function buyPlan(e){
+  const n = S.ui.buyN, o = own(e.id);
+  if (n === 'max'){ const m = Core.equipmentMaxAffordable(e.cost, o, S.cash); return m.count ? m : {count:1, total:eqCost(e), none:true}; }
+  return {count:n, total:Core.equipmentCostTotal(e.cost, o, n)};
+}
+function buyEq(e){
+  const p = buyPlan(e); if (p.none || S.cash < p.total) return 0;
+  const was = own(e.id); S.cash -= p.total; S.own[e.id] = was + p.count;
+  if (!was) note(p.count > 1 ? `The first ${p.count} of ${e.name.toLowerCase()} came ashore and joined the outpost.` : `First ${e.name.toLowerCase()} came ashore and joined the outpost.`);
+  render(); return p.count;
+}
+function setBuyN(v){ S.ui.buyN = BUY_NS.includes(v) ? v : 1; render(); }
 function buildEquipment(){
+  document.querySelectorAll('#buyN button').forEach(b => b.onclick = () => setBuyN(b.dataset.n === 'max' ? 'max' : +b.dataset.n));
   const box = $('eq'); box.innerHTML = '';
   STAGES.forEach(s => {
     const g = document.createElement('div'); g.className = 'group'; g.dataset.stage = s.id;
@@ -2413,8 +2582,7 @@ function buildEquipment(){
     EQ.filter(e => e.stage === s.id).forEach(e => {
       const r = document.createElement('div'); r.className = 'row';
       r.innerHTML = `<div class="info"><b>${e.name}</b><span class="own"></span><p>${e.desc}</p><span class="spec">+${fmt(e.rate)} ${s.unit} · ${money(e.up)}/min upkeep</span></div><div class="btns"><button class="sellb" type="button" title="Sell one for half its price">Sell</button><button class="buy" type="button"></button></div>`;
-      r.querySelector('.buy').onclick = () => { const c = eqCost(e); if (S.cash < c) return; S.cash -= c; S.own[e.id] = own(e.id)+1;
-        if (own(e.id) === 1) note(`First ${e.name.toLowerCase()} came ashore and joined the outpost.`); render(); };
+      r.querySelector('.buy').onclick = () => buyEq(e);
       r.querySelector('.sellb').onclick = () => { if (!own(e.id)) return; S.own[e.id]--; S.cash += Math.floor(eqCost(e)*.5); render(); };
       g.appendChild(r); eqRows[e.id] = r;
     });
@@ -2590,6 +2758,7 @@ function render(force){
     if (logs.childElementCount !== n){ logs.innerHTML = Array.from({length:n}, (_,i) => `<i style="height:${6 + (i%3)*3}px"></i>`).join(''); }
   });
   // equipment
+  document.querySelectorAll('#buyN button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.n === 'max' ? 'max' : +b.dataset.n) === S.ui.buyN)));
   document.querySelectorAll('#eq .group').forEach(g => {
     const r = baseRate(g.dataset.stage);
     g.querySelector('h3 small').textContent = r ? `${fmt(r)} ${STAGES.find(s => s.id === g.dataset.stage).unit} owned` : '';
@@ -2597,7 +2766,9 @@ function render(force){
   EQ.forEach(e => {
     const r = eqRows[e.id]; r.hidden = e.era > S.era;
     r.querySelector('.own').textContent = own(e.id) ? '×'+own(e.id) : '';
-    const b = r.querySelector('.buy'); const c = eqCost(e); b.textContent = money(c); b.disabled = S.cash < c;
+    const b = r.querySelector('.buy'), p = buyPlan(e), lab = S.ui.buyN === 1 ? money(p.total) : `${S.ui.buyN === 'max' && p.none ? 'Max' : '×' + p.count} · ${money(p.total)}`;
+    if (b.textContent !== lab) b.textContent = lab; b.disabled = !!p.none || S.cash < p.total;
+    b.setAttribute('aria-label', p.none ? `Buy ${e.name}: not enough cash for one (${money(p.total)})` : `Buy ${p.count} ${e.name} for ${money(p.total)}`);
     r.querySelector('.sellb').hidden = !own(e.id);
   });
   renderSales(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
@@ -2658,7 +2829,7 @@ function status(t){ $('mgStatus').textContent = t; }
 function buttons(list){
   const box = $('mgBtns'); box.innerHTML = '';
   list.forEach(b => { const el = document.createElement('button'); el.type = 'button'; el.className = 'mbtn' + (b.primary ? ' primary' : '');
-    el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; box.appendChild(el); });
+    el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; if (b.id) el.id = b.id; if (b.pressed != null) el.setAttribute('aria-pressed', String(!!b.pressed)); box.appendChild(el); });
 }
 const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace'));
 // at most Core.BOOST_STAGES stages run boosted at once (the oldest drops; Fog lifts ignores the limit)
@@ -2668,8 +2839,8 @@ const GAMES = {fell:'Place a fall', buck:'Plan the cuts', skid:'Skid a turn', ha
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
 const MG_HELP = {
   fell: () => `Set the face notch toward the opening in the fog, then saw the back cut with your ${['axe','crosscut saw','chainsaw','felling head'][S.era]}. Leave a thin hinge so the tree falls where you aimed.`,
-  buck: () => 'Click along the stem to place cuts. Sawlogs must be 8, 10, 12, 14 or 16 ft, have an 8 in top and no rot. Knots and sweep lower the grade.',
-  skid: () => `Drag a turn of logs from the stump to the landing with your ${['ox team','donkey line','crawler tractor','grapple skidder'][S.era]}. Stay on the trail, miss the stumps, and go around mud.`,
+  buck: () => 'Cut the stem into logs for the mill. Sawlogs are 8, 10, 12, 14 or 16 ft with an 8 in top and no rot; knots and sweep lower the grade. Press ? for the guide.',
+  skid: () => `Drag a turn of logs from the stump to the landing with your ${['ox team','donkey line','crawler tractor','grapple skidder'][S.era]}. Stay on the trail, miss the stumps, and ${perk('greased') ? 'drive through the mud: your greased runners slide faster there' : 'go around mud'}. Long turns swing wide on the bends.`,
   haul: () => `Load your ${['logging sled','logging train','log truck','self-loading truck'][S.era]} and drive it down to the cove mill. Brake on the downhills or the load runs away.`,
 };
 function gearLine(kind){
@@ -2685,13 +2856,14 @@ function openMG(kind){
   MG.kind = kind; MG.LW = 640; MG.LH = kind === 'buck' ? 300 : 400; MG.keys = {}; MG.ptr = null;
   $('mgTitle').textContent = GAMES[kind];
   $('mgHelp').textContent = MG_HELP[kind]();
+  $('mgGuide').hidden = true; $('mgGuideBtn').hidden = kind !== 'buck'; $('mgPeek').hidden = kind !== 'buck'; $('mgPeek').textContent = '';
   gearLine(kind);
   mgEl.hidden = false; readColors(); sizeCanvas();
   ({fell:fellInit, buck:buckInit, skid:skidInit, haul:haulInit})[kind]();
   cancelAnimationFrame(MG.raf); MG.lt = 0; MG.raf = requestAnimationFrame(frame);
   $('mgClose').focus();
 }
-function closeMG(){ mgEl.hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = null; render(); }
+function closeMG(){ mgEl.hidden = true; $('mgGuide').hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = null; render(); }
 function frame(ts){
   const dt = MG.lt ? Math.min(.05, (ts - MG.lt)/1000) : 0; MG.lt = ts;
   try {
@@ -2709,13 +2881,14 @@ cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointe
 const up = () => { MG.down = false; if (MG.kind === 'fell') fellRelease(); };
 cv.addEventListener('pointerup', up);
 cv.addEventListener('pointercancel', up);
-cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B) B.hover = p; });
-cv.addEventListener('pointerleave', () => { if (B) B.hover = null; if (MG.kind === 'fell') fellRelease(); });
+cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B){ B.hover = p; buckPeek(); } });
+cv.addEventListener('pointerleave', () => { if (B){ B.hover = null; buckPeek(); } if (MG.kind === 'fell') fellRelease(); });
 const GAME_KEYS = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'];
 window.addEventListener('keydown', e => {
   if (!MG.kind) return;
   if (e.key === 'Escape'){ closeMG(); return; }
   if (MG.kind === 'fell' && e.code === 'Space'){ e.preventDefault(); if (!e.repeat) fellPress(); return; }
+  if (MG.kind === 'buck' && buckKey(e, !!(e.target && e.target.closest && e.target.closest('button')))){ e.preventDefault(); return; }
   if ((MG.kind === 'skid' || MG.kind === 'haul') && GAME_KEYS.includes(e.code)){ e.preventDefault(); MG.keys[e.code] = true; }
 });
 window.addEventListener('keyup', e => {
@@ -2725,6 +2898,8 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('resize', () => { if (MG.kind){ sizeCanvas(); } });
 $('mgClose').onclick = closeMG;
+$('mgGuideBtn').onclick = () => { if ($('mgGuide').hidden) showGuide(true); else hideGuide(); };
+$('mgGuideOk').onclick = () => { hideGuide(); const f = $('mgBtns').querySelector('button'); if (f) f.focus(); };
 mgEl.addEventListener('click', e => { if (e.target === mgEl) closeMG(); });
 
 // --- felling
@@ -2876,47 +3051,90 @@ function fellDraw(){
 const VALID = [8,10,12,14,16];
 const LENP = {8:.9, 10:1, 12:1.05, 14:1.1, 16:1.15};
 const GRADEP = {1:.9, 2:.55, 3:.35};
+// a plan must reach half the best value to count as a bucking run (drafts, run goals, unlocks): sending an uncut stem is not a run
+const BUCK_COUNT_MIN = .5;
+// each "Suggest a cut" takes points off this stem's score (half with Bucking for grade), up to BUCK_HINT_MAX; full value needs a plan of your own
+const buckHintCost = () => has('grade') ? .015 : .03;
+const BUCK_HINT_MAX = .15;
+const buckPenalty = () => B ? Math.min(BUCK_HINT_MAX, B.hints*buckHintCost()) : 0;
+// an unsent stem stays on the deck when you close the game, so reopening never rerolls it
+let buckKeep = null;
 function buckInit(){
   const t = tract();
-  const L = 2*Math.round(rnd(19,31));
-  const def = {knots:[], rot:null, sweep:null};
-  const nk = 2 + Math.floor(Math.random()*3);
-  for (let k=0; k<nk; k++) def.knots.push(Math.floor(rnd(.3,.95)*L) + .5);
-  if (Math.random() < .5) def.rot = [0, Math.round(rnd(2,6))];
-  if (Math.random() < .45){ const a = Math.round(rnd(.25,.55)*L); def.sweep = [a, a + Math.round(rnd(4,8))]; }
-  B = {L, d0:rnd(20,32), dTop:6, def, cuts:[], hover:null, done:false, opt:null, sp: t ? mixPick(t) : S.vis, amt: Math.min(S.stems.bf, Math.max(t ? t.bf : 200, rate('buck')*25))};
-  B.optPre = optimal();
-  buckStatus();
-  const bb = [{label:'Clear cuts', fn:() => { if (!B.done){ B.cuts = []; buckStatus(); } }}, {label:'Send to the landing', primary:true, fn:buckSend}];
-  if (has('optimize')) bb.splice(1, 0, {label:'Run the optimizer', fn:() => { if (!B.done){ B.cuts = [...B.optPre.cuts]; buckStatus(); } }});
+  if (buckKeep && !buckKeep.done){ B = buckKeep; B.hover = null; }
+  else {
+    const L = 2*Math.round(rnd(19,31));
+    const def = {knots:[], rot:null, sweep:null};
+    const nk = 2 + Math.floor(Math.random()*3);
+    for (let k=0; k<nk; k++) def.knots.push(Math.floor(rnd(.3,.95)*L) + .5);
+    if (Math.random() < .5) def.rot = [0, Math.round(rnd(2,6))];
+    if (Math.random() < .45){ const a = Math.round(rnd(.25,.55)*L); def.sweep = [a, a + Math.round(rnd(4,8))]; }
+    B = {L, d0:rnd(20,32), dTop:6, def, cuts:[], hover:null, done:false, opt:null, sp: t ? mixPick(t) : S.vis, hints:0, hint:null};
+    B.optPre = optimal();
+  }
+  B.amt = Math.min(S.stems.bf, Math.max(t ? t.bf : 200, rate('buck')*25));
+  buckKeep = B;
+  buckStatus(); buckButtons(); buckPeek();
+  if (!S.ui.buckIntro) showGuide(false);
+}
+function buckButtons(focusId){
+  const bb = [{label:'Clear cuts', fn:() => { if (!B.done){ B.cuts = []; B.hint = null; buckStatus(); } }},
+    {label:'Suggest a cut', id:'bHint', fn:buckHint},
+    {label:`Guides: ${S.ui.buckGuide ? 'on' : 'off'}`, id:'bGuide', pressed:S.ui.buckGuide, fn:() => { S.ui.buckGuide = !S.ui.buckGuide; buckButtons('bGuide'); }},
+    {label:'Send to the landing', primary:true, fn:buckSend}];
+  if (has('optimize')) bb.splice(1, 0, {label:'Run the optimizer', fn:() => { if (!B.done){ B.cuts = [...B.optPre.cuts]; B.hint = null; buckStatus(); } }});
   buttons(bb);
+  if (focusId){ const f = $(focusId); if (f) f.focus(); }
 }
 const dAt = x => B.d0 + (B.dTop - B.d0)*x/B.L;
 const overlap = (a, b, r) => r ? Math.max(0, Math.min(b, r[1]) - Math.max(a, r[0])) : 0;
+// pulp is sold by the cord: the exact volume of the sound wood, so chopping pulp into short pieces adds nothing
+const frustum = (a, b) => { if (b <= a) return 0; const ra = dAt(a)/24, rb = dAt(b)/24; return Math.PI*(b - a)*(ra*ra + ra*rb + rb*rb)/3; };
+const pulpVol = (a, b) => { const r = B.def.rot; return r ? frustum(a, Math.min(b, r[0])) + frustum(Math.max(a, r[1]), b) : frustum(a, b); };
 function seg(a, b){
   const len = b - a, se = dAt(b), rot = overlap(a, b, B.def.rot);
   if (!VALID.includes(len) || se < 8 || rot > 0){
-    const vol = Math.PI*Math.pow(dAt((a+b)/2)/24, 2)*(len - rot);
-    return {len, g:'P', bf:0, val:vol*.9};
+    const why = rot > 0 ? 'butt rot' : se < 8 ? 'top under 8 in' : len < 8 ? 'too short' : len > 16 ? 'too long' : 'not a sawlog length';
+    return {len, g:'P', bf:0, val:pulpVol(a, b)*.9, why};
   }
-  let g = 1;
-  if (overlap(a, b, B.def.sweep) > 0) g = 3;
-  else if (B.def.knots.some(k => k > a && k < b)) g = 2;
+  let g = 1, why = '';
+  if (overlap(a, b, B.def.sweep) > 0){ g = 3; why = 'sweep'; }
+  else if (B.def.knots.some(k => k > a && k < b)){ g = 2; why = 'knots'; }
   const bf = Math.pow((se - 4)/4, 2)*len;
-  return {len, g, bf, val: bf*GRADEP[g]*LENP[len]};
+  return {len, g, bf, val: bf*GRADEP[g]*LENP[len], why};
 }
 function segsOf(cuts){ const pts = [0, ...[...cuts].sort((a,b) => a-b), B.L]; const out = [];
   for (let i=0; i<pts.length-1; i++) out.push({a:pts[i], b:pts[i+1], ...seg(pts[i], pts[i+1])}); return out; }
+// best plan by dynamic programming; ties go to the plan with fewer, earlier pieces
 function optimal(){
   const L = B.L, best = new Array(L+1).fill(-1), from = new Array(L+1).fill(0); best[0] = 0;
-  for (let i=1; i<=L; i++) for (let j=0; j<i; j++){ const v = best[j] + seg(j, i).val; if (v > best[i]){ best[i] = v; from[i] = j; } }
+  for (let i=1; i<=L; i++) for (let j=0; j<i; j++){ const v = best[j] + seg(j, i).val; if (v > best[i] + 1e-9){ best[i] = v; from[i] = j; } }
   const cuts = []; let i = L; while (i > 0){ const j = from[i]; if (j > 0) cuts.push(j); i = j; }
-  return {val:best[L], cuts};
+  return {val:best[L], cuts:cuts.reverse()};
 }
 const segDollars = v => B && B.optPre && B.optPre.val > 0 && S.stems.bf > 0 ? v/B.optPre.val * B.amt*(S.stems.val/S.stems.bf)*1.2*vmult()*market() : 0;
+const gradeName = x => x.g === 'P' ? `pulp (${x.why})` : `grade ${x.g} sawlog` + (x.why ? ` (${x.why})` : '');
 function buckStatus(){
-  const sg = segsOf(B.cuts), saw = sg.filter(x => x.g !== 'P');
-  status(`${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} sawlogs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft (Doyle scale)`);
+  const sg = segsOf(B.cuts), saw = sg.filter(x => x.g !== 'P'), pen = buckPenalty();
+  status(`${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} sawlogs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft (Doyle scale)` +
+    (B.hints ? ` · ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}, −${Math.round(pen*100)} points` : ''));
+}
+// the next cut of the best plan: first take out a cut that is not in it, otherwise add the first missing one
+function buckHintCut(){
+  const best = B.optPre.cuts, wrong = B.cuts.filter(c => !best.includes(c)).sort((a,b) => a-b);
+  if (wrong.length) return {ft:wrong[0], remove:true};
+  const miss = best.filter(c => !B.cuts.includes(c)).sort((a,b) => a-b);
+  return miss.length ? {ft:miss[0], remove:false} : null;
+}
+function buckHint(){
+  if (!B || B.done) return;
+  const h = buckHintCut();
+  if (!h){ B.hint = null; status('Your cuts already match the best plan. Send it to the landing.'); return; }
+  if (!B.hint || B.hint.ft !== h.ft || B.hint.remove !== h.remove) B.hints++;
+  B.hint = h;
+  const prev = Math.max(0, ...B.cuts.filter(c => c < h.ft)), piece = seg(prev, h.ft);
+  status((h.remove ? `Suggested: take out the cut at ${h.ft} ft. The best plan does not cut there.` : `Suggested: cut at ${h.ft} ft for a ${piece.len}′ ${gradeName(piece)}.`) +
+    ` Hints cost ${Math.round(buckHintCost()*100)} points of this stem’s score each (−${Math.round(buckPenalty()*100)} so far).`);
 }
 const xOf = ft => 40 + ft*560/B.L;
 function buckClick(p){
@@ -2925,53 +3143,80 @@ function buckClick(p){
   if (ft <= 0 || ft >= B.L) return;
   const i = B.cuts.indexOf(ft);
   if (i >= 0) B.cuts.splice(i,1); else B.cuts.push(ft);
+  if (B.hint && B.hint.ft === ft) B.hint = null;
   buckStatus();
 }
 function buckSend(){
   if (!B || B.done) return;
   const mine = segsOf(B.cuts).reduce((a,x) => a + x.val, 0);
-  B.opt = optimal(); let r = B.opt.val > 0 ? Math.min(1, mine/B.opt.val) : 1; const r0 = r;
-  if (perk('scaler') && r >= .9) r = 1;
-  const m = .5 + .7*r, before = S.cut.val;
+  B.opt = optimal();
+  const r0 = B.opt.val > 0 ? Math.min(1, mine/B.opt.val) : 1, pen = buckPenalty(), rs = Math.max(0, r0 - pen);
+  // Scaler's friend pays a 90%+ plan as 100%, but full value still means a plan that really matched the best
+  const r = perk('scaler') && rs >= .9 ? 1 : rs;
+  const counts = rs >= BUCK_COUNT_MIN, m = .5 + .7*r, before = S.cut.val;
   move(S.stems, S.cut, B.amt, m*vmult());
-  B.done = true;
+  B.done = true; B.hint = null; buckKeep = null;
   if (r >= .97) grantBoost('buck');
-  S.stats.run_buck++; if (r >= .85) S.stats.buck85++; if (r >= .9) S.stats.buck90++;
-  if (r >= .999){ note('Bucked a stem for its full value.'); S.stats.perfBuck++; }
-  runDone('buck', r);
-  status((r > r0 ? `You got ${Math.round(r0*100)}%, and the scaler wrote it up as 100%.` : `You got ${Math.round(r*100)}% of the best possible value.`) + ` ${money(S.cut.val - before)} of logs went to the stump pile` +
+  if (counts){
+    S.stats.run_buck++; if (rs >= .85) S.stats.buck85++; if (rs >= .9) S.stats.buck90++;
+    if (rs >= .999){ note('Bucked a stem for its full value.'); S.stats.perfBuck++; }
+    runDone('buck', r);
+  }
+  const pct = x => Math.round(x*100);
+  status(`You got ${pct(r0)}% of the best possible value` + (pen > 0 ? `, less ${pct(pen)} points for ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}: ${pct(rs)}%` : '') +
+    (r > rs ? ', and the scaler wrote it up as 100%' : '') + `. ${money(S.cut.val - before)} of logs went to the stump pile` +
+    (counts ? '' : `. A plan under ${pct(BUCK_COUNT_MIN)}% of the best value does not count as a bucking run`) +
     (r >= .97 ? `. Your buckers work ${boostTxt()}.` : '. The green dashes show the best cuts.'));
   buttons([{label:'Buck another', primary:true, disabled:S.stems.bf <= 0, fn:buckInit}, {label:'Done', fn:closeMG}]);
-  render();
+  buckPeek(); render();
 }
+// first-time guide (shown once, again from the ? button)
+function showGuide(focus){ const g = $('mgGuide'); g.hidden = false; if (focus) $('mgGuideOk').focus(); }
+function hideGuide(){ $('mgGuide').hidden = true; S.ui.buckIntro = true; }
+const gradeCol = g => g === 1 ? C.good : g === 2 ? C.ink : g === 3 ? C.warn : C.muted;
 function buckDraw(){
   if (!cx || !B) return;
-  const W = MG.LW, H = MG.LH, cy0 = 120, k = 1.6;
+  const W = MG.LW, H = MG.LH, cy0 = 120, k = 1.6, guide = S.ui.buckGuide;
   const font = getComputedStyle(document.body).fontFamily;
   cx.clearRect(0,0,W,H); cx.fillStyle = C.sky; cx.fillRect(0,0,W,H);
   const sw = B.def.sweep;
   const cyAt = ft => cy0 - (sw && ft > sw[0] && ft < sw[1] ? Math.sin(Math.PI*(ft - sw[0])/(sw[1]-sw[0]))*12 : 0);
+  const stemPath = (a, b) => { cx.beginPath();
+    for (let f=a; f<=b; f+=.5) cx.lineTo(xOf(f), cyAt(f) - dAt(f)*k);
+    for (let f=b; f>=a; f-=.5) cx.lineTo(xOf(f), cyAt(f) + dAt(f)*k);
+    cx.closePath(); };
   // stem body
-  cx.fillStyle = C.bark; cx.beginPath();
-  for (let f=0; f<=B.L; f+=.5) cx.lineTo(xOf(f), cyAt(f) - dAt(f)*k);
-  for (let f=B.L; f>=0; f-=.5) cx.lineTo(xOf(f), cyAt(f) + dAt(f)*k);
-  cx.closePath(); cx.fill();
+  cx.fillStyle = C.bark; stemPath(0, B.L); cx.fill();
   // butt end
   cx.fillStyle = C.pile; cx.beginPath(); cx.ellipse(xOf(0), cy0, 9, B.d0*k, 0, 0, Math.PI*2); cx.fill();
   cx.textAlign = 'center'; cx.font = '600 11px ' + font; cx.fillStyle = C.ink;
   cx.fillText(`${Math.round(B.d0)} in butt`, xOf(0)+4, cy0 + B.d0*k + 16);
   // defects
   if (B.def.rot){ const [a,b] = B.def.rot; cx.fillStyle = C.ink; cx.globalAlpha = .45;
-    for (let i=0; i<26; i++){ const f = rnd(a, b), y = cy0 + rnd(-.8,.8)*dAt(f)*k; cx.beginPath(); cx.arc(xOf(f), y, rnd(2,5), 0, Math.PI*2); cx.fill(); }
+    for (let i=0; i<26; i++){ const f = a + (b - a)*((i*7919 % 26)/26), y = cy0 + (((i*37) % 17)/8.5 - 1)*.8*dAt(f)*k; cx.beginPath(); cx.arc(xOf(f), y, 2 + (i % 4), 0, Math.PI*2); cx.fill(); }
     cx.globalAlpha = 1; cx.fillText('butt rot', xOf((a+b)/2)+4, cy0 - B.d0*k - 8); }
   B.def.knots.forEach((f,i) => { const y = cyAt(f) + (i % 2 ? .45 : -.45)*dAt(f)*k; cx.fillStyle = C.ink; cx.globalAlpha = .7;
     cx.beginPath(); cx.ellipse(xOf(f), y, 5, 3.5, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
   if (B.def.knots.length){ cx.fillStyle = C.muted; cx.fillText('knots', xOf(B.def.knots[0]), cyAt(B.def.knots[0]) - dAt(B.def.knots[0])*k - 8); }
   if (sw){ cx.fillStyle = C.ink; cx.fillText('sweep', xOf((sw[0]+sw[1])/2), cyAt((sw[0]+sw[1])/2) - dAt(sw[0])*k - 22); }
+  // the top: where the stem drops under 8 in, nothing above is a sawlog
+  const top8 = (B.d0 - 8)/(B.d0 - B.dTop)*B.L;
+  if (guide && top8 < B.L){ cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.setLineDash([2,3]); cx.beginPath(); cx.moveTo(xOf(top8), cy0 - 30); cx.lineTo(xOf(top8), cy0 + 30); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = C.muted; cx.font = '11px ' + font; cx.fillText('8 in top', xOf(top8), cy0 + 44); }
+  // hovered piece, colored by what it would make
+  const hft = B.hover && !B.done ? Math.round((B.hover.x - 40)/560*B.L) : null, hov = hft != null && hft > 0 && hft < B.L;
+  const anchor = hov ? Math.max(0, ...B.cuts.filter(c => c < hft)) : Math.max(0, ...B.cuts);
+  if (guide && hov){ const sp = seg(anchor, hft); cx.fillStyle = gradeCol(sp.g); cx.globalAlpha = .45; stemPath(anchor, hft); cx.fill(); cx.globalAlpha = 1; }
+  // valid sawlog lengths from the last cut
+  if (guide && !B.done){ cx.font = '600 10px ' + font;
+    VALID.forEach(len => { const f = anchor + len; if (f > B.L) return; const x = xOf(f), yT = cyAt(f) - dAt(f)*k - 4;
+      const col = has('scalestick') ? gradeCol(seg(anchor, f).g) : C.accent;
+      cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, yT); cx.lineTo(x - 4, yT - 7); cx.lineTo(x + 4, yT - 7); cx.closePath(); cx.fill();
+      cx.fillText(String(len), x, yT - 10); }); }
   // pieces
   const sg = segsOf(B.cuts);
   sg.forEach(x => {
-    const xa = xOf(x.a), xb = xOf(x.b), col = x.g === 1 ? C.good : x.g === 2 ? C.ink : x.g === 3 ? C.warn : C.muted;
+    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g);
     cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4);
     if (xb - xa > 34){ cx.font = '600 12px ' + font; cx.fillText(`${x.len}′ ${x.g === 'P' ? 'pulp' : 'G' + x.g}`, (xa+xb)/2, 216);
       cx.font = '11px ' + font; cx.fillStyle = C.muted; cx.fillText(x.g === 'P' ? 'cords' : `${Math.round(x.bf)} bd ft`, (xa+xb)/2, 231);
@@ -2980,20 +3225,22 @@ function buckDraw(){
   // best cuts after sending
   if (B.done && B.opt){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([4,4]);
     B.opt.cuts.forEach(f => { cx.beginPath(); cx.moveTo(xOf(f), 40); cx.lineTo(xOf(f), 186); cx.stroke(); }); cx.setLineDash([]); }
+  // suggested cut
+  if (B.hint && !B.done){ const x = xOf(B.hint.ft); cx.strokeStyle = B.hint.remove ? C.bad : C.good; cx.lineWidth = 3; cx.setLineDash([6,4]);
+    cx.beginPath(); cx.moveTo(x, 44); cx.lineTo(x, 186); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = B.hint.remove ? C.bad : C.good; cx.font = '600 11px ' + font; cx.fillText(B.hint.remove ? 'take out' : 'cut here', x, 188 + 4); }
   // cuts
   cx.strokeStyle = C.accent; cx.lineWidth = 3;
   B.cuts.forEach(f => { const h = dAt(f)*k + 10; cx.beginPath(); cx.moveTo(xOf(f), cyAt(f) - h); cx.lineTo(xOf(f), cyAt(f) + h); cx.stroke(); });
-  // hover ghost
-  if (B.hover && !B.done){
-    const ft = Math.round((B.hover.x - 40)/560*B.L);
-    if (ft > 0 && ft < B.L){
-      const prev = Math.max(0, ...B.cuts.filter(c => c < ft)), len = ft - prev, ok = VALID.includes(len);
-      cx.strokeStyle = C.accent; cx.globalAlpha = .55; cx.lineWidth = 2; cx.setLineDash([5,4]);
-      cx.beginPath(); cx.moveTo(xOf(ft), 40); cx.lineTo(xOf(ft), 186); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
-      let lab = `${len}′`;
-      if (has('grade')){ const sgp = seg(prev, ft); lab += sgp.g === 'P' ? ' pulp' : ` G${sgp.g}`; if (has('scalestick')) lab += ` · ${money(segDollars(sgp.val))}`; }
-      cx.fillStyle = ok ? C.good : C.muted; cx.font = '600 12px ' + font; cx.fillText(lab, xOf(ft), 32);
-    }
+  // hover ghost and what the piece would be
+  if (hov){
+    const len = hft - anchor, ok = VALID.includes(len);
+    cx.strokeStyle = C.accent; cx.globalAlpha = .55; cx.lineWidth = 2; cx.setLineDash([5,4]);
+    cx.beginPath(); cx.moveTo(xOf(hft), 40); cx.lineTo(xOf(hft), 186); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
+    let lab = `${len}′`, col = ok ? C.good : C.muted;
+    if (guide){ const sp = seg(anchor, hft); lab += ` ${gradeName(sp)} · ${money(segDollars(sp.val))}`; col = gradeCol(sp.g); }
+    cx.fillStyle = col; cx.font = '600 12px ' + font;
+    const tw = (cx.measureText(lab).width || 0)/2; cx.fillText(lab, Math.max(14 + tw, Math.min(W - 14 - tw, xOf(hft))), 26);
   }
   // ruler
   cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.fillStyle = C.muted; cx.font = '11px ' + font;
@@ -3002,75 +3249,124 @@ function buckDraw(){
   cx.textAlign = 'right'; cx.fillText(`${SP[B.sp] ? SP[B.sp].name : ''} · ${B.L} ft stem`, W-14, 292);
   cx.textAlign = 'left';
 }
-
+// text readout of the piece under the pointer or keyboard cursor (the canvas is not readable by screen readers)
+function buckPeek(){
+  const el = $('mgPeek'); if (!el) return;
+  const ft = B && B.hover && !B.done ? Math.round((B.hover.x - 40)/560*B.L) : null;
+  if (ft == null || ft <= 0 || ft >= B.L){ el.textContent = B && !B.done ? 'Point along the stem, or use the arrow keys and Enter, to place a cut.' : ''; return; }
+  const a = Math.max(0, ...B.cuts.filter(c => c < ft)), sp = seg(a, ft);
+  el.textContent = `At ${ft} ft: a ${sp.len} ft piece from ${a ? 'your cut at ' + a + ' ft' : 'the butt'}` +
+    (S.ui.buckGuide ? `, ${gradeName(sp)}, worth ${money(segDollars(sp.val))}.` : '.') + (B.cuts.includes(ft) ? ' Press again to take this cut out.' : '');
+}
+function buckKey(e, onButton){
+  if (!B || B.done) return false;
+  const cur = B.hover ? Math.round((B.hover.x - 40)/560*B.L) : Math.max(0, ...B.cuts);
+  const step = e.shiftKey ? 2 : 1;
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight'){ const ft = Math.max(1, Math.min(B.L - 1, cur + (e.code === 'ArrowRight' ? step : -step))); B.hover = {x: xOf(ft), y: 120}; buckPeek(); return true; }
+  if (!onButton && (e.code === 'Enter' || e.code === 'KeyC') && B.hover){ buckClick(B.hover); buckPeek(); return true; }
+  return false;
+}
 // --- skidding
 const key = (...codes) => codes.some(c => MG.keys[c]);
+// a turn is a chain: a choker from the team, then each log with a short gap between. Logs drag on the ground and keep some
+// sideways momentum, so long, heavy trains swing wide on the bends; the team also takes longer to get a heavy turn moving.
+const SKID_LINK = {hitch:14, log:20, gap:4};
+const turnName = n => n === 1 ? 'Light turn · 1 log' : n === 2 ? 'Full turn · 2 logs' : n === 3 ? 'Heavy turn · 3 logs' : n < 8 ? `Big turn · ${n} logs` : `Log train · ${n} logs`;
+const skidMud = p => K.mud.some(m => Math.pow((p.x - m.x)/m.rx, 2) + Math.pow((p.y - m.y)/m.ry, 2) < 1);
+const logEnds = i => [K.chain[1 + 2*i], K.chain[2 + 2*i]];
+const logMid = i => { const [a, b] = logEnds(i); return {x:(a.x + b.x)/2, y:(a.y + b.y)/2}; };
 function skidInit(){
   const winter = season() === 'Winter', spring = season() === 'Spring';
   const WH = 1000, w = 100, ph = [rnd(0,6), rnd(0,6)], amp = [rnd(90,140), rnd(30,55)];
   const cxAt = y => 320 + amp[0]*Math.sin(y/260 + ph[0]) + amp[1]*Math.sin(y/90 + ph[1]);
-  const stumps = []; for (let y = 230; y < WH - 190; y += rnd(105,165)) stumps.push({x: cxAt(y) + rnd(-w*.32, w*.32), y, r: rnd(9,13), cd: 0});
+  const stumps = []; for (let y = 230; y < WH - 190; y += rnd(105,165)) stumps.push({x: cxAt(y) + rnd(-w*.32, w*.32), y, r: rnd(9,13), cd: 0, hung:false});
   const mud = []; const nm = winter ? 0 : spring ? 5 : 2;
   for (let i=0; i<nm; i++){ const y = rnd(260, WH - 220); mud.push({x: cxAt(y) + rnd(-20,20), y, rx: rnd(38,64), ry: rnd(24,38)}); }
   const woods = []; for (let i=0; i<120; i++){ const y = rnd(0, WH), side = Math.random() < .5 ? -1 : 1;
     const x = cxAt(y) + side*(w/2 + rnd(14, 260)); if (x > -20 && x < 660) woods.push({x, y, r: rnd(10,20)}); }
-  K = {phase:'pick', WH, w, cxAt, stumps: has('swamper') ? stumps.filter((_, i) => i % 2) : stumps, mud, woods, pos:{x: cxAt(40), y: 40}, hist:[], logs:2, t:0, hits:0, stopT:0, winter, spring, cam:0, msg:'', msgT:0};
-  status(`Choose a turn. Heavier turns move more wood but drag slower and swing wide.${spring ? ' Spring mud is everywhere.' : winter ? ' Frozen ground: no mud, and the team moves faster.' : ''}`);
+  K = {phase:'pick', WH, w, cxAt, stumps: has('swamper') ? stumps.filter((_, i) => i % 2) : stumps, mud, woods, pos:{x: cxAt(40), y: 40}, vel:{x:0, y:0}, chain:[], links:[], logs:2, t:0, hits:0, stopT:0, winter, spring, cam:0, msg:'', msgT:0};
+  const greased = perk('greased');
+  status(`Choose a turn. Bigger turns move more wood but drag slower and swing wide on the bends.${spring ? (greased ? ' Spring mud is everywhere, and your greased runners love it.' : ' Spring mud is everywhere.') : winter ? ' Frozen ground: no mud, and the team moves faster.' : ''}`);
   const go = n => () => { K.logs = n; K.phase = 'run';
-    K.speed = (105 + S.era*18) * [1.15, 1, .78, .62][n-1] * slopeF() * (winter ? 1.15 : 1);
+    K.speed = (105 + S.era*18) * Core.skidTurnSpeed(n) * slopeF() * (winter ? 1.15 : 1);
     K.par = Math.round((K.WH - 110)/K.speed*1.4);
+    // lay the turn out straight behind the team
+    K.links = []; for (let i=0; i<n; i++){ K.links.push(i ? SKID_LINK.gap : SKID_LINK.hitch, SKID_LINK.log); }
+    let y = K.pos.y; K.chain = [{x:K.pos.x, y, vx:0, vy:0}];
+    K.links.forEach(l => { y -= l; K.chain.push({x:K.pos.x, y, vx:0, vy:0}); });
     status('Press and hold where you want the team to go, or use the arrow keys. Reach the landing at the bottom.');
     buttons([{label:'Done', fn:closeMG}]); };
-  buttons([{label:'Light turn · 1 log', fn:go(1)}, {label:'Full turn · 2 logs', primary:true, fn:go(2)}, {label:'Heavy turn · 3 logs', fn:go(3)}]
-    .concat(perk('four') ? [{label:'Big turn · 4 logs', fn:go(4)}] : []));
+  const sizes = Core.skidTurnSizes(S.upg, !!perk('four'));
+  buttons(sizes.map(n => ({label:turnName(n), primary:n === 2, fn:go(n)})));
 }
-function tailPoint(d){
-  const h = K.hist; let acc = 0, prev = K.pos;
-  for (let i = h.length - 1; i >= 0; i--){ const p = h[i], seg = Math.hypot(prev.x - p.x, prev.y - p.y);
-    if (acc + seg >= d){ const f = (d - acc)/(seg || 1); return {x: prev.x + (p.x - prev.x)*f, y: prev.y + (p.y - prev.y)*f}; }
-    acc += seg; prev = p; }
-  return prev;
+function skidChain(dt){
+  const J = K.chain; if (!J.length || dt <= 0) return;
+  J[0].x = K.pos.x; J[0].y = K.pos.y;
+  // ground friction: light turns stop dead, long trains slide on; greased logs slide freely through mud
+  const fr = 9/(1 + .25*(K.logs - 1)), greased = perk('greased');
+  for (let i=1; i<J.length; i++){
+    const p = J[i], q = J[i-1], ox = p.x, oy = p.y;
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    const d = Math.hypot(p.x - q.x, p.y - q.y), L = K.links[i-1];
+    if (d > L){ p.x = q.x + (p.x - q.x)/d*L; p.y = q.y + (p.y - q.y)/d*L; }
+    p.x = Math.max(4, Math.min(636, p.x));
+    const f = Math.exp(-(greased && skidMud(p) ? fr*.35 : fr)*dt);
+    p.vx = (p.x - ox)/dt*f; p.vy = (p.y - oy)/dt*f;
+  }
 }
 function skidStep(dt){
   if (!K || K.phase !== 'run') return;
   K.t += dt; if (K.msgT > 0) K.msgT -= dt;
-  K.stumps.forEach(s => s.cd = Math.max(0, s.cd - dt));
-  if (K.stopT > 0){ K.stopT -= dt; return; }
+  K.stumps.forEach(s => { s.cd = Math.max(0, s.cd - dt); if (s.pass && Math.hypot(K.pos.x - s.x, K.pos.y - s.y) > s.r + 14) s.pass = false; });
+  if (K.stopT > 0){ K.stopT -= dt; K.vel.x = K.vel.y = 0; skidChain(dt); return; }
   let dx = 0, dy = 0;
   if (key('ArrowLeft','KeyA')) dx -= 1; if (key('ArrowRight','KeyD')) dx += 1;
   if (key('ArrowUp','KeyW')) dy -= 1; if (key('ArrowDown','KeyS')) dy += 1;
   if (!dx && !dy && MG.down && MG.ptr){ dx = MG.ptr.x - K.pos.x; dy = MG.ptr.y + K.cam - K.pos.y; if (Math.hypot(dx,dy) < 6){ dx = dy = 0; } }
-  const len = Math.hypot(dx, dy); if (!len) return;
-  dx /= len; dy /= len;
-  const off = Math.abs(K.pos.x - K.cxAt(K.pos.y)) > K.w/2;
-  const inMud = K.mud.some(m => Math.pow((K.pos.x - m.x)/m.rx, 2) + Math.pow((K.pos.y - m.y)/m.ry, 2) < 1);
-  const sp = K.speed * (off ? .32 : 1) * (inMud && !perk('swamp') ? (has('corduroy') ? .75 : .42) : 1);
-  K.pos.x = Math.max(10, Math.min(630, K.pos.x + dx*sp*dt));
-  K.pos.y = Math.max(10, Math.min(K.WH - 10, K.pos.y + dy*sp*dt));
-  const last = K.hist[K.hist.length - 1];
-  if (!last || Math.hypot(last.x - K.pos.x, last.y - K.pos.y) > 3){ K.hist.push({x:K.pos.x, y:K.pos.y}); if (K.hist.length > 400) K.hist.shift(); }
-  // collisions: team and every log in the turn
-  const pts = [K.pos]; for (let i=0; i<K.logs; i++) pts.push(tailPoint(26 + i*24));
+  const len = Math.hypot(dx, dy); let tx = 0, ty = 0;
+  if (len){
+    dx /= len; dy /= len;
+    const off = Math.abs(K.pos.x - K.cxAt(K.pos.y)) > K.w/2;
+    let sp = K.speed * (off ? .32 : 1);
+    if (perk('greased')){
+      // Greased runners: mud is a boost, and every log sliding through mud lightens the drag
+      let wet = 0; for (let i=0; i<K.logs; i++) if (skidMud(logMid(i))) wet++;
+      sp *= (skidMud(K.pos) ? 1.5 : 1) * (1 + Math.min(.4, .05*wet));
+    } else if (skidMud(K.pos) && !perk('swamp')) sp *= has('corduroy') ? .75 : .42;
+    tx = dx*sp; ty = dy*sp;
+  }
+  // heavier turns take longer to get moving and to stop
+  const acc = Math.min(1, dt*10/(1 + .18*(K.logs - 1)));
+  K.vel.x += (tx - K.vel.x)*acc; K.vel.y += (ty - K.vel.y)*acc;
+  K.pos.x = Math.max(10, Math.min(630, K.pos.x + K.vel.x*dt));
+  K.pos.y = Math.max(10, Math.min(K.WH - 10, K.pos.y + K.vel.y*dt));
+  skidChain(dt);
+  // collisions: the team, and every log in the turn (a stump hangs the logs up once; after that the crew has it marked)
   for (const st of K.stumps){
     if (st.cd > 0) continue;
-    const hit = pts.findIndex(p => Math.hypot(p.x - st.x, p.y - st.y) < st.r + (p === K.pos ? 11 : 7));
-    if (hit >= 0){ K.hits++; st.cd = 2.5; K.stopT = has('peavey') ? .55 : 1.1; K.pos.x -= dx*14; K.pos.y -= dy*14;
-      K.msg = hit === 0 ? 'Ran into a stump' : 'The turn hung up on a stump'; K.msgT = 1.4; break; }
+    // the team stops at a stump it runs into, then the teamster works it past (no hitting the same stump again on the way by)
+    let hit = !st.pass && Math.hypot(K.pos.x - st.x, K.pos.y - st.y) < st.r + 11 ? 0 : -1;
+    if (hit < 0 && !st.hung) for (let i=0; i<K.logs; i++){ const m = logMid(i); if (Math.hypot(m.x - st.x, m.y - st.y) < st.r + 7){ hit = i + 1; break; } }
+    if (hit < 0) continue;
+    K.hits++; st.cd = 2.5; if (hit > 0) st.hung = true; else st.pass = true;
+    K.stopT = (has('peavey') ? .55 : 1.1) * (K.logs > 3 ? 1 + .05*(K.logs - 3) : 1);
+    K.vel.x = K.vel.y = 0;
+    K.msg = hit === 0 ? 'Ran into a stump' : 'The turn hung up on a stump'; K.msgT = 1.4; break;
   }
   K.cam = Math.max(0, Math.min(K.WH - MG.LH, K.pos.y - 150));
   if (K.pos.y >= K.WH - 70) skidFinish();
 }
 function skidFinish(){
   K.phase = 'done';
-  const L0 = 60 + baseRate('skid')*15, amt = Math.min(S.cut.bf, L0*[1,2,3.2,4.6][K.logs - 1]);
+  const L0 = 60 + baseRate('skid')*15, amt = Math.min(S.cut.bf, L0*Core.skidTurnLoad(K.logs));
   const vm = has('skyline') ? 1 : Math.max(.7, 1 - .05*K.hits), moved = move(S.cut, S.landing, amt, vm);
   const clean = K.hits === 0 && K.t <= K.par;
-  S.stats.run_skid++; if (K.spring) S.stats.mudRuns++;
+  S.stats.run_skid++; S.stats.skidLogs = (S.stats.skidLogs || 0) + K.logs; if (K.spring) S.stats.mudRuns++;
   runDone('skid', clean ? 1 : Math.max(.1, 1 - .2*K.hits) * (K.t <= K.par ? 1 : .7));
   if (clean) grantBoost('skid');
-  status(`Landed the turn in ${Math.round(K.t)} s (par ${K.par} s) with ${K.hits} stump ${K.hits === 1 ? 'hit' : 'hits'}. Moved ${bf(moved)} to the landing` +
+  status(`Landed a ${K.logs}-log turn in ${Math.round(K.t)} s (par ${K.par} s) with ${K.hits} stump ${K.hits === 1 ? 'hit' : 'hits'}. Moved ${bf(moved)} to the landing` +
     (K.hits && !has('skyline') ? `, scarred logs lost ${Math.round((1 - vm)*100)}% of their value.` : '.') + (clean ? ` Clean run: your skidders work ${boostTxt()}.` : ''));
-  if (clean){ note('Skidded a clean turn to the landing.'); S.stats.cleanSkid++; }
+  if (clean){ note(K.logs >= 8 ? `Skidded a clean ${K.logs}-log train to the landing.` : 'Skidded a clean turn to the landing.'); S.stats.cleanSkid++; }
   buttons([{label:'Skid another', primary:true, disabled: S.cut.bf <= 0, fn:skidInit}, {label:'Done', fn:closeMG}]);
   render();
 }
@@ -3091,14 +3387,17 @@ function skidDraw(){
   for (let i=0; i<6; i++) circle(W/2 + 70 + (i%3)*13, K.WH - 42 + Math.floor(i/3)*-11, 6, C.pile);
   cx.fillStyle = C.muted; cx.font = '12px ' + font; cx.fillText('Stump area', K.cxAt(16), 18);
   // mud
-  K.mud.forEach(m => { cx.fillStyle = C.bark; cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
+  const greased = perk('greased');
+  K.mud.forEach(m => { cx.fillStyle = C.bark; cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1;
+    if (greased){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([5,5]); cx.stroke(); cx.setLineDash([]); } });
   // woods
   K.woods.forEach((t,i) => { if (t.y > cam - 30 && t.y < cam + Hh + 30) circle(t.x, t.y, t.r, i % 2 ? C.needle : C.needle2); });
   // stumps
   K.stumps.forEach(st => { circle(st.x, st.y, st.r, C.bark); circle(st.x, st.y, st.r*.55, C.pile); });
   // logs in the turn
   cx.strokeStyle = C.bark; cx.lineCap = 'round';
-  for (let i=0; i<K.logs; i++){ const a = tailPoint(14 + i*24), b = tailPoint(34 + i*24);
+  if (K.chain.length > 1){ cx.strokeStyle = C.ink; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(K.pos.x, K.pos.y); cx.lineTo(K.chain[1].x, K.chain[1].y); cx.stroke(); }
+  for (let i=0; i<K.logs && K.chain.length > 2*i + 2; i++){ const [a, b] = logEnds(i);
     cx.lineWidth = 9; cx.strokeStyle = C.bark; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
     cx.lineWidth = 6; cx.strokeStyle = C.pile; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); }
   cx.lineCap = 'butt';
@@ -3107,7 +3406,7 @@ function skidDraw(){
   if (MG.down && MG.ptr && K.phase === 'run'){ cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.beginPath(); cx.arc(MG.ptr.x, MG.ptr.y + cam, 10, 0, Math.PI*2); cx.stroke(); }
   cx.restore();
   // HUD
-  cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(10, 10, 200, 46); cx.globalAlpha = 1;
+  cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(10, 10, 220, 46); cx.globalAlpha = 1;
   cx.fillStyle = C.ink; cx.textAlign = 'left'; cx.font = '600 13px ' + font;
   cx.fillText(K.phase === 'pick' ? 'Choose a turn below' : `Time ${Math.round(K.t)} s · par ${K.par} s`, 20, 29);
   cx.font = '12px ' + font; cx.fillStyle = C.muted; cx.fillText(`Stump hits ${K.hits} · ${K.logs} ${K.logs === 1 ? 'log' : 'logs'}`, 20, 47);
@@ -3305,7 +3604,7 @@ function closeCamp(){
   S.meta.legacy += gain; S.meta.total += gain;
   S.runs.unshift({n:r.n, min:Math.round(runMin()), deliv:r.deliv, earned:r.earned, legacy:gain, era:S.era, mods:[...r.mods], perks:r.perks.length, eraT:r.eraT.map(x => x == null ? null : Math.round(x/60))});
   S.runs.length = Math.min(S.runs.length, 12);
-  const keep = {ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, season:S.season, st:S.st};
+  const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, season:S.season, st:S.st};
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
   const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
   S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
@@ -3332,6 +3631,7 @@ function buyMeta(id){
 function normalize(){
   S.stats = Object.assign(fresh().stats, S.stats || {});
   S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
+  S.ui = Object.assign(freshUi(), S.ui && typeof S.ui === 'object' ? S.ui : {}); if (!BUY_NS.includes(S.ui.buyN)) S.ui.buyN = 1;
   if (!Array.isArray(S.runs)) S.runs = [];
   const r = S.run = Object.assign(freshRun(), S.run || {});
   ['perks','dq','mods','eraT','bounty'].forEach(k => { if (!Array.isArray(r[k])) r[k] = []; });

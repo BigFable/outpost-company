@@ -6,7 +6,7 @@
  * are applied left to right with `applyMults` (((base*a)*b)*c), never pre-multiplied.
  */
 import {
-  CLOSE_VOL, EQUIPMENT, ERAS, IMPROVEMENTS, MODS, PERKS, SLOPES,
+  CLOSE_VOL, EQUIPMENT, ERAS, IMPROVEMENTS, MODS, PERKS, SKID_TURN_RUNGS, SLOPES,
   type MultKey, type PerkDef, type Season, type SlopeId, type SpeciesDef, type Stage,
 } from './content';
 
@@ -29,6 +29,24 @@ export function treeValue(s: SpeciesDef): number {
 /** Price of the next unit: +15% per unit already owned, rounded up. */
 export function equipmentCost(baseCost: number, owned: number): number {
   return Math.ceil(baseCost * Math.pow(1.15, owned));
+}
+
+/** Total price of buying `count` more units one after another (exactly the sum of each next-unit price). */
+export function equipmentCostTotal(baseCost: number, owned: number, count: number): number {
+  let total = 0;
+  for (let i = 0; i < count; i++) total += equipmentCost(baseCost, owned + i);
+  return total;
+}
+
+/** Most units `cash` can buy in a row (at most `cap`), and what they cost in all. */
+export function equipmentMaxAffordable(baseCost: number, owned: number, cash: number, cap = 10000): { count: number; total: number } {
+  let count = 0, total = 0;
+  while (count < cap) {
+    const next = equipmentCost(baseCost, owned + count);
+    if (total + next > cash) break;
+    total += next; count++;
+  }
+  return { count, total };
 }
 
 export type Owned = Readonly<Record<string, number | undefined>>;
@@ -94,10 +112,13 @@ export interface SeasonOpts {
   readonly iceRoad: boolean;
   /** Ice road king perk: winter hauling ×1.4. */
   readonly iceKing: boolean;
+  /** Greased runners perk: spring mud speeds skidding ×1.2 instead of slowing it. */
+  readonly greased?: boolean;
 }
 
 /** Seasonal speed factor for a stage. Spring mud slows skid and haul; winter freezes the ground. */
 export function seasonFactor(season: Season, stage: Stage, o: SeasonOpts): number {
+  if (season === 'Spring' && stage === 'skid' && o.greased) return 1.2;
   if (season === 'Spring' && stage === 'skid' && o.swampBoots) return 1;
   if (season === 'Spring' && (stage === 'skid' || stage === 'haul')) return o.corduroy ? 0.75 : 0.5;
   if (season === 'Winter') {
@@ -106,6 +127,34 @@ export function seasonFactor(season: Season, stage: Stage, o: SeasonOpts): numbe
     if (stage === 'haul') return 1.25 * (o.iceRoad ? 1.5 : 1) * (o.iceKing ? 1.4 : 1);
   }
   return 1;
+}
+
+// ---------- skid-game turns
+
+/** Largest skid-game turn: 3 logs, raised by choker, arch and bundle improvements; Four-log turns adds one more. */
+export function maxSkidLogs(improvements: readonly string[], fourLog: boolean): number {
+  let n = 3;
+  for (const id of improvements) n = Math.max(n, SKID_TURN_RUNGS[id] ?? 0);
+  return n + (fourLog ? 1 : 0);
+}
+
+/** Turn sizes offered: 1, 2 and 3 logs, the lower improvement rungs owned, and the largest turn (which replaces the top rung). */
+export function skidTurnSizes(improvements: readonly string[], fourLog: boolean): number[] {
+  const top = maxSkidLogs(improvements, fourLog);
+  const rungs = Object.keys(SKID_TURN_RUNGS).filter((id) => improvements.includes(id)).map((id) => SKID_TURN_RUNGS[id] as number);
+  const topRung = Math.max(3, ...rungs);
+  const sizes = new Set([1, 2, 3, ...rungs.filter((n) => n < topRung), top]);
+  return [...sizes].sort((a, b) => a - b);
+}
+
+/** Wood a turn moves, in light-turn loads: 1, 2, 3.2, 4.6, then 1.15 per log. */
+export function skidTurnLoad(logs: number): number {
+  return logs <= 4 ? ([1, 2, 3.2, 4.6][Math.max(1, logs) - 1] as number) : 1.15 * logs;
+}
+
+/** Team speed factor for a turn: heavier turns drag slower (0.62 at 4 logs, then falling with √(4/n)). */
+export function skidTurnSpeed(logs: number): number {
+  return logs <= 4 ? ([1.15, 1, 0.78, 0.62][Math.max(1, logs) - 1] as number) : 0.62 * Math.sqrt(4 / logs);
 }
 
 /** Skidding factor for ground slope; skyline yarding floors it at 0.92. */
