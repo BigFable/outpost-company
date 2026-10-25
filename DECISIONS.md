@@ -4,6 +4,7 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-25 | Species overhaul approved as designed in docs/design/species-overhaul.md, with: Domino fall unchanged (it can chain through Giant cloudwood); Giant cloudwood stays near 4.8× pine value (not cut to 2.2×); Ghost cedar deferred to the Fishing camp | Owner's calls on the species design |
 | 2026-10-24 | Sawmill fixes: log slider default 20%→10% and the mill pays half price for logs it takes; more amber pitch (buck finds base chance .2→.35, idle .02→.06/min); easier special orders (Admiralty 24 spars + 4 pitch → 16 + 2; Caulk 10 pitch → 6). Special-order bonus cap stays at 25% | Balance check of the Sawmill build: the slider cut idle run-2 speed-up to 15%; pitch made orders nearly unfillable; the 35% cap never binds |
 | 2026-10-24 | Before round 2: fix the Steam Camp cash trap (pushing to Steam Camp always lists a tract priced at or under half the push price), add a mid-game delivery achievement around 2M bd ft (~$10K), and trim haul bonuses to about 60% (full load +25%→+15%, under par +10–30%→+6–18%) | Balance check of the playtest 1 fixes: up to 21 min stuck without timber after a windfall push; haul pay pulled big achievements into the first minutes of run 2 |
 | 2026-10-24 | Domino fall stays as playtesters have it; its balancing is cut short | Owner: more playtesting first |
