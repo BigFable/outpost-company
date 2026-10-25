@@ -24,7 +24,7 @@ const DRIVE=`(pol => { let i=0; while(H && H.phase==='drive' && i++<40000){
  // 1. spring, max legal load, competent driver: no fine, full pay ticket, under par
  haul(0, `S.upg=[]; S.run.perks=[]; S.cash=0; S.owed=0;`);
  ok(E('H.n')===E('H.limit') && E('H.limit')===7,'spring default load is the max legal load (7): '+E('H.n'));
- ok(/Par \d+ s/.test(st()) && !/fine/i.test(st()),'load screen shows par and no fine: '+st().slice(0,120));
+ ok(/Target \d+ s/.test(st()) && !/fine/i.test(st()),'load screen shows par and no fine: '+st().slice(0,120));
  E(`haulGo()`); ok(E('H.v')===0 && E(`Core.haulGrade(H.track, H.x)`)>=0,'starts at a standstill on a flat or downhill stretch');
  E(`MG.keys.ArrowRight=true; for(let i=0;i<60;i++) haulStep(1/60); MG.keys={};`);
  ok(E('H.v')>60,'clean launch: rolling after a second of gas: '+Math.round(E('H.v')));
@@ -32,7 +32,7 @@ const DRIVE=`(pol => { let i=0; while(H && H.phase==='drive' && i++<40000){
  const r=E('H.result');
  ok(E('H.spill')===0 && E('H.t')<=E('H.par'),'competent driver beats par with nothing lost: '+E('H.t').toFixed(1)+' vs '+E('H.par'));
  ok(Math.abs(E('S.cash')-(r.rev+r.bonus))<1e-6 && r.bonus>0,'cash = sale + bonus, nothing deducted: '+Math.round(E('S.cash')));
- ok(/Full load \+15%/.test(st()) && /Nothing lost \+10%/.test(st()) && /Under par \+([6-9]|1[0-8])%/.test(st()) && /Total/.test(st()),'end ticket explains the pay: '+st().slice(0,200));
+ ok(/Full load \+15%/.test(st()) && /Nothing lost \+10%/.test(st()) && /Beat target \+([6-9]|1[0-8])%/.test(st()) && /Total/.test(st()),'end ticket explains the pay: '+st().slice(0,200));
  ok(!/fine/i.test(st()),'no fine on the end ticket');
  ok(E('S.stats.parHaul')===1 && E('S.stats.cleanHaul')===1,'par and clean haul counted');
 
@@ -51,9 +51,9 @@ const DRIVE=`(pol => { let i=0; while(H && H.phase==='drive' && i++<40000){
  // 3. overweight is a chosen, visible risk with a premium
  haul(1, `S.upg=[]; S.run.perks=[]; S.cash=0;`);
  E('H.n=H.limit+3; haulLoadUI();');
- ok(/Overweight by 3: \+15% pay/.test(st()),'overweight shows its premium: '+st().slice(0,160));
+ ok(/3 over the limit: \+15% pay/.test(st()),'overweight shows its premium: '+st().slice(0,160));
  E('haulGo()'); E(DRIVE)('par');
- ok(E('H.spill')>0 || /Overweight premium \+15%/.test(st()),'overweight premium paid when the load arrives whole: '+st().slice(0,160));
+ ok(E('H.spill')>0 || /Over limit \+15%/.test(st()),'overweight premium paid when the load arrives whole: '+st().slice(0,160));
 
  // 4. full gas the whole way can run away on a downgrade; the ticket says what to do
  let ran=0; for(let k=0;k<6 && !ran;k++){ haul(1, `S.upg=[]; S.run.perks=[];`); E('haulGo()'); E(DRIVE)('gas'); if(E('H.spill')>0) ran++; }

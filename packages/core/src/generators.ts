@@ -9,6 +9,7 @@ import {
   ERA_SPECIES, MILLS, PERKS, PLACES, RARITY, SLOPES, SPECIES, TRACT_BASE,
   type PerkDef, type Rarity, type SlopeId, type SpeciesId,
 } from './content';
+import { deepFreeze } from './freeze';
 import { treeValue } from './formulas';
 import { rngPick, rngRange, type Rng } from './rng';
 import {
@@ -39,6 +40,8 @@ export interface Tract {
   /** Asking price; present on land-office listings only. */
   price?: number;
   hire?: { mill: string; rate: number };
+  /** The AFK lot: a big, poor, cheap cutover to leave the camp running on. */
+  afk?: boolean;
 }
 
 /** Build a tract with weight-averaged tree stats (and skid/haul weight). No randomness. */
@@ -143,6 +146,54 @@ export function genListings(rng: Rng, era: number, o: TractListingOpts, n = 3, m
   for (let i = 0; i < n; i++) out.push(genTract(rng, era, o));
   return maxPrice === undefined ? out : ensureAffordableListing(out, maxPrice);
 }
+
+// ---------- the AFK lot (owner request 2026-10-25): a lot you buy before going away so the camp never runs out of timber
+
+/** AFK lot numbers (balance agent to tune). Trees are × TRACT_BASE[era]; per-tree stats multiply the mix average. */
+export const AFK_LOT = deepFreeze({
+  /** Chance a fresh land-office board carries one (never more than one; owner-approved 2026-10-25: always one). */
+  chance: 1,
+  /** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5; owner-approved 2026-10-25: was 4-6). */
+  trees: [12, 18] as readonly [number, number],
+  /** Small second-growth stems: board feet and chops per tree. */
+  bfMult: 0.7, hpMult: 0.75,
+  /** Poor grade, more pulp: value per tree (value per bd ft is valMult ÷ bfMult, about 0.71). */
+  valMult: 0.5,
+  /** Land price on top of the usual 42% of gross (cheaper per tree; owner-approved 2026-10-25: was 0.8). */
+  landMult: 0.4,
+  /** Close to the cove: haul miles. */
+  miles: [1, 3] as readonly [number, number],
+});
+/** The AFK lot's mix per era: the common conifers, pine-led. */
+export const AFK_MIX: readonly (readonly (readonly [SpeciesId, number])[])[] = deepFreeze([
+  [['pine', 50], ['hemlock', 30], ['spruce', 20]],
+  [['pine', 50], ['hemlock', 30], ['spruce', 20]],
+  [['pine', 45], ['hemlock', 35], ['spruce', 20]],
+  [['pine', 40], ['hemlock', 40], ['spruce', 20]],
+]);
+
+/**
+ * An AFK lot for the era: 12-18× the trees of a normal tract, small poor stems,
+ * flat or rolling, 1-3 mi out, land ×0.4. Draws, in order: trees, miles,
+ * slope, place, lot. The prototype feeds it its own stream ('land'), so the
+ * board's other draws are untouched.
+ */
+export function genAfkLot(rng: Rng, era: number, o: TractListingOpts): Tract {
+  const e = Math.max(0, Math.min(TRACT_BASE.length - 1, era));
+  const trees = Math.round((TRACT_BASE[e] ?? 60) * rngRange(rng, AFK_LOT.trees[0], AFK_LOT.trees[1]));
+  const miles = Math.round(rngRange(rng, AFK_LOT.miles[0], AFK_LOT.miles[1]) * 2) / 2;
+  const g = GROUNDS.cutover, slope = rngPick<SlopeId>(rng, g.slopes);
+  const mix: MixEntry[] = (AFK_MIX[e] ?? []).map((m) => [m[0], m[1]] as MixEntry);
+  const t = makeTract(lotName(rng), mix, trees, miles, slope, 'cutover');
+  t.bf *= AFK_LOT.bfMult; t.hp *= AFK_LOT.hpMult; t.val *= AFK_LOT.valMult; t.afk = true;
+  t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * AFK_LOT.landMult);
+  const sz = (o.thinSurvey ? 0.8 : 1) * (o.cruiser ? 1.25 : 1);
+  if (sz !== 1) { t.trees = t.left = Math.max(5, Math.round(t.trees * sz)); }
+  return t;
+}
+
+/** Charter orders shown on the board at once (owner request 2026-10-25; was 2). */
+export const OFFER_BOARD_SIZE = 4;
 
 /** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
 export function tractPrice(gross: number, miles: number, slope: SlopeId, stumpMult: number): number {

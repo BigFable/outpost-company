@@ -24,7 +24,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // M2: the prototype stays one self-contained file and runs on the inlined packages/core bundle
  ok(!/<script[^>]*\ssrc=/.test(html) && d.querySelectorAll('script#outpost-core').length===1,'single file: core inlined, no external scripts');
  ok(w.Core && Object.isFrozen(w.Core.EQUIPMENT) && w.Core.marketPrice(0)===1+0.18*Math.sin(1),'window.Core exposes frozen content and formulas');
- ok(d.querySelectorAll('#eq .row').length===w.Core.EQUIPMENT.length && /Finish 1 skidding run/.test(d.getElementById('upgs').textContent),'equipment and improvement panels built from Core data');
+ ok(d.querySelectorAll('#eq .row').length===w.Core.EQUIPMENT.length && /Play 1 skid game/.test(d.getElementById('upgs').textContent),'equipment and improvement panels built from Core data');
  dom.window.close();
 
  // 2. fresh game: drive the felling game with pointer events
@@ -40,12 +40,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  await waitFor(()=>/Fell another/.test(d.getElementById('mgBtns').textContent));
  ok(/Fell another/.test(d.getElementById('mgBtns').textContent),'felling run finished: '+d.getElementById('mgStatus').textContent.slice(0,60));
  const db=d.getElementById('draftBtn');
- // the toast lives 4.5s, so check it the moment the draft is queued, before closing the mini-game
+ // toasts wait while a sheet is open (they never cover a mini-game), then show when it closes
  await waitFor(()=>!db.hidden);
- await sleep(0); ok(seenToasts.some(t=>/Draft ready/.test(t)),'draft toast shown');
+ await sleep(0); ok(!seenToasts.some(t=>/Perk ready/.test(t)) && d.getElementById('toasts').childElementCount===0,'no toast over the open mini-game');
  d.getElementById('mgClose').click();
  await waitFor(()=>d.getElementById('mg').hidden);
- ok(!db.hidden && /Draft ready \(1\)/.test(db.textContent),'draft queued after mini-game: '+db.textContent);
+ await sleep(0); ok(seenToasts.some(t=>/Perk ready/.test(t)),'draft toast shown once the mini-game closes');
+ ok(!db.hidden && /Pick perk \(1\)/.test(db.textContent),'draft queued after mini-game: '+db.textContent);
  db.click(); ok(!d.getElementById('draft').hidden,'draft modal opens');
  const cards=[...d.querySelectorAll('#dCards .pcard')]; ok(cards.length===3,'3 cards offered');
  const pid=cards[0].dataset.p; cards[0].click();

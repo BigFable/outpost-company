@@ -53,8 +53,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // Thaw flood: +3 mud patches in the skid game, haul road limit −1
  E(`S.cut={bf:1e5,val:2e4}; openMG('skid'); cancelAnimationFrame(MG.raf);`);
  ok(E('K.mud.filter(m=>m.flood).length')===3 && E('K.mud.length')===8,'Thaw flood: the skid game has 3 more mud patches (5 spring + 3)');
- ok(/Thaw flood: 3 more mud patches/.test(d.getElementById('mgStatus').textContent) && /Skid a clean turn/.test(d.getElementById('mgStatus').textContent),'skid status line opens with the event and its counter');
- ok(/Weather: Thaw flood/.test(d.getElementById('mgHelp').textContent),'the game help names the weather');
+ ok(/Spring flood: 3 more mud patches/.test(d.getElementById('mgStatus').textContent) && /Make a clean skid/.test(d.getElementById('mgStatus').textContent),'skid status line opens with the event and its counter');
+ ok(/Weather: Spring flood/.test(d.getElementById('mgHelp').textContent),'the game help names the weather');
  E('closeMG()');
  E(`S.landing={bf:1e5,val:2e4}; openMG('haul'); cancelAnimationFrame(MG.raf);`); const limFlood=E('H.limit'); E('closeMG(); S.weather.cur=null'); E(`openMG('haul'); cancelAnimationFrame(MG.raf);`); const lim0=E('H.limit'); E('closeMG()');
  ok(limFlood===lim0-1,`Thaw flood: spring road limit −1 (${limFlood} vs ${lim0})`);
@@ -62,7 +62,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  setEv('thaw_flood'); const before=E(`seasonF('skid')`);
  E(`S.cut={bf:1e5,val:2e4}; openMG('skid'); cancelAnimationFrame(MG.raf); K.logs=2; K.phase='run'; K.par=99; K.t=10; K.hits=0; skidFinish();`);
  ok(E(`S.weather.cur.cleared.includes('skid')`),'a clean skid turn clears the trails');
- ok(/Clear the road/.test(d.getElementById('mgStatus').textContent),'the run’s result says so: '+d.getElementById('mgStatus').textContent.slice(-110));
+ ok(/Road cleared/.test(d.getElementById('mgStatus').textContent),'the run’s result says so: '+d.getElementById('mgStatus').textContent.slice(-110));
  const fF=E(`Core.eventStageFactor(Core.eventDef('thaw_flood'),'skid',0,evOpts('skid'))`);
  ok(Math.abs(fF-0.9)<1e-9 && E(`seasonF('skid')`)>before,`flood skid penalty halved: ×${fF} (season factor ${before} → ${E(`seasonF('skid')`)})`);
  E('closeMG()');
@@ -72,7 +72,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.season=2; S.weather.cur=null;`); const hq=E(`seasonF('haul')`); setEv('equinox_gale');
  ok(Math.abs(E(`seasonF('haul')`)-0.85*hq)<1e-9 && Math.abs(E(`seasonF('fell')`)-1.1)<1e-9,'gale: idle hauling ×0.85, felling ×1.1');
  E(`openMG('fell'); cancelAnimationFrame(MG.raf);`);
- ok(E('F.wind.mult')===1.5 && /Equinox gale: wind ×1.5/.test(d.getElementById('mgStatus').textContent),'gale: felling wind ×1.5, named in the status line');
+ ok(E('F.wind.mult')===1.5 && /Fall gale: wind ×1.5/.test(d.getElementById('mgStatus').textContent),'gale: felling wind ×1.5, named in the status line');
  E('closeMG()');
  E(`S.landing={bf:1e5,val:2e4}; openMG('haul'); cancelAnimationFrame(MG.raf);`);
  ok(/Drive a clean load to clear the road/.test(d.getElementById('mgStatus').textContent),'gale: the haul game names its counter');
@@ -93,12 +93,12 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.rng.events=1; for(let i=0;i<4000 && !S.weather.cur.fired;i++) weatherTick(0.5);`);
  ok(E('S.weather.cur.fired') && Math.abs(E('S.stems.bf')-850000)<1,'dry spell: a slash fire burns 15% of the stems once: '+E('S.stems.bf'));
  const b1=E('S.stems.bf'); E('for(let i=0;i<400;i++) weatherTick(0.5)'); ok(E('S.stems.bf')===b1,'only once per season');
- ok(E('S.weather.burnt') && /Burnt-over ground/.test(d.getElementById('saleMeta').textContent+E('(render(true), $("saleMeta").textContent)')),'silver lining: the land office notes burnt-over ground');
+ ok(E('S.weather.burnt') && /After the fire/.test(d.getElementById('saleMeta').textContent+E('(render(true), $("saleMeta").textContent)')),'silver lining: the land office notes burnt-over ground');
  const p0=E('S.forSale[0].price'); ok(E('tractCost(S.forSale[0])')===Math.round(p0*0.8),'the next lot costs 20% less');
  setEv('dry_spell'); E(`S.stems={bf:1e6,val:2e5}; runDone('buck', .9);`);
  ok(E(`S.weather.cur.cleared.includes('buck')`),'a good bucking run clears the slash');
  E(`for(let i=0;i<4000 && !S.weather.cur.fired;i++) weatherTick(0.5);`); ok(Math.abs(E('S.stems.bf')-925000)<1,'after clearing, a fire burns half as much (7.5%)');
- ok(E(`Core.MODS.find(m=>m.id==='drought').desc`).includes('Dry spell') && !/Math\.random\(\) < dt\*\.003/.test(src),'Dry summer rework: one fire rule (the clause triples Dry spell), the old random fire is gone');
+ ok(E(`Core.MODS.find(m=>m.id==='drought').desc`).includes('dry spells') && !/Math\.random\(\) < dt\*\.003/.test(src),'Dry summer rework: one fire rule (the clause triples Dry spell), the old random fire is gone');
  const dryW=E(`Core.eventWeights('Summer',{drySummer:true}).find(r=>r.def.id==='dry_spell').w`); ok(dryW===36,'Dry summer: Dry spell weight ×3');
 
  // 4. Ill wind: bad weather's crew penalties become bonuses; Clear the road no longer needed
@@ -146,11 +146,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const save=JSON.parse(E('JSON.stringify(S)')); save.last=Date.now()-2*3600*1000; save.weather.seen={}; save.weather.cur=null; save.weather.next=null; save.weather.changes=50;
  const dom2=mk({'timberline-v2':JSON.stringify(save)}); await sleep(400); const w2=dom2.window, d2=w2.document, E2=s=>w2.__eval(s); E2('clearInterval(loop)');
  const c2=d2.getElementById('dispatch');
- ok(!c2.hidden && /while you were away/.test(c2.textContent) && /Weather this time away/.test(c2.textContent),'return summary card after time away: '+c2.textContent.slice(0,160));
+ ok(!c2.hidden && /while you were away/.test(c2.textContent) && /Weather while away/.test(c2.textContent),'return summary card after time away: '+c2.textContent.slice(0,160));
  ok(c2.querySelectorAll('li').length>=1 && c2.querySelectorAll('li').length<=6,'summary lists up to 6 lines: '+c2.querySelectorAll('li').length);
  ok(E2('dispQ.filter(c=>c.first).length')>=1,'first sightings made offline open as cards after the summary');
  d2.getElementById('dOk').click(); ok(!c2.hidden && /New in the almanac/.test(c2.textContent),'then the first sighting card opens');
- ok(E2('S.log.some(l=>/New in the weather almanac/.test(l.text))'),'activity log lines for the offline weather');
+ ok(E2('S.log.some(l=>/New in the almanac/.test(l.text))'),'activity log lines for the offline weather');
 
  // owner tuning 2026-10-25: Fish run every stage ×0.92 (upkeep ×0.75 kept); 'Preferred supplier' needs 16 contracts
  E(`S.season=1; S.weather.cur=null; S.upg=[]; S.run.perks=[];`); const fq=E(`seasonF('buck')`); setEv('fish_run');

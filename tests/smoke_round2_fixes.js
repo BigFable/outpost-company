@@ -25,8 +25,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    worst=Math.max(worst, cheapest());
  }
  ok(worst<=7500,`every Steam Camp push lists a tract at or under $7,500 (worst cheapest of ${tries}: $${worst})`);
- const shown=[...d.querySelectorAll('#sales button[data-i]')].length;
- ok(shown===3,'land office still shows three listings: '+shown);
+ const shown=[...d.querySelectorAll('#sales .row.lot:not(.afk) button[data-i]')].length; // plus at most one AFK lot (cutover), on its own stream
+ ok(shown===3,'land office still shows three regular listings: '+shown);
  // the 3-minute board refresh keeps the guarantee
  let worstR=0; for(let i=0;i<60;i++){ E(`S.saleT=0; tick(0.5);`); worstR=Math.max(worstR, cheapest()); }
  ok(worstR<=7500,'refreshed boards at Steam Camp keep a tract at or under $7,500: $'+worstR);
@@ -49,10 +49,10 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // 3. haul: the load screen and end ticket show the new caps
  E(`closeMG(); S.season=1; S.landing={bf:1e6, val:2e5}; S.upg=[]; S.run.perks=[]; openMG('haul'); cancelAnimationFrame(MG.raf);`);
  const st=()=>d.getElementById('mgStatus').textContent;
- ok(/Full load: \+15% pay/.test(st()) && /whole for \+10%, under par for \+6 to \+18%/.test(st()),'load screen states +15% full load, +10% whole, +6 to +18% under par: '+st().slice(-120));
+ ok(/Full load: \+15% pay/.test(st()) && /Lose nothing: \+10%\. Beat the target: \+6 to \+18%/.test(st()),'load screen states +15% full load, +10% whole, +6 to +18% under par: '+st().slice(-120));
  E(`H.n=Math.max(1,H.limit-3); haulLoadUI();`); ok(/A full load pays up to \+15%/.test(st()),'part load: full load pays up to +15%');
  E(`H.n=H.limit; haulLoadUI(); haulGo(); let i=0; while(H.phase==='drive' && i++<40000){ const c=Core.haulPolicy(H.rules.phys,H.v,Core.haulGrade(H.track,H.x)); MG.keys.ArrowRight=c.gas; MG.keys.ArrowLeft=c.brk; haulStep(1/60);} MG.keys={};`);
- const m=st().match(/Under par \+(\d+)%/);
+ const m=st().match(/Beat target \+(\d+)%/);
  ok(/Full load \+15%/.test(st()) && m && +m[1]>=6 && +m[1]<=18,'end ticket: full load +15%, under par within +6 to +18%: '+(m&&m[1]));
 
  await sleep(100);

@@ -23,7 +23,7 @@ for (const p of base.profiles) {
       else ok = Math.abs(got - want) <= Math.max(absolute, Math.abs(want) * relative);
       total++;
       if (!ok) fails++;
-      console.log(`${ok ? 'PASS' : 'FAIL'} ${p.padEnd(8)} ${run} ${m.padEnd(10)} baseline ${String(want).padStart(6)}  now ${String(got).padStart(6)}`);
+      console.log(`${ok ? 'PASS' : 'FAIL'} ${p.padEnd(9)} ${run} ${m.padEnd(10)} baseline ${String(want).padStart(6)}  now ${String(got).padStart(6)}`);
     }
   }
 }

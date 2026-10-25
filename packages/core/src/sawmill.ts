@@ -20,17 +20,17 @@ export interface StructureDef {
   readonly levels: readonly StructureLevel[];
 }
 export const STRUCTURES: readonly StructureDef[] = deepFreeze([
-  {id:'sawmill.pit', skill:'sawmill', target:'sawmill', name:'Saw pit', desc:'Two sawyers whipsaw logs by hand over a pit.',
+  {id:'sawmill.pit', skill:'sawmill', target:'sawmill', name:'Saw pit', desc:'Two sawyers saw logs by hand over a pit.',
     levels:[{items:[], cash:0, effect:'2 sawyers, hand power'}]},
-  {id:'sawmill.pond', skill:'sawmill', target:'sawmill', name:'Mill pond & wheel', desc:'Dam the creek, float the logs and turn a water wheel.',
+  {id:'sawmill.pond', skill:'sawmill', target:'sawmill', name:'Mill pond & wheel', desc:'Dam the creek and turn a water wheel.',
     levels:[{items:[{item:'logging.prime_spar', qty:3}, {item:'logging.amber_pitch', qty:2}], cash:100, effect:'Water power: sawing ×2.5, room for 10 more sawyers. Seasons now matter'}]},
-  {id:'sawmill.headrig', skill:'sawmill', target:'sawmill', name:'Circular headrig', desc:'A circular saw on a log carriage, belted to the wheel.',
-    levels:[{items:[{item:'logging.prime_spar', qty:2}, {item:'logging.ships_fitting', qty:1}], cash:250, effect:'+2 sawyers and room for 44 more; Saw for grade gets the full carriage (turning takes 1 s, not 2)'}]},
-  {id:'logging.bunkhouse', skill:'sawmill', target:'logging', name:'Bunkhouse', desc:'Plank walls and bunks for the logging crews.',
+  {id:'sawmill.headrig', skill:'sawmill', target:'sawmill', name:'Circular saw', desc:'A big round saw on a moving log cart, run by the wheel.',
+    levels:[{items:[{item:'logging.prime_spar', qty:2}, {item:'logging.ships_fitting', qty:1}], cash:250, effect:'+2 sawyers and room for 44 more; in Saw boards, turns take 1 s, not 2'}]},
+  {id:'logging.bunkhouse', skill:'sawmill', target:'logging', name:'Bunkhouse', desc:'Beds for the logging crews.',
     levels:[
-      {items:[{item:'sawmill.plank_bundle', qty:4}], cash:0, effect:'Crew upkeep and hiring ×0.95'},
-      {items:[{item:'sawmill.plank_bundle', qty:8}], cash:0, effect:'Crew upkeep and hiring ×0.90'},
-      {items:[{item:'sawmill.plank_bundle', qty:16}], cash:0, effect:'Crew upkeep and hiring ×0.86'},
+      {items:[{item:'sawmill.plank_bundle', qty:4}], cash:0, effect:'Wages and hiring ×0.95'},
+      {items:[{item:'sawmill.plank_bundle', qty:8}], cash:0, effect:'Wages and hiring ×0.90'},
+      {items:[{item:'sawmill.plank_bundle', qty:16}], cash:0, effect:'Wages and hiring ×0.86'},
     ]},
 ]);
 export function structureDef(id: string): StructureDef | undefined { return STRUCTURES.find((s) => s.id === id); }
@@ -129,20 +129,20 @@ export const MILL_SHARE_MAX = 0.5;
 
 /** The mill's board (spent with Sawmill Charter Shares). */
 export const MILL_META: readonly MetaNodeDef[] = deepFreeze([
-  {id:'saw.advance', cost:3, name:'Mill advance', desc:'Start each mill outpost with $300.'},
-  {id:'saw.crew', cost:5, name:'Sawyers on the boat', desc:'Start each mill outpost with 2 more sawyers.'},
+  {id:'saw.advance', cost:3, name:'Mill cash', desc:'Start each mill run with $300.'},
+  {id:'saw.crew', cost:5, name:'Extra sawyers', desc:'Start each mill run with 2 more sawyers.'},
   {id:'saw.sharp', cost:8, name:'Saw filer', desc:'Every sawyer saws ×1.2.'},
-  {id:'saw.chronicler', cost:10, name:'Mill clerk', desc:'Charter Shares from closing the mill +15%.'},
+  {id:'saw.chronicler', cost:10, name:'Mill clerk', desc:'Shares from closing the mill +15%.'},
 ]);
 
 // ---------- perks (Sawmill drafts)
 
 export const SAW_PERKS: readonly PerkDef[] = deepFreeze([
-  {id:'chaincarriage', r:'rare', name:'Chain carriage', desc:'Saw for grade: a top-tier log rolls the next log straight onto the carriage with its outer boards one grade higher, chaining up to 3 logs.'},
-  {id:'sawyerseye', r:'rare', name:'Sawyer’s eye', desc:'Saw for grade shows hidden knots one board ahead on every face.'},
-  {id:'pondmonkey', r:'common', name:'Pond monkey', desc:'Prime logs always come first on the deck, and each gives 1 extra Clear board.'},
-  {id:'turndog', r:'common', name:'Turn and dog', desc:'Turning the log in Saw for grade is instant.'},
-  {id:'bigstick', r:'legendary', name:'Big stick', desc:'Once per mill outpost, a giant log arrives on the deck: twice the wood, and every Clear board from it is worth ×3.'},
+  {id:'chaincarriage', r:'rare', name:'Chain carriage', desc:'Saw boards: a top run brings the next log at once, outer boards one grade better, up to 3 logs.'},
+  {id:'sawyerseye', r:'rare', name:'Sawyer’s eye', desc:'Saw boards: see hidden knots one board ahead on every side.'},
+  {id:'pondmonkey', r:'common', name:'Pond monkey', desc:'Prime logs always come first, and each gives 1 extra Clear board.'},
+  {id:'turndog', r:'common', name:'Turn and dog', desc:'Saw boards: turning the log is instant.'},
+  {id:'bigstick', r:'legendary', name:'Big stick', desc:'Once per mill run, a giant log arrives: twice the wood, and its Clear boards are worth ×3.'},
 ]);
 /** Sawmill perks that can be offered: commons stack (Pond monkey), the rest once per mill outpost. */
 export function sawDraftPool(drafted: readonly string[]): PerkDef[] {

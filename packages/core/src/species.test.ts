@@ -87,7 +87,7 @@ describe('felling rules', () => {
     expect(fellRules('hemlock')).toMatchObject({ hinge: [0.1, 0.2], rockLoss: 0.6, chairBelow: 0.05 });
     expect(fellRules('pine')).toMatchObject({ wind: 1, hinge: [0.08, 0.2], cut: 1, half: 10, fallS: 0.9, rockLoss: 0.4, chairBelow: 0 });
     expect(fellRules('maple')).toMatchObject({ wind: 1, rockLoss: 0.4 });
-    expect(fellRules('maple').tag).toContain('Glacier maple');
+    expect(fellRules('maple').tag).toContain('Maple');
     for (const sp of ['pine', 'spruce', 'hemlock'] as const) expect(FELL_RULES[sp]?.tag).toMatch(new RegExp('^' + SPECIES[sp].name));
   });
   it('Mill file widens every species alike', () => {
@@ -167,5 +167,6 @@ describe('camp fit', () => {
     expect(tractScore(c, a)).toBeGreaterThan(tractScore(c, { ...a, price: 900 }));
     expect(tractScore(c, a)).toBeGreaterThan(tractScore({ ...c, skid: 5 }, a));
     expect(tractScore({ fell: 0, buck: 0, skid: 0, haul: 0 }, a)).toBeGreaterThan(0);
+    expect(tractScore(c, { ...a, afk: true })).toBe(0); // the AFK lot is never ranked a best buy
   });
 });
