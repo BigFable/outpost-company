@@ -210,14 +210,14 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'bargain',  r:'common', name:'Friendly land agent', desc:'Cutting rights at the land office cost 15% less.', m:{stump:.85}},
   {id:'pacer',    r:'common', name:'Pace-setter',        desc:'Pace boosts last 15 s longer.'},
   {id:'widow',    r:'rare',   name:'Widowmaker’s luck',  desc:'Felling game: a barber chair has a 50% chance to swing true and count as a perfect fall.'},
-  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
+  {id:'iceking',  r:'rare',   name:'Ice road king',      desc:'On winter roads (Winter or an Early freeze): haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs.'},
   {id:'hotsaw',   r:'rare',   name:'Hot saw',            desc:'Felling game: the back cut saws twice as fast (same green zone), and your fallers drop twice the trees behind you.'},
   {id:'scaler',   r:'rare',   name:'Scaler’s friend',    desc:'Bucking game: any score of 90% or better is scaled as 100%.'},
   {id:'four',     r:'rare',   name:'Four-log turns',     desc:'Skid game: one more log on your biggest turn (4 logs without chokers). Slow and wide, but it moves the most wood.'},
   {id:'daredevil',r:'rare',   name:'Downhill daredevil', desc:'Haul game: runaway speed +40, but a runaway spills twice the logs.'},
   {id:'overload', r:'rare',   name:'Overload artist',    desc:'Haul game: load 4 more logs over the road limit, an overweight rig handles like a legal one, and each extra log pays +8% instead of +5%.'},
   {id:'highball', r:'rare',   name:'Highballer',         desc:'Haul game: par is 10% tighter, but a haul under par counts as two runs toward your next draft.'},
-  {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud.'},
+  {id:'swamp',    r:'rare',   name:'Swamp boots',        desc:'Mud never slows the skid game, and idle skidding ignores spring mud and thaw floods.'},
   {id:'neck',     r:'rare',   name:'Bottleneck boss',    desc:'Idle: whichever stage is the bottleneck runs ×1.35.'},
   {id:'handshake',r:'rare',   name:'Handshake deals',    desc:'Missed charter orders carry no penalty.'},
   {id:'store',    r:'rare',   name:'Company store',      desc:'Crews with nothing to do draw no pay at all (instead of ¼).', set:2},
@@ -230,6 +230,8 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'snowball', r:'legendary', name:'Snowball camp',   desc:'Idle: every filled charter order speeds all crews +4% for the rest of the outpost.', set:2},
   {id:'strict',   r:'curse',  name:'Strict scaler',      desc:'Log value −15%, but charter order premiums +40 points.', m:{value:.85}},
   {id:'scrip',    r:'curse',  name:'Company scrip',      desc:'No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.', m:{price:1.15}},
+  {id:'illwind',  r:'legendary', name:'Ill wind',        desc:'“It’s an ill wind that blows nobody good.” Bad weather’s crew penalties become bonuses of the same size (a gale’s hauling ×0.85 becomes ×1.15). Mini-game hazards and silver linings stay.'},
+  {id:'stormseason', r:'curse', name:'Storm season',     desc:'Bad weather comes twice as often and may come twice in a row, but every bad event that runs its full course adds +2% to this outpost’s Charter Shares (at most +30%, on top of the special-order bonus).'},
   {id:'absentee', r:'curse',  name:'Absentee directors', desc:'The board runs things from home. Mini-games never grant pace boosts, but every crew works ×1.2.', m:{all:1.2}},
 ]);
 export const RARITY: Readonly<Record<Rarity, RarityDef>> = deepFreeze({common:{w:60, label:'Common'}, rare:{w:26, label:'Rare'}, legendary:{w:5, label:'Legendary'}, curse:{w:9, label:'Curse'}});
@@ -247,11 +249,13 @@ export const META: readonly MetaNodeDef[] = deepFreeze([
   {id:'lore',    cost:14, name:'Old Reach hands',   desc:'Four more rare and legendary perks join the draft pool.'},
   {id:'gas',     cost:12, name:'Diesel dealer',     desc:'Reaching Diesel Road costs 25% less.'},
   {id:'four',    cost:20, name:'Wider choice',      desc:'Drafts show 4 perks instead of 3.'},
+  {id:'almanac', cost:8,  name:'Weather almanac',   desc:'The season tile shows next season’s card a season early.'},
+  {id:'signals', cost:12, name:'Storm signals',     desc:'A signal mast on Foghorn Point: bad weather comes 30% less often (quiet seasons take its place).'},
 ]);
 
 /** Charter clauses: optional hard modifiers that multiply Charter Shares. */
 export const MODS: readonly RunModDef[] = deepFreeze([
-  {id:'drought', name:'Dry summer', desc:'Felling −10%, and summer slash fires can burn stems on the ground.', x:1.25},
+  {id:'drought', name:'Dry summer', desc:'Felling −10%, and a Dry spell is three times as likely every summer.', x:1.25},
   {id:'market',  name:'Dividends due', desc:'Investors back home take their cut. Every sale pays 15% less.', x:1.3},
   {id:'beetle',  name:'Thin survey',  desc:'Land office listings carry 20% fewer trees.', x:1.2},
 ]);

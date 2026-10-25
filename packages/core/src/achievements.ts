@@ -9,7 +9,9 @@ import { IMPROVEMENT_ALT_REQS, IMPROVEMENT_REQS, type StatRequirement } from './
 /** Numbers an achievement condition can test. `crewedStages` = stages with a working crew (0-4). */
 export type AchMetric =
   | 'deliv' | 'earned' | 'felled' | 'tracts' | 'hires' | 'contracts' | 'crew' | 'winters'
-  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul' | 'era' | 'crewedStages';
+  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul' | 'era' | 'crewedStages'
+  /** Bad weather events weathered in full; Almanac cards seen (seasonal events). */
+  | 'storms' | 'almanac';
 
 export interface AchCondition { readonly metric: AchMetric; readonly op: '>=' | '>'; readonly value: number }
 
@@ -91,6 +93,8 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   ladder('ch1', 'Clean haul', 'Deliver a full load under par with nothing lost.', 'cleanHaul', 1, 60, 0),
   ladder('ch10', 'Road boss', 'Make 10 clean hauls.', 'cleanHaul', 10, 900, 1),
   once('allround', 'All-around logger', 'Do a clean run of every mini-game.', [atLeast('perfFell', 1), atLeast('perfBuck', 1), atLeast('cleanSkid', 1), atLeast('cleanHaul', 1)], 1500, 2),
+  ladder('wx10', 'Weathered 10 storms', 'Ride out 10 bad-weather events to the end of their season.', 'storms', 10, 900, 1),
+  once('wxall', 'Every season’s card', 'See every card in the weather almanac.', [atLeast('almanac', 16)], 1500, 2),
   once('era1', 'Full steam', 'Reach Steam Camp.', [atLeast('era', 1)], 0, 2),
   once('era2', 'Diesel Road', 'Reach Diesel Road.', [atLeast('era', 2)], 0, 2),
   once('era3', 'Into the Interior', 'Reach the Interior with mechanized logging.', [atLeast('era', 3)], 0, 3),
