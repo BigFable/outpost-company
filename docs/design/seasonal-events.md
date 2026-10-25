@@ -30,7 +30,7 @@ Today the seasons are a fixed rhythm: mud in spring, frozen roads in winter, the
 
 **Bad-luck rules (all in core, all tested):**
 - **No two bad events in a row.** A bad roll right after a bad event becomes "nothing". (Storm coast and the *Storm season* curse loosen this to "no three in a row".)
-- **Gentle start:** a brand-new company's first 4 season changes deal only good or nothing, and the very first card is always *Supply ship in* or *Long days*.
+- **Gentle start:** a brand-new company's first 4 season changes deal only good or nothing, and the very first card is always the coming season's good headline event (*Supply ship in*, *Long days*, *Second summer* or *Ice bridge*). Every event belongs to one season's table, and a new company lands in Fall, so in practice its first card is *Ice bridge*. (Changed 2026-10-25 to match the build: a Spring or Summer card dealt in Winter would break the season tables.)
 - **Payroll guard:** no event can put crews into arrears. If an upkeep or price effect would leave cash under 2 minutes of upkeep, that effect pauses ("The board covers the shortfall").
 - **Instant losses are capped:** a slash fire burns at most 15% of stems on the ground, once per season.
 
