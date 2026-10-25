@@ -5651,15 +5651,17 @@ const tract = () => S.tracts[0] || null;
 const season = () => SEASONS[S.season];
 const rnd = (a,b) => Core.rngRange(Math.random, a, b);
 const pick = a => Core.rngPick(Math.random, a);
+// rounds first, then picks the suffix, so 999,999 reads 1.00M (not 1000K)
+const FMT_UNITS = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
 function fmt(n){
   if (!isFinite(n)) return '0';
-  const a = Math.abs(n);
-  if (a < 10) return (Math.round(n*10)/10).toString();
-  if (a < 1000) return Math.round(n).toString();
-  const u = ['K','M','B','T','Qa'];
-  let i = -1, v = n;
-  while (Math.abs(v) >= 1000 && i < u.length-1){ v /= 1000; i++; }
-  return v.toFixed(Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0) + u[i];
+  if (Math.abs(n) < 10){ const r = Math.round(n*10)/10; if (Math.abs(r) < 10) return r.toString(); }
+  if (Math.abs(Math.round(n)) < 1000) return Math.round(n).toString();
+  const fix = v => { const a = Math.abs(v), d = a < 10 ? 2 : a < 100 ? 1 : 0; let t = v.toFixed(d);
+    if (d && Math.abs(+t) >= (d === 2 ? 10 : 100)) t = v.toFixed(d - 1); return t; };
+  let i = 0, v = n/1000;
+  while (i < FMT_UNITS.length - 1 && Math.abs(+fix(v)) >= 1000){ v /= 1000; i++; }
+  return fix(v) + FMT_UNITS[i];
 }
 const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
 const bf = n => fmt(n) + ' bd ft';
@@ -5786,7 +5788,7 @@ function buyTract(i){
   render(true);
 }
 function buildRoad(){
-  const t = tract(); if (!t || t.road || S.cash < t.roadCost) return;
+  const t = tract(); if (!t || t.road || !(typeof t.roadCost === 'number' && isFinite(t.roadCost) && t.roadCost >= 0) || S.cash < t.roadCost) return;
   S.cash -= t.roadCost; t.road = true; t.miles = Core.milesWithRoad(t.miles); setSite();
   note(`Built a road into ${t.name}. Haul is now ${t.miles} mi.`); render(true);
 }
@@ -6452,10 +6454,13 @@ function evShort(ev){
 const DISPATCH_SEC = 8;
 function pumpDispatch(){
   if (dCur && !dCur.sticky && S.t >= dCur.until) dCur = null;
+  // QA-13: a first-sighting card waits for a click, but not forever: once a newer card is waiting and it has been up a whole season,
+  // it gives way (the event is already in the Almanac), so later cards are not stuck behind it
+  if (dCur && dCur.sticky && dispQ.length && S.t >= dCur.shown + SEASON_LEN) dCur = null;
   if (dCur || !dispQ.length || !mgEl.hidden) return;
   // a card for a season already over is dropped (first sightings and the return summary always show)
   while (dispQ.length > 1 && dispQ[0].kind === 'event' && !dispQ[0].first && !(S.weather.cur && S.weather.cur.id === dispQ[0].id)) dispQ.shift();
-  const c = dispQ.shift(); dCur = Object.assign(c, {until: S.t + (c.kind === 'away' ? 20 : DISPATCH_SEC), sticky: !!c.first});
+  const c = dispQ.shift(); dCur = Object.assign(c, {shown: S.t, until: S.t + (c.kind === 'away' ? 20 : DISPATCH_SEC), sticky: !!c.first});
 }
 function dismissDispatch(){ dCur = null; pumpDispatch(); render(); }
 function renderDispatch(){
@@ -6653,7 +6658,7 @@ function openMG(kind){
   cancelAnimationFrame(MG.raf); MG.lt = 0; MG.raf = requestAnimationFrame(frame);
   $('mgClose').focus();
 }
-function closeMG(){ mgEl.hidden = true; mgEl.classList.remove('info'); $('mgGuide').hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = W = null; render(); }
+function closeMG(){ if (MG.kind === 'saw' && S.camps.sawmill) sawRefund(S.camps.sawmill); mgEl.hidden = true; mgEl.classList.remove('info'); $('mgGuide').hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = W = null; render(); }
 function frame(ts){
   const dt = MG.lt ? Math.min(.05, (ts - MG.lt)/1000) : 0; MG.lt = ts;
   try {
@@ -6685,7 +6690,9 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape'){ closeMG(); return; }
   if (MG.kind === 'fell' && e.code === 'Space'){ e.preventDefault(); if (!e.repeat) fellPress(); return; }
   if (MG.kind === 'buck' && buckKey(e, !!(e.target && e.target.closest && e.target.closest('button')))){ e.preventDefault(); return; }
-  if (MG.kind === 'saw' && sawKey(e, !!(e.target && e.target.closest && e.target.closest('button')))){ e.preventDefault(); return; }
+  // QA-01: Space on the focused close button or the Saw button saws (the close button keeps Enter); on Turn, Guides or Mark it presses that button
+  if (MG.kind === 'saw'){ const btn = e.target && e.target.closest && e.target.closest('button');
+    if (sawKey(e, !!btn && btn.id !== 'mgClose' && btn.id !== 'sSaw')){ e.preventDefault(); return; } }
   if ((MG.kind === 'skid' || MG.kind === 'haul') && GAME_KEYS.includes(e.code)){ e.preventDefault(); MG.keys[e.code] = true; }
 });
 window.addEventListener('keyup', e => {
@@ -7590,7 +7597,7 @@ function closeCamp(){
   S.runs.length = Math.min(S.runs.length, 12);
   settleOrders(r.n);
   // the warehouse, special orders, structures and the Sawmill belong to the company, not this outpost (pillar 4)
-  const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, season:S.season, st:S.st,
+  const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, year:S.year, season:S.season, st:S.st,
     bank:S.bank, found:S.found, locks:S.locks, newCount:S.newCount, orders:S.orders, structures:S.structures, camps:S.camps, shares:S.shares, story:S.story, millShare:S.millShare, bulk:S.bulk, rng:S.rng, mruns:S.mruns,
     weather:S.weather}; // the weather is the coast's, not the outpost's: closing camp never touches it
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
@@ -7623,6 +7630,12 @@ function normalize(){
   S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
   S.ui = Object.assign(freshUi(), S.ui && typeof S.ui === 'object' ? S.ui : {}); if (!BUY_NS.includes(S.ui.buyN)) S.ui.buyN = 1;
   if (!Array.isArray(S.runs)) S.runs = [];
+  // money and the past-outposts list come from the save as-is: a damaged or hand-edited value must not break every comparison or the page
+  if (!(typeof S.cash === 'number' && isFinite(S.cash))) S.cash = 0;
+  const num = v => typeof v === 'number' && isFinite(v) ? v : 0;
+  S.runs = S.runs.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 12).map((x, i) => Object.assign(x, {
+    n:num(x.n) || S.runs.length - i, min:num(x.min), deliv:num(x.deliv), earned:num(x.earned), legacy:num(x.legacy),
+    era:Math.max(0, Math.min(ERAS.length - 1, Math.floor(num(x.era)))), mods:(Array.isArray(x.mods) ? x.mods : []).filter(id => MODS.some(m => m.id === id))}));
   const r = S.run = Object.assign(freshRun(), S.run || {});
   ['perks','dq','mods','eraT','bounty'].forEach(k => { if (!Array.isArray(r[k])) r[k] = []; });
   if (!r.init){ // an existing company becomes run 1, already under way
@@ -7634,6 +7647,7 @@ function normalize(){
   ['bank','found','structures','camps','bulk','dropT'].forEach(k => { if (!obj(S[k])) S[k] = {}; });
   if (!Array.isArray(S.locks)) S.locks = [];
   if (!Array.isArray(S.mruns)) S.mruns = [];
+  S.mruns = S.mruns.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 12).map(x => Object.assign(x, {n:num(x.n), min:num(x.min), sawn:num(x.sawn), legacy:num(x.legacy)}));
   if (typeof S.newCount !== 'number') S.newCount = 0;
   S.orders = Object.assign(freshOrders(), obj(S.orders) ? S.orders : {});
   ['filled','filledAt','back'].forEach(k => { if (!obj(S.orders[k])) S.orders[k] = {}; });
@@ -7674,7 +7688,8 @@ function normalize(){
   if (typeof S.weather.streak !== 'number') S.weather.streak = 0;
   if (S.camps.sawmill){ const m = S.camps.sawmill = Object.assign(freshMill(S.camps.sawmill.n || 1), S.camps.sawmill);
     m.yard = Object.assign({clear:0, select:0, common:0}, obj(m.yard) ? m.yard : {});
-    ['perks','dq'].forEach(k => { if (!Array.isArray(m[k])) m[k] = []; }); m.drafts = m.dq.length; }
+    ['perks','dq'].forEach(k => { if (!Array.isArray(m[k])) m[k] = []; }); m.drafts = m.dq.length;
+    sawRefund(m); } // a log picked for Saw for grade but never sawn (the page closed mid-game) goes back
   if (!['logging','sawmill'].includes(S.ui.camp) || (S.ui.camp === 'sawmill' && !S.camps.sawmill)) S.ui.camp = 'logging';
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
@@ -8047,15 +8062,27 @@ function sawInit(chain){
   }
   if (!S.ui.sawIntro && !phoneUI()) showGuide(false);
 }
+// QA-02: the log is paid for when it is picked, but held in m.sawHold until the first board is sawn. Done, Escape, the X or a reload
+// before that gives the spar, pond logs and log money back (sawRefund, from closeMG and normalize).
+function sawRefund(m){
+  const h = m && m.sawHold; if (!h) return; delete m.sawHold;
+  if (h.spar) S.bank[SPAR] = bankN(SPAR) + h.spar;
+  if (h.logs) S.bulk.logs += h.logs;
+  if (h.cash) m.cash += h.cash;
+  if (h.cost) m.logCost = Math.max(0, (m.logCost || 0) - h.cost);
+  if (h.giant) m.bigStick = false;
+}
 function sawPick(i){
   const d = W && W.deck && W.deck[i]; if (!d || W.phase !== 'pick' || !deckOk(d)) return;
-  const m = S.camps.sawmill;
-  if (d.src === 'prime') S.bank[SPAR] = bankN(SPAR) - 1;
-  else { const need = deckNeed(d), pond = Math.min(S.bulk.logs, need); S.bulk.logs -= pond;
-    if (need > pond){ const cc = (need - pond)*Core.coveLogPrice(market()); m.cash = Math.max(0, m.cash - cc); m.logCost += cc; } }
-  if (d.src === 'giant') m.bigStick = true;
+  const m = S.camps.sawmill; sawRefund(m);
+  const hold = {spar:0, logs:0, cash:0, giant:false};
+  if (d.src === 'prime'){ S.bank[SPAR] = bankN(SPAR) - 1; hold.spar = 1; }
+  else { const need = deckNeed(d), pond = Math.min(S.bulk.logs, need); S.bulk.logs -= pond; hold.logs = pond;
+    if (need > pond){ const cc = (need - pond)*Core.coveLogPrice(market()), paid = Math.min(m.cash, cc); m.cash = Math.max(0, m.cash - cc); m.logCost += cc; hold.cash = paid; hold.cost = cc; } }
+  if (d.src === 'giant'){ m.bigStick = true; hold.giant = true; }
+  m.sawHold = hold;
   W.log = d.log; W.src = d.src; W.cut = Core.newSawCut(d.log); W.par = Core.sawPar(d.log); W.cellBf = cellBfNow(); W.phase = 'saw'; W.t = 0; W.busy = 0;
-  sawButtons(); sawStatus();
+  sawButtons('sSaw'); sawStatus();
 }
 function sawButtons(focusId){
   buttons([{label:'Turn', id:'sTurn', fn:sawTurn}, {label:'Saw', id:'sSaw', primary:true, fn:sawSaw},
@@ -8066,7 +8093,7 @@ function sawButtons(focusId){
 }
 function sawSaw(){
   if (!W || W.phase !== 'saw' || W.busy > 0) return;
-  const b = Core.sawBoard(W.log, W.cut); W.busy = Core.SAW_TIME; W.flash = b; W.flashT = 1.2;
+  const b = Core.sawBoard(W.log, W.cut); W.busy = Core.SAW_TIME; W.flash = b; W.flashT = 1.2; delete S.camps.sawmill.sawHold;
   if (W.cut.done) sawFinish(false); else sawStatus();
 }
 function sawTurn(){
@@ -8111,7 +8138,7 @@ function sawKey(e, onButton){
 }
 function sawFinish(timeUp){
   if (!W || W.phase !== 'saw') return;
-  const m = S.camps.sawmill, L = W.log, c = W.cut; W.phase = 'done';
+  const m = S.camps.sawmill, L = W.log, c = W.cut; W.phase = 'done'; delete m.sawHold;
   const value = Core.sawValue(L, c), left = Math.max(0, Core.SAW_LIMIT - W.t), bonus = timeUp ? 0 : Core.sawSpeedBonus(left);
   const score = W.par > 0 ? value*(1 + bonus)/W.par : 1, q = Core.sawQuality(score);
   const bfG = {clear:0, select:0, common:0}; let clearW = 0, nClear = 0;
@@ -8287,8 +8314,9 @@ function itemRow(d){
   const n = bankN(d.id), tags = [], locked = S.locks.includes(d.id);
   S.orders.open.forEach(o => { const od = SODEF(o.id), r = od ? Core.orderRemaining(od, o.given).find(x => x.item === d.id) : null; if (r) tags.push(`${od.short} needs ${r.qty} more`); });
   const rs = reserveFor(d.id); if (rs) tags.push(`${rs} kept for building`);
+  if (locked && n) tags.push('Locked: unlock to sell');
   return `<div class="witem ir-${d.rarity}"><span class="cnt">${fmt(n)}</span><div class="info"><b>${d.name}</b> <span class="chipl rchip">${RARITY_ITEM[d.rarity]}</span><p>${d.desc}</p>${tags.length ? `<span class="tag">${tags.join(' · ')}</span>` : ''}</div>
-    <div class="btns"><button class="sellb" type="button" data-s1="${d.id}" ${n ? '' : 'disabled'}>Sell 1 · ${money(sellPrice(d.id))}</button><button class="sellb" type="button" data-sa="${d.id}" ${n ? '' : 'disabled'}>Sell all</button><button class="sellb lockb" type="button" data-lk="${d.id}" aria-pressed="${locked}">${locked ? 'Locked' : 'Lock'}</button></div></div>`;
+    <div class="btns"><button class="sellb" type="button" data-s1="${d.id}" ${n && !locked ? '' : 'disabled'}>Sell 1 · ${money(sellPrice(d.id))}</button><button class="sellb" type="button" data-sa="${d.id}" ${n && !locked ? '' : 'disabled'}>Sell all</button><button class="sellb lockb" type="button" data-lk="${d.id}" aria-pressed="${locked}">${locked ? 'Locked' : 'Lock'}</button></div></div>`;
 }
 function renderWh(){
   const tab = S.ui.whTab || 'stock', box = $('whBody');
@@ -8327,8 +8355,9 @@ function renderWh(){
     `<p class="meta">Sell spares keeps what orders and buildings need, and anything locked.</p>` +
     (groups || '<p class="empty">Empty. Perfect falls and good cuts make Prime spars. Mini-games turn up finds; idle crews do too, rarely.</p>');
   const again = () => { renderWh(); render(); };
-  box.querySelectorAll('[data-s1]').forEach(b => b.onclick = () => { sellItem(b.dataset.s1, 1); again(); });
-  box.querySelectorAll('[data-sa]').forEach(b => b.onclick = () => { sellItem(b.dataset.sa, bankN(b.dataset.sa)); again(); });
+  // a locked item cannot be sold from its row (unlock it first); Sell surplus already skips it
+  box.querySelectorAll('[data-s1]').forEach(b => b.onclick = () => { if (S.locks.includes(b.dataset.s1)) return; sellItem(b.dataset.s1, 1); again(); });
+  box.querySelectorAll('[data-sa]').forEach(b => b.onclick = () => { if (S.locks.includes(b.dataset.sa)) return; sellItem(b.dataset.sa, bankN(b.dataset.sa)); again(); });
   box.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { const id = b.dataset.lk; S.locks = S.locks.includes(id) ? S.locks.filter(x => x !== id) : [...S.locks, id]; again(); const f = box.querySelector(`[data-lk="${id}"]`); if (f) f.focus(); });
   const sb = box.querySelector('#whSurplus'); if (sb) sb.onclick = () => { sellSurplus(); again(); };
 }
@@ -8354,6 +8383,8 @@ const saveIoHtml = () => `<div class="group saveio" id="saveIo"><h3>Save backup<
   <textarea id="svOut" readonly hidden aria-label="Your save as text"></textarea>
   <textarea id="svIn" aria-label="Paste a save here" placeholder="Paste a save here" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
   <div class="cbtns"><button class="mbtn" type="button" id="svLoad">Load save</button></div>
+  ${brokenText() ? `<p class="meta">An earlier save could not be read, so a new company started. Its text is kept here in case it can be repaired.</p>
+  <div class="cbtns"><button class="mbtn" type="button" id="svBroken">Show the damaged save</button></div>` : ''}
   <p class="msg" id="svMsg" role="status" aria-live="polite"></p></div>`;
 function bindSaveIo(box){
   const msg = (t, cls) => { const m = box.querySelector('#svMsg'); m.textContent = t; m.className = 'msg' + (cls ? ' ' + cls : ''); };
@@ -8367,6 +8398,9 @@ function bindSaveIo(box){
     msg(done ? 'Copied. Keep it somewhere safe, like a note.' : 'Copy the text in the box.', done ? 'good' : '');
   };
   inp.oninput = disarm;
+  const bb = box.querySelector('#svBroken');
+  if (bb) bb.onclick = () => { out.value = brokenText(); out.hidden = false; try { out.focus(); out.select(); } catch(e){}
+    msg('This is the save that could not be read. Copy it and keep it somewhere safe.'); };
   load.onclick = () => {
     let d; try { d = readSaveText(inp.value); } catch(e){ disarm(); msg(e.message, 'bad'); return; }
     if (saveArmed !== inp.value){ saveArmed = inp.value; load.textContent = 'Replace company'; load.classList.add('danger');
@@ -8464,12 +8498,31 @@ function save(){
   S.last = Date.now();
   try { localStorage.setItem(KEY, JSON.stringify(S)); $('saved').textContent = 'Saved.'; } catch(e){}
 }
+// QA-08: a save that cannot be read is kept under BROKEN_KEY before anything can overwrite it, and the player is told (brokenSave)
+const BROKEN_KEY = KEY + '-broken';
+let brokenSave = false;
 function load(){
-  try { const raw = localStorage.getItem(KEY); if (raw){ const d = JSON.parse(raw); if (d && d.v === 2) S = Object.assign(fresh(), d); } } catch(e){ S = fresh(); }
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch(e){ return; }
+  if (!raw) return;
+  try { const d = JSON.parse(raw); if (d && typeof d === 'object' && d.v === 2){ S = Object.assign(fresh(), d); return; } } catch(e){}
+  S = fresh(); brokenSave = true;
+  try { localStorage.setItem(BROKEN_KEY, raw); } catch(e){}
 }
-function offline(){
-  const away = Math.min(4*3600, (Date.now() - (S.last || Date.now()))/1000);
-  if (away < 30) return;
+function brokenText(){ try { return localStorage.getItem(BROKEN_KEY) || ''; } catch(e){ return ''; } }
+function tellBroken(){
+  if (!brokenSave) return;
+  note('Your saved company could not be read, so a new one started. The old save text is kept: open Save backup in the ledger to copy it.');
+  toast({label:'Save could not be read', name:'A new company started', line:'The old save is kept. Open Save backup in the ledger.'});
+}
+// offline catch-up: on load (time since the last save) and whenever the page wakes after a long gap (QA-03: a hidden or throttled tab,
+// a sleeping machine, a frozen iframe). The same capped simulation either way; time past the cap is lost and the player is told.
+const OFFLINE_CAP = 4*3600, WAKE_GAP = 10;
+function offline(sec){
+  const raw = sec != null ? sec : (Date.now() - (S.last || Date.now()))/1000;
+  const away = Math.min(OFFLINE_CAP, raw), capped = raw > OFFLINE_CAP;
+  if (!(away > 0) || (sec == null && away < 30)) return;
+  if (away < 30){ let left = away; while (left > 0){ const dt = Math.min(5, left); tick(dt); left -= dt; } return; }
   const c0 = S.cash, f0 = S.felled;
   let left = away; const step = Math.max(.5, away/4000);
   // weather while away: rolled as usual; the bottleneck with and without the weather gives the net line
@@ -8481,12 +8534,14 @@ function offline(){
       tick(dt); left -= dt; }
   } finally { wxMute = false; }
   const log = awayLog; awayLog = null;
-  if (log.length){
+  const capLine = capped ? `You were away ${mins(raw)}. Camp only works the first ${mins(OFFLINE_CAP)} on its own, so the rest did not count.` : '';
+  if (log.length || capped){
     const net = quiet > 0 ? (1 - withW/quiet)*100 : 0;
-    dispQ.push({kind:'away', lines:Core.awaySummary(log), net});
+    dispQ.push({kind:'away', lines:[...(capLine ? [capLine] : []), ...Core.awaySummary(log)], net});
     log.filter(a => a.first).forEach(a => dispQ.push({kind:'event', id:a.id, first:true}));
   }
-  if (S.felled > f0 || S.cash !== c0) note(`While away (${mins(away)}): ${fmt(S.felled-f0)} trees felled, cash ${S.cash >= c0 ? 'up' : 'down'} ${money(Math.abs(S.cash-c0))}.`);
+  if (S.felled > f0 || S.cash !== c0) note(`While away (${capped ? mins(raw) + ', counted ' + mins(OFFLINE_CAP) : mins(away)}): ${fmt(S.felled-f0)} trees felled, cash ${S.cash >= c0 ? 'up' : 'down'} ${money(Math.abs(S.cash-c0))}.`);
+  else if (capped) note(`Away ${mins(raw)}; only ${mins(OFFLINE_CAP)} counted.`);
 }
 const reset = $('reset'); let armed = null;
 reset.onclick = () => {
@@ -8512,16 +8567,24 @@ function start(data){
   if (hot) S = Object.assign(fresh(), data.S); else load();
   normalize();
   if (!hot) offline();
-  buildChain(); buildEquipment(); bindRogue(); boot(); checkAch(true); maybeStory();
-  let prev = performance.now(), sinceSave = 0, sinceRender = 0;
-  clearInterval(loop);
-  loop = setInterval(() => {
-    const now = performance.now(); const dt = Math.min(5, (now - prev)/1000); prev = now;
-    tick(dt); sinceRender += dt; sinceSave += dt;
+  buildChain(); buildEquipment(); bindRogue(); boot(); checkAch(true); maybeStory(); tellBroken();
+  // real time is measured two ways: performance.now can stand still while a machine sleeps, Date.now keeps going
+  let prev = performance.now(), prevWall = Date.now(), sinceSave = 0, sinceRender = 0;
+  const pump = () => {
+    const now = performance.now(), wall = Date.now();
+    const gap = Math.max((now - prev)/1000, (wall - prevWall)/1000); prev = now; prevWall = wall;
+    if (!(gap > 0)) return;
+    if (gap > WAKE_GAP){ offline(gap); checkAch(); save(); sinceSave = 0; render(true); sinceRender = 0; return; }
+    let left = gap; while (left > 0){ const dt = Math.min(5, left); tick(dt); left -= dt; }
+    sinceRender += gap; sinceSave += gap;
     if (sinceRender >= .2){ checkAch(); render(); sinceRender = 0; }
     if (sinceSave >= 5){ save(); sinceSave = 0; }
-  }, 100);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  };
+  clearInterval(loop);
+  loop = setInterval(pump, 100);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else pump(); });
+  window.addEventListener('focus', pump);
+  window.addEventListener('pageshow', pump);
   window.addEventListener('pagehide', save);
 }
 try { window.claude?.hot?.snapshot?.(() => ({S})); } catch(e){}
