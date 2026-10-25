@@ -146,7 +146,41 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .row.lot .info>.spec{display:block}
 .chipl.ground{color:var(--muted);margin-left:4px}
 .chipl.sp{color:var(--good);margin-left:4px}
-.row p.fit{color:var(--ink)} .row p.fit-teams,.row p.fit-fallers{color:var(--warn)}
+.row p.fit{color:var(--ink)} .row p.fit-fell,.row p.fit-buck,.row p.fit-skid,.row p.fit-haul{color:var(--warn)}
+/* order fit and the camp note (land office and cutting queue) */
+.chipl.best{color:var(--accent-ink);background:var(--accent);border-color:var(--accent);margin-left:4px}
+.chipl.crew{color:var(--panel);background:var(--good);border-color:var(--good);margin-left:4px}
+.chipl.ofb{color:var(--good);margin-left:4px}
+.row p.ofit,.qrow p.ofit{color:var(--good)} .row p.ofit.late,.qrow p.ofit.late{color:var(--muted)}
+details.fitmore{font-size:.78rem;color:var(--muted);margin-top:2px}
+details.fitmore summary{cursor:pointer;color:var(--ink);font-weight:600;width:max-content;max-width:100%;min-height:44px;display:flex;align-items:center}
+details.fitmore ul{margin:4px 0 0;padding-left:18px}
+/* the cutting queue */
+.qmode{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;font-size:.8rem;color:var(--muted)}
+.qmode button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:.8rem;font-weight:600;min-height:44px}
+.qmode button:hover{border-color:var(--ink)}
+.qmode button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.tq{list-style:none;margin:6px 0 0;padding:0}
+.qrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 6px;border:1px solid transparent;border-radius:4px}
+.qrow+.qrow{border-top:1px dotted var(--line)}
+.qrow.on{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.qrow.over{border-color:var(--accent);border-style:dashed}
+.qrow.dragging{opacity:.5}
+.qrow .qgrip{cursor:grab;color:var(--muted);font-size:1.1rem;width:44px;height:44px;border:1px solid var(--line);border-radius:4px;background:transparent;touch-action:none;user-select:none;-webkit-user-select:none;padding:0}
+.qrow .qgrip:active{cursor:grabbing}
+.qrow .info{min-width:0}
+.qrow .info b{font-weight:600}
+.qrow p{margin:1px 0 0;font-size:.8rem;color:var(--muted)}
+.qrow .spec{display:block;font-family:var(--f-num);font-size:.75rem;color:var(--muted)}
+.qbtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:200px}
+.qbtns button{border:1px solid var(--line);background:transparent;border-radius:4px;padding:4px 10px;font-size:.8rem;font-weight:600;min-width:44px;min-height:44px}
+.qbtns button:hover:not(:disabled){border-color:var(--ink)}
+.qbtns button:disabled{opacity:.35;cursor:not-allowed}
+.qbtns button.now{border-color:var(--accent);color:var(--accent)}
+.chipl.afkchip{color:var(--muted);margin-left:4px}
+.chipl.best,.chipl.ofb{white-space:normal;max-width:100%}
+.row.lot .info,.qrow .info{overflow-wrap:anywhere}
+@media (max-width:460px){.qrow{grid-template-columns:44px minmax(0,1fr)}.qbtns{grid-column:1 / -1;justify-content:flex-start;max-width:none}}
 .wt-light{color:var(--good)} .wt-heavy{color:var(--warn)}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
@@ -363,6 +397,14 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
           </div>
         </div>
         <p class="queue" id="queue"></p>
+      </section>
+
+      <section class="panel" id="queuePanel">
+        <p class="eyebrow">Cutting queue</p>
+        <h2>Lots under contract</h2>
+        <p class="meta" id="qMeta">Crews work the top lot and move down the list when it is cut out. Drag a lot, or use the arrows, to change the order. Moving crews is free and every lot keeps its progress.</p>
+        <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
+        <ol class="tq" id="tq"></ol>
       </section>
 
       <section class="panel">
@@ -2423,6 +2465,17 @@ var Core = (function(exports) {
 			name: "Mixed stand",
 			era: 1,
 			slopes: ANY_SLOPE
+		},
+		cutover: {
+			id: "cutover",
+			name: "Cutover slash country",
+			era: 0,
+			slopes: [
+				"flat",
+				"flat",
+				"rolling"
+			],
+			twist: "Second growth among old slash: small, pulpy trees, but acres of them"
 		}
 	});
 	/** Cove Landing grounds, in draw order. */
@@ -2804,6 +2857,69 @@ var Core = (function(exports) {
 		for (let i = 0; i < n; i++) out.push(genTract(rng, era, o));
 		return maxPrice === void 0 ? out : ensureAffordableListing(out, maxPrice);
 	}
+	/** AFK lot numbers (balance agent to tune). Trees are × TRACT_BASE[era]; per-tree stats multiply the mix average. */
+	var AFK_LOT = deepFreeze({
+		/** Chance a fresh land-office board carries one (never more than one). */
+		chance: .6,
+		/** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5). */
+		trees: [4, 6],
+		/** Small second-growth stems: board feet and chops per tree. */
+		bfMult: .7,
+		hpMult: .75,
+		/** Poor grade, more pulp: value per tree (value per bd ft is valMult ÷ bfMult, about 0.71). */
+		valMult: .5,
+		/** Land price on top of the usual 42% of gross (cheaper per tree). */
+		landMult: .8,
+		/** Close to the cove: haul miles. */
+		miles: [1, 3]
+	});
+	/** The AFK lot's mix per era: the common conifers, pine-led. */
+	var AFK_MIX = deepFreeze([
+		[
+			["pine", 50],
+			["hemlock", 30],
+			["spruce", 20]
+		],
+		[
+			["pine", 50],
+			["hemlock", 30],
+			["spruce", 20]
+		],
+		[
+			["pine", 45],
+			["hemlock", 35],
+			["spruce", 20]
+		],
+		[
+			["pine", 40],
+			["hemlock", 40],
+			["spruce", 20]
+		]
+	]);
+	/**
+	* An AFK lot for the era: 4-6× the trees of a normal tract, small poor stems,
+	* flat or rolling, 1-3 mi out, land ×0.8. Draws, in order: trees, miles,
+	* slope, place, lot. The prototype feeds it its own stream ('land'), so the
+	* board's other draws are untouched.
+	*/
+	function genAfkLot(rng, era, o) {
+		const e = Math.max(0, Math.min(TRACT_BASE.length - 1, era));
+		const trees = Math.round((TRACT_BASE[e] ?? 60) * rngRange(rng, AFK_LOT.trees[0], AFK_LOT.trees[1]));
+		const miles = Math.round(rngRange(rng, AFK_LOT.miles[0], AFK_LOT.miles[1]) * 2) / 2;
+		const g = GROUNDS.cutover, slope = rngPick(rng, g.slopes);
+		const mix = (AFK_MIX[e] ?? []).map((m) => [m[0], m[1]]);
+		const t = makeTract(lotName(rng), mix, trees, miles, slope, "cutover");
+		t.bf *= AFK_LOT.bfMult;
+		t.hp *= AFK_LOT.hpMult;
+		t.val *= AFK_LOT.valMult;
+		t.afk = true;
+		t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * AFK_LOT.landMult);
+		const sz = (o.thinSurvey ? .8 : 1) * (o.cruiser ? 1.25 : 1);
+		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
+		return t;
+	}
+	/** Charter orders shown on the board at once (owner request 2026-10-25; was 2). */
+	var OFFER_BOARD_SIZE = 4;
 	/** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
 	function tractPrice(gross, miles, slope, stumpMult) {
 		return Math.round(gross * .42 * Math.max(.55, 1.12 - .04 * miles) * SLOPES[slope].disc * stumpMult);
@@ -4143,6 +4259,389 @@ var Core = (function(exports) {
 		return g === 0 ? "clear" : g === 1 ? "select" : g === 2 ? "common" : "slab";
 	}
 	//#endregion
+	//#region packages/core/src/queue.ts
+	/**
+	* The cutting queue (owner feedback, 2026-10-25): what a lot does for your
+	* open orders (order fit), what it does to your camp (the camp note), and how
+	* the queue of owned lots is ordered. Pure helpers, no randomness: nothing
+	* here changes a draw or a game number, it only reads them.
+	*
+	* Capacities (`QueueCaps`) are the camp's rates with no site factors: felling
+	* in chops a second; bucking, skidding and hauling in bd ft a second for
+	* pine-weight wood on flat ground at one mile. Each lot then applies its own
+	* slope, haul distance and weight, the same way `stageRate` does in play.
+	*/
+	/** Price of moving crews to another owned lot. Free for now (owner may add a cost later). */
+	var TRACT_SWITCH_COST = 0;
+	var QUEUE_STAGES = deepFreeze([
+		"fell",
+		"buck",
+		"skid",
+		"haul"
+	]);
+	var leftOf = (l) => Math.max(0, l.left ?? l.trees);
+	/** Bd ft a second each stage would work on this lot (felling as chops ÷ hp × bf). */
+	function lotRates(c, l, skyline = false) {
+		const wt = l.wt && l.wt > 0 ? l.wt : 1;
+		return {
+			fell: l.hp > 0 ? c.fell / l.hp * l.bf : 0,
+			buck: c.buck,
+			skid: c.skid * slopeFactor(l.slope, skyline) / wt,
+			haul: c.haul * distanceFactor(l.miles) / wt
+		};
+	}
+	/** The slowest stage on this lot sets the camp's bd ft a second. */
+	function lotThroughput(c, l, skyline = false) {
+		const r = lotRates(c, l, skyline);
+		return Math.max(0, Math.min(r.fell, r.buck, r.skid, r.haul));
+	}
+	/** Seconds to cut out what is left of the lot at the camp's pace (Infinity with no crews). */
+	function cutOutSeconds(c, l, skyline = false) {
+		const thr = lotThroughput(c, l, skyline), bf = leftOf(l) * l.bf;
+		if (bf <= 0) return 0;
+		return thr > 0 ? bf / thr : Infinity;
+	}
+	/** Mix-weighted seasonal value factor (hemlock tanbark, maple), as `seasonValueFactor` but on read-only data. */
+	function seasonFactorOf(mix, season) {
+		let plain = 0, now = 0, hit = false;
+		for (const [id, w] of mix) {
+			const sp = speciesId(id);
+			if (!sp) continue;
+			const s = SPECIES[sp], v = s.bf * (s.saw * s.sawP + (1 - s.saw) * s.pulpP);
+			const t = SPECIES_SEASON[sp]?.[season];
+			if (t) hit = true;
+			plain += v * w;
+			now += (t ? v * t.mult + t.bark : v) * w;
+		}
+		return hit && plain > 0 ? now / plain : 1;
+	}
+	/** Log value a second of camp work on this lot, this season (bd ft a second × value per bd ft × species season factor). */
+	function lotValueRate(c, l, season, skyline = false) {
+		return l.bf > 0 ? lotThroughput(c, l, skyline) * (l.val / l.bf) * seasonFactorOf(l.mix, season) : 0;
+	}
+	/** Highest perfect-fall rate the estimate trusts (most stems are crew-felled). */
+	var FIT_PERF_RATE_MAX = .5;
+	/**
+	* Expected Prime of one item a lot makes per tree felled: idle crews (the 2%
+	* trickle, one log) plus the player's perfect-fall pace × the species'
+	* perfect-fall count, weighted by the mix.
+	*/
+	function primePerTree(l, item, era, perfRate = 0) {
+		const idle = idlePrimeChance(era), pr = Math.max(0, Math.min(FIT_PERF_RATE_MAX, perfRate));
+		let n = 0;
+		for (const r of PRIME_RULES) {
+			if (r.item !== item) continue;
+			const s = mixShare(l.mix, r.species);
+			if (s > 0) n += s * (idle + pr * r.perfectFall);
+		}
+		return n;
+	}
+	/** Expected Prime of an item from what is left of a lot. */
+	function primeEstimate(l, item, era, perfRate = 0) {
+		return leftOf(l) * primePerTree(l, item, era, perfRate);
+	}
+	var spWord = (sp) => SPECIES[sp].name.split(" ").pop();
+	var pct = (x) => Math.max(1, Math.min(99, Math.round(x * 100 / 5) * 5));
+	/** Bd ft of the order's species that `lots` deliver in turn before `seconds` run out, and the seconds they take. */
+	function speciesFlow(c, lots, sp, seconds, skyline) {
+		let t = 0, bf = 0;
+		for (const l of lots) {
+			const dur = cutOutSeconds(c, l, skyline);
+			const use = Math.min(dur, Math.max(0, seconds - t));
+			if (use > 0 && isFinite(use)) bf += use * lotThroughput(c, l, skyline) * mixShare(l.mix, sp);
+			t += dur;
+		}
+		return {
+			bf,
+			t
+		};
+	}
+	/**
+	* What a lot does for each open order, counting what the lots `ahead` of it
+	* in the queue deliver first. A species order counts the lot's share of each
+	* delivery before the deadline; an item need counts the expected Prime.
+	* Orders the lot cannot serve at all are left out.
+	*/
+	function orderFit(lot, orders, ctx, ahead = []) {
+		const out = [], sky = !!ctx.skyline;
+		for (const o of orders) {
+			if (!(o.need > 0)) continue;
+			if (o.kind === "species") {
+				const share = mixShare(lot.mix, o.sp);
+				if (share <= 0) continue;
+				const w = spWord(o.sp), tag = o.signed ? "the" : "the offered";
+				const before = speciesFlow(ctx.caps, ahead, o.sp, o.secondsLeft, sky);
+				const still = Math.max(0, o.need - before.bf);
+				if (still <= 0) {
+					out.push({
+						orderId: o.id,
+						kind: "species",
+						amount: 0,
+						share: 0,
+						fills: false,
+						text: `${Math.round(share * 100)}% ${w}, but the lots ahead of it should already fill ${tag} ${w} order.`
+					});
+					continue;
+				}
+				const thr = lotThroughput(ctx.caps, lot, sky);
+				if (!(thr > 0)) {
+					out.push({
+						orderId: o.id,
+						kind: "species",
+						amount: share * .01,
+						share: 0,
+						fills: false,
+						text: `${Math.round(share * 100)}% ${w}: counts toward ${tag} ${w} order once crews are on it.`
+					});
+					continue;
+				}
+				const time = Math.max(0, o.secondsLeft - before.t);
+				const got = Math.min(still, Math.min(cutOutSeconds(ctx.caps, lot, sky), time) * thr * share);
+				if (got <= 0) {
+					out.push({
+						orderId: o.id,
+						kind: "species",
+						amount: 0,
+						share: 0,
+						fills: false,
+						text: `${Math.round(share * 100)}% ${w}, but ${tag} ${w} order expires before crews reach it.`
+					});
+					continue;
+				}
+				const fills = got >= still - 1e-6, of = got / o.need;
+				const text = fills ? before.bf > 0 ? `Finishes ${tag} ${w} order before it expires, after the lots ahead of it.` : `Enough to fill ${tag} ${w} order before it expires.` : `Fills about ${pct(of)}% of ${tag} ${w} order before it expires.`;
+				out.push({
+					orderId: o.id,
+					kind: "species",
+					amount: of,
+					share: got / still,
+					fills,
+					text: text + (o.signed ? "" : " (if you sign it now)")
+				});
+			} else {
+				const per = primePerTree(lot, o.item, ctx.era, ctx.perfRate ?? 0);
+				if (per <= 0) continue;
+				const est = leftOf(lot) * per;
+				const before = ahead.reduce((a, l) => a + primeEstimate(l, o.item, ctx.era, ctx.perfRate ?? 0), 0);
+				const still = Math.max(0, o.need - before);
+				const n = est >= 10 ? Math.round(est) : Math.round(est * 10) / 10;
+				if (still <= 0) {
+					out.push({
+						orderId: o.id,
+						kind: "item",
+						amount: 0,
+						share: 0,
+						fills: false,
+						text: `≈ ${n} ${o.itemName}, but the lots ahead of it should already cover ${o.short}.`
+					});
+					continue;
+				}
+				const fills = est >= still - 1e-9;
+				const text = fills ? `≈ ${n} ${o.itemName} toward ${o.short}, enough to fill it.` : `≈ ${n} of the ${Math.ceil(still)} ${o.itemName} ${o.short} still needs.`;
+				out.push({
+					orderId: o.id,
+					kind: "item",
+					amount: est,
+					share: Math.min(1, est / still),
+					fills,
+					text
+				});
+			}
+		}
+		return out;
+	}
+	/**
+	* For each order, the index of the lot that serves it best (the most of the
+	* order covered; the first on a tie). Orders no lot helps are left out.
+	*/
+	function bestFor(fits) {
+		const best = {};
+		fits.forEach((lines, i) => lines.forEach((f) => {
+			if (!(f.amount > 0)) return;
+			const b = best[f.orderId];
+			if (!b || f.amount > b.a + 1e-9) best[f.orderId] = {
+				i,
+				a: f.amount
+			};
+		}));
+		const out = {};
+		for (const k in best) out[k] = best[k].i;
+		return out;
+	}
+	/** The AFK lot's lead line. */
+	var AFK_NOTE = "Best for leaving the camp running: poor wood, but acres of it.";
+	/** Below this gap the stages count as matched. */
+	var CAMP_NOTE_MATCHED = .1;
+	/** Site factors under this are called out in the short note when they hit the slowest stage. */
+	var CAMP_NOTE_SITE_FLAG = .9;
+	var CREW = deepFreeze({
+		fell: "fallers",
+		buck: "buckers",
+		skid: "teams",
+		haul: "haulers"
+	});
+	var VERB = deepFreeze({
+		fell: "felling",
+		buck: "bucking",
+		skid: "skidding",
+		haul: "hauling"
+	});
+	var f2 = (x) => (Math.round(x * 100) / 100).toString();
+	var nextSeason = (s) => SEASONS[(SEASONS.indexOf(s) + 1) % 4];
+	var upper = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+	var sameTrait = (a, b) => !!a && !!b && a.mult === b.mult && a.bark === b.bark;
+	var pays = (t) => !!t && (t.bark > 0 || t.mult > 1);
+	/** Species season lines for a mix: what pays now (`now`), and what pays later (`later`). Species under 10% of the mix are skipped. */
+	function seasonLines(mix, season) {
+		const now = [], later = [];
+		for (const [id] of mix) {
+			const sp = speciesId(id);
+			if (!sp || mixShare(mix, sp) < .1) continue;
+			const tr = SPECIES_SEASON[sp];
+			if (!tr) continue;
+			const w = spWord(sp), t = tr[season];
+			let until = nextSeason(season);
+			for (let i = 0; i < 3 && sameTrait(t, tr[until]); i++) until = nextSeason(until);
+			if (t && t.bark > 0) now.push(`Tanbark season: ${w} pays +$${t.bark} a tree in bark until ${until}.`);
+			else if (t && t.mult > 1) now.push(`${season} ${w} is worth ×${f2(t.mult)} felled now, until ${until}.`);
+			else if (t && t.mult < 1) now.push(`${season} sap stain: ${w} is worth ×${f2(t.mult)} until ${until}.`);
+			else {
+				let s = nextSeason(season);
+				for (let i = 0; i < 3 && !pays(tr[s]); i++) s = nextSeason(s);
+				const u = tr[s];
+				if (u && u.bark > 0) later.push(`${upper(w)} pays +$${u.bark} a tree in tanbark from ${s}.`);
+				else if (u && u.mult > 1) later.push(`${upper(w)} felled in ${s} is worth ×${f2(u.mult)}.`);
+			}
+		}
+		return {
+			now,
+			later
+		};
+	}
+	/**
+	* Plain, specific advice for a lot: which stage will hold the camp back and
+	* by how much, what the haul and slope do, value an hour against the current
+	* lot, and any season or weather that matters. `short` is one or two lines.
+	*/
+	function campNote(c, lot, ctx) {
+		const sky = !!ctx.skyline, money = ctx.money ?? ((n) => `$${Math.round(n)}`);
+		const r = lotRates(c, lot, sky);
+		const wt = lot.wt && lot.wt > 0 ? lot.wt : 1, main = mainSpecies(lot.mix);
+		const word = main ? spWord(main) : "mixed wood";
+		const Lead = upper((wt > 1.03 ? "Heavy " : wt < .97 ? "Light " : "") + word);
+		const perHour = lotValueRate(c, lot, ctx.season, sky) * 3600;
+		const perHourNow = ctx.current ? lotValueRate(c, ctx.current, ctx.season, sky) * 3600 : null;
+		const sf = slopeFactor(lot.slope, sky), df = distanceFactor(lot.miles);
+		const seas = seasonLines(lot.mix, ctx.season);
+		const details = [];
+		details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} bd ft/s.`);
+		details.push(`Weight ${f2(wt)}: skid and haul ×${f2(1 / wt)}. ${lot.miles} mi haul: hauling ×${f2(df)}. ${upper(lot.slope)} ground: skidding ×${f2(sf)}.`);
+		if (!(r.fell > 0 && r.buck > 0 && r.skid > 0 && r.haul > 0)) {
+			const short = `${Lead}: hire ${QUEUE_STAGES.filter((s) => !(r[s] > 0)).map((s) => CREW[s]).join(" and ")} to see how this lot would work for your camp.` + (seas.now[0] ? ` ${seas.now[0]}` : "");
+			return {
+				key: "none",
+				behind: 0,
+				perHour,
+				perHourNow,
+				short: lot.afk ? `${AFK_NOTE} ${short}` : short,
+				details: [
+					...details,
+					...seas.now.slice(1),
+					...seas.later
+				]
+			};
+		}
+		let neck = "fell";
+		for (const s of QUEUE_STAGES) if (r[s] < r[neck]) neck = s;
+		const others = QUEUE_STAGES.filter((s) => s !== neck).map((s) => r[s]);
+		const behind = neck === "fell" ? 1 - r.fell / Math.min(...others) : 1 - r[neck] / r.fell;
+		let s1, key;
+		if (behind < .1) {
+			key = "matched";
+			s1 = `${Lead}: well matched to your camp, every stage within ${Math.round(CAMP_NOTE_MATCHED * 100)}% of the others.`;
+		} else if (neck === "fell") {
+			key = "fell";
+			s1 = `${Lead}: your fallers are the slowest stage here, so the rest of the camp waits about ${Math.round(behind * 100)}% of the time.`;
+		} else {
+			key = neck;
+			s1 = `${Lead}: your ${CREW[neck]} are the slowest stage here; expect ${VERB[neck]} to fall behind felling by about ${Math.round(behind * 100)}%.`;
+		}
+		const site = [];
+		if (key === "skid" && sf < .9) site.push(`${lot.slope} ground slows skidding ×${f2(sf)}`);
+		if (key === "haul" && df < .9) site.push(`the ${lot.miles} mi haul slows hauling ×${f2(df)}`);
+		if (site.length) s1 = s1.replace(/\.$/, "") + ` (${site.join("; ")}).`;
+		const wf = ctx.weather && key !== "matched" ? ctx.weather.factors[neck] : void 0;
+		if (ctx.weather && wf !== void 0 && wf !== 1) details.push(`${ctx.weather.name}: ${VERB[neck]} ×${f2(wf)} this season, ${wf < 1 ? "which deepens" : "which eases"} this gap.`);
+		let s2 = `About ${money(perHour)} of logs an hour`;
+		if (perHourNow !== null && perHourNow > 0) {
+			const d = perHour / perHourNow - 1;
+			const cn = ctx.current ? ctx.current.name : "the current lot";
+			s2 += Math.abs(d) < .05 ? `, about the same as ${cn}.` : `, ${Math.round(Math.abs(d) * 100)}% ${d > 0 ? "more" : "less"} than ${cn}.`;
+		} else s2 += ".";
+		if (seas.now[0]) s2 += ` ${seas.now[0]}`;
+		details.push(...seas.now.slice(1), ...seas.later);
+		const wline = ctx.weather && wf !== void 0 && wf !== 1 && wf < 1 ? ` ${ctx.weather.name} makes it worse for now.` : "";
+		if (lot.afk) {
+			const sec = cutOutSeconds(c, lot, sky);
+			details.unshift(s1 + wline);
+			const last = isFinite(sec) ? `about ${sec >= 3600 ? `${f2(Math.round(sec / 360) / 10)} h` : `${Math.max(1, Math.round(sec / 60))} min`} of work for your camp as it stands` : "a long stretch of work";
+			return {
+				key,
+				behind: Math.max(0, behind),
+				perHour,
+				perHourNow,
+				short: `${AFK_NOTE} It holds ${last}, so crews keep cutting while you are away. ${s2}`.replace(/\s+/g, " ").trim(),
+				details
+			};
+		}
+		return {
+			key,
+			behind: Math.max(0, behind),
+			perHour,
+			perHourNow,
+			short: `${s1}${wline} ${s2}`.replace(/\s+/g, " ").trim(),
+			details
+		};
+	}
+	var QUEUE_MODES = deepFreeze([
+		"bought",
+		"deadline",
+		"value",
+		"hand"
+	]);
+	var QUEUE_MODE_LABEL = deepFreeze({
+		bought: "As bought",
+		deadline: "By order deadline",
+		value: "By value an hour",
+		hand: "By hand"
+	});
+	/**
+	* The order of the waiting lots (indices into `keys`) under a mode. Stable:
+	* 'hand' keeps the given order; 'bought' sorts by purchase; 'deadline' puts
+	* lots that serve the soonest order first (then value, then purchase);
+	* 'value' sorts by value an hour (then purchase).
+	*/
+	function queueOrder(keys, mode) {
+		const idx = keys.map((_, i) => i);
+		if (mode === "hand") return idx;
+		const k = (i) => keys[i];
+		return idx.sort((a, b) => {
+			const A = k(a), B = k(b);
+			if (mode === "deadline" && A.deadline !== B.deadline) return A.deadline < B.deadline ? -1 : 1;
+			if (mode !== "bought" && A.perHour !== B.perHour) return B.perHour - A.perHour;
+			return A.seq - B.seq || a - b;
+		});
+	}
+	/** Move one entry of a list from `from` to `to` (both clamped), returning a new list. */
+	function moveEntry(list, from, to) {
+		const out = list.slice();
+		if (from < 0 || from >= out.length) return out;
+		const t = Math.max(0, Math.min(out.length - 1, to));
+		const [x] = out.splice(from, 1);
+		out.splice(t, 0, x);
+		return out;
+	}
+	//#endregion
 	//#region packages/core/src/weather.ts
 	/**
 	* Seasonal events, slice 1 (docs/design/seasonal-events.md): one weather card per
@@ -4745,6 +5244,9 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.AFK_LOT = AFK_LOT;
+	exports.AFK_MIX = AFK_MIX;
+	exports.AFK_NOTE = AFK_NOTE;
 	exports.BEST_FOR = BEST_FOR;
 	exports.BIG_STICK_CLEAR = BIG_STICK_CLEAR;
 	exports.BOARD_GRADES = BOARD_GRADES;
@@ -4760,6 +5262,8 @@ var Core = (function(exports) {
 	exports.BURNT_DISCOUNT = BURNT_DISCOUNT;
 	exports.CAMP_FIT_FALLERS_SHORT = CAMP_FIT_FALLERS_SHORT;
 	exports.CAMP_FIT_TEAMS_SHORT = CAMP_FIT_TEAMS_SHORT;
+	exports.CAMP_NOTE_MATCHED = CAMP_NOTE_MATCHED;
+	exports.CAMP_NOTE_SITE_FLAG = CAMP_NOTE_SITE_FLAG;
 	exports.CLEAR_ROAD_Q = CLEAR_ROAD_Q;
 	exports.CLOSE_VOL = CLOSE_VOL;
 	exports.COVE_GROUNDS = COVE_GROUNDS;
@@ -4775,6 +5279,7 @@ var Core = (function(exports) {
 	exports.FELL_RULES = FELL_RULES;
 	exports.FIRE_PER_SEC = FIRE_PER_SEC;
 	exports.FIRST_CARD = FIRST_CARD;
+	exports.FIT_PERF_RATE_MAX = FIT_PERF_RATE_MAX;
 	exports.FOUNDING_CRATE = FOUNDING_CRATE;
 	exports.GENTLE_CHANGES = GENTLE_CHANGES;
 	exports.GRADE_MIX = GRADE_MIX;
@@ -4809,6 +5314,7 @@ var Core = (function(exports) {
 	exports.MILL_SHARE_DEFAULT = MILL_SHARE_DEFAULT;
 	exports.MILL_SHARE_MAX = MILL_SHARE_MAX;
 	exports.MODS = MODS;
+	exports.OFFER_BOARD_SIZE = OFFER_BOARD_SIZE;
 	exports.ORDER_BONUS_CAP = ORDER_BONUS_CAP;
 	exports.ORDER_OPEN_MAX = ORDER_OPEN_MAX;
 	exports.ORDER_PERKS = ORDER_PERKS;
@@ -4820,6 +5326,9 @@ var Core = (function(exports) {
 	exports.POND_POWER = POND_POWER;
 	exports.PRIME_RULES = PRIME_RULES;
 	exports.PUSH_TRACT_SHARE = PUSH_TRACT_SHARE;
+	exports.QUEUE_MODES = QUEUE_MODES;
+	exports.QUEUE_MODE_LABEL = QUEUE_MODE_LABEL;
+	exports.QUEUE_STAGES = QUEUE_STAGES;
 	exports.RARITY = RARITY;
 	exports.SAWYER_BF_MIN = SAWYER_BF_MIN;
 	exports.SAWYER_COST = SAWYER_COST;
@@ -4850,6 +5359,7 @@ var Core = (function(exports) {
 	exports.STRUCTURES = STRUCTURES;
 	exports.TANBARK = TANBARK;
 	exports.TRACT_BASE = TRACT_BASE;
+	exports.TRACT_SWITCH_COST = TRACT_SWITCH_COST;
 	exports.TURN_TIME_CARRIAGE = TURN_TIME_CARRIAGE;
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
 	exports.WIND_CAP = WIND_CAP;
@@ -4857,6 +5367,7 @@ var Core = (function(exports) {
 	exports.achievementProgress = achievementProgress;
 	exports.applyMults = applyMults;
 	exports.awaySummary = awaySummary;
+	exports.bestFor = bestFor;
 	exports.boardCells = boardCells;
 	exports.boardGradeName = boardGradeName;
 	exports.boardValue = boardValue;
@@ -4869,6 +5380,7 @@ var Core = (function(exports) {
 	exports.bundlesStillNeeded = bundlesStillNeeded;
 	exports.bunkhouseMult = bunkhouseMult;
 	exports.campFit = campFit;
+	exports.campNote = campNote;
 	exports.canCloseCamp = canCloseCamp;
 	exports.canCloseMill = canCloseMill;
 	exports.cantCells = cantCells;
@@ -4882,6 +5394,7 @@ var Core = (function(exports) {
 	exports.crewRate = crewRate;
 	exports.crewUpkeep = crewUpkeep;
 	exports.crewUpkeepFull = crewUpkeepFull;
+	exports.cutOutSeconds = cutOutSeconds;
 	exports.deepFreeze = deepFreeze;
 	exports.distanceFactor = distanceFactor;
 	exports.draftPool = draftPool;
@@ -4904,6 +5417,7 @@ var Core = (function(exports) {
 	exports.fitTractPrice = fitTractPrice;
 	exports.freeSawyers = freeSawyers;
 	exports.gameRule = gameRule;
+	exports.genAfkLot = genAfkLot;
 	exports.genHaulTrack = genHaulTrack;
 	exports.genHire = genHire;
 	exports.genListings = genListings;
@@ -4935,6 +5449,9 @@ var Core = (function(exports) {
 	exports.knotShows = knotShows;
 	exports.legacyBase = legacyBase;
 	exports.legacyGain = legacyGain;
+	exports.lotRates = lotRates;
+	exports.lotThroughput = lotThroughput;
+	exports.lotValueRate = lotValueRate;
 	exports.lumberPrice = lumberPrice;
 	exports.mainSpecies = mainSpecies;
 	exports.makeTract = makeTract;
@@ -4949,19 +5466,24 @@ var Core = (function(exports) {
 	exports.mixShare = mixShare;
 	exports.mixWeight = mixWeight;
 	exports.mobilization = mobilization;
+	exports.moveEntry = moveEntry;
 	exports.newHaulCar = newHaulCar;
 	exports.newSawCut = newSawCut;
 	exports.nextBoard = nextBoard;
 	exports.orderBonus = orderBonus;
+	exports.orderFit = orderFit;
 	exports.orderRemaining = orderRemaining;
 	exports.payrollGuard = payrollGuard;
 	exports.perkCount = perkCount;
 	exports.perkMult = perkMult;
 	exports.pickFromMix = pickFromMix;
+	exports.primeEstimate = primeEstimate;
 	exports.primeFromBuck = primeFromBuck;
 	exports.primeFromFall = primeFromFall;
+	exports.primePerTree = primePerTree;
 	exports.pushTractCap = pushTractCap;
 	exports.quarterSawn = quarterSawn;
+	exports.queueOrder = queueOrder;
 	exports.requirementProgress = requirementProgress;
 	exports.rngPick = rngPick;
 	exports.rngRange = rngRange;
@@ -4982,6 +5504,7 @@ var Core = (function(exports) {
 	exports.sawValue = sawValue;
 	exports.sawyerCost = sawyerCost;
 	exports.seasonFactor = seasonFactor;
+	exports.seasonLines = seasonLines;
 	exports.seasonValueFactor = seasonValueFactor;
 	exports.skidTurnLoad = skidTurnLoad;
 	exports.skidTurnSizes = skidTurnSizes;
@@ -5043,7 +5566,7 @@ const KEY = 'timberline-v2';
 const makeTract = Core.makeTract;
 const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
-  own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
+  own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
   boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
@@ -5055,11 +5578,12 @@ function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes
 function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0, markerRerolls:0, itemSales:0, toMill:0, stormN:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
-function freshUi(){ return {buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
+// qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
+function freshUi(){ return {qOrder:'bought', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
-function freshRng(){ const t = Date.now(); return {drops:(t ^ 0x5bd1e995) >>> 0, saw:(t*7 + 13) >>> 0, events:(t*31 + 7) >>> 0}; }
+function freshRng(){ const t = Date.now(); return {drops:(t ^ 0x5bd1e995) >>> 0, saw:(t*7 + 13) >>> 0, events:(t*31 + 7) >>> 0, land:(t*17 + 3) >>> 0}; }
 let S = fresh();
 
 // ---------- helpers
@@ -5136,21 +5660,72 @@ function newTree(){
   const id = Core.pickFromMix(Math.random, t.mix); if (id) S.vis = id;
 }
 function setSite(){ const t = tract(); if (t) S.site = {miles:t.miles, slope:t.slope}; }
+// the cutting queue: S.tracts in order, crews on the first. A lot crews leave keeps its trees left and the tree they were on
+// (t.cur chops left, t.curSp its species); a lot with none starts a new tree (the same draw as before).
+function stashTree(){ const t = tract(); if (t && S.hp != null){ t.cur = S.hp; t.curSp = S.vis; } }
+function resumeTree(){
+  const t = tract(); if (!t){ S.hp = null; return; }
+  if (t.cur > 0){ S.hp = t.cur; if (SP[t.curSp]) S.vis = t.curSp; } else newTree();
+  delete t.cur; delete t.curSp;
+}
+const qMode = () => Core.QUEUE_MODES.includes(S.ui.qOrder) ? S.ui.qOrder : 'bought';
+// sort the waiting lots (and the first one too when no crews are on it yet) by the queue mode; 'by hand' leaves them alone
+function applyQueue(all){
+  const m = qMode(); if (m === 'hand' || S.tracts.length < 2) return;
+  const head = all ? [] : S.tracts.slice(0, 1), rest = all ? S.tracts.slice() : S.tracts.slice(1);
+  const caps = bareCaps(), orders = m === 'deadline' ? fitOrders() : [], sn = effSeason(), sky = has('skyline');
+  const keys = rest.map(t => ({seq: t.seq || 0, perHour: m === 'value' ? Core.lotValueRate(caps, t, sn, sky) : 0, deadline: m === 'deadline' ? lotDeadline(t, orders) : Infinity}));
+  S.tracts = head.concat(Core.queueOrder(keys, m).map(i => rest[i]));
+}
+// the soonest deadline among the orders a lot serves: a signed species order in seconds, then special orders and structures
+function lotDeadline(t, orders){
+  let d = Infinity;
+  for (const o of orders){
+    if (o.kind === 'species'){ if (o.signed && Core.mixShare(t.mix, o.sp) > 0) d = Math.min(d, o.secondsLeft); }
+    else if (Core.primePerTree(t, o.item, S.era, perfRate()) > 0) d = Math.min(d, 1e9 + (o.due || 0));
+  }
+  return d;
+}
+// move a lot in the queue; moving one to the top (or the top one down) moves the crews, free (Core.TRACT_SWITCH_COST)
+function moveTract(from, to, keepMode){
+  const n = S.tracts.length; if (from < 0 || from >= n) return false;
+  to = Math.max(0, Math.min(n - 1, to)); if (from === to) return false;
+  const was = tract(), cost = Core.TRACT_SWITCH_COST;
+  const moves = from === 0 || to === 0;
+  if (moves && cost > 0 && S.cash < cost) return false;
+  if (moves) stashTree();
+  S.tracts = Core.moveEntry(S.tracts, from, to);
+  if (!keepMode && qMode() !== 'hand'){ S.ui.qOrder = 'hand'; }
+  if (keepMode) applyQueue();
+  if (tract() !== was){ if (cost > 0) S.cash -= cost; setSite(); resumeTree();
+    note(`Crews moved to ${tract().name}: ${fmt(tract().left)} of ${fmt(tract().trees)} trees left.` + (was && was.left > 0 ? ` ${was.name} waits with ${fmt(was.left)} trees left.` : '')); }
+  render(true); return true;
+}
+const cutNow = i => moveTract(i, 0, true);
+const cutNext = i => moveTract(i, 1);
+function setQueueMode(m){
+  if (!Core.QUEUE_MODES.includes(m)) return;
+  S.ui.qOrder = m; applyQueue(); render(true);
+  const b = document.querySelector(`#qMode button[data-m="${m}"]`); if (b) b.focus();
+}
 const saleOpts = () => ({stumpMult: pmult('stump'), thinSurvey: !!hasMod('beetle'), cruiser: !!perk('cruiser')});
 const genTract = () => Core.genTract(Math.random, S.era, saleOpts());
 // after a push inland the board always lists a tract at or under half that push's price (Steam Camp cash trap)
 const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
-function refreshSales(){ S.forSale = Core.genListings(Math.random, S.era, saleOpts(), 3, saleCap()); S.saleT = 180; }
+// the AFK lot (Core.AFK_LOT): at most one on the board, from its own stream ('land') so the other listings draw as before
+function refreshSales(){ S.forSale = Core.genListings(Math.random, S.era, saleOpts(), 3, saleCap()); S.saleT = 180;
+  const lr = Core.streamRng(S.rng, 'land'); if (lr() < Core.AFK_LOT.chance) S.forSale.push(Core.genAfkLot(lr, S.era, saleOpts())); }
 // cutting rights: a Supply ship cheapens them; burnt-over ground after a slash fire takes 20% off the next lot
 const tractCost = t => { const m = evMult('tractPrice') * (S.weather.burnt ? Core.BURNT_DISCOUNT : 1); return m === 1 ? t.price : Math.round(t.price*m); };
 function buyTract(i){
   const t = S.forSale[i]; if (!t || S.cash < tractCost(t)) return;
   S.cash -= tractCost(t); delete t.price; if (S.weather.burnt){ S.weather.burnt = false; t.burnt = true; }
-  t.roadCost = Core.roadCost(t);
+  t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++;
   S.tracts.push(t);
-  if (S.tracts.length === 1){ setSite(); newTree(); }
-  S.forSale[i] = genTract();
-  const cap = saleCap(); if (cap !== undefined && !S.forSale.some(x => x.price <= cap)) S.forSale[i] = Core.fitTractPrice(S.forSale[i], cap);
+  if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
+  if (t.afk) S.forSale.splice(i, 1); // the AFK lot is not relisted until the next board
+  else { S.forSale[i] = genTract();
+    const cap = saleCap(); if (cap !== undefined && !S.forSale.some(x => !x.afk && x.price <= cap)) S.forSale[i] = Core.fitTractPrice(S.forSale[i], cap); }
   note(`Bought cutting rights on ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
 }
@@ -5164,7 +5739,7 @@ function buildRoad(){
 // species orders name a species in the current tract or on the land office board, sized by its share of the current tract
 function offerSpecies(){
   const t = tract(), species = [];
-  [t, ...S.forSale].forEach(x => { if (x && x.mix) x.mix.forEach(([id]) => { if (SP[id] && !species.includes(id)) species.push(id); }); });
+  [t, ...S.forSale.filter(x => !x.afk)].forEach(x => { if (x && x.mix) x.mix.forEach(([id]) => { if (SP[id] && !species.includes(id)) species.push(id); }); });
   const share = {}; if (t) species.forEach(id => { share[id] = Core.mixShare(t.mix, id); });
   return {species, share};
 }
@@ -5181,8 +5756,8 @@ const mobilization = t => Core.mobilization(t.trees, t.val, upkeep());
 function acceptHire(){
   const t = S.hireOffer; if (!t || hireActive() || scripBlock()) return;
   const mob = mobilization(t);
-  S.cash += mob; S.tracts.push(t); S.hireOffer = genHire();
-  if (S.tracts.length === 1){ setSite(); newTree(); }
+  t.seq = S.tractSeq++; S.cash += mob; S.tracts.push(t); S.hireOffer = genHire();
+  if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
   note(`Signed to cut ${t.name} for ${t.hire.mill}. Received a ${money(mob)} advance.`);
   render(true);
 }
@@ -5190,12 +5765,13 @@ const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, tractCost(t)), 
 const scripBlock = () => perk('scrip') && (!!tract() || S.cash >= cheapestSale());
 const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &&
   (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
-function refreshOffers(){ S.offers = [genOffer(true), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
+// the charter board: Core.OFFER_BOARD_SIZE orders; the first slot is always a regular (any wood) order, the rest may name a species
+function refreshOffers(){ S.offers = Array.from({length: Core.OFFER_BOARD_SIZE}, (_, i) => genOffer(i === 0)); S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
 function accept(i){
   if (S.contract) return;
   const o = S.offers[i]; if (!o) return;
   S.contract = {...o, done:0, end:S.t + o.dur};
-  S.offers.splice(i,1);
+  S.offers.splice(i,1); applyQueue();
   note(`Signed with ${o.mill}: ${bf(o.vol)} in ${mins(o.dur)} at +${Math.round(o.prem*100)}%.`);
   render(true);
 }
@@ -5209,8 +5785,9 @@ function fellK(t, k){
 function finishTract(){
   const t = S.tracts.shift();
   S.stats.tracts++; if (t.hire) S.stats.hires++;
-  note(t.hire ? `Finished the ${t.hire.mill} job on ${t.name}.` : `Cut out ${t.name}.`);
-  setSite(); newTree();
+  applyQueue(true);
+  note((t.hire ? `Finished the ${t.hire.mill} job on ${t.name}.` : `Cut out ${t.name}.`) + (tract() ? ` Crews moved on to ${tract().name}.` : ''));
+  setSite(); resumeTree();
 }
 function damage(chops){
   let t = tract(), n = 0;
@@ -5255,7 +5832,7 @@ function tick(dt){
   while (S.st >= SEASON_LEN){ S.st -= SEASON_LEN; S.season = (S.season+1) % 4; if (S.season === 0){ S.year++; S.stats.winters++; }
     if (SEASONS[S.season] === 'Spring') note(`Mud season on the Reach. Skidding and hauling slow down.`);
     if (SEASONS[S.season] === 'Winter') note(`Ground is frozen and the fog is thin. Good skidding and hauling.`);
-    weatherTurn(); }
+    weatherTurn(); applyQueue(); }
   weatherTick(dt);
   // payroll
   // payroll: if you can't pay, crews keep working at half pace and the wages are owed
@@ -5491,25 +6068,129 @@ function speciesBar(t){
   const tot = t.mix.reduce((a,m) => a+m[1], 0);
   return `<span class="spbar" aria-hidden="true">${t.mix.map(([id,w]) => `<i class="sp-${id}" style="width:${(w/tot*100).toFixed(1)}%"></i>`).join('')}</span>`;
 }
-function listingCard(t, i, fitKey){
+// ---------- order fit and the camp note (Core: packages/core/src/queue.ts). Read-only: no draws, no game numbers change.
+// the camp's steady capacities with no site factors: no pace boost, flat ground, one mile, pine weight (each lot applies its own)
+const bareCaps = () => ({fell: baseRate('fell')*seasonF('fell'), buck: baseRate('buck')*seasonF('buck'), skid: baseRate('skid')*seasonF('skid'), haul: baseRate('haul')*seasonF('haul')});
+// the felling-game pace the Prime estimate trusts: perfect falls per tree felled (0 for an idle company)
+const perfRate = () => Math.min(Core.FIT_PERF_RATE_MAX, (S.stats.perfFell || 0) / Math.max(40, S.felled || 0));
+const spWord = sp => SP[sp].name.split(' ').pop();
+// the player's open orders a lot can serve: the species charter order (or species offers on the board when none is signed),
+// then Prime needs: structures still to build (the warehouse keeps their share back), then special orders, each after warehouse stock
+function fitOrders(){
+  const out = [], c = S.contract;
+  if (c && c.sp && c.vol > c.done) out.push({kind:'species', id:'contract', short:`the ${spWord(c.sp)} order`, sp:c.sp, need:c.vol - c.done, secondsLeft:Math.max(0, c.end - S.t), signed:true});
+  if (!c) S.offers.forEach((o, i) => { if (o.sp) out.push({kind:'species', id:'offer'+i, short:`the offered ${spWord(o.sp)} order${S.offers.filter(x => x.sp === o.sp).length > 1 ? ` (${o.mill})` : ''}`, sp:o.sp, need:o.vol, secondsLeft:o.dur, signed:false}); });
+  [...new Set(Core.PRIME_RULES.map(r => r.item))].forEach(item => {
+    let stock = bankN(item); const name = IDEF(item).plural;
+    if (S.story.sawmillOpened) for (const d of Core.STRUCTURES){
+      if (d.id === 'logging.bunkhouse') continue;
+      const nx = Core.structureNext(S.structures, d.id), q = nx ? nx.items.filter(x => x.item === item).reduce((a, x) => a + x.qty, 0) : 0; if (!q) continue;
+      const k = Math.min(stock, q); stock -= k; if (q > k) out.push({kind:'item', id:'struct:'+d.id, short:`the ${d.name}`, item, itemName:name, need:q - k, due:Infinity}); }
+    S.orders.open.forEach(o => { const d = SODEF(o.id), r = d ? Core.orderRemaining(d, o.given).find(x => x.item === item) : null; if (!r) return;
+      const k = Math.min(stock, r.qty); stock -= k; if (r.qty > k) out.push({kind:'item', id:o.id, short:`the ${d.short} order`, item, itemName:name, need:r.qty - k, due:o.due}); });
+  });
+  return out;
+}
+const lotFits = (t, ahead, orders) => Core.orderFit(t, orders, {caps:bareCaps(), era:S.era, perfRate:perfRate(), skyline:has('skyline')}, ahead);
+// pine bucking finds amber pitch twice as often: a plain hint when special orders still want pitch (no estimate, no badge)
+function pitchHint(t){
+  const P = 'logging.amber_pitch', want = Math.max(0, orderNeed(P) - Math.max(0, bankN(P) - reserveFor(P))), sh = Core.mixShare(t.mix, 'pine');
+  return want > 0 && sh >= .3 ? `<p class="ofit">Pine ${Math.round(sh*100)}%: bucking finds amber pitch twice as often (special orders want ${want} more).</p>` : '';
+}
+function noteFor(t, current){
+  const ev = evNow(), factors = {};
+  if (ev) STAGES.forEach(st => { const f = Core.eventStageFactor(ev, st.id, S.st, evOpts(st.id)); if (f !== 1) factors[st.id] = f; });
+  return Core.campNote(bareCaps(), t, {skyline:has('skyline'), season:effSeason(), current, weather: ev && Object.keys(factors).length ? {name:ev.name, factors} : null, money});
+}
+// "details" folds stay open across re-renders
+const openD = new Set();
+const fitHtml = lines => lines.map(f => `<p class="ofit${f.amount > 0 ? '' : ' late'}" data-order="${f.orderId}">${f.text}</p>`).join('');
+const noteHtml = (n, id, label) => label
+  ? `<details class="fitmore" data-d="${id}"${openD.has(id) ? ' open' : ''}><summary>${label}</summary><p class="fit fit-${n.key}" data-fit="${n.key}">${n.short}</p><ul>${n.details.map(x => `<li>${x}</li>`).join('')}</ul></details>`
+  : `<p class="fit fit-${n.key}" data-fit="${n.key}">${n.short}</p><details class="fitmore" data-d="${id}"${openD.has(id) ? ' open' : ''}><summary>Details</summary><ul>${n.details.map(x => `<li>${x}</li>`).join('')}</ul></details>`;
+const bindDetails = box => box.querySelectorAll('details[data-d]').forEach(el => el.addEventListener('toggle', () => { if (el.open) openD.add(el.dataset.d); else openD.delete(el.dataset.d); }));
+const bestChips = (i, best, orders) => Object.keys(best).filter(id => best[id] === i).map(id => { const o = orders.find(x => x.id === id); return o ? `<span class="chipl best" data-best="${id}">Best for ${o.short}</span>` : ''; }).join('');
+function listingCard(t, i, fits, note, best, orders){
   const g = Core.GROUNDS[Core.groundId(t.ground)], wt = Core.weightTag(t.wt || 1), main = Core.mainSpecies(t.mix);
-  const fit = Core.campFit(campCaps(), {hp:t.hp, bf:t.bf, wt:t.wt || 1});
-  return `<div class="row lot"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>
+  return `<div class="row lot${t.afk ? ' afk' : ''}"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${bestChips(i, best, orders)}
     <p>${fmt(t.trees)} trees · ${mixText(t)}</p>${speciesBar(t)}
     <span class="spec">${money(t.val)} a tree · ${fmt(t.hp)} chops a tree · <span class="wt-${wt.key}">${wt.text}</span></span>
     <span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}${g.twist ? ' · ' + g.twist : ''}</span>
-    <p>Best for: ${main ? Core.BEST_FOR[main] : 'mixed use'}</p>
-    <p class="fit fit-${fit.key}" data-fit="${fit.key}">${fit.text}</p></div>
+    <p>Best for: ${t.afk ? 'leaving the camp running while you are away' : main ? Core.BEST_FOR[main] : 'mixed use'}</p>
+    ${fitHtml(fits)}${pitchHint(t)}${noteHtml(note, 'l'+t.name)}</div>
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
 function renderSales(){
-  const fits = S.forSale.map(t => Core.campFit(campCaps(), {hp:t.hp, bf:t.bf, wt:t.wt || 1}).key).join(',');
-  const key = S.forSale.map(t => t.name+t.trees+':'+tractCost(t)).join('|') + fits;
-  list('sales', key, S.forSale.map((t,i) => listingCard(t, i)).join(''),
-    box => box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)));
+  const orders = fitOrders(), cur = tract();
+  // a bought lot joins the end of the queue, so every lot under contract is ahead of it
+  const fits = S.forSale.map(t => lotFits(t, S.tracts, orders)), best = Core.bestFor(fits), notes = S.forSale.map(t => noteFor(t, cur));
+  const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)).join('|') + JSON.stringify(best);
+  list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join(''),
+    box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < tractCost(t); });
   $('saleMeta').textContent = `The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.` +
     (S.weather.burnt ? ' Burnt-over ground after the slash fire: the next lot costs 20% less.' : '') + (evMult('tractPrice') < 1 ? ` ${evNow().name}: cutting rights 15% cheaper this season.` : '');
+}
+// ---------- the cutting queue panel: owned lots in order, crews on the first. Drag the grip (mouse or touch, pointer events)
+// or use the arrow buttons to reorder; Cut next puts a lot second, Cut now moves the crews to it (free, progress kept);
+// the order buttons sort the waiting lots.
+let qDrag = null;
+function fitChip(f, orders){
+  const o = orders.find(x => x.id === f.orderId), sh = o ? o.short.replace(/^the /, '') : '';
+  const n = f.amount >= 10 ? Math.round(f.amount) : Math.round(f.amount*10)/10;
+  return `<span class="chipl ofb" data-fitb="${f.orderId}">${f.fills ? `Fills ${sh}` : f.kind === 'species' ? (f.share > 0 ? `${Math.max(1, Math.round(f.amount*100))}% of ${sh}` : `Counts toward ${sh}`) : `≈${n} for ${sh}`}</span>`;
+}
+// the queue row under a pointer's y (the first or last row when above or below the list)
+function qRowAt(box, y){
+  const rows = [...box.querySelectorAll('.qrow')]; if (!rows.length) return null;
+  for (let i = 0; i < rows.length; i++){ const r = rows[i].getBoundingClientRect(); if (y < r.bottom) return i; }
+  return rows.length - 1;
+}
+function bindQueueDrag(box){
+  box.querySelectorAll('.qgrip').forEach(g => {
+    const li = g.closest('.qrow');
+    g.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); qDrag = {from: +li.dataset.q, to: +li.dataset.q, id: e.pointerId};
+      try { g.setPointerCapture(e.pointerId); } catch(_){} li.classList.add('dragging'); });
+    g.addEventListener('pointermove', e => { if (!qDrag || qDrag.id !== e.pointerId) return; e.preventDefault();
+      const to = qRowAt(box, e.clientY); if (to == null) return; qDrag.to = to;
+      box.querySelectorAll('.qrow').forEach((x, i) => x.classList.toggle('over', i === to && to !== qDrag.from)); });
+    const end = (e, drop) => { if (!qDrag || qDrag.id !== e.pointerId) return; const d = qDrag; qDrag = null;
+      try { g.releasePointerCapture(e.pointerId); } catch(_){}
+      if (!(drop && moveTract(d.from, d.to))) render(true); };
+    g.addEventListener('pointerup', e => end(e, true));
+    g.addEventListener('pointercancel', e => end(e, false));
+  });
+}
+function renderQueue(){
+  const mb = $('qMode');
+  if (!mb.querySelector('button')){ mb.insertAdjacentHTML('beforeend', Core.QUEUE_MODES.map(m => `<button type="button" data-m="${m}" aria-pressed="false">${Core.QUEUE_MODE_LABEL[m]}</button>`).join(''));
+    mb.querySelectorAll('button').forEach(b => b.onclick = () => setQueueMode(b.dataset.m)); }
+  mb.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === qMode())));
+  const orders = fitOrders(), caps = bareCaps(), sky = has('skyline'), n = S.tracts.length;
+  const rows = S.tracts.map((t, i) => ({t, i, fits: lotFits(t, S.tracts.slice(0, i), orders), note: noteFor(t, i ? tract() : null)}));
+  const key = qMode() + '|' + rows.map(r => `${r.t.seq}:${r.t.name}:${r.fits.map(f => fitChip(f, orders) + f.text).join('/')}:${r.note.short}${r.note.details.join('/')}`).join('|');
+  if (!qDrag) list('tq', key, n ? rows.map(({t, i, fits, note}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
+    <button type="button" class="qgrip" aria-label="Drag ${t.name} to reorder (or use the arrows)" title="Drag to reorder">⠿</button>
+    <div class="info"><b>${i + 1}. ${t.name}</b>${i === 0 ? '<span class="chipl crew">Crews here</span>' : ''}${t.hire ? `<span class="chipl ground">Hire work for ${t.hire.mill}</span>` : ''}${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${fits.filter(f => f.amount > 0).map(f => fitChip(f, orders)).join('')}
+      <p>${mixText(t)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</p>${speciesBar(t)}
+      <span class="spec" data-qs="${i}"></span>${fitHtml(fits)}${noteHtml(note, 'q'+t.seq, 'Camp note')}</div>
+    <div class="qbtns"><button type="button" data-qu="${i}" aria-label="Move ${t.name} up the queue" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-qd="${i}" aria-label="Move ${t.name} down the queue" title="Move down" ${i === n - 1 ? 'disabled' : ''}>▼</button>${i > 1 ? `<button type="button" data-qnext="${i}">Cut next</button>` : ''}${i > 0 ? `<button type="button" class="now" data-qnow="${i}">Cut now</button>` : ''}</div></li>`).join('')
+    : '<li class="empty">No lots under contract. Buy cutting rights at the land office or sign hire work.</li>',
+    box => {
+      const refocus = (attr, i) => { const b = document.querySelector(`#tq [data-${attr}="${i}"]`); if (b && !b.disabled) b.focus(); };
+      box.querySelectorAll('[data-qu]').forEach(b => b.onclick = () => { const i = +b.dataset.qu; if (moveTract(i, i - 1)) refocus('qu', i - 1); });
+      box.querySelectorAll('[data-qd]').forEach(b => b.onclick = () => { const i = +b.dataset.qd; if (moveTract(i, i + 1)) refocus('qd', i + 1); });
+      box.querySelectorAll('[data-qnext]').forEach(b => b.onclick = () => cutNext(+b.dataset.qnext));
+      box.querySelectorAll('[data-qnow]').forEach(b => b.onclick = () => cutNow(+b.dataset.qnow));
+      bindQueueDrag(box); bindDetails(box);
+    });
+  rows.forEach(({t, i, note}) => { const el = document.querySelector(`#tq [data-qs="${i}"]`); if (!el) return;
+    const eta = Core.cutOutSeconds(caps, t, sky);
+    const txt = `${fmt(t.left)} of ${fmt(t.trees)} trees left · cut out in ${isFinite(eta) ? mins(eta) : 'no crews yet'} · ${money(t.left*t.val)} of logs · ${money(note.perHour)} an hour`;
+    if (el.textContent !== txt) el.textContent = txt; });
+  const m = qMode();
+  $('qMeta').textContent = 'Crews work the top lot and move down the list when it is cut out. ' + (n > 1 ? 'Drag a lot by its grip, or use the arrows, to change the order. Moving crews is free and every lot keeps its progress. ' : '') +
+    (m === 'hand' ? 'Order: set by hand.' : m === 'bought' ? 'Order: as bought.' : m === 'deadline' ? 'Order: lots that serve the soonest order deadline go first.' : 'Order: the most log value an hour goes first.') + (m !== 'hand' ? ' Crews stay on their lot until it is cut out or you move them.' : '');
 }
 function renderHire(){
   const job = S.tracts.find(t => t.hire), o = S.hireOffer;
@@ -5529,18 +6210,29 @@ function renderHire(){
     box => { box.querySelector('#hireBuy').onclick = acceptHire; });
   $('hSpec').textContent = `${o.miles} mi haul · ${SLOPES[o.slope].label} · ${money(mobilization(o))} advance on signing`;
 }
+// order fit on the charter board: for a species order (signed, or each offer), the lot that serves it best, owned or listed
+function orderBestLot(id){
+  const ord = fitOrders().find(x => x.id === id); if (!ord) return '';
+  const lots = S.tracts.map((t, j) => ({t, ahead:S.tracts.slice(0, j), where: j === 0 ? 'crews are on it' : 'in your cutting queue'}))
+    .concat(S.forSale.map(t => ({t, ahead:S.tracts, where:'at the land office'})));
+  let best = null;
+  lots.forEach(l => { const f = lotFits(l.t, l.ahead, [ord])[0]; if (f && f.amount > 0 && (!best || f.amount > best.f.amount + 1e-9)) best = {l, f}; });
+  return best ? `<p class="ofit" data-obest="${id}">Best lot for it: ${best.l.t.name} (${best.l.where}). ${best.f.text.replace(' (if you sign it now)', '')}</p>`
+    : `<p class="ofit late" data-obest="${id}">None of your lots, or the land office's, carries enough ${spWord(ord.sp)} to help before it expires.</p>`;
+}
 function renderContracts(){
   renderHire(); renderSpecials();
   const c = S.contract;
-  const key = c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|');
+  const bestLine = c ? (c.sp ? orderBestLot('contract') : '') : S.offers.map((o, i) => o.sp ? orderBestLot('offer'+i) : '');
+  const key = (c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|')) + JSON.stringify(bestLine);
   // a species order: the client wants one species; only its share of each delivery counts, and missing it costs nothing
   const spLine = o => o.sp ? `<p class="sporder">${SP[o.sp].name} only: “${Core.SPECIES_CLIENTS[o.sp].line}”. Counts the ${SP[o.sp].name.split(' ').pop()} share of each delivery` +
     (tract() ? ` (${Math.round(Core.mixShare(tract().mix, o.sp)*100)}% of ${tract().name})` : '') + '.</p>' : '';
   list('contracts', key, c
-    ? `<div class="contract"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Species order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on deliveries</span>${spLine(c)}
+    ? `<div class="contract"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Species order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on deliveries</span>${spLine(c)}${bestLine}
        <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
     : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>${o.sp ? ' <span class="chipl sp">Species order</span>' : ''}
-       <p>${bf(o.vol)}${o.sp ? ' of ' + SP[o.sp].name.split(' ').pop() : ''} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p>${spLine(o)}<span class="spec">${o.sp ? 'Free to miss: no penalty' : `Penalty if missed: up to ${money(o.penalty)}`}</span></div>
+       <p>${bf(o.vol)}${o.sp ? ' of ' + SP[o.sp].name.split(' ').pop() : ''} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p>${spLine(o)}${bestLine[i]}<span class="spec">${o.sp ? 'Free to miss: no penalty' : `Penalty if missed: up to ${money(o.penalty)}`}</span></div>
        <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No charter orders right now.</p>'),
     box => box.querySelectorAll('button[data-o]').forEach(b => b.onclick = () => accept(+b.dataset.o)));
   if (c){
@@ -5633,7 +6325,7 @@ function render(force){
     const rd = $('road');
     rd.hidden = t.road || !t.roadCost || t.miles <= 1;
     if (!rd.hidden){ rd.textContent = `Build haul road ${money(t.roadCost)}`; rd.disabled = S.cash < t.roadCost; }
-    $('queue').textContent = S.tracts.length > 1 ? `Up next: ${S.tracts.slice(1).map(x => x.name).join(', ')} · ${fmt(totalLeft)} trees under contract in all.` : 'No tracts queued. Buy cutting rights or take hire work before this one runs out.';
+    $('queue').textContent = `Crews are on ${t.name}. ` + (S.tracts.length > 1 ? `Up next in the cutting queue: ${S.tracts[1].name} (${S.tracts.length - 1} waiting, ${fmt(totalLeft)} trees under contract in all).` : 'Nothing queued after it: buy cutting rights or take hire work before it runs out.');
   } else {
     $('tName').textContent = 'No timber';
     $('tMeta').textContent = 'Buy cutting rights from the land office to keep cutting.';
@@ -5684,7 +6376,7 @@ function render(force){
     b.setAttribute('aria-label', p.none ? `Buy ${e.name}: not enough cash for one (${money(p.total)})` : `Buy ${p.count} ${e.name} for ${money(p.total)}`);
     r.querySelector('.sellb').hidden = !own(e.id);
   });
-  renderSales(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
+  renderSales(); renderQueue(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
 }
 
 // ---------- the season dispatch: a card under the tally at every season change. It folds away after 8 s, never opens a modal,
@@ -6794,6 +7486,10 @@ function normalize(){
     return t; };
   S.tracts = (Array.isArray(S.tracts) ? S.tracts : []).filter(obj).map(fixTract);
   S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
+  // the cutting queue (2026-10-25): an old save's tracts become the queue in their current order; each gets a purchase number
+  S.tracts.forEach((t, i) => { if (!(typeof t.seq === 'number' && isFinite(t.seq))) t.seq = i; if (t.cur != null && !(t.cur > 0)) { delete t.cur; delete t.curSp; } });
+  S.tractSeq = Math.max(typeof S.tractSeq === 'number' && isFinite(S.tractSeq) ? S.tractSeq : 0, ...S.tracts.map(t => t.seq + 1), 1);
+  if (!Core.QUEUE_MODES.includes(S.ui.qOrder)) S.ui.qOrder = 'bought';
   if (obj(S.hireOffer)) fixTract(S.hireOffer); else S.hireOffer = null;
   S.vis = Core.speciesId(S.vis) || (S.tracts[0] ? S.tracts[0].mix[0][0] : 'pine');
   const fixOffer = o => { if (obj(o) && o.sp != null){ const sp = Core.speciesId(o.sp); if (sp) o.sp = sp; else delete o.sp; } return o; };
