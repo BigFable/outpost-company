@@ -6,6 +6,9 @@ import {
   draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genTract, makeTract, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
 } from './generators';
 import { rngPick, rngRange } from './rng';
+import { GROUNDS, mixWeight, SPECIES_CLIENTS, speciesId } from './species';
+import type { SlopeId } from './content';
+import type { MixEntry } from './generators';
 import { must, scripted, simLcg } from './test-rng';
 
 type GoldenTractCase = { era: number; seed: number; stumpMult: number; thinSurvey: boolean; cruiser: boolean; forSale: unknown[] };
@@ -25,18 +28,56 @@ describe('rng helpers', () => {
 describe('makeTract', () => {
   it('weight-averages species stats', () => {
     const t = makeTract('Cove woodlot', [['pine', 6], ['hemlock', 4]], 40, 1, 'flat');
-    expect(t).toMatchObject({ trees: 40, left: 40, road: false, hp: 20.8, bf: 208 });
-    expect(t.val).toBeCloseTo((40.5 * 6 + 220 * (0.5 * 0.18 + 0.5 * 0.06) * 4) / 10, 12);
+    expect(t).toMatchObject({ trees: 40, left: 40, road: false, ground: 'coast' });
+    expect(t.hp).toBeCloseTo(18.4, 12);
+    expect(t.bf).toBeCloseTo(216, 12);
+    expect(t.wt).toBeCloseTo(0.6 * 1 + 0.4 * 1.1, 12);
+    expect(t.val).toBeCloseTo((40.5 * 6 + 240 * (0.45 * 0.2 + 0.55 * 0.08) * 4) / 10, 12);
   });
 });
 
 describe('genTract', () => {
-  it('reproduces the prototype listings for every era, seed and perk/clause variant', () => {
+  it('keeps the prototype draw sequence: the mixed stand matches the captured listings draw for draw', () => {
+    // species overhaul slice 1: Cove ground listings are new, but every listing still takes 9 draws,
+    // so later listings stay aligned and mixed-stand ones match the pre-M2 names, mixes, sizes and slopes
+    let compared = 0;
     for (const c of GOLDEN.tracts as GoldenTractCase[]) {
       const rng = simLcg(c.seed);
       const got = [0, 1, 2].map(() => genTract(rng, c.era, { stumpMult: c.stumpMult, thinSurvey: c.thinSurvey, cruiser: c.cruiser }));
-      expect(got).toEqual(c.forSale);
+      got.forEach((t, i) => {
+        if (t.ground !== 'mixed') return;
+        const want = c.forSale[i] as { name: string; mix: [string, number][]; trees: number; miles: number; slope: string };
+        expect({ name: t.name, mix: t.mix, trees: t.trees, miles: t.miles, slope: t.slope }).toEqual({ name: want.name, mix: want.mix.map(([id, w]) => [speciesId(id), w]), trees: want.trees, miles: want.miles, slope: want.slope });
+        compared++;
+      });
     }
+    expect(compared).toBeGreaterThan(10);
+  });
+  it('lists Cove grounds at Cove Landing: coast bottoms, spruce headland, hemlock swamp', () => {
+    const seen = new Set<string>();
+    for (let seed = 1; seed < 60; seed++) {
+      const t = genTract(simLcg(seed), 0, { stumpMult: 1, thinSurvey: false, cruiser: false });
+      seen.add(t.ground);
+      const g = GROUNDS[t.ground];
+      const [main, w] = must(t.mix[0]);
+      expect(main).toBe(g.main);
+      expect(w % 5).toBe(0);
+      expect(w).toBeGreaterThanOrEqual(must(g.mainW)[0]);
+      expect(w).toBeLessThanOrEqual(must(g.mainW)[1]);
+      expect(g.rest).toContain(must(t.mix[1])[0]);
+      expect(must(t.mix[1])[1]).toBe(100 - w);
+      expect(g.slopes).toContain(t.slope);
+      expect(t.wt).toBeCloseTo(mixWeight(t.mix), 12);
+    }
+    expect([...seen].sort()).toEqual(['coast', 'headland', 'swamp']);
+  });
+  it('prices a hemlock swamp at 0.9 and keeps it flat or rolling', () => {
+    // older-tier 0.9, ground 0.99 -> swamp, main 0.5, rest 0, trees .5, miles 0, slope 0.99 -> rolling, place 0, lot 0
+    const t = genTract(scripted([0.9, 0.99, 0.5, 0, 0.5, 0, 0.99, 0, 0]), 0, { stumpMult: 1, thinSurvey: false, cruiser: false });
+    expect(t.ground).toBe('swamp');
+    expect(t.slope).toBe('rolling');
+    expect(t.mix).toEqual([['hemlock', 75], ['spruce', 25]]);
+    expect(t.price).toBe(tractPrice(t.trees * t.val, t.miles, 'rolling', 0.9));
   });
   it('uses exactly 9 draws per listing', () => {
     const r = scripted(Array(9).fill(0.5));
@@ -45,10 +86,17 @@ describe('genTract', () => {
   });
   it('drops to the previous tier on a low roll and never mixes a species with itself', () => {
     // older-tier roll 0.1 (<0.3), species a=b=first -> b bumps to the next species
-    const r = scripted([0.1, 0, 0, 0.5, 0.5, 0, 0, 0, 0]);
+    // at Steam Camp an older-tier roll lists a Cove ground with Cove-sized timber
+    const r = scripted([0.1, 0, 0, 0, 0.5, 0, 0, 0, 0]);
     const t = genTract(r, 1, { stumpMult: 1, thinSurvey: false, cruiser: false });
-    expect(t.mix.map((m) => m[0])).toEqual(['pine', 'spruce']);
+    expect(t.ground).toBe('coast');
+    expect(t.mix).toEqual([['pine', 60], ['spruce', 40]]);
     expect(t.trees).toBe(Math.round(must(TRACT_BASE[0]) * 1.05));
+    // at Diesel Road the older tier is Steam Camp: the mixed stand, where a species never mixes with itself
+    const m = genTract(scripted([0.1, 0, 0, 0.5, 0.5, 0, 0, 0, 0]), 2, { stumpMult: 1, thinSurvey: false, cruiser: false });
+    expect(m.ground).toBe('mixed');
+    expect(m.mix.map((x) => x[0])).toEqual(['pine', 'spruce']);
+    expect(m.trees).toBe(Math.round(must(TRACT_BASE[1]) * 1.05));
   });
   it('clauses and perks scale tree count after pricing, never below 5', () => {
     const draws = [0.9, 0, 0.5, 0.5, 0, 0, 0, 0, 0];
@@ -76,8 +124,13 @@ describe('tract economics', () => {
 
 describe('genHire', () => {
   it('reproduces the prototype hire jobs', () => {
-    for (const c of GOLDEN.hires as { era: number; seed: number; hire: unknown }[]) {
-      expect(genHire(simLcg(c.seed), c.era)).toEqual(c.hire);
+    // same draws as the pre-M2 prototype; tree stats follow the species overhaul
+    for (const c of GOLDEN.hires as unknown as { era: number; seed: number; hire: { name: string; mix: MixEntry[]; trees: number; miles: number; slope: SlopeId; hire: unknown } }[]) {
+      const t = genHire(simLcg(c.seed), c.era), h = c.hire;
+      expect({ name: t.name, mix: t.mix, trees: t.trees, miles: t.miles, slope: t.slope, hire: t.hire }).toEqual({ name: h.name, mix: h.mix, trees: h.trees, miles: h.miles, slope: h.slope, hire: h.hire });
+      const plain = makeTract(h.name, h.mix, h.trees, h.miles, h.slope, 'mixed');
+      expect(t.val).toBeCloseTo(plain.val * 0.45, 12);
+      expect(t.ground).toBe('mixed');
     }
   });
   it('pays 45% of value and always mixes two different species', () => {
@@ -105,6 +158,39 @@ describe('genOffer', () => {
     expect(o.penalty).toBe(Math.round(2000 * 0.2 * 0.25));
     const big = genOffer(scripted([0.5, 0.5, 0, 0]), 1234, 0.2);
     expect(String(big.vol).replace(/0+$/, '').length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('genOffer species orders', () => {
+  const so = { species: ['spruce', 'pine'] as const, share: { spruce: 0.7, pine: 0.3 } };
+  it('draws nothing extra without species options', () => {
+    const r = scripted([0, 0, 0, 0]);
+    expect(genOffer(r, 0, 0.2).sp).toBeUndefined();
+    expect(r.used()).toBe(4);
+  });
+  it('one roll decides: a miss leaves an any-wood order (5 draws)', () => {
+    const r = scripted([0, 0, 0, 0, 0.5]);
+    const o = genOffer(r, 0, 0.2, { species: [...so.species], share: so.share });
+    expect(o.sp).toBeUndefined();
+    expect(o.penalty).toBe(100);
+    expect(r.used()).toBe(5);
+  });
+  it('a species order names the client, pays 30-55%, is sized by the species share and is free to miss', () => {
+    const r = scripted([0.5, 0.5, 0, 0, 0.1, 0, 1 - 1e-9]);
+    const plain = genOffer(scripted([0.5, 0.5, 0, 0]), 100, 0.2);
+    const o = genOffer(r, 100, 0.2, { species: [...so.species], share: so.share });
+    expect(r.used()).toBe(7);
+    expect(o.sp).toBe('spruce');
+    expect(o.mill).toBe(SPECIES_CLIENTS.spruce.client);
+    expect(o.prem).toBe(0.55);
+    expect(o.penalty).toBe(0);
+    expect(o.vol).toBeLessThan(plain.vol);
+    expect(Math.abs(o.vol / (plain.vol * 0.7) - 1)).toBeLessThan(0.06);
+  });
+  it('sizes an order for a species off the current tract at the off-tract share', () => {
+    const o = genOffer(scripted([0.5, 0.5, 0, 0, 0.1, 0.99, 0]), 100, 0.2, { species: ['spruce', 'hemlock'], share: {} });
+    expect(o.sp).toBe('hemlock');
+    expect(o.prem).toBe(0.3);
   });
 });
 

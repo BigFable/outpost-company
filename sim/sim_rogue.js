@@ -105,7 +105,7 @@ function run(profile, seed, hours=4, opt={}){
         mgClock=8+rest; }
       else if(pick==='buck' && S.stems.bf>0){ const skill = (has('scalestick')?.06:0)+(has('grade')?.06:0);
         // Scaler's friend pays 90%+ as 100% but full value (perfBuck) needs the raw score (playtest 1 exploit fix)
-        const r0=Math.min(1, .72 + rnd()*.3 + skill); let r=r0; if(P('scaler') && r>=.9) r=1; G.runDone('buck', r); G.move(S.stems,S.cut,Math.min(S.stems.bf,Math.max(G.tract()?G.tract().bf:200, G.rate('buck')*25)),(0.5+0.7*r)*G.umult('value'));
+        const r0=Math.min(1, .72 + rnd()*.3 + skill); let r=r0; if(P('scaler') && r>=.9) r=1; G.runDone('buck', r, false, G.tract()?Core.mainSpecies(G.tract().mix):null); G.move(S.stems,S.cut,Math.min(S.stems.bf,Math.max(G.tract()?G.tract().bf:200, G.rate('buck')*25)),(0.5+0.7*r)*G.umult('value'));
         // Prime from grade 1 cuts at 90%+: Binomial(3, .45) logs of 12 ft+, two at most; Pitch boiler boils a pulp piece to pitch
         if(MILL && r0>=.9 && G.tract()){ let n=0; for(let j=0;j<3;j++) if(G.drng()<.45) n++; const sp=Core.pickFromMix(G.drng, G.tract().mix), pr=sp?Core.primeFromFall(sp):null; if(pr && n) G.addItem(pr.item, Math.min(2,n)); }
         if(MILL && P('pitchboiler')) G.addItem('logging.amber_pitch', 1);
@@ -164,10 +164,12 @@ function run(profile, seed, hours=4, opt={}){
     if(G.atRisk() && S.hireOffer && !G.hireActive()){ const h=S.tracts.length; G.acceptHire(); if(S.tracts.length>h) stats.hire++; }
     const queued=S.tracts.reduce((a,t)=>a+t.left,0);
     if(S.tracts.length<2){
-      const best=S.forSale.map((t,i)=>({i,score:t.trees*t.val*G.distF()/t.price,price:t.price})).filter(o=>o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
+      // species overhaul: every profile buys by "best value per work for my camp" (Core.tractScore on pine-weight capacities); no draws
+      const caps={fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)};
+      const best=S.forSale.map((t,i)=>({i,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
       if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract'); }
     }
-    if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const o=S.offers.find(o=>o.vol<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }
+    if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1; const o=S.offers.find(o=>sh(o)>0 && o.vol/sh(o)<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }
     const nx=G.ERAS[S.era+1];
     const ec=G.eraCost(S.era+1);
     if(nx && S.cash>=ec+reserve()){ S.cash-=ec; S.era++; S.year=Math.max(S.year,nx.year); G.refreshSales(); G.refreshOffers(); eraT.push(S.t); bought('era'); continue; }

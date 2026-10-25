@@ -125,6 +125,15 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .buyn button{min-width:46px;border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:600}
 .buyn button:hover{border-color:var(--ink)}
 .buyn button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.spbar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line);margin:4px 0 3px;max-width:260px}
+.spbar i{display:block;height:100%}
+.sp-pine{background:var(--needle)} .sp-spruce{background:var(--needle2)} .sp-hemlock{background:var(--bark)}
+.sp-maple{background:var(--warn)} .sp-oak{background:var(--pile)} .sp-cloudwood{background:var(--accent)}
+.row.lot .info>.spec{display:block}
+.chipl.ground{color:var(--muted);margin-left:4px}
+.chipl.sp{color:var(--good);margin-left:4px}
+.row p.fit{color:var(--ink)} .row p.fit-teams,.row p.fit-fallers{color:var(--warn)}
+.wt-light{color:var(--good)} .wt-heavy{color:var(--warn)}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
 .contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
@@ -534,25 +543,28 @@ var Core = (function(exports) {
 			saw: .75,
 			sawP: .25,
 			pulpP: .06,
-			shape: "con"
+			shape: "con",
+			wt: 1
 		},
 		spruce: {
 			name: "Shore spruce",
-			hp: 16,
-			bf: 160,
-			saw: .6,
-			sawP: .23,
-			pulpP: .07,
-			shape: "con"
+			hp: 14,
+			bf: 180,
+			saw: .45,
+			sawP: .24,
+			pulpP: .09,
+			shape: "con",
+			wt: .8
 		},
 		hemlock: {
 			name: "Mist hemlock",
-			hp: 22,
-			bf: 220,
-			saw: .5,
-			sawP: .18,
-			pulpP: .06,
-			shape: "con"
+			hp: 16,
+			bf: 240,
+			saw: .45,
+			sawP: .2,
+			pulpP: .08,
+			shape: "con",
+			wt: 1.1
 		},
 		maple: {
 			name: "Glacier maple",
@@ -561,7 +573,8 @@ var Core = (function(exports) {
 			saw: .55,
 			sawP: .42,
 			pulpP: .05,
-			shape: "dec"
+			shape: "dec",
+			wt: 1
 		},
 		oak: {
 			name: "Hot-spring oak",
@@ -570,16 +583,18 @@ var Core = (function(exports) {
 			saw: .6,
 			sawP: .52,
 			pulpP: .05,
-			shape: "dec"
+			shape: "dec",
+			wt: 1
 		},
-		walnut: {
+		cloudwood: {
 			name: "Giant cloudwood",
 			hp: 30,
 			bf: 280,
 			saw: .7,
 			sawP: 1.4,
 			pulpP: .04,
-			shape: "dec"
+			shape: "dec",
+			wt: 1
 		}
 	});
 	var ERAS = deepFreeze([
@@ -633,7 +648,7 @@ var Core = (function(exports) {
 			"hemlock",
 			"maple",
 			"oak",
-			"walnut"
+			"cloudwood"
 		]
 	]);
 	/** Typical tree count of a tract, per era tier. */
@@ -2135,11 +2150,12 @@ var Core = (function(exports) {
 		for (const k of golden ? BOOST_ORDER : [stage]) b[k] = Math.min(t + 120, Math.max(b[k] || 0, t) + len);
 		return b;
 	}
-	/** Effective per-second rate of a stage (before payroll efficiency). */
+	/** Effective per-second rate of a stage (before payroll efficiency). Skidding and hauling move bd ft ÷ weight. */
 	function stageRate(stage, i) {
 		let r = i.base * i.season * i.boost;
 		if (stage === "skid") r *= i.slope;
 		if (stage === "haul") r *= i.distance;
+		if ((stage === "skid" || stage === "haul") && i.weight !== void 0 && i.weight !== 1 && i.weight > 0) r /= i.weight;
 		return r;
 	}
 	/** Board feet moved by one click of hand work. `hand` is the hand-work multiplier. */
@@ -2157,9 +2173,9 @@ var Core = (function(exports) {
 	function mobilization(trees, val, upkeepPerMin) {
 		return Math.round(Math.max(40, Math.min(upkeepPerMin * 4, trees * val * .3)));
 	}
-	/** Penalty for a missed charter order, scaled by the share left undelivered. */
-	function missedPenalty(penalty, done, vol, handshake) {
-		return handshake ? 0 : Math.round(penalty * (1 - done / vol));
+	/** Penalty for a missed charter order, scaled by the share left undelivered. A species order (`speciesOrder`) is free to miss. */
+	function missedPenalty(penalty, done, vol, handshake, speciesOrder = false) {
+		return handshake || speciesOrder ? 0 : Math.round(penalty * (1 - done / vol));
 	}
 	/** Price of pushing on to era `i`; Infinity past the last era. */
 	function eraCost(i, d) {
@@ -2220,6 +2236,414 @@ var Core = (function(exports) {
 		};
 	}
 	//#endregion
+	//#region packages/core/src/species.ts
+	/**
+	* Species rules as data plus pure helpers (docs/design/species-overhaul.md, slice 1:
+	* the Cove trio made distinct). Grounds, weights, the seasonal-trait hook,
+	* felling and bucking rules, species charter orders and the land office's
+	* camp-fit hint.
+	*
+	* Slice 1 gives pine, spruce and hemlock their own rules. Maple, oak and
+	* cloudwood keep the standard (pine) rules until slice 3.
+	*/
+	/** Old save ids that map to a current species (`walnut` was renamed `cloudwood`). */
+	var SPECIES_ALIAS = deepFreeze({ walnut: "cloudwood" });
+	/** A save's species id as a current SpeciesId (aliases applied); null when unknown. */
+	function speciesId(id) {
+		if (typeof id !== "string") return null;
+		if (Object.prototype.hasOwnProperty.call(SPECIES, id)) return id;
+		return SPECIES_ALIAS[id] ?? null;
+	}
+	var SPECIES_SEASON = deepFreeze({
+		hemlock: {
+			Spring: {
+				mult: 1,
+				bark: 14
+			},
+			Summer: {
+				mult: 1,
+				bark: 14
+			}
+		},
+		maple: {
+			Winter: {
+				mult: 1.15,
+				bark: 0
+			},
+			Spring: {
+				mult: .85,
+				bark: 0
+			}
+		}
+	});
+	/** Hemlock tanbark, dollars a tree in peel season. */
+	var TANBARK = 14;
+	/** The seasonal trait of a species this season (×1, +$0 when it has none). */
+	function speciesSeasonTrait(sp, season) {
+		return SPECIES_SEASON[sp]?.[season] ?? {
+			mult: 1,
+			bark: 0
+		};
+	}
+	/** Value of one tree of this species felled this season: treeValue × mult + bark. */
+	function speciesSeasonValue(sp, season) {
+		const t = speciesSeasonTrait(sp, season);
+		return treeValue(SPECIES[sp]) * t.mult + t.bark;
+	}
+	/**
+	* Felling-value factor for a tract mix this season: the mix-weighted seasonal
+	* tree value over the plain one. The prototype multiplies a tract's per-tree
+	* value by it when trees are felled, so hire jobs and perks scale alike.
+	* Exactly 1 when no species in the mix has a trait this season.
+	*/
+	function seasonValueFactor(mix, season) {
+		let plain = 0, now = 0, hit = false;
+		for (const [id, w] of mix) {
+			const sp = speciesId(id);
+			if (!sp) continue;
+			const v = treeValue(SPECIES[sp]);
+			const t = SPECIES_SEASON[sp]?.[season];
+			if (t) hit = true;
+			plain += v * w;
+			now += (t ? v * t.mult + t.bark : v) * w;
+		}
+		return hit && plain > 0 ? now / plain : 1;
+	}
+	/** Weight-averaged skid and haul weight of a mix (pine = 1). */
+	function mixWeight(mix) {
+		let wt = 0, w = 0;
+		for (const [id, n] of mix) {
+			const sp = speciesId(id);
+			if (!sp) continue;
+			wt += SPECIES[sp].wt * n;
+			w += n;
+		}
+		return w > 0 ? wt / w : 1;
+	}
+	/** Share (0..1) of a species in a mix. */
+	function mixShare(mix, sp) {
+		const tot = mix.reduce((a, m) => a + m[1], 0);
+		return tot > 0 ? mix.reduce((a, m) => a + (m[0] === sp ? m[1] : 0), 0) / tot : 0;
+	}
+	/** The species with the biggest share of a mix (first on a tie). */
+	function mainSpecies(mix) {
+		let best = null, bw = -Infinity;
+		for (const [id, w] of mix) if (w > bw) {
+			best = id;
+			bw = w;
+		}
+		return best;
+	}
+	var ANY_SLOPE = [
+		"flat",
+		"flat",
+		"rolling",
+		"rolling",
+		"steep"
+	];
+	var GROUNDS = deepFreeze({
+		coast: {
+			id: "coast",
+			name: "Coast bottoms",
+			era: 0,
+			main: "pine",
+			mainW: [60, 80],
+			rest: ["spruce", "hemlock"],
+			slopes: ANY_SLOPE
+		},
+		headland: {
+			id: "headland",
+			name: "Spruce headland",
+			era: 0,
+			main: "spruce",
+			mainW: [60, 90],
+			rest: ["pine"],
+			slopes: ANY_SLOPE,
+			windMult: 1.2,
+			twist: "Windy: felling-game wind ×1.2"
+		},
+		swamp: {
+			id: "swamp",
+			name: "Hemlock swamp",
+			era: 0,
+			main: "hemlock",
+			mainW: [60, 90],
+			rest: ["spruce"],
+			slopes: [
+				"flat",
+				"flat",
+				"rolling"
+			],
+			landMult: .9,
+			twist: "Flat or rolling only; land ×0.9"
+		},
+		mixed: {
+			id: "mixed",
+			name: "Mixed stand",
+			era: 1,
+			slopes: ANY_SLOPE
+		}
+	});
+	/** Cove Landing grounds, in draw order. */
+	var COVE_GROUNDS = deepFreeze([
+		"coast",
+		"headland",
+		"swamp"
+	]);
+	/** A ground id from a save (unknown or missing → 'coast', the spec's default for old tracts). */
+	function groundId(id) {
+		return typeof id === "string" && Object.prototype.hasOwnProperty.call(GROUNDS, id) ? id : "coast";
+	}
+	/**
+	* A Cove ground's mix: main share rounded to 5%, the rest one other species.
+	* Draws, in order: main share, rest species.
+	*/
+	function groundMix(rng, g) {
+		const [lo, hi] = g.mainW ?? [60, 80];
+		const w = Math.round(rngRange(rng, lo, hi) / 5) * 5;
+		const rest = rngPick(rng, g.rest ?? ["pine"]);
+		return [[g.main ?? "pine", w], [rest, 100 - w]];
+	}
+	var FELL_STD = {
+		wind: 1,
+		hinge: [.08, .2],
+		cut: 1,
+		half: 10,
+		fallS: .9,
+		rockLoss: .4,
+		chairBelow: 0,
+		tag: ""
+	};
+	var FELL_RULES = deepFreeze({
+		pine: {
+			...FELL_STD,
+			tag: "Fogbound pine: the honest all-rounder. Standard wind, hinge and cut."
+		},
+		spruce: {
+			...FELL_STD,
+			wind: 1.5,
+			cut: 1.25,
+			fallS: .8,
+			tag: "Shore spruce: tall and shallow-rooted. The wind pushes it half again as hard, and the back cut goes quicker."
+		},
+		hemlock: {
+			...FELL_STD,
+			hinge: [.1, .2],
+			rockLoss: .6,
+			chairBelow: .05,
+			tag: "Mist hemlock: brittle. The green hinge starts at 10%, a hinge under 5% barber-chairs, and a rock break loses 60%."
+		}
+	});
+	/** Felling rules for a species (the standard rules when it has none of its own yet). */
+	function fellRules(sp) {
+		const id = speciesId(sp);
+		return id && FELL_RULES[id] || {
+			...FELL_STD,
+			tag: id ? `${SPECIES[id].name}: standard wind, hinge and cut.` : ""
+		};
+	}
+	/** Green hinge zone for a species: Mill file widens every species alike (−2 points low, +5 high). */
+	function hingeZone(sp, file) {
+		const [lo, hi] = fellRules(sp).hinge;
+		return file ? [Math.round((lo - .02) * 100) / 100, Math.round((hi + .05) * 100) / 100] : [lo, hi];
+	}
+	var LEN_STD = {
+		8: .9,
+		10: 1,
+		12: 1.05,
+		14: 1.1,
+		16: 1.15
+	};
+	var BUCK_STD = {
+		L: [38, 62],
+		d0: [20, 32],
+		top: 8,
+		knots: [2, 4],
+		knotAt: [.3, .95],
+		rot: [
+			.5,
+			2,
+			6
+		],
+		sweep: .45,
+		lenP: LEN_STD,
+		g1Prime: 12,
+		pitchMult: 1,
+		tag: "",
+		guide: ""
+	};
+	var BUCK_RULES = deepFreeze({
+		pine: {
+			...BUCK_STD,
+			pitchMult: 2,
+			tag: "Fogbound pine: pitch pockets. Bucking finds amber pitch twice as often.",
+			guide: "<b>Fogbound pine:</b> pitch pockets, so amber pitch turns up twice as often. 16 ft logs pay ×1.15."
+		},
+		spruce: {
+			...BUCK_STD,
+			L: [44, 66],
+			d0: [16, 26],
+			knots: [3, 5],
+			knotAt: [.5, .95],
+			rot: [
+				.2,
+				2,
+				4
+			],
+			sweep: .2,
+			lenP: {
+				...LEN_STD,
+				16: 1.25
+			},
+			g1Prime: 14,
+			tag: "Shore spruce: clear butt logs. Knots only in the top half, and 16 ft spar lengths pay ×1.25.",
+			guide: "<b>Shore spruce:</b> knots only in the top half, so the butt logs run clear. 16 ft spar lengths pay ×1.25; Prime needs a grade 1 log of 14 ft."
+		},
+		hemlock: {
+			...BUCK_STD,
+			L: [36, 56],
+			d0: [22, 34],
+			knots: [2, 3],
+			rot: [
+				.8,
+				4,
+				10
+			],
+			sweep: .3,
+			shake: [
+				.4,
+				4,
+				6
+			],
+			lenP: {
+				8: 1,
+				10: 1,
+				12: 1,
+				14: 1,
+				16: 1
+			},
+			tag: "Mist hemlock: deep butt rot, and ring shake can drop a band of the stem to grade 3. Every length pays the same.",
+			guide: "<b>Mist hemlock:</b> butt rot runs 4–10 ft, and ring shake makes any sawlog that crosses it grade 3. Every sawlog length pays the same."
+		}
+	});
+	/** Bucking rules for a species (the standard rules when it has none of its own yet). */
+	function buckRules(sp) {
+		const id = speciesId(sp);
+		return id && BUCK_RULES[id] || {
+			...BUCK_STD,
+			tag: id ? `${SPECIES[id].name}: standard stem.` : ""
+		};
+	}
+	var SPECIES_CLIENTS = deepFreeze({
+		spruce: {
+			client: "the Admiralty spar yard",
+			line: "long straight spruce"
+		},
+		pine: {
+			client: "the Company shipwrights",
+			line: "pine for planking"
+		},
+		hemlock: {
+			client: "Landfall Pier Works",
+			line: "hemlock for pilings and pier decking"
+		},
+		maple: {
+			client: "Harbor Planing Mill",
+			line: "maple for flooring"
+		},
+		oak: {
+			client: "the Cove cooperage",
+			line: "oak for staves"
+		},
+		cloudwood: {
+			client: "the Landfall City works",
+			line: "cloudwood beams"
+		}
+	});
+	/** Chance a regular charter order is a species order. */
+	var SPECIES_ORDER_CHANCE = 1 / 3;
+	/** Species order premium range (any wood pays 15–40%). */
+	var SPECIES_ORDER_PREM = deepFreeze([.3, .55]);
+	/** Share used to size a species order for a species not in the current tract. */
+	var SPECIES_ORDER_OFF_TRACT = .6;
+	/** "Best for" line per species. */
+	var BEST_FOR = deepFreeze({
+		pine: "boards and amber pitch",
+		spruce: "Prime spars (3 from a perfect fall)",
+		hemlock: "tanbark in Spring and Summer",
+		maple: "boards",
+		oak: "boards",
+		cloudwood: "big timber"
+	});
+	/** Weight tag for a listing: skid and haul move ÷ weight (light under 0.97, heavy over 1.03). */
+	function weightTag(wt) {
+		const f = Math.round(100 / wt) / 100;
+		if (wt < .97) return {
+			key: "light",
+			text: `Light: skid and haul ×${f}`
+		};
+		if (wt > 1.03) return {
+			key: "heavy",
+			text: `Heavy: skid and haul ×${f}`
+		};
+		return {
+			key: "average",
+			text: "Average weight"
+		};
+	}
+	/** Hint thresholds: fallers/teams ratio above TEAMS_SHORT or below FALLERS_SHORT. */
+	var CAMP_FIT_TEAMS_SHORT = 1.25;
+	var CAMP_FIT_FALLERS_SHORT = .8;
+	/**
+	* Camp fit for a lot: your felling capacity on its trees (chops ÷ hp × bf)
+	* against your skid and haul capacity on its wood (the slower of the two,
+	* ÷ the lot's weight).
+	*/
+	function campFit(c, t) {
+		const fell = t.hp > 0 ? c.fell / t.hp * t.bf : 0;
+		const move = Math.min(c.skid, c.haul) / (t.wt || 1);
+		if (!(fell > 0) || !(move > 0)) return {
+			key: "none",
+			ratio: 0,
+			text: "Camp fit: hire fallers and teams to see how this lot suits your camp."
+		};
+		const ratio = fell / move;
+		if (ratio > 1.25) return {
+			key: "teams",
+			ratio,
+			text: "Camp fit: your fallers are ahead of your teams here, so this wood will pile up at the stump. Lighter wood suits this camp."
+		};
+		if (ratio < .8) return {
+			key: "fallers",
+			ratio,
+			text: "Camp fit: your teams are ahead of your fallers here. Heavy, easy-felling wood suits this camp."
+		};
+		return {
+			key: "good",
+			ratio,
+			text: "Camp fit: good. Your fallers and teams are matched on this wood."
+		};
+	}
+	/**
+	* Bd ft per second the camp would work on a lot: the slowest of felling
+	* (chops ÷ hp × bf), bucking, and skidding and hauling ÷ weight (hauling also
+	* × distance factor).
+	*/
+	function tractThroughput(c, t, distance = 1) {
+		const wt = t.wt || 1;
+		return Math.min(t.hp > 0 ? c.fell / t.hp * t.bf : 0, c.buck, c.skid / wt, c.haul * distance / wt);
+	}
+	/**
+	* A buyer's score for a listing, "best value per work for my camp": value per
+	* dollar of land (× distance factor) times the dollars a second the camp would
+	* earn on it. With no crews the throughput floors at a token rate, so the
+	* score falls back to value per dollar and value per bd ft.
+	*/
+	function tractScore(c, t, distance = 1) {
+		const thr = Math.max(.01, tractThroughput(c, t, distance));
+		return t.trees * t.val * distance / Math.max(1, t.price ?? 1) * thr * (t.bf > 0 ? t.val / t.bf : 0);
+	}
+	//#endregion
 	//#region packages/core/src/generators.ts
 	/**
 	* Procedural generation with an injected RNG (tech plan M2): land-office
@@ -2228,8 +2652,8 @@ var Core = (function(exports) {
 	* Draw order is part of the contract. Each function documents the order of
 	* its rng() calls; the seeded sim baseline depends on it.
 	*/
-	/** Build a tract with weight-averaged tree stats. No randomness. */
-	function makeTract(name, mix, trees, miles, slope) {
+	/** Build a tract with weight-averaged tree stats (and skid/haul weight). No randomness. */
+	function makeTract(name, mix, trees, miles, slope, ground = "coast") {
 		let hp = 0, bf = 0, val = 0, w = 0;
 		mix.forEach(([id, wt]) => {
 			const s = SPECIES[id];
@@ -2248,7 +2672,9 @@ var Core = (function(exports) {
 			hp: hp / w,
 			bf: bf / w,
 			val: val / w,
-			road: false
+			road: false,
+			ground,
+			wt: mixWeight(mix)
 		};
 	}
 	function lotName(rng) {
@@ -2256,27 +2682,32 @@ var Core = (function(exports) {
 	}
 	/**
 	* A land-office listing for the current era.
-	* Draws, in order: older-tier roll, species a, species b, weight, trees, miles, slope, place, lot.
+	* Draws, in order: older-tier roll, then
+	* - on Cove ground (era 0, or the older-tier roll down to Cove Landing): ground, main share, rest species, trees, miles, slope, place, lot;
+	* - otherwise (the slice-1 mixed stand): species a, species b, weight, trees, miles, slope, place, lot.
+	* Nine draws either way. Hemlock swamps are flat or rolling and price ×0.9.
 	*/
 	function genTract(rng, era, o) {
 		const tier = Math.max(0, era - (rng() < .3 ? 1 : 0));
-		const pool = ERA_SPECIES[era] ?? [];
-		const a = rngPick(rng, pool);
-		let b = rngPick(rng, pool);
-		if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
-		const wa = Math.round(rngRange(rng, 5, 8));
-		const mix = [[a, wa], [b, 10 - wa]];
+		let mix, ground;
+		if (tier === 0) {
+			ground = rngPick(rng, COVE_GROUNDS);
+			mix = groundMix(rng, GROUNDS[ground]);
+		} else {
+			ground = "mixed";
+			const pool = ERA_SPECIES[era] ?? [];
+			const a = rngPick(rng, pool);
+			let b = rngPick(rng, pool);
+			if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
+			const wa = Math.round(rngRange(rng, 5, 8));
+			mix = [[a, wa], [b, 10 - wa]];
+		}
+		const g = GROUNDS[ground];
 		const trees = Math.round((TRACT_BASE[tier] ?? 0) * rngRange(rng, .6, 1.5));
 		const miles = Math.round(rngRange(rng, 1, 12) * 2) / 2;
-		const slope = rngPick(rng, [
-			"flat",
-			"flat",
-			"rolling",
-			"rolling",
-			"steep"
-		]);
-		const t = makeTract(lotName(rng), mix, trees, miles, slope);
-		t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult);
+		const slope = rngPick(rng, g.slopes);
+		const t = makeTract(lotName(rng), mix, trees, miles, slope, ground);
+		t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * (g.landMult ?? 1));
 		const sz = (o.thinSurvey ? .8 : 1) * (o.cruiser ? 1.25 : 1);
 		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
 		return t;
@@ -2362,7 +2793,7 @@ var Core = (function(exports) {
 			"flat",
 			"rolling"
 		]);
-		const t = makeTract(name, [[a, wa], [b, 10 - wa]], trees, miles, slope);
+		const t = makeTract(name, [[a, wa], [b, 10 - wa]], trees, miles, slope, "mixed");
 		t.hire = {
 			mill: rngPick(rng, MILLS),
 			rate: HIRE_RATE
@@ -2370,25 +2801,41 @@ var Core = (function(exports) {
 		t.val *= t.hire.rate;
 		return t;
 	}
+	var sig2 = (raw) => {
+		const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+		return Math.round(raw / mag) * mag;
+	};
 	/**
 	* A charter order sized to haul capacity (bd ft/s, floor 8): volume over a
 	* 4-8 minute window, rounded to two significant figures.
 	* `perBf` is the current tract's value per board foot (0.2 with no tract).
-	* Draws, in order: duration, volume share, mill, premium.
+	* Draws, in order: duration, volume share, mill, premium; then, only with
+	* `so` naming at least one species: species roll, and on a hit (1 in 3) the
+	* species and its premium. A species order is sized by that species' share
+	* of the current tract (SPECIES_ORDER_OFF_TRACT when it is not in it), pays
+	* +30–55%, names the species' client and carries no penalty.
 	*/
-	function genOffer(rng, haulCapacity, perBf) {
+	function genOffer(rng, haulCapacity, perBf, so) {
 		const cap = Math.max(8, haulCapacity);
 		const dur = Math.round(rngRange(rng, 240, 480) / 30) * 30;
 		const raw = Math.max(2e3, cap * dur * rngRange(rng, .4, .75));
-		const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
-		const vol = Math.round(raw / mag) * mag;
-		return {
+		const vol = sig2(raw);
+		const o = {
 			mill: rngPick(rng, MILLS),
 			vol,
 			dur,
 			prem: Math.round(rngRange(rng, .15, .4) * 100) / 100,
 			penalty: Math.round(vol * perBf * .25)
 		};
+		if (!so || !so.species.length || rng() >= .3333333333333333) return o;
+		const sp = rngPick(rng, so.species);
+		const share = so.share[sp] ?? 0;
+		o.sp = sp;
+		o.mill = SPECIES_CLIENTS[sp].client;
+		o.vol = Math.max(1e3, sig2(raw * (share > 0 ? share : SPECIES_ORDER_OFF_TRACT)));
+		o.prem = Math.round(rngRange(rng, SPECIES_ORDER_PREM[0], SPECIES_ORDER_PREM[1]) * 100) / 100;
+		o.penalty = 0;
+		return o;
 	}
 	/** Weighted pick of a species from a tract mix. One draw. Null only if float rounding exhausts the loop. */
 	function pickFromMix(rng, mix) {
@@ -2649,7 +3096,7 @@ var Core = (function(exports) {
 				"structure",
 				"sell"
 			],
-			from: "Perfect falls and grade 1 cuts of 12 ft or more; idle crews about 1 tree in 50"
+			from: "Perfect falls (3 from a spruce) and grade 1 cuts of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50"
 		},
 		{
 			id: "logging.burl",
@@ -2795,17 +3242,20 @@ var Core = (function(exports) {
 		{
 			species: "pine",
 			item: "logging.prime_spar",
-			perfectFall: 2
+			perfectFall: 1,
+			buckMinLen: 12
 		},
 		{
 			species: "spruce",
 			item: "logging.prime_spar",
-			perfectFall: 2
+			perfectFall: 3,
+			buckMinLen: 14
 		},
 		{
 			species: "hemlock",
 			item: "logging.prime_spar",
-			perfectFall: 1
+			perfectFall: 1,
+			buckMinLen: 12
 		}
 	]);
 	var PRIME_BY_SP = new Map(PRIME_RULES.map((p) => [p.species, p]));
@@ -2819,14 +3269,14 @@ var Core = (function(exports) {
 	}
 	/** Bucking score needed before grade 1 cuts are stamped Prime. */
 	var BUCK_PRIME_SCORE = .9;
-	/** Shortest grade 1 sawlog that can be stamped Prime, and the most Prime one stem gives. */
+	/** Shortest grade 1 sawlog that can be stamped Prime by default (spruce needs 14 ft), and the most Prime one stem gives. */
 	var BUCK_PRIME_MIN_LEN = 12;
 	var BUCK_PRIME_MAX = 2;
-	/** Prime from one bucked stem: 1 per grade 1 sawlog ≥ 12 ft when the score is ≥ 90%, at most 2. */
+	/** Prime from one bucked stem: 1 per grade 1 sawlog of the species' Prime length (12 ft; spruce 14 ft) when the score is ≥ 90%, at most 2. */
 	function primeFromBuck(species, segments, score) {
 		const r = PRIME_BY_SP.get(species);
 		if (!r || score < .9) return null;
-		const n = Math.min(2, segments.filter((s) => s.g === 1 && s.len >= 12).length);
+		const n = Math.min(2, segments.filter((s) => s.g === 1 && s.len >= r.buckMinLen).length);
 		return n > 0 ? {
 			item: r.item,
 			qty: n
@@ -2968,10 +3418,11 @@ var Core = (function(exports) {
 	/**
 	* A mini-game's drop roll. Draws: the chance roll; on a hit, the entry pick.
 	* Low tier rolls on entries with minTier 0 ("common"), mid on minTier ≤ 1, top on all.
+	* `weightMult` favours an item (pine's pitch pockets: amber pitch ×2 in bucking).
 	*/
-	function rollDrop(table, tier, rng, chanceMult = 1) {
+	function rollDrop(table, tier, rng, chanceMult = 1, weightMult = {}) {
 		if (rng() >= table.baseChance * table.tierMult[tier] * chanceMult) return null;
-		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight);
+		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight * (weightMult[x.item] ?? 1));
 		return e ? {
 			item: e.item,
 			qty: e.qty[0]
@@ -3672,6 +4123,7 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.BEST_FOR = BEST_FOR;
 	exports.BIG_STICK_CLEAR = BIG_STICK_CLEAR;
 	exports.BOARD_GRADES = BOARD_GRADES;
 	exports.BOOST_BANK = BOOST_BANK;
@@ -3681,8 +4133,12 @@ var Core = (function(exports) {
 	exports.BUCK_PRIME_MAX = BUCK_PRIME_MAX;
 	exports.BUCK_PRIME_MIN_LEN = BUCK_PRIME_MIN_LEN;
 	exports.BUCK_PRIME_SCORE = BUCK_PRIME_SCORE;
+	exports.BUCK_RULES = BUCK_RULES;
 	exports.BUNDLE_BF = BUNDLE_BF;
+	exports.CAMP_FIT_FALLERS_SHORT = CAMP_FIT_FALLERS_SHORT;
+	exports.CAMP_FIT_TEAMS_SHORT = CAMP_FIT_TEAMS_SHORT;
 	exports.CLOSE_VOL = CLOSE_VOL;
+	exports.COVE_GROUNDS = COVE_GROUNDS;
 	exports.COVE_LOG_PRICE = COVE_LOG_PRICE;
 	exports.CURRENCIES = CURRENCIES;
 	exports.DROP_TABLES = DROP_TABLES;
@@ -3690,8 +4146,10 @@ var Core = (function(exports) {
 	exports.ERAS = ERAS;
 	exports.ERA_SHARES = ERA_SHARES;
 	exports.ERA_SPECIES = ERA_SPECIES;
+	exports.FELL_RULES = FELL_RULES;
 	exports.FOUNDING_CRATE = FOUNDING_CRATE;
 	exports.GRADE_MIX = GRADE_MIX;
+	exports.GROUNDS = GROUNDS;
 	exports.HAUL_CLEAN_BONUS = HAUL_CLEAN_BONUS;
 	exports.HAUL_FLAT = HAUL_FLAT;
 	exports.HAUL_GHOST_STEP = HAUL_GHOST_STEP;
@@ -3745,9 +4203,16 @@ var Core = (function(exports) {
 	exports.SLOPES = SLOPES;
 	exports.SPECIAL_ORDERS = SPECIAL_ORDERS;
 	exports.SPECIES = SPECIES;
+	exports.SPECIES_ALIAS = SPECIES_ALIAS;
+	exports.SPECIES_CLIENTS = SPECIES_CLIENTS;
+	exports.SPECIES_ORDER_CHANCE = SPECIES_ORDER_CHANCE;
+	exports.SPECIES_ORDER_OFF_TRACT = SPECIES_ORDER_OFF_TRACT;
+	exports.SPECIES_ORDER_PREM = SPECIES_ORDER_PREM;
+	exports.SPECIES_SEASON = SPECIES_SEASON;
 	exports.STAGES = STAGES;
 	exports.START_SAWYERS = START_SAWYERS;
 	exports.STRUCTURES = STRUCTURES;
+	exports.TANBARK = TANBARK;
 	exports.TRACT_BASE = TRACT_BASE;
 	exports.TURN_TIME_CARRIAGE = TURN_TIME_CARRIAGE;
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
@@ -3762,8 +4227,10 @@ var Core = (function(exports) {
 	exports.bountyCap = bountyCap;
 	exports.bountyMetric = bountyMetric;
 	exports.bountyPay = bountyPay;
+	exports.buckRules = buckRules;
 	exports.bundlesStillNeeded = bundlesStillNeeded;
 	exports.bunkhouseMult = bunkhouseMult;
+	exports.campFit = campFit;
 	exports.canCloseCamp = canCloseCamp;
 	exports.canCloseMill = canCloseMill;
 	exports.cantCells = cantCells;
@@ -3786,6 +4253,7 @@ var Core = (function(exports) {
 	exports.equipmentCostTotal = equipmentCostTotal;
 	exports.equipmentMaxAffordable = equipmentMaxAffordable;
 	exports.eraCost = eraCost;
+	exports.fellRules = fellRules;
 	exports.fitTractPrice = fitTractPrice;
 	exports.freeSawyers = freeSawyers;
 	exports.genHaulTrack = genHaulTrack;
@@ -3795,6 +4263,8 @@ var Core = (function(exports) {
 	exports.genSawLog = genSawLog;
 	exports.genTract = genTract;
 	exports.grantBoost = grantBoost;
+	exports.groundId = groundId;
+	exports.groundMix = groundMix;
 	exports.handAmount = handAmount;
 	exports.haulBonus = haulBonus;
 	exports.haulDrive = haulDrive;
@@ -3807,6 +4277,7 @@ var Core = (function(exports) {
 	exports.haulRules = haulRules;
 	exports.haulSpill = haulSpill;
 	exports.haulStepCar = haulStepCar;
+	exports.hingeZone = hingeZone;
 	exports.idlePrimeChance = idlePrimeChance;
 	exports.improvementMult = improvementMult;
 	exports.improvementProgress = improvementProgress;
@@ -3817,6 +4288,7 @@ var Core = (function(exports) {
 	exports.legacyBase = legacyBase;
 	exports.legacyGain = legacyGain;
 	exports.lumberPrice = lumberPrice;
+	exports.mainSpecies = mainSpecies;
 	exports.makeTract = makeTract;
 	exports.marketPrice = marketPrice;
 	exports.maxSawyers = maxSawyers;
@@ -3826,6 +4298,8 @@ var Core = (function(exports) {
 	exports.millPower = millPower;
 	exports.millRate = millRate;
 	exports.missedPenalty = missedPenalty;
+	exports.mixShare = mixShare;
+	exports.mixWeight = mixWeight;
 	exports.mobilization = mobilization;
 	exports.newHaulCar = newHaulCar;
 	exports.newSawCut = newSawCut;
@@ -3858,18 +4332,25 @@ var Core = (function(exports) {
 	exports.sawValue = sawValue;
 	exports.sawyerCost = sawyerCost;
 	exports.seasonFactor = seasonFactor;
+	exports.seasonValueFactor = seasonValueFactor;
 	exports.skidTurnLoad = skidTurnLoad;
 	exports.skidTurnSizes = skidTurnSizes;
 	exports.skidTurnSpeed = skidTurnSpeed;
 	exports.slopeFactor = slopeFactor;
+	exports.speciesId = speciesId;
+	exports.speciesSeasonTrait = speciesSeasonTrait;
+	exports.speciesSeasonValue = speciesSeasonValue;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
 	exports.streamRng = streamRng;
 	exports.structureDef = structureDef;
 	exports.structureNext = structureNext;
 	exports.tractPrice = tractPrice;
+	exports.tractScore = tractScore;
+	exports.tractThroughput = tractThroughput;
 	exports.treeValue = treeValue;
 	exports.turnLog = turnLog;
+	exports.weightTag = weightTag;
 	return exports;
 })({});
 </script><!-- /outpost-core -->
@@ -3958,9 +4439,11 @@ const vmult = () => umult('value') * pmult('value');
 const cmult = () => umult('click') * pmult('click');
 const boostF = () => Core.boostFactor(!!perk('bull'));
 const boostTxt = () => perk('absentee') ? 'no faster (absentee directors)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every other stage' : ` (up to ${Core.BOOST_STAGES} stages at a time)`);
-// effective per second, before payroll efficiency
-const rate = stage => Core.stageRate(stage, {base: baseRate(stage), season: seasonF(stage), boost: (S.boost[stage]||0) > S.t ? boostF() : 1,
-  slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1});
+// skid and haul weight of the wood being worked: the current tract's mix (species overhaul; the landing does not track species)
+const wtNow = () => { const t = tract(); return t && t.wt > 0 ? t.wt : 1; };
+// effective per second, before payroll efficiency; idle skidding and hauling move bd ft ÷ weight (pass wt = 1 for pine-weight capacity)
+const rate = (stage, wt = wtNow()) => Core.stageRate(stage, {base: baseRate(stage), season: seasonF(stage), boost: (S.boost[stage]||0) > S.t ? boostF() : 1,
+  slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1, weight: wt});
 function fellBf(chops){ const t = tract(); return t ? chops / t.hp * t.bf : 0; }
 // per minute; crews with nothing to do are paid a quarter rate
 // the bunkhouse (raised with plank bundles from the Sawmill) makes crews cheaper to keep and to hire
@@ -4007,10 +4490,19 @@ function buildRoad(){
 }
 
 // ---------- contracts
+// species orders name a species in the current tract or on the land office board, sized by its share of the current tract
+function offerSpecies(){
+  const t = tract(), species = [];
+  [t, ...S.forSale].forEach(x => { if (x && x.mix) x.mix.forEach(([id]) => { if (SP[id] && !species.includes(id)) species.push(id); }); });
+  const share = {}; if (t) species.forEach(id => { share[id] = Core.mixShare(t.mix, id); });
+  return {species, share};
+}
 function genOffer(){
   const t = tract();
-  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2);
+  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, offerSpecies());
 }
+// a species order counts only that species' share of each delivery, by the current tract's mix
+const orderShare = c => !c || !c.sp ? 1 : tract() ? Core.mixShare(tract().mix, c.sp) : 0;
 const genHire = () => Core.genHire(Math.random, S.era);
 const hireActive = () => S.tracts.some(t => t.hire);
 const mobilization = t => Core.mobilization(t.trees, t.val, upkeep());
@@ -4037,9 +4529,10 @@ function accept(i){
 }
 
 // ---------- simulation
+// species seasonal traits (hemlock tanbark in Spring and Summer, maple in Winter) come in through Core.seasonValueFactor
 function fellK(t, k){
   t.left -= k; S.felled += k;
-  S.stems.bf += k*t.bf; S.stems.val += k*t.val;
+  S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, season());
 }
 function finishTract(){
   const t = S.tracts.shift();
@@ -4076,7 +4569,7 @@ function deliver(amt){
   const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100)*(sh > 0 ? 1 - sh*.5 : 1);
   let rev = base;
   const c = S.contract;
-  if (c){ const into = Math.min(amt, c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
+  if (c){ const into = Math.min(amt*orderShare(c), c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
     if (c.done >= c.vol - 1e-6){ S.stats.contracts++; note(`Filled the ${c.mill} contract. ${bf(c.vol)} delivered.`); S.contract = null; contractFilled(c); } }
   S.earned += rev; S.bucket += rev; S.run.earned += rev;
   const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back;
@@ -4126,8 +4619,8 @@ function tick(dt){
     S.stems.bf *= .75; S.stems.val *= .75; note('Dry summer: a slash fire burned a quarter of the stems on the ground.'); }
   // contracts
   if (S.contract && S.t >= S.contract.end){
-    const c = S.contract; const pen = Core.missedPenalty(c.penalty, c.done, c.vol, !!perk('handshake')); S.cash = Math.max(0, S.cash - pen);
-    note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. Paid a ${money(pen)} penalty.`);
+    const c = S.contract; const pen = Core.missedPenalty(c.penalty, c.done, c.vol, !!perk('handshake'), !!c.sp); S.cash = Math.max(0, S.cash - pen);
+    note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. ` + (c.sp ? 'A species order is free to miss: no penalty.' : `Paid a ${money(pen)} penalty.`));
     S.contract = null;
   }
   S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !S.contract)) refreshOffers();
@@ -4243,11 +4736,27 @@ function mixText(t){
   const tot = t.mix.reduce((a,m) => a+m[1], 0);
   return t.mix.map(([id,w]) => `${SP[id].name.split(' ').pop()} ${Math.round(w/tot*100)}%`).join(' · ');
 }
+// the land office's listing card: ground, species bar, value and chops per tree, weight tag, what the lot is best for, and camp fit
+const campCaps = () => ({fell: rate('fell'), buck: rate('buck'), skid: rate('skid', 1), haul: rate('haul', 1)});
+function speciesBar(t){
+  const tot = t.mix.reduce((a,m) => a+m[1], 0);
+  return `<span class="spbar" aria-hidden="true">${t.mix.map(([id,w]) => `<i class="sp-${id}" style="width:${(w/tot*100).toFixed(1)}%"></i>`).join('')}</span>`;
+}
+function listingCard(t, i, fitKey){
+  const g = Core.GROUNDS[Core.groundId(t.ground)], wt = Core.weightTag(t.wt || 1), main = Core.mainSpecies(t.mix);
+  const fit = Core.campFit(campCaps(), {hp:t.hp, bf:t.bf, wt:t.wt || 1});
+  return `<div class="row lot"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>
+    <p>${fmt(t.trees)} trees · ${mixText(t)}</p>${speciesBar(t)}
+    <span class="spec">${money(t.val)} a tree · ${fmt(t.hp)} chops a tree · <span class="wt-${wt.key}">${wt.text}</span></span>
+    <span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}${g.twist ? ' · ' + g.twist : ''}</span>
+    <p>Best for: ${main ? Core.BEST_FOR[main] : 'mixed use'}</p>
+    <p class="fit fit-${fit.key}" data-fit="${fit.key}">${fit.text}</p></div>
+    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(t.price)}</button></div></div>`;
+}
 function renderSales(){
-  const key = S.forSale.map(t => t.name+t.trees).join('|');
-  list('sales', key, S.forSale.map((t,i) => `<div class="row"><div class="info"><b>${t.name}</b>
-    <p>${fmt(t.trees)} trees · ${mixText(t)}</p><span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</span></div>
-    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(t.price)}</button></div></div>`).join(''),
+  const fits = S.forSale.map(t => Core.campFit(campCaps(), {hp:t.hp, bf:t.bf, wt:t.wt || 1}).key).join(',');
+  const key = S.forSale.map(t => t.name+t.trees).join('|') + fits;
+  list('sales', key, S.forSale.map((t,i) => listingCard(t, i)).join(''),
     box => box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)));
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < t.price; });
   $('saleMeta').textContent = `The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.`;
@@ -4273,18 +4782,21 @@ function renderHire(){
 function renderContracts(){
   renderHire(); renderSpecials();
   const c = S.contract;
-  const key = c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol).join('|');
+  const key = c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|');
+  // a species order: the client wants one species; only its share of each delivery counts, and missing it costs nothing
+  const spLine = o => o.sp ? `<p class="sporder">${SP[o.sp].name} only: “${Core.SPECIES_CLIENTS[o.sp].line}”. Counts the ${SP[o.sp].name.split(' ').pop()} share of each delivery` +
+    (tract() ? ` (${Math.round(Core.mixShare(tract().mix, o.sp)*100)}% of ${tract().name})` : '') + '.</p>' : '';
   list('contracts', key, c
-    ? `<div class="contract"><b>${c.mill}</b><span class="spec"> · +${Math.round(c.prem*100)}% on deliveries</span>
+    ? `<div class="contract"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Species order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on deliveries</span>${spLine(c)}
        <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
-    : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>
-       <p>${bf(o.vol)} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p><span class="spec">Penalty if missed: up to ${money(o.penalty)}</span></div>
+    : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>${o.sp ? ' <span class="chipl sp">Species order</span>' : ''}
+       <p>${bf(o.vol)}${o.sp ? ' of ' + SP[o.sp].name.split(' ').pop() : ''} within ${mins(o.dur)} · +${Math.round(o.prem*100)}% premium</p>${spLine(o)}<span class="spec">${o.sp ? 'Free to miss: no penalty' : `Penalty if missed: up to ${money(o.penalty)}`}</span></div>
        <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No charter orders right now.</p>'),
     box => box.querySelectorAll('button[data-o]').forEach(b => b.onclick = () => accept(+b.dataset.o)));
   if (c){
     $('cBar').style.width = (c.done/c.vol*100).toFixed(1)+'%';
     $('cDone').textContent = `${bf(c.done)} of ${bf(c.vol)}`;
-    const left = c.end - S.t, need = (c.vol - c.done)/Math.max(1e-9, rate('haul'));
+    const left = c.end - S.t, need = (c.vol - c.done)/Math.max(1e-9, rate('haul')*orderShare(c));
     $('cLeft').textContent = `${mins(Math.max(0,left))} left` + (need > left ? ' · behind pace' : ' · on pace');
     $('cLeft').className = need > left ? 'neg' : 'pos';
   }
@@ -4500,7 +5012,8 @@ function setGuide(kind){
   const l = $('mgGuideL'); if (BUCK_GUIDE == null) BUCK_GUIDE = l.innerHTML;
   const saw = kind === 'saw', t = saw ? 'How to saw for grade' : 'How to buck a stem';
   $('mgGuideT').textContent = t; $('mgGuideBtn').setAttribute('aria-label', t); $('mgGuideBtn').title = t;
-  l.innerHTML = saw ? SAW_GUIDE.map(x => `<li>${x}</li>`).join('') : BUCK_GUIDE;
+  // the bucking guide lists the species rules too (Core.BUCK_RULES)
+  l.innerHTML = saw ? SAW_GUIDE.map(x => `<li>${x}</li>`).join('') : BUCK_GUIDE + `<li class="sprules">${['pine','spruce','hemlock'].map(id => Core.BUCK_RULES[id].guide).join(' ')}</li>`;
 }
 function gearLine(kind){
   const gear = UPG.filter(u => u.game && u.game.split(' ').includes(kind));
@@ -4569,16 +5082,19 @@ mgEl.addEventListener('click', e => { if (e.target === mgEl) closeMG(); });
 // --- felling
 const STUMP = {x:320, y:372};
 const polar = (a, r) => ({x: STUMP.x + r*Math.sin(a*Math.PI/180), y: STUMP.y - r*Math.cos(a*Math.PI/180)});
+// species felling rules (Core.fellRules): wind, hinge zone, back-cut speed, fall time and how a miss breaks; spruce headlands add wind
+const fellWindMult = sp => Core.fellRules(sp).wind * ((tract() && Core.GROUNDS[Core.groundId(tract().ground)].windMult) || 1);
 function fellInit(){
-  const gap = rnd(-45,45), half = 10;
+  const sp = S.vis, R = Core.fellRules(sp), gap = rnd(-45,45), half = R.half;
   const windy = season() === 'Winter' || season() === 'Spring';
-  const wind = {dir: Math.random() < .5 ? -1 : 1, str: windy ? rnd(.35,1) : rnd(0,.6)};
+  const wind = {dir: Math.random() < .5 ? -1 : 1, str: windy ? rnd(.35,1) : rnd(0,.6), mult: fellWindMult(sp)};
   const rocks = [];
   for (let k=0; k<2; k++){ let a, n=0; do { a = rnd(-80,80); n++; } while (n < 50 && (Math.abs(a-gap) < half+12 || rocks.some(r => Math.abs(r-a) < 16))); rocks.push(a); }
   const stand = [];
   for (let a=-88; a<=88; a+=9){ if (Math.abs(a-gap) < half+4) continue; stand.push({a:a+rnd(-2,2), r:240+rnd(-22,22), s:rnd(13,19)}); }
-  F = {phase:'aim', sweep:Math.random()*6, aim:0, hinge:1, holding:false, armed:false, gap, half, wind, rocks, stand, fallP:0, final:0, out:null, sp:S.vis, sat:false};
-  status(`Press when the line points at the opening. Wind from the ${wind.dir > 0 ? 'left' : 'right'} will push the fall ${wind.dir > 0 ? 'right' : 'left'}, so aim against it.`);
+  F = {phase:'aim', sweep:Math.random()*6, aim:0, hinge:1, holding:false, armed:false, gap, half, wind, rocks, stand, fallP:0, final:0, out:null, sp, R, sat:false};
+  $('mgHelp').textContent = `${MG_HELP.fell()} ${R.tag}`;
+  status(`${R.tag} Press when the line points at the opening. Wind from the ${wind.dir > 0 ? 'left' : 'right'} will push the fall ${wind.dir > 0 ? 'right' : 'left'}, so aim against it.`);
   buttons([{label:'Done', fn:closeMG}]);
 }
 function fellPress(){
@@ -4593,25 +5109,26 @@ function fellRelease(){
 function fellStep(dt){
   if (!F) return;
   if (F.phase === 'aim'){ F.sweep += dt*(1.4 + S.era*.25); F.aim = 75*Math.sin(F.sweep); }
-  if (F.phase === 'cut' && F.holding){ F.hinge -= dt*.42*(perk('hotsaw') ? 2 : 1); if (F.hinge <= 0){ F.hinge = 0; F.holding = false; fellResolve(); } }
-  if (F.phase === 'fall'){ F.fallP = Math.min(1, F.fallP + dt/.9); if (F.fallP >= 1) fellFinish(); }
+  if (F.phase === 'cut' && F.holding){ F.hinge -= dt*.42*F.R.cut*(perk('hotsaw') ? 2 : 1); if (F.hinge <= 0){ F.hinge = 0; F.holding = false; fellResolve(); } }
+  if (F.phase === 'fall'){ F.fallP = Math.min(1, F.fallP + dt/F.R.fallS); if (F.fallP >= 1) fellFinish(); }
 }
-const hingeZone = () => has('file') ? [.06, .25] : [.08, .2];
+const hingeZone = () => Core.hingeZone(F ? F.sp : S.vis, has('file'));
 function fellResolve(){
   const h = F.hinge, [lo, hi] = hingeZone(); let noise, wm = 1, chair = false;
   const steady = has('wedges') ? .55 : 1;
-  if (h <= 0){ chair = true; noise = rnd(-25,25); }
+  // hemlock is brittle: a hinge under 5% barber-chairs too
+  if (h <= 0 || h < F.R.chairBelow){ chair = true; noise = rnd(-25,25); }
   else if (h < lo) noise = rnd(-14,14)*steady;
   else if (h <= hi) noise = rnd(-2.5,2.5)*steady;
   else if (has('wedges')) noise = rnd(-3,3);
   else { noise = rnd(-7,7); wm = 1.8; F.sat = true; }
-  F.final = F.aim + F.wind.dir*F.wind.str*14*wm + noise;
+  F.final = F.aim + F.wind.dir*F.wind.str*14*F.wind.mult*wm + noise;
   const err = Math.abs(F.final - F.gap);
   const pre = F.sat ? 'The tree sat back on a thick hinge and the wind took it. ' : h < lo && !chair ? 'The hinge was too thin to steer the fall. ' : '';
-  if (chair) F.out = {k:'chair', m:.5, text:'Barber chair. The hinge failed and the trunk split up the back. Half the value is lost.'};
+  if (chair) F.out = {k:'chair', m:.5, text:(h > 0 ? 'Brittle hemlock: a hinge under 5% gives way. ' : '') + 'Barber chair. The hinge failed and the trunk split up the back. Half the value is lost.'};
   else if (err <= F.half*.45) F.out = {k:'perfect', m:1.25, text:pre+`Perfect lay, right into the opening. Log value +25%` + (perk('sparman') ? '.' : ` and your fallers work ${boostTxt()}.`)};
   else if (err <= F.half) F.out = {k:'good', m:1.1, text:pre+'Good fall into the opening. Log value +10%.'};
-  else if (F.rocks.some(r => Math.abs(F.final - r) < 7)) F.out = {k:'broke', m:.6, text:pre+'It landed across a rock and broke. Log value −40%.'};
+  else if (F.rocks.some(r => Math.abs(F.final - r) < 7)) F.out = {k:'broke', m:1 - F.R.rockLoss, text:pre+`It landed across a rock and broke${F.R.rockLoss > .4 ? ': brittle wood shatters' : ''}. Log value −${Math.round(F.R.rockLoss*100)}%.`};
   else F.out = {k:'hung', m:.8, text:pre+'Hung up in a standing tree. Pulling it down cost you. Log value −20%.'};
   if (chair && perk('widow') && Math.random() < .5){ F.final = F.gap + rnd(-2,2);
     F.out = {k:'perfect', m:1.25, text:`The trunk started to split, then swung true. Widowmaker’s luck: a perfect lay. Log value +25%` + (perk('sparman') ? '.' : ` and your fallers work ${boostTxt()}.`)}; }
@@ -4659,8 +5176,8 @@ function fellDraw(){
   F.stand.forEach((s,i) => { const p = polar(s.a, s.r); circle(p.x, p.y, s.s, i % 2 ? C.needle : C.needle2); circle(p.x, p.y, 3, C.bark); });
   // wind
   cx.fillStyle = C.ink; cx.font = '600 13px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'right';
-  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph`, W-18, 26);
-  const wl = 20 + F.wind.str*50, wy = 42, wx = W-18-wl;
+  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph` + (F.wind.mult !== 1 ? ` · pushes this ${SP[F.sp] ? SP[F.sp].name.split(' ').pop() : 'tree'} ×${+F.wind.mult.toFixed(2)}` : ''), W-18, 26);
+  const wl = 20 + Math.min(1.6, F.wind.str*F.wind.mult)*50, wy = 42, wx = W-18-wl;
   cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath();
   if (F.wind.dir > 0){ cx.moveTo(wx, wy); cx.lineTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy-5); cx.moveTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy+5); }
   else { cx.moveTo(wx+wl, wy); cx.lineTo(wx, wy); cx.lineTo(wx+7, wy-5); cx.moveTo(wx, wy); cx.lineTo(wx+7, wy+5); }
@@ -4670,7 +5187,7 @@ function fellDraw(){
     const p = polar(F.aim, 250);
     cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.setLineDash(F.phase === 'aim' ? [8,6] : []);
     cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(p.x, p.y); cx.stroke(); cx.setLineDash([]);
-    if (has('gunstick')){ const pa = F.aim + F.wind.dir*F.wind.str*14, q = polar(pa, 280);
+    if (has('gunstick')){ const pa = F.aim + F.wind.dir*F.wind.str*14*F.wind.mult, q = polar(pa, 280);
       cx.strokeStyle = C.good; cx.lineWidth = 3; cx.setLineDash([2,5]); cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(q.x, q.y); cx.stroke(); cx.setLineDash([]);
       cx.fillStyle = C.good; cx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'center'; cx.fillText('fall line', q.x, q.y - 8); cx.textAlign = 'left'; }
   }
@@ -4715,7 +5232,7 @@ function fellDraw(){
 
 // --- bucking
 const VALID = [8,10,12,14,16];
-const LENP = {8:.9, 10:1, 12:1.05, 14:1.1, 16:1.15};
+// length values, top, knots, rot, sweep and ring shake come from the stem's species (Core.buckRules)
 const GRADEP = {1:.9, 2:.55, 3:.35};
 // a plan must reach half the best value to count as a bucking run (drafts, run goals, unlocks): sending an uncut stem is not a run
 const BUCK_COUNT_MIN = .5;
@@ -4727,20 +5244,24 @@ const buckPenalty = () => B ? Math.min(BUCK_HINT_MAX, B.hints*buckHintCost()) : 
 let buckKeep = null;
 function buckInit(){
   const t = tract();
-  if (buckKeep && !buckKeep.done){ B = buckKeep; B.hover = null; }
+  if (buckKeep && !buckKeep.done){ B = buckKeep; B.hover = null; if (!B.R) B.R = Core.buckRules(B.sp); }
   else {
-    const L = 2*Math.round(rnd(19,31));
-    const def = {knots:[], rot:null, sweep:null};
-    const nk = 2 + Math.floor(Math.random()*3);
-    for (let k=0; k<nk; k++) def.knots.push(Math.floor(rnd(.3,.95)*L) + .5);
-    if (Math.random() < .5) def.rot = [0, Math.round(rnd(2,6))];
-    if (Math.random() < .45){ const a = Math.round(rnd(.25,.55)*L); def.sweep = [a, a + Math.round(rnd(4,8))]; }
-    B = {L, d0:rnd(20,32), dTop:6, def, cuts:[], hover:null, done:false, opt:null, sp: t ? mixPick(t) : S.vis, hints:0, hint:null};
+    const sp = t ? mixPick(t) : S.vis, R = Core.buckRules(sp);
+    const L = 2*Math.round(rnd(R.L[0]/2, R.L[1]/2));
+    const def = {knots:[], rot:null, sweep:null, shake:null};
+    const nk = R.knots[0] + Math.floor(Math.random()*(R.knots[1] - R.knots[0] + 1));
+    for (let k=0; k<nk; k++) def.knots.push(Math.floor(rnd(R.knotAt[0], R.knotAt[1])*L) + .5);
+    if (Math.random() < R.rot[0]) def.rot = [0, Math.round(rnd(R.rot[1], R.rot[2]))];
+    if (Math.random() < R.sweep){ const a = Math.round(rnd(.25,.55)*L); def.sweep = [a, a + Math.round(rnd(4,8))]; }
+    // hemlock ring shake: a band of the stem where any sawlog is grade 3
+    if (R.shake && Math.random() < R.shake[0]){ const a = Math.round(rnd(.3,.75)*L); def.shake = [a, Math.min(L, a + Math.round(rnd(R.shake[1], R.shake[2])))]; }
+    B = {L, d0:rnd(R.d0[0], R.d0[1]), dTop:6, def, cuts:[], hover:null, done:false, opt:null, sp, R, hints:0, hint:null};
     B.optPre = optimal();
   }
   B.amt = Math.min(S.stems.bf, Math.max(t ? t.bf : 200, rate('buck')*25));
   buckKeep = B;
-  buckStatus(); buckButtons(); buckPeek();
+  $('mgHelp').textContent = `${MG_HELP.buck()} ${B.R.tag}`;
+  buckStatus(); status(`${B.R.tag} ` + $('mgStatus').textContent); buckButtons(); buckPeek();
   if (!S.ui.buckIntro) showGuide(false);
 }
 function buckButtons(focusId){
@@ -4759,15 +5280,17 @@ const frustum = (a, b) => { if (b <= a) return 0; const ra = dAt(a)/24, rb = dAt
 const pulpVol = (a, b) => { const r = B.def.rot; return r ? frustum(a, Math.min(b, r[0])) + frustum(Math.max(a, r[1]), b) : frustum(a, b); };
 function seg(a, b){
   const len = b - a, se = dAt(b), rot = overlap(a, b, B.def.rot);
-  if (!VALID.includes(len) || se < 8 || rot > 0){
-    const why = rot > 0 ? 'butt rot' : se < 8 ? 'top under 8 in' : len < 8 ? 'too short' : len > 16 ? 'too long' : 'not a sawlog length';
+  const top = B.R.top;
+  if (!VALID.includes(len) || se < top || rot > 0){
+    const why = rot > 0 ? 'butt rot' : se < top ? `top under ${top} in` : len < 8 ? 'too short' : len > 16 ? 'too long' : 'not a sawlog length';
     return {len, g:'P', bf:0, val:pulpVol(a, b)*.9, why};
   }
   let g = 1, why = '';
   if (overlap(a, b, B.def.sweep) > 0){ g = 3; why = 'sweep'; }
+  else if (overlap(a, b, B.def.shake) > 0){ g = 3; why = 'ring shake'; }
   else if (B.def.knots.some(k => k > a && k < b)){ g = 2; why = 'knots'; }
   const bf = Math.pow((se - 4)/4, 2)*len;
-  return {len, g, bf, val: bf*GRADEP[g]*LENP[len], why};
+  return {len, g, bf, val: bf*GRADEP[g]*(B.R.lenP[len] ?? 1), why};
 }
 function segsOf(cuts){ const pts = [0, ...[...cuts].sort((a,b) => a-b), B.L]; const out = [];
   for (let i=0; i<pts.length-1; i++) out.push({a:pts[i], b:pts[i+1], ...seg(pts[i], pts[i+1])}); return out; }
@@ -4831,7 +5354,7 @@ function buckSend(){
   if (counts){
     S.stats.run_buck++; if (rs >= .85) S.stats.buck85++; if (rs >= .9) S.stats.buck90++;
     if (rs >= .999){ note('Bucked a stem for its full value.'); S.stats.perfBuck++; }
-    runDone('buck', r);
+    runDone('buck', r, false, B.sp);
   }
   const pct = x => Math.round(x*100);
   status(`You got ${pct(r0)}% of the best possible value` + (pen > 0 ? `, less ${pct(pen)} points for ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}: ${pct(rs)}%` : '') +
@@ -4872,10 +5395,15 @@ function buckDraw(){
     cx.beginPath(); cx.ellipse(xOf(f), y, 5, 3.5, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
   if (B.def.knots.length){ cx.fillStyle = C.muted; cx.fillText('knots', xOf(B.def.knots[0]), cyAt(B.def.knots[0]) - dAt(B.def.knots[0])*k - 8); }
   if (sw){ cx.fillStyle = C.ink; cx.fillText('sweep', xOf((sw[0]+sw[1])/2), cyAt((sw[0]+sw[1])/2) - dAt(sw[0])*k - 22); }
-  // the top: where the stem drops under 8 in, nothing above is a sawlog
-  const top8 = (B.d0 - 8)/(B.d0 - B.dTop)*B.L;
+  // hemlock ring shake: a band of split rings drawn across the stem
+  const sh = B.def.shake;
+  if (sh){ cx.strokeStyle = C.warn; cx.lineWidth = 1.5; cx.globalAlpha = .8;
+    for (let f = sh[0]; f <= sh[1]; f += .5){ const r = dAt(f)*k*.55; cx.beginPath(); cx.arc(xOf(f), cyAt(f), Math.max(2, r), -.6, .6); cx.stroke(); }
+    cx.globalAlpha = 1; cx.fillStyle = C.warn; cx.font = '600 11px ' + font; cx.fillText('ring shake', xOf((sh[0]+sh[1])/2), cyAt(sh[0]) + dAt(sh[0])*k + 16); }
+  // the top: where the stem drops under the species' sawlog top, nothing above is a sawlog
+  const topIn = B.R.top, top8 = (B.d0 - topIn)/(B.d0 - B.dTop)*B.L;
   if (guide && top8 < B.L){ cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.setLineDash([2,3]); cx.beginPath(); cx.moveTo(xOf(top8), cy0 - 30); cx.lineTo(xOf(top8), cy0 + 30); cx.stroke(); cx.setLineDash([]);
-    cx.fillStyle = C.muted; cx.font = '11px ' + font; cx.fillText('8 in top', xOf(top8), cy0 + 44); }
+    cx.fillStyle = C.muted; cx.font = '11px ' + font; cx.fillText(`${topIn} in top`, xOf(top8), cy0 + 44); }
   // hovered piece, colored by what it would make
   const hft = B.hover && !B.done ? Math.round((B.hover.x - 40)/560*B.L) : null, hov = hft != null && hft > 0 && hft < B.L;
   const anchor = hov ? Math.max(0, ...B.cuts.filter(c => c < hft)) : Math.max(0, ...B.cuts);
@@ -5331,11 +5859,11 @@ function queueDraft(q, why){
 }
 // every mini-game run fills the draft meter; draft n from games takes n runs (1, 2, 3...), so play accelerates without flooding
 // each run also makes one drop roll for a find (`again` marks a second count of the same run, e.g. Highballer, which rolls no second find)
-function runDone(kind, q, again){
+function runDone(kind, q, again, sp){
   const r = S.run; r.games = (r.games||0) + 1; r.pq = Math.max(r.pq || 0, q || 0); r.prog++;
   const need = 1 + (r.gameDrafts||0);
   if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
-  if (!again) gameFind(kind, q);
+  if (!again) gameFind(kind, q, sp);
 }
 function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met this outpost'); } }
 function contractFilled(){
@@ -5424,6 +5952,20 @@ function normalize(){
   S.shares.sawmill = Object.assign(freshMeta(), obj(S.shares.sawmill) ? S.shares.sawmill : {}); if (!Array.isArray(S.shares.sawmill.nodes)) S.shares.sawmill.nodes = [];
   S.story = Object.assign({sawmillOpened:false, card:false}, obj(S.story) ? S.story : {});
   S.bulk.logs = +S.bulk.logs || 0;
+  // species overhaul: old species ids map to the current ones (walnut → cloudwood); every tract gets a ground and a skid/haul weight
+  const fixTract = t => { if (!obj(t)) return t;
+    t.mix = (Array.isArray(t.mix) ? t.mix : []).map(m => [Core.speciesId(m && m[0]) || 'pine', Math.max(0, +(m && m[1]) || 0)]).filter(m => m[1] > 0);
+    if (!t.mix.length) t.mix = [['pine', 1]];
+    if (!t.ground) t.ground = t.hire ? 'mixed' : 'coast'; else t.ground = Core.groundId(t.ground);
+    if (!(t.wt > 0)) t.wt = Core.mixWeight(t.mix);
+    return t; };
+  S.tracts = (Array.isArray(S.tracts) ? S.tracts : []).filter(obj).map(fixTract);
+  S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
+  if (obj(S.hireOffer)) fixTract(S.hireOffer); else S.hireOffer = null;
+  S.vis = Core.speciesId(S.vis) || (S.tracts[0] ? S.tracts[0].mix[0][0] : 'pine');
+  const fixOffer = o => { if (obj(o) && o.sp != null){ const sp = Core.speciesId(o.sp); if (sp) o.sp = sp; else delete o.sp; } return o; };
+  S.offers = (Array.isArray(S.offers) ? S.offers : []).filter(obj).map(fixOffer);
+  if (obj(S.contract)) fixOffer(S.contract); else S.contract = null;
   S.millShare = typeof S.millShare === 'number' && isFinite(S.millShare) ? Math.max(0, Math.min(Core.MILL_SHARE_MAX, S.millShare)) : Core.MILL_SHARE_DEFAULT;
   S.rng = Object.assign(freshRng(), obj(S.rng) ? S.rng : {});
   if (S.camps.sawmill){ const m = S.camps.sawmill = Object.assign(freshMill(S.camps.sawmill.n || 1), S.camps.sawmill);
@@ -5576,9 +6118,11 @@ function idleFinds(dt, full){
   }
 }
 // a mini-game run's drop roll: better results find more often and rarer things (Core.dropTier)
-function gameFind(kind, q){
+// bucking a pine: pitch pockets make amber pitch twice as likely (Core.buckRules(sp).pitchMult)
+function gameFind(kind, q, sp){
   const tb = Core.DROP_TABLES[kind]; if (!tb) return null;
-  const st = Core.rollDrop(tb, Core.dropTier(q || 0), drng); if (!st) return null;
+  const pm = kind === 'buck' && sp ? Core.buckRules(sp).pitchMult : 1;
+  const st = Core.rollDrop(tb, Core.dropTier(q || 0), drng, 1, pm !== 1 ? {'logging.amber_pitch': pm} : {}); if (!st) return null;
   addItem(st.item, st.qty); S.run.gameFinds = (S.run.gameFinds || 0) + 1;
   return st;
 }

@@ -42,8 +42,8 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  $('whClose').click();
  // ---------- 2. Prime timber and finds (separate seeded stream: no Math.random draws)
  E(`S.orders.autoFill=false; S.vis='pine'; F={sp:'pine', out:{k:'perfect', m:1.25, text:''}, phase:'fall'}; MG.kind='fell'`);
- const sp0=E(`bankN(SPAR)`), m0=mathCalls; E(`fellPrime('perfect','pine'); fellPrime('perfect','hemlock'); fellPrime('good','spruce')`);
- ok(E(`bankN(SPAR)`)-sp0===3,'perfect fall: pine 2 Prime spars, hemlock 1; a good fall none (without Spar man)');
+ const sp0=E(`bankN(SPAR)`), m0=mathCalls; E(`fellPrime('perfect','pine'); fellPrime('perfect','hemlock'); fellPrime('perfect','spruce'); fellPrime('good','spruce')`);
+ ok(E(`bankN(SPAR)`)-sp0===5,'perfect fall: pine 1 Prime spar, hemlock 1, spruce 3 (the 1/3/1 split); a good fall none (without Spar man)');
  ok(E(`Core.primeFromBuck('pine', [{len:12,g:1},{len:16,g:1},{len:14,g:1},{len:10,g:1}], .92).qty`)===2 && E(`Core.primeFromBuck('pine', [{len:16,g:1}], .89)`)===null,'bucking: grade 1 logs of 12 ft+ at 90%+, two at most');
  ok(Math.abs(E('Core.idlePrimeChance(0)')-.02)<1e-12 && Math.abs(E('Core.idlePrimeChance(3)')*120000-1.2)<1e-9,'idle Prime: 2% at Cove Landing, ~1.2 a tract later');
  const tr=E(`JSON.stringify(Core.makeTract('t',[['pine',1]],1000,1,'flat'))`); E(`window.__t=${tr}; for(let i=0;i<5000;i++) idlePrime(window.__t, 1)`);

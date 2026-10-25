@@ -38,7 +38,7 @@ export interface CurrencyDef { readonly id: CurrencyId; readonly name: string; r
 
 export const ITEMS: readonly ItemDef[] = deepFreeze([
   {id:'logging.prime_spar', name:'Prime spar', plural:'Prime spars', skill:'logging', category:'prime', rarity:'made', sell:40,
-    desc:'A straight, knot-free conifer log the scaler stamped Prime. Mast and spar stock.', uses:['order','structure','sell'], from:'Perfect falls and grade 1 cuts of 12 ft or more; idle crews about 1 tree in 50'},
+    desc:'A straight, knot-free conifer log the scaler stamped Prime. Mast and spar stock.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 cuts of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50'},
   {id:'logging.burl', name:'Burl', plural:'Burls', skill:'logging', category:'find', rarity:'common', sell:30,
     desc:'A swirled growth off a stump. The veneer men pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking'},
   {id:'logging.amber_pitch', name:'Amber pitch', plural:'Amber pitch', skill:'logging', category:'find', rarity:'common', sell:12,
@@ -76,12 +76,13 @@ export function itemSellPrice(id: ItemId, era: number): number {
 
 // ---------- Prime timber
 
-/** The Prime item a species makes, and how many a perfect fall stamps. Hardwoods come later (deferred). */
-export interface PrimeRule { readonly species: SpeciesId; readonly item: ItemId; readonly perfectFall: number }
+/** The Prime item a species makes, how many a perfect fall stamps, and the shortest grade 1 log bucking stamps. Hardwoods come later (slice 3). */
+export interface PrimeRule { readonly species: SpeciesId; readonly item: ItemId; readonly perfectFall: number; readonly buckMinLen: number }
+// species overhaul slice 1: the Prime spar split 1/3/1 (spruce is the spar tree); the Cove average per perfect fall stays 1.67
 export const PRIME_RULES: readonly PrimeRule[] = deepFreeze([
-  {species:'pine', item:'logging.prime_spar', perfectFall:2},
-  {species:'spruce', item:'logging.prime_spar', perfectFall:2},
-  {species:'hemlock', item:'logging.prime_spar', perfectFall:1},
+  {species:'pine', item:'logging.prime_spar', perfectFall:1, buckMinLen:12},
+  {species:'spruce', item:'logging.prime_spar', perfectFall:3, buckMinLen:14},
+  {species:'hemlock', item:'logging.prime_spar', perfectFall:1, buckMinLen:12},
 ]);
 const PRIME_BY_SP: ReadonlyMap<SpeciesId, PrimeRule> = new Map(PRIME_RULES.map((p) => [p.species, p]));
 
@@ -93,15 +94,15 @@ export function primeFromFall(species: SpeciesId): ItemStack | null {
 
 /** Bucking score needed before grade 1 cuts are stamped Prime. */
 export const BUCK_PRIME_SCORE = 0.9;
-/** Shortest grade 1 sawlog that can be stamped Prime, and the most Prime one stem gives. */
+/** Shortest grade 1 sawlog that can be stamped Prime by default (spruce needs 14 ft), and the most Prime one stem gives. */
 export const BUCK_PRIME_MIN_LEN = 12;
 export const BUCK_PRIME_MAX = 2;
 
-/** Prime from one bucked stem: 1 per grade 1 sawlog ≥ 12 ft when the score is ≥ 90%, at most 2. */
+/** Prime from one bucked stem: 1 per grade 1 sawlog of the species' Prime length (12 ft; spruce 14 ft) when the score is ≥ 90%, at most 2. */
 export function primeFromBuck(species: SpeciesId, segments: readonly { readonly len: number; readonly g: number | string }[], score: number): ItemStack | null {
   const r = PRIME_BY_SP.get(species);
   if (!r || score < BUCK_PRIME_SCORE) return null;
-  const n = Math.min(BUCK_PRIME_MAX, segments.filter((s) => s.g === 1 && s.len >= BUCK_PRIME_MIN_LEN).length);
+  const n = Math.min(BUCK_PRIME_MAX, segments.filter((s) => s.g === 1 && s.len >= r.buckMinLen).length);
   return n > 0 ? { item: r.item, qty: n } : null;
 }
 
@@ -176,10 +177,11 @@ function pickEntry(rng: Rng, entries: readonly DropEntry[], weight: (e: DropEntr
 /**
  * A mini-game's drop roll. Draws: the chance roll; on a hit, the entry pick.
  * Low tier rolls on entries with minTier 0 ("common"), mid on minTier ≤ 1, top on all.
+ * `weightMult` favours an item (pine's pitch pockets: amber pitch ×2 in bucking).
  */
-export function rollDrop(table: DropTable, tier: DropTier, rng: Rng, chanceMult = 1): ItemStack | null {
+export function rollDrop(table: DropTable, tier: DropTier, rng: Rng, chanceMult = 1, weightMult: Readonly<Record<ItemId, number>> = {}): ItemStack | null {
   if (rng() >= table.baseChance * table.tierMult[tier] * chanceMult) return null;
-  const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight);
+  const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight * (weightMult[x.item] ?? 1));
   return e ? { item: e.item, qty: e.qty[0] } : null;
 }
 

@@ -9,12 +9,17 @@ import { deepFreeze } from './freeze';
 export type Stage = 'fell' | 'buck' | 'skid' | 'haul';
 export type Season = 'Spring' | 'Summer' | 'Fall' | 'Winter';
 export type SlopeId = 'flat' | 'rolling' | 'steep';
-export type SpeciesId = 'pine' | 'spruce' | 'hemlock' | 'maple' | 'oak' | 'walnut';
+export type SpeciesId = 'pine' | 'spruce' | 'hemlock' | 'maple' | 'oak' | 'cloudwood';
 export type Rarity = 'common' | 'rare' | 'legendary' | 'curse';
 /** Keys a perk or improvement can multiply (read by the prototype's umult/pmult). */
 export type MultKey = Stage | 'all' | 'value' | 'click' | 'hand' | 'upkeep' | 'scale' | 'price' | 'stump';
 
-export interface SpeciesDef { readonly name: string; readonly hp: number; readonly bf: number; readonly saw: number; readonly sawP: number; readonly pulpP: number; readonly shape: 'con' | 'dec' }
+/**
+ * A tree species. `wt` is the skid and haul weight (idle skidding and hauling
+ * move bd ft ÷ weight; pine = 1). Species rules for the mini-games, grounds and
+ * seasonal traits live in species.ts (docs/design/species-overhaul.md).
+ */
+export interface SpeciesDef { readonly name: string; readonly hp: number; readonly bf: number; readonly saw: number; readonly sawP: number; readonly pulpP: number; readonly shape: 'con' | 'dec'; readonly wt: number }
 export interface EraDef { readonly name: string; readonly year: number; readonly cost: number; readonly blurb?: string }
 export interface StageDef { readonly id: Stage; readonly name: string; readonly verb: string; readonly unit: string }
 export interface PileDef { readonly id: 'stems' | 'cut' | 'landing'; readonly label: string }
@@ -28,13 +33,16 @@ export interface RarityDef { readonly w: number; readonly label: string }
 export interface MetaNodeDef { readonly id: string; readonly cost: number; readonly name: string; readonly desc: string }
 export interface RunModDef { readonly id: string; readonly name: string; readonly desc: string; readonly x: number }
 
+// Species overhaul slice 1: the Cove trio made distinct (spruce and hemlock restatted, weights added).
+// Maple, oak and cloudwood keep their old stats, and weight 1, until slice 3 (spec weights 1.35, 1.6, 1.4 arrive with
+// their other trade-offs); cloudwood stays near 4.8× pine (owner, 2026-10-25).
 export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = deepFreeze({
-  pine:    {name:'Fogbound pine',      hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con'},
-  spruce:  {name:'Shore spruce',       hp:16, bf:160, saw:.60, sawP:.23, pulpP:.07, shape:'con'},
-  hemlock: {name:'Mist hemlock',       hp:22, bf:220, saw:.50, sawP:.18, pulpP:.06, shape:'con'},
-  maple:   {name:'Glacier maple',      hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec'},
-  oak:     {name:'Hot-spring oak',     hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec'},
-  walnut:  {name:'Giant cloudwood',    hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec'},
+  pine:      {name:'Fogbound pine',      hp:20, bf:200, saw:.75, sawP:.25, pulpP:.06, shape:'con', wt:1},
+  spruce:    {name:'Shore spruce',       hp:14, bf:180, saw:.45, sawP:.24, pulpP:.09, shape:'con', wt:.8},
+  hemlock:   {name:'Mist hemlock',       hp:16, bf:240, saw:.45, sawP:.20, pulpP:.08, shape:'con', wt:1.1},
+  maple:     {name:'Glacier maple',      hp:28, bf:260, saw:.55, sawP:.42, pulpP:.05, shape:'dec', wt:1},
+  oak:       {name:'Hot-spring oak',     hp:32, bf:300, saw:.60, sawP:.52, pulpP:.05, shape:'dec', wt:1},
+  cloudwood: {name:'Giant cloudwood',    hp:30, bf:280, saw:.70, sawP:1.40, pulpP:.04, shape:'dec', wt:1},
 });
 
 export const ERAS: readonly EraDef[] = deepFreeze([
@@ -44,7 +52,7 @@ export const ERAS: readonly EraDef[] = deepFreeze([
   {name:'Into the Interior', year:1990, cost:10000000, blurb:'Feller bunchers, processors and forwarders working the deep Interior.'},
 ]);
 /** Species that can appear in a generated tract, per era. */
-export const ERA_SPECIES: readonly (readonly SpeciesId[])[] = deepFreeze([['pine','spruce','hemlock'],['pine','spruce','hemlock','maple'],['pine','spruce','hemlock','maple','oak'],['pine','spruce','hemlock','maple','oak','walnut']]);
+export const ERA_SPECIES: readonly (readonly SpeciesId[])[] = deepFreeze([['pine','spruce','hemlock'],['pine','spruce','hemlock','maple'],['pine','spruce','hemlock','maple','oak'],['pine','spruce','hemlock','maple','oak','cloudwood']]);
 /** Typical tree count of a tract, per era tier. */
 export const TRACT_BASE: readonly number[] = deepFreeze([60, 1500, 15000, 120000]);
 
