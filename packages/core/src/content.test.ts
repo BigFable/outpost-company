@@ -37,7 +37,7 @@ describe('content tables', () => {
     expect(ERAS.map((e) => e.cost)).toEqual([0, 15000, 1000000, 10000000]);
     expect(EQUIPMENT.find((e) => e.id === 'axeman')).toMatchObject({ rate: 1, cost: 40, up: 3 });
     expect(IMPROVEMENTS.find((u) => u.id === 'cook')?.mult).toEqual({ fell: 1.25, buck: 1.25 });
-    expect(ACHIEVEMENTS).toHaveLength(56);
+    expect(ACHIEVEMENTS).toHaveLength(58);
   });
 });
 
