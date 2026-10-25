@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { must } from './test-rng';
 import { streamRng } from './rng';
 import {
-  boardGradeName, boardValue, bundlesStillNeeded, bunkhouseMult, canCloseMill, cantSquared, coveLogPrice, freeSawyers, genSawLog, GRADE_MIX,
+  boardGradeName, boardValue, bundleCost, CAMP_MONEY, levelBundles, millLogSale, structureDef, bundlesStillNeeded, bunkhouseMult, canCloseMill, cantSquared, coveLogPrice, freeSawyers, genSawLog, GRADE_MIX,
   knotShows, lumberPrice, maxSawyers, millLegacyGain, millPower, millRate, newSawCut, nextBoard, quarterSawn, sawAdvice, sawBest, sawBoard,
   MILL_SHARE_DEFAULT, MILL_SHARE_MAX, sawBestPlan, sawCellBf, sawDraftPool, sawPar, sawQuality, sawSpeedBonus, sawValue, sawyerCost, SAW_PERKS, structureNext, STRUCTURES, turnLog, type SawLog,
 } from './sawmill';
@@ -13,6 +13,29 @@ describe('log slider', () => {
   it('defaults to 10%, up to 50%', () => {
     expect(MILL_SHARE_DEFAULT).toBe(0.1);
     expect(MILL_SHARE_MAX).toBe(0.5);
+  });
+});
+
+describe('camp money', () => {
+  it('starting values: 0.8x cove price, $40 a bundle, $300 crate cash', () => {
+    expect(CAMP_MONEY).toEqual({ logPriceMult: 0.8, bundlePrice: 40, crateCash: 300 });
+  });
+  it('the mill pays 0.8x for every slider log it can afford', () => {
+    expect(millLogSale(1000, 200, 500)).toEqual({ bf: 1000, cost: 160 });
+    expect(millLogSale(1000, 200, 160)).toEqual({ bf: 1000, cost: 160 });
+  });
+  it('short of cash: takes only what it can pay for, never goes below $0', () => {
+    expect(millLogSale(1000, 200, 80)).toEqual({ bf: 500, cost: 80 });
+    expect(millLogSale(1000, 200, 0)).toEqual({ bf: 0, cost: 0 });
+    expect(millLogSale(1000, 200, -5)).toEqual({ bf: 0, cost: 0 });
+    expect(millLogSale(0, 200, 500)).toEqual({ bf: 0, cost: 0 });
+  });
+  it('bundles: $40 each; a bunkhouse level counts its bundles', () => {
+    expect(bundleCost(4)).toBe(160);
+    expect(bundleCost(-1)).toBe(0);
+    const bh = structureDef('logging.bunkhouse');
+    expect(bh?.levels.map(levelBundles)).toEqual([4, 8, 16]);
+    expect(levelBundles(must(structureDef('sawmill.pond')?.levels[0]))).toBe(0);
   });
 });
 

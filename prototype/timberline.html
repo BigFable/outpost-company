@@ -496,7 +496,7 @@ button,summary,input,.lcell{touch-action:manipulation}
         <p class="meta">Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove. The slowest stage sets your pace.</p>
         <div class="chain" id="chain"></div>
         <div class="millsl" id="millSl" hidden><label for="millShare"><span>Logs to the mill</span><b class="num" id="millShareV">10%</b></label>
-          <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millSlMeta"><p class="meta" id="millSlMeta"></p></div>
+          <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millSlMeta"><p class="meta" id="millSlMeta"></p><p class="meta" id="millLedger"></p></div>
       </section>
 
       <section class="panel" id="runPanel">
@@ -569,6 +569,7 @@ button,summary,input,.lcell{touch-action:manipulation}
         <h2 id="mName">Saw pit</h2>
         <p class="meta" id="mMeta"></p>
         <div class="facts" id="mFacts"></div>
+        <p class="meta" id="mLedger"></p>
         <div class="mbtns"><button class="act game" type="button" id="mSawBtn">Saw boards</button><button class="act" type="button" id="mCove" aria-pressed="true">Buy logs: on</button><button class="act" type="button" id="mBundle" aria-pressed="true">Bundle: on</button></div>
         <p class="spec" id="mSawWhy"></p>
         <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Clear sells at 3×, Select 2× and Common 1× the log price. Common makes plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
@@ -3974,6 +3975,44 @@ var Core = (function(exports) {
 	/** Share of Logging deliveries sent to the log pond: default and bounds of the slider. */
 	var MILL_SHARE_DEFAULT = .1;
 	var MILL_SHARE_MAX = .5;
+	/**
+	* - `logPriceMult`: the mill pays Logging this share of the cove price (what Logging would get at the cove) for slider logs, from mill cash.
+	* - `bundlePrice`: Logging pays the mill this much mill cash per plank bundle used in the bunkhouse.
+	* - `crateCash`: mill cash in the founding crate, given once when the Sawmill opens (not every mill run).
+	*/
+	var CAMP_MONEY = deepFreeze({
+		logPriceMult: .8,
+		bundlePrice: 40,
+		crateCash: 300
+	});
+	/**
+	* The slider's sale to the mill. `wantBf` is the slider's share of a delivery and `coveValue` what those logs would fetch at the cove.
+	* Can't-afford rule: the mill takes only the logs it can pay for in full; Logging sells the rest at the cove as usual.
+	* No debt, no stall: Logging is never short-paid and the mill never goes below $0.
+	*/
+	function millLogSale(wantBf, coveValue, millCash) {
+		if (!(wantBf > 0)) return {
+			bf: 0,
+			cost: 0
+		};
+		const price = Math.max(0, coveValue) * CAMP_MONEY.logPriceMult, cash = Math.max(0, millCash);
+		if (price <= cash) return {
+			bf: wantBf,
+			cost: price
+		};
+		return {
+			bf: wantBf * (cash / price),
+			cost: cash
+		};
+	}
+	/** What Logging pays the mill for `bundles` plank bundles. */
+	function bundleCost(bundles) {
+		return Math.max(0, bundles) * CAMP_MONEY.bundlePrice;
+	}
+	/** Plank bundles one structure level uses. */
+	function levelBundles(l) {
+		return l.items.reduce((a, i) => a + (i.item === "sawmill.plank_bundle" ? i.qty : 0), 0);
+	}
 	/** The mill's board (spent with Sawmill Charter Shares). */
 	var MILL_META = deepFreeze([
 		{
@@ -5594,6 +5633,7 @@ var Core = (function(exports) {
 	exports.BURNT_DISCOUNT = BURNT_DISCOUNT;
 	exports.CAMP_FIT_FALLERS_SHORT = CAMP_FIT_FALLERS_SHORT;
 	exports.CAMP_FIT_TEAMS_SHORT = CAMP_FIT_TEAMS_SHORT;
+	exports.CAMP_MONEY = CAMP_MONEY;
 	exports.CAMP_NOTE_MATCHED = CAMP_NOTE_MATCHED;
 	exports.CAMP_NOTE_SITE_FLAG = CAMP_NOTE_SITE_FLAG;
 	exports.CLEAR_ROAD_Q = CLEAR_ROAD_Q;
@@ -5712,6 +5752,7 @@ var Core = (function(exports) {
 	exports.bountyMetric = bountyMetric;
 	exports.bountyPay = bountyPay;
 	exports.buckRules = buckRules;
+	exports.bundleCost = bundleCost;
 	exports.bundlesStillNeeded = bundlesStillNeeded;
 	exports.bunkhouseMult = bunkhouseMult;
 	exports.campFit = campFit;
@@ -5787,6 +5828,7 @@ var Core = (function(exports) {
 	exports.knotShows = knotShows;
 	exports.legacyBase = legacyBase;
 	exports.legacyGain = legacyGain;
+	exports.levelBundles = levelBundles;
 	exports.lotRates = lotRates;
 	exports.lotThroughput = lotThroughput;
 	exports.lotValueRate = lotValueRate;
@@ -5798,6 +5840,7 @@ var Core = (function(exports) {
 	exports.maxSkidLogs = maxSkidLogs;
 	exports.milesWithRoad = milesWithRoad;
 	exports.millLegacyGain = millLegacyGain;
+	exports.millLogSale = millLogSale;
 	exports.millPower = millPower;
 	exports.millRate = millRate;
 	exports.missedPenalty = missedPenalty;
@@ -5921,7 +5964,7 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
 // seasonal events (Core: packages/core/src/weather.ts): company-wide, one roll per season change on the events stream, rolled one season ahead.
 // changes -1 = not yet known (an old save): normalize() sets it from the winters already worked, so a veteran company gets no gentle start.
 function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes:-1, burnt:false, off:false, stats:{bad:0, guard:0, fires:0, burned:0, maxStreak:0}}; }
-function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0, markerRerolls:0, itemSales:0, toMill:0, stormN:0}; }
+function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0, markerRerolls:0, itemSales:0, toMill:0, millPaid:0, bundlePaid:0, stormN:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
@@ -6236,14 +6279,21 @@ function move(a, b, amt, vm=1){
   const avg = a.val/a.bf; a.bf -= amt; a.val -= amt*avg; b.bf += amt; b.val += amt*avg*vm; clean(a);
   return amt;
 }
+let millShortAt = -1e9;
 function deliver(amt){
   const L = S.landing; amt = Math.min(amt, L.bf); if (amt <= 0) return 0;
   const avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
   S.stats.deliv += amt; S.run.deliv += amt;
-  // the log slider: a share of every delivery floats to the company mill's log pond; the company pays half price for the logs it takes
+  // the log slider (camp money, model 4): a share of every delivery floats to the mill's log pond and the mill pays 0.8x the cove price
+  // from its own cash. Short of cash, it takes only what it can pay for and the rest is sold at the cove (no debt, no stall).
   const sh = S.camps.sawmill && S.millShare > 0 ? S.millShare : 0;
-  if (sh > 0){ S.bulk.logs += amt*sh; S.run.toMill = (S.run.toMill || 0) + amt*sh; }
-  const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100)*(sh > 0 ? 1 - sh*.5 : 1);
+  const full = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100);
+  let base = full;
+  if (sh > 0){ const m = S.camps.sawmill, sale = Core.millLogSale(amt*sh, full*sh, m.cash);
+    if (sale.bf < amt*sh - 1e-9) millShortAt = S.t;
+    if (sale.bf > 0){ S.bulk.logs += sale.bf; S.run.toMill = (S.run.toMill || 0) + sale.bf;
+      m.cash = Math.max(0, m.cash - sale.cost); m.logPaid = (m.logPaid || 0) + sale.cost; S.run.millPaid = (S.run.millPaid || 0) + sale.cost;
+      base = full*(1 - sale.bf/amt) + sale.cost; } }
   let rev = base;
   const c = S.contract;
   if (c){ const into = Math.min(amt*orderShare(c), c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
@@ -8084,7 +8134,7 @@ function normalize(){
   S.orders.open = S.orders.open.filter(o => o && Core.SPECIAL_ORDERS.some(d => d.id === o.id)).map(o => Object.assign({posted:r.n, due:r.n + 1, given:{}}, o));
   S.shares = Object.assign({sawmill:freshMeta()}, obj(S.shares) ? S.shares : {});
   S.shares.sawmill = Object.assign(freshMeta(), obj(S.shares.sawmill) ? S.shares.sawmill : {}); if (!Array.isArray(S.shares.sawmill.nodes)) S.shares.sawmill.nodes = [];
-  S.story = Object.assign({sawmillOpened:false, card:false}, obj(S.story) ? S.story : {});
+  S.story = Object.assign({sawmillOpened:false, card:false, crateCash:false}, obj(S.story) ? S.story : {});
   S.bulk.logs = +S.bulk.logs || 0;
   // species overhaul: old species ids map to the current ones (walnut → cloudwood); every tract gets a ground and a skid/haul weight
   const fixTract = t => { if (!obj(t)) return t;
@@ -8123,6 +8173,9 @@ function normalize(){
   if (S.camps.sawmill){ const m = S.camps.sawmill = Object.assign(freshMill(S.camps.sawmill.n || 1), S.camps.sawmill);
     m.yard = Object.assign({clear:0, select:0, common:0}, obj(m.yard) ? m.yard : {});
     ['perks','dq'].forEach(k => { if (!Array.isArray(m[k])) m[k] = []; }); m.drafts = m.dq.length;
+    ['logPaid','bundleIn','cash'].forEach(k => { if (typeof m[k] !== 'number' || !isFinite(m[k])) m[k] = 0; });
+    // camp money: a save from before the mill paid for its logs gets the founding crate's mill cash once
+    if (!S.story.crateCash){ m.cash += Core.CAMP_MONEY.crateCash; S.story.crateCash = true; }
     sawRefund(m); } // a log picked for Saw for grade but never sawn (the page closed mid-game) goes back
   if (!['logging','sawmill'].includes(S.ui.camp) || (S.ui.camp === 'sawmill' && !S.camps.sawmill)) S.ui.camp = 'logging';
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
@@ -8361,7 +8414,7 @@ const millRateNow = () => S.camps.sawmill ? Core.millRate(millSawyers(), S.struc
 const MILL_DRAFT_BF = 30000;
 function freshMill(n){
   return {n:n || 1, t0:S.t, cash:Core.FOUNDING_CRATE.cash + (mmeta('saw.advance') ? 300 : 0), hired:0, sawn:0, earned:0, logCost:0, yard:{clear:0, select:0, common:0}, comAcc:0,
-    bundle:true, buyCove:true, perks:[], dq:[], offer:null, prog:0, pq:0, gameDrafts:0, games:0, rerolls:0, drafts:0, draftMark:0, bigStick:false, ema:0, bucket:0, dry:false, best:0};
+    bundle:true, buyCove:true, perks:[], dq:[], offer:null, prog:0, pq:0, gameDrafts:0, games:0, rerolls:0, drafts:0, draftMark:0, bigStick:false, ema:0, bucket:0, dry:false, best:0, logPaid:0, bundleIn:0};
 }
 // the first Logging close camp: story card, the founding crate and the Sawmill tab
 function openSawmill(quiet){
@@ -8369,10 +8422,11 @@ function openSawmill(quiet){
   S.story.sawmillOpened = true; S.story.card = !quiet; S.ui.millSeen = false;
   S.structures['sawmill.pit'] = Math.max(1, S.structures['sawmill.pit'] || 0);
   S.camps.sawmill = freshMill(1);
+  S.camps.sawmill.cash += Core.CAMP_MONEY.crateCash; S.story.crateCash = true;
   S.bulk.logs += Core.FOUNDING_CRATE.logsBf;
   Core.FOUNDING_CRATE.items.forEach(st => { S.bank[st.item] = bankN(st.item) + st.qty; S.newCount = (S.newCount || 0) + st.qty;
     if (!S.found[st.item]) S.found[st.item] = {first:'Founding crate', total:st.qty}; else S.found[st.item].total += st.qty; });
-  note('The ship left a crate on the beach: saw blades, Prime spars, pitch, a ship’s fitting and 20,000 bd ft of logs. “No more raw logs home. Saw them here.” A Sawmill opens by the cove.');
+  note(`The ship left a crate on the beach: saw blades, Prime spars, pitch, a ship’s fitting, 20,000 bd ft of logs and ${money(Core.CAMP_MONEY.crateCash)} of mill cash. “No more raw logs home. Saw them here.” A Sawmill opens by the cove.`);
   postOrders();
 }
 const bundling = () => { const m = S.camps.sawmill; return !!m && m.bundle && Core.bundlesStillNeeded(S.structures) > bankN(BUNDLE); };
@@ -8408,12 +8462,15 @@ function hireSawyer(){
 }
 function canBuild(id){
   const d = Core.structureDef(id), nx = Core.structureNext(S.structures, id); if (!d || !nx || !S.camps.sawmill) return false;
-  return nx.items.every(i => bankN(i.item) >= i.qty) && S.camps.sawmill.cash >= nx.cash;
+  return nx.items.every(i => bankN(i.item) >= i.qty) && S.camps.sawmill.cash >= nx.cash && (d.target !== 'logging' || S.cash >= bundlePay(nx));
 }
+// camp money: Logging pays the mill for the plank bundles a Logging structure (the bunkhouse) uses
+const bundlePay = nx => Core.bundleCost(Core.levelBundles(nx));
 function buildStructure(id){
   if (!canBuild(id)) return false;
   const d = Core.structureDef(id), nx = Core.structureNext(S.structures, id), m = S.camps.sawmill;
   nx.items.forEach(i => { S.bank[i.item] = bankN(i.item) - i.qty; }); m.cash -= nx.cash;
+  if (d.target === 'logging'){ const c = bundlePay(nx); if (c > 0){ S.cash -= c; m.cash += c; m.bundleIn = (m.bundleIn || 0) + c; S.run.bundlePaid = (S.run.bundlePaid || 0) + c; } }
   S.structures[id] = (S.structures[id] || 0) + 1;
   const lv = S.structures[id], name = d.levels.length > 1 ? `${d.name}, level ${lv}` : d.name;
   if (!S.structT) S.structT = {}; S.structT[id + lv] = S.t;
@@ -8712,8 +8769,11 @@ function renderSlider(){
   const pct = Math.round(S.millShare*100), inp = $('millShare'); if (document.activeElement !== inp && +inp.value !== pct) inp.value = pct;
   $('millShareV').textContent = pct + '%';
   const r = millRateNow()*60;
-  $('millSlMeta').textContent = (pct ? `${pct}% of each delivery goes to the mill’s log pond, at half price.` : 'All logs are sold here. The mill buys its own.') +
-    ` Log pond ${bf(S.bulk.logs)}` + (r > 0 ? `, about ${mins(S.bulk.logs/r*60)} of sawing at ${bf(r)}/min.` : '.');
+  const pp = Math.round(Core.CAMP_MONEY.logPriceMult*100);
+  $('millSlMeta').textContent = (pct ? `${pct}% of each delivery goes to the mill’s log pond. The mill pays ${pp}% of the cove price.` : 'All logs are sold here. The mill buys its own.') +
+    ` Log pond ${bf(S.bulk.logs)}` + (r > 0 ? `, about ${mins(S.bulk.logs/r*60)} of sawing at ${bf(r)}/min.` : '.') +
+    (pct && S.t - millShortAt < 30 ? ' The mill is short of cash, so the rest sells here.' : '');
+  $('millLedger').textContent = `With the mill this outpost: logs sold +${money(S.run.millPaid || 0)} · bundles bought −${money(S.run.bundlePaid || 0)}.`;
 }
 function renderSpecials(){
   const O = S.orders, bon = Math.min(Core.ORDER_BONUS_CAP, O.bonusPct), cap = Math.round(Core.ORDER_BONUS_CAP*100);
@@ -8736,7 +8796,7 @@ function renderBunk(){
   const open = !!S.story.sawmillOpened; $('bunkGroup').hidden = !open; if (!open) return;
   const id = 'logging.bunkhouse', L = S.structures[id] || 0, nx = Core.structureNext(S.structures, id), def = Core.structureDef(id);
   $('bunkLv').textContent = `level ${L} of ${def.levels.length}`;
-  list('bunk', `${L}|${bankN(BUNDLE)}|${canBuild(id)}`, nx ? `<div class="row"><div class="info"><b>Build level ${L + 1}</b><p>${nx.effect}. Now ×${bunkF().toFixed(2)}.</p><span class="spec">${nx.items.map(i => `${i.qty} ${IDEF(i.item).plural} (${bankN(i.item)} in stock)`).join(' · ')}</span></div>
+  list('bunk', `${L}|${bankN(BUNDLE)}|${canBuild(id)}|${nx ? bundlePay(nx) : 0}`, nx ? `<div class="row"><div class="info"><b>Build level ${L + 1}</b><p>${nx.effect}. Now ×${bunkF().toFixed(2)}.</p><span class="spec">${nx.items.map(i => `${i.qty} ${IDEF(i.item).plural} (${bankN(i.item)} in stock)`).join(' · ')} · ${money(bundlePay(nx))} to the mill</span></div>
     <div class="btns"><button class="buy" type="button" id="bunkBuy" ${canBuild(id) ? '' : 'disabled'}>Build</button></div></div>` : `<p class="empty">The bunkhouse is done: wages and hiring ×${bunkF().toFixed(2)}.</p>`,
     box => { const b = box.querySelector('#bunkBuy'); if (b) b.onclick = () => buildStructure(id); });
 }
@@ -8865,6 +8925,7 @@ function renderMill(){
     : 'Hand power: the same every season until the mill pond turns a wheel.';
   $('mFacts').innerHTML = row('Sawing', `${bf(rM)}/min`) + row('Sawyers', `${ns} of ${maxS}`) + row('Log pond', bf(S.bulk.logs) + (m.dry && S.bulk.logs < 1 ? (m.buyCove ? ' · buying logs' : ' · empty') : '')) +
     row('Income', `${money(m.ema*60)}/min`) + row('Plank bundles', fmt(bankN(BUNDLE)));
+  $('mLedger').textContent = `With Logging this mill run: logs bought −${money(m.logPaid || 0)} · bundles sold +${money(m.bundleIn || 0)}.`;
   const why = sawBlock(); $('mSawBtn').disabled = !!why; $('mSawWhy').textContent = why || (S.bulk.logs < 1 ? `Bought logs cost ${money(Core.coveLogPrice(market())*1000)} per 1,000 bd ft.` : '');
   $('mCove').textContent = `Buy logs: ${m.buyCove ? 'on' : 'off'}`; $('mCove').setAttribute('aria-pressed', String(m.buyCove));
   $('mBundle').textContent = `Bundle: ${m.bundle ? 'on' : 'off'}`; $('mBundle').setAttribute('aria-pressed', String(m.bundle));

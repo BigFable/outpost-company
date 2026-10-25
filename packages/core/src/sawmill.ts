@@ -127,6 +127,35 @@ export const FOUNDING_CRATE = deepFreeze({
 export const MILL_SHARE_DEFAULT = 0.1;
 export const MILL_SHARE_MAX = 0.5;
 
+// ---------- camp money (docs/design/lot-stash-and-camp-money.md, part B, model 4, slice 1)
+// Each camp keeps its own cash. Money crosses camps only with goods: logs floated down, plank bundles carted up.
+
+/**
+ * - `logPriceMult`: the mill pays Logging this share of the cove price (what Logging would get at the cove) for slider logs, from mill cash.
+ * - `bundlePrice`: Logging pays the mill this much mill cash per plank bundle used in the bunkhouse.
+ * - `crateCash`: mill cash in the founding crate, given once when the Sawmill opens (not every mill run).
+ */
+export const CAMP_MONEY = deepFreeze({ logPriceMult: 0.8, bundlePrice: 40, crateCash: 300 });
+
+export interface MillLogSale { readonly bf: number; readonly cost: number }
+/**
+ * The slider's sale to the mill. `wantBf` is the slider's share of a delivery and `coveValue` what those logs would fetch at the cove.
+ * Can't-afford rule: the mill takes only the logs it can pay for in full; Logging sells the rest at the cove as usual.
+ * No debt, no stall: Logging is never short-paid and the mill never goes below $0.
+ */
+export function millLogSale(wantBf: number, coveValue: number, millCash: number): MillLogSale {
+  if (!(wantBf > 0)) return { bf: 0, cost: 0 };
+  const price = Math.max(0, coveValue) * CAMP_MONEY.logPriceMult, cash = Math.max(0, millCash);
+  if (price <= cash) return { bf: wantBf, cost: price };
+  return { bf: wantBf * (cash / price), cost: cash };
+}
+/** What Logging pays the mill for `bundles` plank bundles. */
+export function bundleCost(bundles: number): number { return Math.max(0, bundles) * CAMP_MONEY.bundlePrice; }
+/** Plank bundles one structure level uses. */
+export function levelBundles(l: StructureLevel): number {
+  return l.items.reduce((a, i) => a + (i.item === 'sawmill.plank_bundle' ? i.qty : 0), 0);
+}
+
 /** The mill's board (spent with Sawmill Charter Shares). */
 export const MILL_META: readonly MetaNodeDef[] = deepFreeze([
   {id:'saw.advance', cost:3, name:'Mill cash', desc:'Start each mill run with $300.'},

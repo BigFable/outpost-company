@@ -54,7 +54,7 @@ function run(profile, seed, hours=4, opt={}){
     let keep=0; for(const id of ['sawmill.pond','sawmill.headrig']){ const nx=Core.structureNext(S.structures,id); if(nx && nx.items.every(x=>G.bankN(x.item)>=x.qty)) keep=Math.max(keep,nx.cash); }
     for(let n=0; n<10 && G.millSawyers()<Core.maxSawyers(S.structures) && m.cash>=Core.sawyerCost(m.hired)+keep; n++) G.hireSawyer();
     for(let n=0; n<20 && m.dq.length; n++){ const off=G.currentOffer('sawmill'); if(!off) break; G.pickPerk(off.slice().sort((a,b)=>MILL_PERKS.indexOf(a)-MILL_PERKS.indexOf(b))[0],'sawmill'); }
-    if(G.canCloseMill()){ millRunsOut.push({n:m.n, min:Math.round((S.t-m.t0)/60), L:G.millLegacyNow(), games:m.games, hired:m.hired}); G.closeMill();
+    if(G.canCloseMill()){ millRunsOut.push({n:m.n, min:Math.round((S.t-m.t0)/60), L:G.millLegacyNow(), games:m.games, hired:m.hired, logPaid:Math.round(m.logPaid||0), bundleIn:Math.round(m.bundleIn||0), earned:Math.round(m.earned)}); G.closeMill();
       for(const x of Core.MILL_META){ if(S.shares.sawmill.nodes.includes(x.id)) continue; if(!G.buyMillMeta(x.id)) break; } }
   }
   const RANK={legendary:0,rare:1,common:2,curse:3}; let achCash=0, achSeen=0;
@@ -157,7 +157,9 @@ function run(profile, seed, hours=4, opt={}){
       else mgClock=5;
     }}
     // stats
-    if(MILL && S.camps.sawmill){ if(S.bulk.logs<1){ XT.pondDry+=dt; XT.dryRun=(XT.dryRun||0)+dt; XT.dryMax=Math.max(XT.dryMax||0,XT.dryRun); } else XT.dryRun=0; if(S.camps.sawmill.dry) XT.millDry+=dt; }
+    if(MILL && S.camps.sawmill){ if(S.bulk.logs<1){ XT.pondDry+=dt; XT.dryRun=(XT.dryRun||0)+dt; XT.dryMax=Math.max(XT.dryMax||0,XT.dryRun); } else XT.dryRun=0; if(S.camps.sawmill.dry) XT.millDry+=dt;
+      // camp money: the slider sold logs at the cove because the mill was short of cash (within the last 2 s)
+      if(G.millShortAt!=null && S.t-G.millShortAt<2){ XT.short=(XT.short||0)+dt; XT.shortRun=(XT.shortRun||0)+dt; XT.shortMax=Math.max(XT.shortMax||0,XT.shortRun); } else XT.shortRun=0; }
     if(!G.tract()) stats.noTimber+=dt;
     if(S.short) stats.short+=dt;
     if((S.ema-S.upEma)<0) stats.neg+=dt;
@@ -229,9 +231,9 @@ function run(profile, seed, hours=4, opt={}){
   if(runsOut.length<RUNS) runsOut.push({n:S.run.n, min:Math.round((S.t-runStart)/60), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:G.legacyNow(), unfinished:true, perks:S.run.perks.join(','), deliv:Math.round(S.run.deliv)});
   const items = MILL ? (()=>{ const by={made:0,common:0,uncommon:0,rare:0}; Object.entries(S.found).forEach(([id,f])=>{ const d=Core.itemDef(id); if(d && f.first!=='Founding crate') by[d.rarity]+=f.total; });
     return {primeTotal:(S.found[SPAR]||{}).total||0, findsPerHour:{common:+(by.common/hours).toFixed(1), uncommon:+(by.uncommon/hours).toFixed(1), rare:+(by.rare/hours).toFixed(2)}, ordersFilled:S.orders.filled, openOrders:S.orders.open.map(o=>o.id+":"+JSON.stringify(o.given)), pitchFound:(S.found["logging.amber_pitch"]||{}).total||0, stockEnd:Object.values(S.bank).reduce((a,n)=>a+n,0)}; })() : null;
-  const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games}, shares:S.shares.sawmill.total} : null;
+  const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games, logPaid:Math.round(S.camps.sawmill.logPaid||0), bundleIn:Math.round(S.camps.sawmill.bundleIn||0), earned:Math.round(S.camps.sawmill.earned)}, shares:S.shares.sawmill.total} : null;
   const endT=runsOut.length? (runsOut.reduce((a,r)=>a+r.min,0)*60):S.t; let gap=0,gapAt=0,prev=0; for(const t of XT.ev.concat([Math.min(S.t,endT)])){ if(t>endT) break; if(t-prev>gap){gap=t-prev;gapAt=prev;} prev=t; }
-  const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire,
+  const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), millShortMin:+((XT.short||0)/60).toFixed(1), millShortMaxMin:+((XT.shortMax||0)/60).toFixed(1), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire,
     stash:STASH?'first':'any', spFill:XT.spFill, spMiss:XT.spMiss, pickLowMin:Math.round(XT.pickLow/60)};
   return {...(AWAYP ? {AX:Object.fromEntries(Object.entries(AX).map(([k,v])=>[k,Math.round(v*10)/10]))} : {}), xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
 }
