@@ -4,6 +4,9 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-25 | Camp money: separate cash per camp confirmed; money crosses only with goods — the mill pays Logging 0.8× cove price for slider logs from its own cash, Logging pays $40 per plank bundle, the Sawmill crate adds $300 mill cash; mill log orders (1.2×, free to miss) as a 5th charter-board card in slice 2 | Owner's pick from docs/design/lot-stash-and-camp-money.md (model 4) |
+| 2026-10-25 | Lot stash: a Trees tab listing all owned trees by species with Any / First / Skip per species; picking costs speed (felling and skidding at 0.5 + 0.5 × species share); species orders credit what is actually cut; fallbacks so crews never stall | Owner's request and calls |
+| 2026-10-25 | Build both (smallest versions first) after the phone and text passes land, then a balance check | Owner approved |
 | 2026-10-25 | Storm season curse stays as is (strong pick), despite the bug hunt finding it pays well for little cost | Owner's call |
 | 2026-10-25 | Text simplification pass across the whole game: concise wording for phone screens, plain common language, and common tree names (Pine, Spruce, Hemlock, Maple, Oak, and a common name for the giant tree) | Owner: phone overhaul needs shorter text; easier names and everyday language throughout |
 | 2026-10-25 | Species + seasons tuning: first charter-board slot is always a regular (non-species) order; Fish run every-stage factor ×0.85→×0.92 (upkeep discount kept); bad-luck measure becomes time-weighted; "20 orders filled" achievement (c20) needs 16 | Balance review: species orders delayed early fills and Steam Camp; Fish run was the largest weather drag; the old measure overweighted late seconds |
