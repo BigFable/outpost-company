@@ -9,6 +9,7 @@ Pure game rules: no DOM, no wall clock, no `Math.random`, and no imports from `u
 | `src/formulas.ts` | Equipment cost curve, crew rates and upkeep (idle crews at a share of pay), improvement and perk multipliers, season/slope/distance factors, stage rate, hand work, pace boosts, market price over time, mobilization, missed-order penalty, era cost, Charter Shares (close camp) |
 | `src/generators.ts` | RNG-injected generation: land-office tracts and prices, full boards (`genListings`, with the after-a-push guarantee of a tract at or under half the push price; no extra draws), hire jobs, charter orders, tree pick from a mix, perk draft pool/weights/roll |
 | `src/species.ts` | Species overhaul slice 1: save-id aliases (`walnut` → `cloudwood`), the seasonal-trait hook (`speciesSeasonValue`, `seasonValueFactor`: hemlock tanbark, maple Winter/Spring), mix weight and share, grounds and `groundMix`, felling and bucking rules per species, species-order clients, weight tags, camp fit, throughput and the buyer's tract score |
+| `src/weather.ts` | Seasonal events (slice 1): the event tables as data, weights (Storm signals, Storm season, Dry summer), the roll with its guards (gentle start, no two bad in a row), stage factors with the 0.4-1.6 clamp (`composeSeason`), price/upkeep/finds hooks, mini-game rules, payroll guard, Storm season bonus, return summary |
 | `src/rng.ts` | The `Rng` type and `rngRange`/`rngPick` |
 
 Logging-specific content moves to `packages/skills/logging` in M4; it sits in core for now because the prototype is the only consumer.

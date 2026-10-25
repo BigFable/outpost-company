@@ -52,6 +52,20 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .spot{display:flex;align-items:center;gap:8px}
 .spot canvas{width:72px;height:24px;flex:none}
 @media (max-width:680px){.tally{grid-template-columns:repeat(2,minmax(0,1fr))}.tally>div:nth-child(3){border-left:0}.tally>div:nth-child(n+3){border-top:1px solid var(--line)}}
+/* season dispatch: the weather card under the tally (both camps); never a modal */
+.dispatch{border:1px solid var(--line);border-left:4px solid var(--muted);background:var(--panel);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:.88rem;min-width:0;animation:dslide .35s ease-out}
+.dispatch.t-bad{border-left-color:var(--bad)} .dispatch.t-good{border-left-color:var(--good)} .dispatch.t-neutral{border-left-color:var(--warn)}
+.dispatch .dh{display:flex;justify-content:space-between;gap:4px 10px;align-items:baseline;flex-wrap:wrap}
+.dispatch small{font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.dispatch b.dn{font-family:var(--f-display);font-size:1.05rem}
+.dispatch p{margin:0;overflow-wrap:anywhere}
+.dispatch .fx{color:var(--muted)} .dispatch .ctr{color:var(--accent);font-weight:600}
+.dispatch ul{margin:2px 0 0;padding-left:18px}
+.dispatch .dbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.dispatch .bar{margin-top:4px;height:4px}
+@keyframes dslide{from{transform:translateY(-6px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.dispatch{animation:none}}
+.tally .sub.next{color:var(--accent)}
 .banner{border:1px solid var(--bad);color:var(--bad);background:var(--panel);border-radius:6px;padding:8px 12px;font-size:.88rem;font-weight:600}
 
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
@@ -294,9 +308,10 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
     <div class="tally" id="logTally">
       <div class="cash"><small>Cash</small><b id="tCash">$0</b><div class="sub" id="tCashSub"></div></div>
       <div><small>Net per minute</small><b id="tNet">$0</b><div class="sub" id="tNetSub"></div></div>
-      <div><small>Season</small><b id="tSeason">Fall 1890</b><div class="sub" id="tSeasonSub"></div></div>
+      <div><small>Season</small><b id="tSeason">Fall 1890</b><div class="sub" id="tSeasonSub"></div><div class="sub next" id="tSeasonNext" hidden></div></div>
       <div><small>Cove log price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas></div><div class="sub" id="tMktSub"></div></div>
     </div>
+    <div class="dispatch" id="dispatch" hidden role="status" aria-live="polite"></div>
     <div class="runbar" id="runbar">
       <span class="runno" id="rbRun">Outpost 1</span>
       <span class="rbmods" id="rbMods"></span>
@@ -484,7 +499,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <div class="modal" id="wh" hidden role="dialog" aria-modal="true" aria-labelledby="whTitle">
   <div class="sheet">
     <header><div><h2 id="whTitle">Company warehouse</h2><p>One store for every camp. It never fills up, and it stays when any camp closes camp. Sales pay the logging camp.</p></div><button class="closeb" id="whClose" type="button">Close</button></header>
-    <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection log</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
+    <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection log</button><button type="button" data-t="almanac" aria-pressed="false">Almanac</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
     <div id="whBody"></div>
   </div>
 </div>
@@ -1574,7 +1589,7 @@ var Core = (function(exports) {
 			id: "iceking",
 			r: "rare",
 			name: "Ice road king",
-			desc: "Winter on the Reach: haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs."
+			desc: "On winter roads (Winter or an Early freeze): haul-game loads count double and crews haul ×1.4. Spring: runaways lose twice the logs."
 		},
 		{
 			id: "hotsaw",
@@ -1616,7 +1631,7 @@ var Core = (function(exports) {
 			id: "swamp",
 			r: "rare",
 			name: "Swamp boots",
-			desc: "Mud never slows the skid game, and idle skidding ignores spring mud."
+			desc: "Mud never slows the skid game, and idle skidding ignores spring mud and thaw floods."
 		},
 		{
 			id: "neck",
@@ -1695,6 +1710,18 @@ var Core = (function(exports) {
 			name: "Company scrip",
 			desc: "No cut-for-hire jobs unless you are out of timber and cash, but every sale pays ×1.15.",
 			m: { price: 1.15 }
+		},
+		{
+			id: "illwind",
+			r: "legendary",
+			name: "Ill wind",
+			desc: "“It’s an ill wind that blows nobody good.” Bad weather’s crew penalties become bonuses of the same size (a gale’s hauling ×0.85 becomes ×1.15). Mini-game hazards and silver linings stay."
+		},
+		{
+			id: "stormseason",
+			r: "curse",
+			name: "Storm season",
+			desc: "Bad weather comes twice as often and may come twice in a row, but every bad event that runs its full course adds +2% to this outpost’s Charter Shares (at most +30%, on top of the special-order bonus)."
 		},
 		{
 			id: "absentee",
@@ -1794,6 +1821,18 @@ var Core = (function(exports) {
 			cost: 20,
 			name: "Wider choice",
 			desc: "Drafts show 4 perks instead of 3."
+		},
+		{
+			id: "almanac",
+			cost: 8,
+			name: "Weather almanac",
+			desc: "The season tile shows next season’s card a season early."
+		},
+		{
+			id: "signals",
+			cost: 12,
+			name: "Storm signals",
+			desc: "A signal mast on Foghorn Point: bad weather comes 30% less often (quiet seasons take its place)."
 		}
 	]);
 	/** Charter clauses: optional hard modifiers that multiply Charter Shares. */
@@ -1801,7 +1840,7 @@ var Core = (function(exports) {
 		{
 			id: "drought",
 			name: "Dry summer",
-			desc: "Felling −10%, and summer slash fires can burn stems on the ground.",
+			desc: "Felling −10%, and a Dry spell is three times as likely every summer.",
 			x: 1.25
 		},
 		{
@@ -1893,7 +1932,7 @@ var Core = (function(exports) {
 		ladder("c1", "Under contract", "Fill a delivery contract.", "contracts", 1, 250, 0),
 		ladder("c5", "Reliable supplier", "Fill 5 delivery contracts.", "contracts", 5, 1500, 1),
 		ladder("c10", "Steady supplier", "Fill 10 delivery contracts.", "contracts", 10, 8e3, 1),
-		ladder("c20", "Preferred supplier", "Fill 20 delivery contracts.", "contracts", 20, 25e3, 2),
+		ladder("c20", "Preferred supplier", "Fill 16 delivery contracts.", "contracts", 16, 25e3, 2),
 		ladder("crew10", "Ten-crew outfit", "Own 10 crews or machines.", "crew", 10, 400, 0),
 		ladder("crew30", "Big outfit", "Own 30 crews or machines.", "crew", 30, 4e3, 1),
 		ladder("crew75", "Industrial outfit", "Own 75 crews or machines.", "crew", 75, 8e4, 2),
@@ -1916,6 +1955,8 @@ var Core = (function(exports) {
 			atLeast("cleanSkid", 1),
 			atLeast("cleanHaul", 1)
 		], 1500, 2),
+		ladder("wx10", "Weathered 10 storms", "Ride out 10 bad-weather events to the end of their season.", "storms", 10, 900, 1),
+		once("wxall", "Every season’s card", "See every card in the weather almanac.", [atLeast("almanac", 16)], 1500, 2),
 		once("era1", "Full steam", "Reach Steam Camp.", [atLeast("era", 1)], 0, 2),
 		once("era2", "Diesel Road", "Reach Diesel Road.", [atLeast("era", 2)], 0, 2),
 		once("era3", "Into the Interior", "Reach the Interior with mechanized logging.", [atLeast("era", 3)], 0, 3)
@@ -4102,6 +4143,587 @@ var Core = (function(exports) {
 		return g === 0 ? "clear" : g === 1 ? "select" : g === 2 ? "common" : "slab";
 	}
 	//#endregion
+	//#region packages/core/src/weather.ts
+	/**
+	* Seasonal events, slice 1 (docs/design/seasonal-events.md): one weather card per
+	* season change, company-wide (both camps share the roll), drawn from its own
+	* seeded stream (`rng.events`), so the logging sim's Math.random draws are untouched.
+	*
+	* Effects are data. The prototype reads them through small hooks:
+	* - `eventStageFactor` multiplies a stage on top of `seasonFactor()`, and
+	*   `composeSeason` applies the 0.4-1.6 clamp. Species seasonal traits (species
+	*   overhaul) compose by multiplying into the same `base` before the clamp.
+	* - `eventMult` reads price/upkeep/hire/tract/finds multipliers.
+	* - `eventGameRules` lists the mini-game hazards for one game.
+	* With no event the factors are exactly 1 and `composeSeason` returns `base`
+	* untouched, so a quiet season is byte-identical to the pre-events game.
+	*/
+	/** After the season factor and the event, a stage's factor stays inside this range (unless the season alone is already outside it). */
+	var EVENT_CLAMP = deepFreeze([.4, 1.6]);
+	/** A mini-game run at this quality or better clears the road (halves the stage's remaining penalty). */
+	var CLEAR_ROAD_Q = .55;
+	/** Gentle start: a brand-new company's first season changes deal only good or nothing. */
+	var GENTLE_CHANGES = 4;
+	/** Payroll guard: harmful event effects pause while cash is under this many minutes of upkeep. */
+	var PAYROLL_GUARD_MIN = 2;
+	/** Storm season curse: Charter Shares bonus per bad event that runs its full course, and its cap (outside the special-order cap). */
+	var STORM_SEASON_STEP = .02;
+	var STORM_SEASON_CAP = .3;
+	/** Storm signals (board node): bad-event weights ×0.7, the freed weight goes to "nothing". */
+	var STORM_SIGNALS_MULT = .7;
+	/** Storm season curse: bad-event weights ×2. */
+	var STORM_SEASON_MULT = 2;
+	/** Dry summer clause: Dry spell's weight ×3 (its separate random fire is gone). */
+	var DRY_SUMMER_MULT = 3;
+	/** Slash fire chance per second while the stems pile is over the line (events stream). */
+	var FIRE_PER_SEC = .01;
+	/** The land office discounts one listing on burnt-over ground by this much. */
+	var BURNT_DISCOUNT = .8;
+	/** Felling wind multiplier product cap (events × species), so a gale stays playable. */
+	var WIND_CAP = 2;
+	var W = "logging.ships_fitting";
+	var FOG = "logging.fog_glass";
+	var SEASON_EVENTS = deepFreeze([
+		{
+			id: "grey_spring",
+			season: "Spring",
+			tone: "none",
+			weight: 34,
+			name: "Grey spring",
+			lasts: "none",
+			effects: [],
+			card: "Rain off the sound and mud to the axles. The usual.",
+			fx: "No change: spring mud as always"
+		},
+		{
+			id: "thaw_flood",
+			season: "Spring",
+			tone: "bad",
+			weight: 14,
+			name: "Thaw flood",
+			lasts: "season",
+			card: "The snowpack let go overnight. Charter Creek is over its banks and the skid trails are soup.",
+			fx: "Skidding ×0.8 (counts as mud) · 15% of the landing floats down to the cove and sells",
+			counter: "Skid a clean turn to clear the trails",
+			silver: "River drive: logs float to the cove for free",
+			effects: [
+				{
+					kind: "stage",
+					stage: "skid",
+					mult: .8,
+					mud: true
+				},
+				{
+					kind: "drift",
+					share: .15
+				},
+				{
+					kind: "game",
+					game: "skid",
+					rule: "mudPlus",
+					value: 3
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "limit",
+					value: -1
+				}
+			]
+		},
+		{
+			id: "supply_ship",
+			season: "Spring",
+			tone: "good",
+			weight: 12,
+			name: "Supply ship in",
+			lasts: "instant",
+			card: "The Perseverance is in early with hands, hay and hardware, and a crate of fittings for the shop.",
+			fx: "Crews, machines and cutting rights 15% cheaper this season · +1 ship’s fitting",
+			effects: [
+				{
+					kind: "hire",
+					mult: .85
+				},
+				{
+					kind: "tractPrice",
+					mult: .85
+				},
+				{
+					kind: "item",
+					item: W,
+					qty: 1
+				}
+			]
+		},
+		{
+			id: "fog_bank",
+			season: "Spring",
+			tone: "neutral",
+			weight: 12,
+			name: "Fog bank",
+			lasts: "season",
+			card: "A wall of fog sits on the cove road. Teamsters drive by the sound of the surf.",
+			fx: "Hauling ×0.9 · idle crews turn up finds twice as often",
+			silver: "Things wash up in the fog",
+			effects: [
+				{
+					kind: "stage",
+					stage: "haul",
+					mult: .9
+				},
+				{
+					kind: "finds",
+					mult: 2,
+					item: FOG,
+					itemMult: 2
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "viewYd",
+					value: 120
+				}
+			]
+		},
+		{
+			id: "long_light",
+			season: "Summer",
+			tone: "none",
+			weight: 30,
+			name: "Long light",
+			lasts: "none",
+			effects: [],
+			card: "Warm days and a thin fog by noon.",
+			fx: "No change: normal summer work"
+		},
+		{
+			id: "long_days",
+			season: "Summer",
+			tone: "good",
+			weight: 18,
+			name: "Long days",
+			lasts: "season",
+			card: "The sun barely sets. The crews work till ten and sing on the way back.",
+			fx: "Every stage ×1.1 · mini-game pace boosts +10 s",
+			effects: [{
+				kind: "stage",
+				stage: "all",
+				mult: 1.1
+			}, {
+				kind: "game",
+				game: "all",
+				rule: "boostSec",
+				value: 10
+			}]
+		},
+		{
+			id: "dry_spell",
+			season: "Summer",
+			tone: "bad",
+			weight: 12,
+			name: "Dry spell, fire watch",
+			lasts: "season",
+			card: "No rain in five weeks. The slash is tinder and the fire watch is up on Lantern Bluff.",
+			fx: "If stems pile up past 2 minutes of bucking, a slash fire can burn 15% of them (once)",
+			counter: "Buck a good stem to clear the slash (halves the burn)",
+			silver: "Burnt-over ground: the next lot costs 20% less",
+			clearBy: ["buck"],
+			effects: [{
+				kind: "fire",
+				share: .15,
+				minStemsMin: 2
+			}]
+		},
+		{
+			id: "fish_run",
+			season: "Summer",
+			tone: "neutral",
+			weight: 12,
+			name: "Fish run",
+			lasts: "season",
+			card: "The salmon are in. Half the hands are down at the cannery with a gaff and a grin.",
+			fx: "Every stage ×0.92 · upkeep ×0.75",
+			effects: [{
+				kind: "stage",
+				stage: "all",
+				mult: .92
+			}, {
+				kind: "upkeep",
+				mult: .75
+			}]
+		},
+		{
+			id: "fog_water",
+			season: "Fall",
+			tone: "none",
+			weight: 30,
+			name: "Fog on the water",
+			lasts: "none",
+			effects: [],
+			card: "Grey mornings and still water in the cove.",
+			fx: "No change: normal fall work"
+		},
+		{
+			id: "equinox_gale",
+			season: "Fall",
+			tone: "bad",
+			weight: 14,
+			name: "Equinox gale",
+			lasts: "season",
+			card: "The equinox came in screaming. Windthrow is down across the haul road from here to the cove.",
+			fx: "Hauling ×0.85 · felling ×1.1 (the wind fells the weak ones) · felling-game wind ×1.5",
+			counter: "Drive a clean load to clear the road",
+			silver: "Wreck wash: idle haulers find ship’s fittings twice as often; a perfect fall stamps +1 Prime",
+			effects: [
+				{
+					kind: "stage",
+					stage: "haul",
+					mult: .85
+				},
+				{
+					kind: "stage",
+					stage: "fell",
+					mult: 1.1
+				},
+				{
+					kind: "finds",
+					mult: 1,
+					item: W,
+					itemMult: 2
+				},
+				{
+					kind: "game",
+					game: "fell",
+					rule: "wind",
+					value: 1.5
+				},
+				{
+					kind: "game",
+					game: "fell",
+					rule: "galePrime",
+					value: 1
+				}
+			]
+		},
+		{
+			id: "second_summer",
+			season: "Fall",
+			tone: "good",
+			weight: 14,
+			name: "Second summer",
+			lasts: "season",
+			card: "An Indian summer: dry trails, blue sky and no mud for weeks.",
+			fx: "Skidding ×1.15 · hauling ×1.1 · no mud in the skid game",
+			effects: [
+				{
+					kind: "stage",
+					stage: "skid",
+					mult: 1.15
+				},
+				{
+					kind: "stage",
+					stage: "haul",
+					mult: 1.1
+				},
+				{
+					kind: "game",
+					game: "skid",
+					rule: "noMud"
+				}
+			]
+		},
+		{
+			id: "early_freeze",
+			season: "Fall",
+			tone: "neutral",
+			weight: 12,
+			name: "Early freeze",
+			lasts: "season",
+			card: "Ice on the pond in October. The ground is iron and the roads are fast.",
+			fx: "Counts as Winter: felling ×0.85, skidding and hauling ×1.25 and every winter rule",
+			effects: [{
+				kind: "seasonAs",
+				season: "Winter"
+			}]
+		},
+		{
+			id: "hard_frost",
+			season: "Winter",
+			tone: "none",
+			weight: 30,
+			name: "Hard frost",
+			lasts: "none",
+			effects: [],
+			card: "Frozen ground and a thin fog. Good going.",
+			fx: "No change: winter roads as always"
+		},
+		{
+			id: "blizzard",
+			season: "Winter",
+			tone: "bad",
+			weight: 12,
+			name: "Blizzard",
+			lasts: "half",
+			card: "Three days of snow sideways off the sound. Nobody sees past the horses’ ears.",
+			fx: "First half: every stage ×0.6 (the sprinkler sled keeps hauling going) · second half: packed snow, hauling ×1.2",
+			counter: "Finish a good run on a job to clear its share of the snow",
+			silver: "Packed road after the storm",
+			effects: [
+				{
+					kind: "stage",
+					stage: "all",
+					mult: .6,
+					half: 1,
+					sprinkler: true
+				},
+				{
+					kind: "stage",
+					stage: "haul",
+					mult: 1.2,
+					half: 2
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "viewFrac",
+					value: .6
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "dashedEdges"
+				}
+			]
+		},
+		{
+			id: "ice_bridge",
+			season: "Winter",
+			tone: "good",
+			weight: 14,
+			name: "Ice bridge",
+			lasts: "season",
+			card: "The inlet froze clean across. The sleds take the short way, straight over the ice.",
+			fx: "Hauling ×1.3 · skidding ×1.1 · haul game: road limit +2, summer brakes",
+			effects: [
+				{
+					kind: "stage",
+					stage: "haul",
+					mult: 1.3
+				},
+				{
+					kind: "stage",
+					stage: "skid",
+					mult: 1.1
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "limit",
+					value: 2
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "summerBrakes"
+				}
+			]
+		},
+		{
+			id: "clear_cold",
+			season: "Winter",
+			tone: "good",
+			weight: 12,
+			name: "Clear cold",
+			lasts: "season",
+			card: "The fog has gone. You can see the far shore and every ridge in between.",
+			fx: "Idle finds ×1.5 · haul game shows the whole road · felling game shows the true fall line",
+			effects: [
+				{
+					kind: "finds",
+					mult: 1.5,
+					item: FOG,
+					itemMult: 3
+				},
+				{
+					kind: "game",
+					game: "haul",
+					rule: "fullRoad"
+				},
+				{
+					kind: "game",
+					game: "fell",
+					rule: "trueLine"
+				}
+			]
+		}
+	]);
+	var BY_ID = new Map(SEASON_EVENTS.map((e) => [e.id, e]));
+	function eventDef(id) {
+		return id ? BY_ID.get(id) : void 0;
+	}
+	/** The friendly first card of a brand-new company, per season (the season's good headline event). */
+	var FIRST_CARD = deepFreeze({
+		Spring: "supply_ship",
+		Summer: "long_days",
+		Fall: "second_summer",
+		Winter: "ice_bridge"
+	});
+	/** One season's table with weights after board nodes, curses and clauses. Freed bad weight (Storm signals) goes to "nothing". */
+	function eventWeights(season, o = {}) {
+		const rows = SEASON_EVENTS.filter((e) => e.season === season).map((def) => {
+			let w = def.weight;
+			if (def.id === "dry_spell" && o.drySummer) w *= 3;
+			if (def.tone === "bad" && o.stormSeason) w *= 2;
+			return {
+				def,
+				w
+			};
+		});
+		if (o.signals) {
+			let freed = 0;
+			for (const r of rows) if (r.def.tone === "bad") {
+				const nw = r.w * STORM_SIGNALS_MULT;
+				freed += r.w - nw;
+				r.w = nw;
+			}
+			const none = rows.find((r) => r.def.tone === "none");
+			if (none) none.w += freed;
+		}
+		return rows;
+	}
+	/**
+	* Roll one event for `season`. Exactly one draw from `rng`. A brand-new company's first
+	* card is the season's good headline; the next gentle-start rolls turn anything but good
+	* into nothing; a bad roll past `maxBad` in a row becomes nothing.
+	*/
+	function rollEvent(season, ctx, rows, rng) {
+		const x = rng();
+		const none = (rows.find((r) => r.def.tone === "none") ?? rows[0])?.def;
+		if (!none) throw new RangeError(`rollEvent: no events for ${season}`);
+		if (ctx.changes === 0) return eventDef(FIRST_CARD[season]) ?? none;
+		let y = x * rows.reduce((a, r) => a + r.w, 0), pick = rows[rows.length - 1]?.def ?? none;
+		for (const r of rows) {
+			y -= r.w;
+			if (y < 0) {
+				pick = r.def;
+				break;
+			}
+		}
+		if (ctx.changes < 4 && pick.tone !== "good") return none;
+		if (pick.tone === "bad" && ctx.badStreak >= ctx.maxBad) return none;
+		return pick;
+	}
+	/** Seconds of the season after which a 'half' effect switches to its second half. */
+	var HALF_SEC = 75;
+	/** One stage's event multiplier at `tIn` seconds into the season (1 with no event). */
+	function eventStageFactor(ev, stage, tIn, o = {}) {
+		if (!ev) return 1;
+		let f = 1;
+		for (const e of ev.effects) {
+			if (e.kind !== "stage" || e.stage !== "all" && e.stage !== stage) continue;
+			if (e.half === 1 && tIn >= 75) continue;
+			if (e.half === 2 && tIn < 75) continue;
+			let m = e.mult;
+			if (e.mud && stage === "skid") m = o.greased ? 1.1 : o.swampBoots ? 1 : o.corduroy ? 1 - (1 - m) / 2 : m;
+			if (e.sprinkler && stage === "haul" && o.iceRoad) m = 1;
+			if (m < 1 && ev.tone === "bad") {
+				if (o.illWind) m = 1 + (1 - m);
+				else if (o.guard) m = 1;
+				else if (o.cleared) m = 1 - (1 - m) / 2;
+			} else if (m < 1 && o.guard) m = 1;
+			f *= m;
+		}
+		return f;
+	}
+	/** True when an event slows this stage at `tIn` (the stages Clear the road can clear). */
+	function eventSlows(ev, stage, tIn) {
+		if (!ev || ev.tone !== "bad") return false;
+		if (ev.clearBy) return ev.clearBy.includes(stage);
+		return eventStageFactor(ev, stage, tIn) < 1;
+	}
+	/**
+	* The season factor after an event: base × event, kept inside EVENT_CLAMP. A season factor
+	* already outside the range on its own (winter hauling with the sprinkler sled) is never
+	* made worse by a good event or better by a bad one. With ev = 1 this returns `base` exactly.
+	*/
+	function composeSeason(base, ev) {
+		if (ev === 1) return base;
+		const lo = Math.min(EVENT_CLAMP[0], base), hi = Math.max(EVENT_CLAMP[1], base);
+		return Math.min(hi, Math.max(lo, base * ev));
+	}
+	/** Product of an event's multipliers of one kind (price, upkeep, hire, tractPrice, finds). Harmful ones pause under the payroll guard. */
+	function eventMult(ev, kind, guard = false) {
+		if (!ev) return 1;
+		let m = 1;
+		for (const e of ev.effects) {
+			if (e.kind !== kind) continue;
+			if ((kind === "upkeep" || kind === "hire" || kind === "tractPrice" ? e.mult > 1 : e.mult < 1) && guard) continue;
+			m *= e.mult;
+		}
+		return m;
+	}
+	/** Extra idle-find weights an event puts on single items. */
+	function eventFindWeights(ev) {
+		const out = {};
+		if (!ev) return out;
+		for (const e of ev.effects) if (e.kind === "finds" && e.item && e.itemMult) out[e.item] = (out[e.item] ?? 1) * e.itemMult;
+		return out;
+	}
+	/** The season every seasonal rule should use (Early freeze counts as Winter). */
+	function effectiveSeason(season, ev) {
+		const e = ev?.effects.find((x) => x.kind === "seasonAs");
+		return e && e.kind === "seasonAs" ? e.season : season;
+	}
+	/** Mini-game rule changes an event makes in one game (rows for 'all' included). */
+	function eventGameRules(ev, game) {
+		if (!ev) return [];
+		const out = [];
+		for (const e of ev.effects) if (e.kind === "game" && (e.game === game || e.game === "all")) out.push(e.value === void 0 ? { rule: e.rule } : {
+			rule: e.rule,
+			value: e.value
+		});
+		return out;
+	}
+	/** Value of one game rule (`dflt` when the event lacks it). */
+	function gameRule(ev, game, rule, dflt = 0) {
+		const r = eventGameRules(ev, game).find((x) => x.rule === rule);
+		return r ? r.value ?? 1 : dflt;
+	}
+	/** Felling wind multiplier with the cap (events × species). */
+	function windMult(...mults) {
+		return Math.min(2, mults.reduce((a, m) => a * m, 1));
+	}
+	/** Payroll guard: harmful effects pause while cash is under PAYROLL_GUARD_MIN minutes of upkeep. */
+	function payrollGuard(cash, upkeepPerMin) {
+		return upkeepPerMin > 0 && cash < 2 * upkeepPerMin;
+	}
+	/** Storm season curse: Charter Shares multiplier for `n` bad events weathered in full (outside the special-order cap). */
+	function stormSeasonMult(n) {
+		return 1 + Math.min(STORM_SEASON_CAP, STORM_SEASON_STEP * Math.max(0, n));
+	}
+	/**
+	* The return summary: quiet seasons grouped, each event on its own line (up to `max` lines in all,
+	* the rest folded into a count).
+	*/
+	function awaySummary(entries, max = 6) {
+		const quiet = entries.filter((e) => eventDef(e.id)?.tone === "none").length;
+		const evs = entries.filter((e) => {
+			const d = eventDef(e.id);
+			return d && d.tone !== "none";
+		});
+		const lines = [];
+		if (quiet) lines.push(`${quiet} quiet ${quiet === 1 ? "season" : "seasons"}`);
+		const room = Math.max(0, max - lines.length);
+		const shown = evs.length > room ? evs.slice(evs.length - (room - 1)) : evs;
+		if (evs.length > room) lines.push(`${evs.length - shown.length} earlier events`);
+		for (const e of shown) {
+			const d = eventDef(e.id);
+			lines.push(`${d.name}, ${e.when}${e.detail ? `: ${e.detail}` : ""}`);
+		}
+		return lines;
+	}
+	//#endregion
 	//#region packages/core/src/index.ts
 	/** Clamp a number into [min, max]. */
 	function clamp(value, min, max) {
@@ -4135,21 +4757,29 @@ var Core = (function(exports) {
 	exports.BUCK_PRIME_SCORE = BUCK_PRIME_SCORE;
 	exports.BUCK_RULES = BUCK_RULES;
 	exports.BUNDLE_BF = BUNDLE_BF;
+	exports.BURNT_DISCOUNT = BURNT_DISCOUNT;
 	exports.CAMP_FIT_FALLERS_SHORT = CAMP_FIT_FALLERS_SHORT;
 	exports.CAMP_FIT_TEAMS_SHORT = CAMP_FIT_TEAMS_SHORT;
+	exports.CLEAR_ROAD_Q = CLEAR_ROAD_Q;
 	exports.CLOSE_VOL = CLOSE_VOL;
 	exports.COVE_GROUNDS = COVE_GROUNDS;
 	exports.COVE_LOG_PRICE = COVE_LOG_PRICE;
 	exports.CURRENCIES = CURRENCIES;
 	exports.DROP_TABLES = DROP_TABLES;
+	exports.DRY_SUMMER_MULT = DRY_SUMMER_MULT;
 	exports.EQUIPMENT = EQUIPMENT;
 	exports.ERAS = ERAS;
 	exports.ERA_SHARES = ERA_SHARES;
 	exports.ERA_SPECIES = ERA_SPECIES;
+	exports.EVENT_CLAMP = EVENT_CLAMP;
 	exports.FELL_RULES = FELL_RULES;
+	exports.FIRE_PER_SEC = FIRE_PER_SEC;
+	exports.FIRST_CARD = FIRST_CARD;
 	exports.FOUNDING_CRATE = FOUNDING_CRATE;
+	exports.GENTLE_CHANGES = GENTLE_CHANGES;
 	exports.GRADE_MIX = GRADE_MIX;
 	exports.GROUNDS = GROUNDS;
+	exports.HALF_SEC = HALF_SEC;
 	exports.HAUL_CLEAN_BONUS = HAUL_CLEAN_BONUS;
 	exports.HAUL_FLAT = HAUL_FLAT;
 	exports.HAUL_GHOST_STEP = HAUL_GHOST_STEP;
@@ -4183,6 +4813,7 @@ var Core = (function(exports) {
 	exports.ORDER_OPEN_MAX = ORDER_OPEN_MAX;
 	exports.ORDER_PERKS = ORDER_PERKS;
 	exports.ORDER_RETURN_OUTPOSTS = ORDER_RETURN_OUTPOSTS;
+	exports.PAYROLL_GUARD_MIN = PAYROLL_GUARD_MIN;
 	exports.PERKS = PERKS;
 	exports.PILES = PILES;
 	exports.PLACES = PLACES;
@@ -4197,6 +4828,7 @@ var Core = (function(exports) {
 	exports.SAW_PERKS = SAW_PERKS;
 	exports.SAW_TIME = SAW_TIME;
 	exports.SEASONS = SEASONS;
+	exports.SEASON_EVENTS = SEASON_EVENTS;
 	exports.SEASON_LEN = SEASON_LEN;
 	exports.SITE = SITE;
 	exports.SKID_TURN_RUNGS = SKID_TURN_RUNGS;
@@ -4211,14 +4843,20 @@ var Core = (function(exports) {
 	exports.SPECIES_SEASON = SPECIES_SEASON;
 	exports.STAGES = STAGES;
 	exports.START_SAWYERS = START_SAWYERS;
+	exports.STORM_SEASON_CAP = STORM_SEASON_CAP;
+	exports.STORM_SEASON_MULT = STORM_SEASON_MULT;
+	exports.STORM_SEASON_STEP = STORM_SEASON_STEP;
+	exports.STORM_SIGNALS_MULT = STORM_SIGNALS_MULT;
 	exports.STRUCTURES = STRUCTURES;
 	exports.TANBARK = TANBARK;
 	exports.TRACT_BASE = TRACT_BASE;
 	exports.TURN_TIME_CARRIAGE = TURN_TIME_CARRIAGE;
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
+	exports.WIND_CAP = WIND_CAP;
 	exports.achievementMet = achievementMet;
 	exports.achievementProgress = achievementProgress;
 	exports.applyMults = applyMults;
+	exports.awaySummary = awaySummary;
 	exports.boardCells = boardCells;
 	exports.boardGradeName = boardGradeName;
 	exports.boardValue = boardValue;
@@ -4237,6 +4875,7 @@ var Core = (function(exports) {
 	exports.cantSquared = cantSquared;
 	exports.clamp = clamp;
 	exports.clauseMult = clauseMult;
+	exports.composeSeason = composeSeason;
 	exports.countEvents = countEvents;
 	exports.coveLogPrice = coveLogPrice;
 	exports.crewCount = crewCount;
@@ -4248,14 +4887,23 @@ var Core = (function(exports) {
 	exports.draftPool = draftPool;
 	exports.draftWeight = draftWeight;
 	exports.dropTier = dropTier;
+	exports.effectiveSeason = effectiveSeason;
 	exports.ensureAffordableListing = ensureAffordableListing;
 	exports.equipmentCost = equipmentCost;
 	exports.equipmentCostTotal = equipmentCostTotal;
 	exports.equipmentMaxAffordable = equipmentMaxAffordable;
 	exports.eraCost = eraCost;
+	exports.eventDef = eventDef;
+	exports.eventFindWeights = eventFindWeights;
+	exports.eventGameRules = eventGameRules;
+	exports.eventMult = eventMult;
+	exports.eventSlows = eventSlows;
+	exports.eventStageFactor = eventStageFactor;
+	exports.eventWeights = eventWeights;
 	exports.fellRules = fellRules;
 	exports.fitTractPrice = fitTractPrice;
 	exports.freeSawyers = freeSawyers;
+	exports.gameRule = gameRule;
 	exports.genHaulTrack = genHaulTrack;
 	exports.genHire = genHire;
 	exports.genListings = genListings;
@@ -4306,6 +4954,7 @@ var Core = (function(exports) {
 	exports.nextBoard = nextBoard;
 	exports.orderBonus = orderBonus;
 	exports.orderRemaining = orderRemaining;
+	exports.payrollGuard = payrollGuard;
 	exports.perkCount = perkCount;
 	exports.perkMult = perkMult;
 	exports.pickFromMix = pickFromMix;
@@ -4319,6 +4968,7 @@ var Core = (function(exports) {
 	exports.roadCost = roadCost;
 	exports.rollDraft = rollDraft;
 	exports.rollDrop = rollDrop;
+	exports.rollEvent = rollEvent;
 	exports.rollIdleDrop = rollIdleDrop;
 	exports.sawAdvice = sawAdvice;
 	exports.sawBest = sawBest;
@@ -4342,6 +4992,7 @@ var Core = (function(exports) {
 	exports.speciesSeasonValue = speciesSeasonValue;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
+	exports.stormSeasonMult = stormSeasonMult;
 	exports.streamRng = streamRng;
 	exports.structureDef = structureDef;
 	exports.structureNext = structureNext;
@@ -4351,6 +5002,7 @@ var Core = (function(exports) {
 	exports.treeValue = treeValue;
 	exports.turnLog = turnLog;
 	exports.weightTag = weightTag;
+	exports.windMult = windMult;
 	return exports;
 })({});
 </script><!-- /outpost-core -->
@@ -4393,18 +5045,21 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat')],
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
-  millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[]});
-function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0, markerRerolls:0, itemSales:0, toMill:0}; }
+  millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather()});
+// seasonal events (Core: packages/core/src/weather.ts): company-wide, one roll per season change on the events stream, rolled one season ahead.
+// changes -1 = not yet known (an old save): normalize() sets it from the winters already worked, so a veteran company gets no gentle start.
+function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes:-1, burnt:false, off:false, stats:{bad:0, guard:0, fires:0, burned:0, maxStreak:0}}; }
+function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:0, earned:0, perks:[], drafts:0, dq:[], prog:0, pq:0, offer:null, rerolls:0, mods:[], era:0, eraT:[], achMark:0, cFilled:0, snow:0, setup:false, bountyPaid:0, markerRerolls:0, itemSales:0, toMill:0, stormN:0}; }
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
 function freshUi(){ return {buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
-function freshRng(){ const t = Date.now(); return {drops:(t ^ 0x5bd1e995) >>> 0, saw:(t*7 + 13) >>> 0}; }
+function freshRng(){ const t = Date.now(); return {drops:(t ^ 0x5bd1e995) >>> 0, saw:(t*7 + 13) >>> 0, events:(t*31 + 7) >>> 0}; }
 let S = fresh();
 
 // ---------- helpers
@@ -4430,7 +5085,19 @@ const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
 const bf = n => fmt(n) + ' bd ft';
 const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt(s/3600)+' h';
 
-const seasonF = stage => Core.seasonFactor(season(), stage, {swampBoots: !!perk('swamp'), corduroy: has('corduroy'), iceRoad: has('icerd'), iceKing: !!perk('iceking'), greased: !!perk('greased')});
+// the weather now (undefined in a quiet stretch); wxMute lets the return summary compare against a quiet stretch
+let wxMute = false;
+const evNow = () => !wxMute && S.weather && S.weather.cur ? Core.eventDef(S.weather.cur.id) : undefined;
+const effSeason = () => Core.effectiveSeason(season(), evNow());
+const upkeepBase = () => Core.crewUpkeep(S.own, S.util || {}, perk('store') ? 0 : .25) * umult('upkeep') * pmult('upkeep') * bunkF();
+// payroll guard: harmful weather pauses while cash is under 2 minutes of upkeep (no event can put crews into arrears)
+const payGuard = () => Core.payrollGuard(S.cash, upkeepBase());
+const evOpts = stage => ({corduroy: has('corduroy'), swampBoots: !!perk('swamp'), greased: !!perk('greased'), iceRoad: has('icerd'), illWind: !!perk('illwind'),
+  cleared: !!(S.weather.cur && S.weather.cur.cleared.includes(stage)), guard: payGuard()});
+const evMult = kind => { const e = evNow(); return e ? Core.eventMult(e, kind, payGuard()) : 1; };
+// the season factor, then the event on top, clamped (Core.composeSeason); with no event this is exactly Core.seasonFactor
+const seasonF = stage => { const e = evNow(), base = Core.seasonFactor(effSeason(), stage, {swampBoots: !!perk('swamp'), corduroy: has('corduroy'), iceRoad: has('icerd'), iceKing: !!perk('iceking'), greased: !!perk('greased')});
+  return e ? Core.composeSeason(base, Core.eventStageFactor(e, stage, S.st, evOpts(stage))) : base; };
 const slopeF = () => Core.slopeFactor(S.site.slope, has('skyline'));
 const distF = () => Core.distanceFactor(S.site.miles);
 const baseRate = stage => Core.crewRate(stage, S.own) * umult(stage) * umult('all')
@@ -4448,10 +5115,12 @@ function fellBf(chops){ const t = tract(); return t ? chops / t.hp * t.bf : 0; }
 // per minute; crews with nothing to do are paid a quarter rate
 // the bunkhouse (raised with plank bundles from the Sawmill) makes crews cheaper to keep and to hire
 const bunkF = () => Core.bunkhouseMult(S.structures || {});
-const upkeep = () => Core.crewUpkeep(S.own, S.util || {}, perk('store') ? 0 : .25) * umult('upkeep') * pmult('upkeep') * bunkF();
+const upkeep = () => upkeepBase() * evMult('upkeep');
 const fullUpkeep = () => Core.crewUpkeepFull(S.own) * umult('upkeep') * pmult('upkeep') * bunkF();
 const market = () => Core.marketPrice(S.t);
-const eqCost = e => Core.equipmentCost(e.cost * bunkF(), own(e.id));
+// crews and machines: the bunkhouse and a Supply ship make them cheaper
+const hireF = () => bunkF() * evMult('hire');
+const eqCost = e => Core.equipmentCost(e.cost * hireF(), own(e.id));
 const handAmt = stage => Core.handAmount(stage, umult('hand') * pmult('hand'), slopeF(), distF());
 
 function note(text){
@@ -4472,9 +5141,11 @@ const genTract = () => Core.genTract(Math.random, S.era, saleOpts());
 // after a push inland the board always lists a tract at or under half that push's price (Steam Camp cash trap)
 const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
 function refreshSales(){ S.forSale = Core.genListings(Math.random, S.era, saleOpts(), 3, saleCap()); S.saleT = 180; }
+// cutting rights: a Supply ship cheapens them; burnt-over ground after a slash fire takes 20% off the next lot
+const tractCost = t => { const m = evMult('tractPrice') * (S.weather.burnt ? Core.BURNT_DISCOUNT : 1); return m === 1 ? t.price : Math.round(t.price*m); };
 function buyTract(i){
-  const t = S.forSale[i]; if (!t || S.cash < t.price) return;
-  S.cash -= t.price; delete t.price;
+  const t = S.forSale[i]; if (!t || S.cash < tractCost(t)) return;
+  S.cash -= tractCost(t); delete t.price; if (S.weather.burnt){ S.weather.burnt = false; t.burnt = true; }
   t.roadCost = Core.roadCost(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); }
@@ -4497,9 +5168,10 @@ function offerSpecies(){
   const share = {}; if (t) species.forEach(id => { share[id] = Core.mixShare(t.mix, id); });
   return {species, share};
 }
-function genOffer(){
+// regular=true: a plain charter order (no species roll); the board's first slot always is one
+function genOffer(regular){
   const t = tract();
-  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, offerSpecies());
+  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, regular ? undefined : offerSpecies());
 }
 // a species order counts only that species' share of each delivery, by the current tract's mix
 const orderShare = c => !c || !c.sp ? 1 : tract() ? Core.mixShare(tract().mix, c.sp) : 0;
@@ -4514,11 +5186,11 @@ function acceptHire(){
   note(`Signed to cut ${t.name} for ${t.hire.mill}. Received a ${money(mob)} advance.`);
   render(true);
 }
-const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, t.price), Infinity);
+const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, tractCost(t)), Infinity);
 const scripBlock = () => perk('scrip') && (!!tract() || S.cash >= cheapestSale());
 const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &&
   (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
-function refreshOffers(){ S.offers = [genOffer(), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
+function refreshOffers(){ S.offers = [genOffer(true), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
 function accept(i){
   if (S.contract) return;
   const o = S.offers[i]; if (!o) return;
@@ -4532,7 +5204,7 @@ function accept(i){
 // species seasonal traits (hemlock tanbark in Spring and Summer, maple in Winter) come in through Core.seasonValueFactor
 function fellK(t, k){
   t.left -= k; S.felled += k;
-  S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, season());
+  S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, effSeason()); // an Early freeze counts as Winter for species traits too (maple)
 }
 function finishTract(){
   const t = S.tracts.shift();
@@ -4582,7 +5254,9 @@ function tick(dt){
   S.st += dt;
   while (S.st >= SEASON_LEN){ S.st -= SEASON_LEN; S.season = (S.season+1) % 4; if (S.season === 0){ S.year++; S.stats.winters++; }
     if (SEASONS[S.season] === 'Spring') note(`Mud season on the Reach. Skidding and hauling slow down.`);
-    if (SEASONS[S.season] === 'Winter') note(`Ground is frozen and the fog is thin. Good skidding and hauling.`); }
+    if (SEASONS[S.season] === 'Winter') note(`Ground is frozen and the fog is thin. Good skidding and hauling.`);
+    weatherTurn(); }
+  weatherTick(dt);
   // payroll
   // payroll: if you can't pay, crews keep working at half pace and the wages are owed
   const cost = upkeep()*dt/60; let eff = 1;
@@ -4615,8 +5289,6 @@ function tick(dt){
   // run milestones
   if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
     queueDraft(.65, `Reached ${ERAS[S.run.era].name}`); } }
-  if (hasMod('drought') && season() === 'Summer' && S.stems.bf > 50 && Math.random() < dt*.003){
-    S.stems.bf *= .75; S.stems.val *= .75; note('Dry summer: a slash fire burned a quarter of the stems on the ground.'); }
   // contracts
   if (S.contract && S.t >= S.contract.end){
     const c = S.contract; const pen = Core.missedPenalty(c.penalty, c.done, c.vol, !!perk('handshake'), !!c.sp); S.cash = Math.max(0, S.cash - pen);
@@ -4631,6 +5303,83 @@ function tick(dt){
   S.upEma = upkeep()/60*eff;
   S.phT -= dt; if (S.phT <= 0){ S.ph.push(market()); if (S.ph.length > 60) S.ph.shift(); S.phT = 4; }
   if (S.camps.sawmill) millTick(dt);
+}
+
+// ---------- seasonal events (data and rules in Core: packages/core/src/weather.ts)
+const evRng = () => Core.streamRng(S.rng, 'events')();
+const nextSeason = () => SEASONS[(S.season + 1) % 4];
+const seasonLabel = () => `${season()} ${S.year}`;
+let awayLog = null; // set while offline() runs: the seasons rolled while the player was away
+const dispQ = []; let dCur = null; // dispatch cards waiting, and the one showing ({kind, id or lines, until, sticky})
+function rollWeather(sn){
+  const W = S.weather;
+  const rows = Core.eventWeights(sn, {signals: !!meta('signals'), stormSeason: !!perk('stormseason'), drySummer: !!hasMod('drought')});
+  const e = Core.rollEvent(sn, {badStreak: W.streak, maxBad: perk('stormseason') ? 2 : 1, changes: Math.max(0, W.changes)}, rows, evRng);
+  W.changes = Math.max(0, W.changes) + 1; W.streak = e.tone === 'bad' ? W.streak + 1 : 0; W.stats.maxStreak = Math.max(W.stats.maxStreak, W.streak);
+  return e.id;
+}
+// at every season change: the event that just ran out ends, last season's roll becomes this season's card, and next season rolls
+function weatherTurn(){
+  const W = S.weather; if (W.off) return;
+  const prev = evNow();
+  if (prev && prev.tone === 'bad'){ S.stats.storms = (S.stats.storms || 0) + 1; if (perk('stormseason')) S.run.stormN = (S.run.stormN || 0) + 1; }
+  const id = W.next || rollWeather(season()); W.next = null;
+  const d = Core.eventDef(id) || Core.eventDef(Core.FIRST_CARD[season()]);
+  W.cur = {id:d.id, t0:S.t - S.st, cleared:[], fired:false, guarded:false, when:seasonLabel()};
+  W.next = rollWeather(nextSeason());
+  if (d.tone === 'bad') W.stats.bad++;
+  let detail = '';
+  for (const e of d.effects){
+    if (e.kind === 'item') addItem(e.item, e.qty, !!awayLog);
+    if (e.kind === 'drift' && S.landing.bf > 0){ const amt = S.landing.bf*e.share, rev = deliver(amt); detail = `${bf(amt)} floated to the cove (${money(rev)})`; }
+  }
+  W.cur.detail = detail;
+  const first = !W.seen[d.id];
+  W.seen[d.id] = first ? {first:seasonLabel(), n:1} : {...W.seen[d.id], n:(W.seen[d.id].n || 0) + 1};
+  if (d.tone !== 'none') note(`${d.name}: ${d.fx}.${detail ? ` ${detail[0].toUpperCase() + detail.slice(1)}.` : ''}`);
+  if (first) note(`New in the weather almanac: ${d.name}.`);
+  if (awayLog){ awayLog.push({id:d.id, when:seasonLabel(), detail, first}); return; }
+  dispQ.push({kind:'event', id:d.id, first});
+}
+function weatherTick(dt){
+  const W = S.weather; if (W.off) return;
+  if (!W.next) W.next = rollWeather(nextSeason());
+  const e = evNow(); if (!e || !W.cur) return;
+  if (e.tone === 'bad' && !W.cur.guarded && payGuard()){ W.cur.guarded = true; W.stats.guard++; note('The board covers the shortfall: bad weather does not slow crews while cash is under two minutes of wages.'); }
+  const fe = e.effects.find(x => x.kind === 'fire');
+  if (fe && !W.cur.fired && S.stems.bf > Math.max(50, fe.minStemsMin*60*rate('buck')) && evRng() < dt*Core.FIRE_PER_SEC){
+    const share = fe.share*(W.cur.cleared.includes('buck') ? .5 : 1), amt = S.stems.bf*share;
+    S.stems.bf -= amt; S.stems.val *= 1 - share; clean(S.stems);
+    W.cur.fired = true; W.cur.detail = `a slash fire burned ${bf(amt)} of stems`; W.stats.fires++; W.stats.burned += amt; W.burnt = true;
+    note(`Slash fire: ${bf(amt)} of stems on the ground burned (${Math.round(share*100)}%). Burnt-over ground: the next lot at the land office costs 20% less.`);
+    if (awayLog){ const a = awayLog[awayLog.length - 1]; if (a && a.id === e.id) a.detail = W.cur.detail; }
+  }
+}
+// Clear the road: a mid-tier or better run on a job the bad weather slows halves that job's penalty for the rest of the event
+let clearMsg = '';
+const STAGE_NAME = {fell:'felling', buck:'bucking', skid:'skidding', haul:'hauling'};
+function clearRoad(kind, q){
+  const W = S.weather, e = evNow(); if (!e || !W.cur || e.tone !== 'bad' || !STAGE_NAME[kind] || perk('illwind')) return false;
+  if (W.cur.cleared.includes(kind) || q < Core.CLEAR_ROAD_Q || !Core.eventSlows(e, kind, S.st)) return false;
+  W.cur.cleared.push(kind); S.stats.cleared = (S.stats.cleared || 0) + 1;
+  const fire = e.effects.some(x => x.kind === 'fire');
+  clearMsg = ` Clear the road: ${fire ? 'the slash is cleared, so a fire would burn half as much' : `the ${e.name.toLowerCase()} slows ${STAGE_NAME[kind]} half as much`} for the rest of the season.`;
+  note(`Cleared the road in the ${e.name.toLowerCase()}: ${fire ? 'slash cleared' : STAGE_NAME[kind] + ' penalty halved'}.`);
+  return true;
+}
+const takeClear = () => { const m = clearMsg; clearMsg = ''; return m; };
+// what the weather changes in one mini-game, for its status line and help (Core.eventGameRules)
+function wxGameText(kind){
+  const e = evNow(); if (!e || e.tone === 'none' || kind === 'saw') return '';
+  const g = r => Core.gameRule(e, kind, r), parts = [];
+  if (kind === 'fell'){ if (g('wind')) parts.push(`wind ×${g('wind')}`); if (g('galePrime')) parts.push('a perfect fall stamps +1 Prime'); if (g('trueLine')) parts.push('the true fall line shows'); if (e.id === 'early_freeze') parts.push('winter wind'); }
+  if (kind === 'skid'){ if (g('mudPlus')) parts.push(`${g('mudPlus')} more mud patches`); if (g('noMud')) parts.push('no mud on the trail'); if (e.id === 'early_freeze') parts.push('frozen ground, no mud'); }
+  if (kind === 'haul'){ const l = g('limit'); if (l) parts.push(`road limit ${l > 0 ? '+' : '−'}${Math.abs(l)}`); if (g('viewYd')) parts.push(`road hidden past ${g('viewYd')*(has('lookout') ? 2 : 1)} yd`);
+    if (g('viewFrac') && S.st < Core.HALF_SEC) parts.push('snow on the road: you see 60% ahead'); if (g('summerBrakes')) parts.push('summer brakes'); if (g('fullRoad')) parts.push('the whole road shows, brake flags included'); if (e.id === 'early_freeze') parts.push('winter road'); }
+  const bs = g('boostSec'); if (bs) parts.push(`pace boosts +${bs} s`);
+  const ctr = e.counter && Core.eventSlows(e, kind, S.st) && !S.weather.cur.cleared.includes(kind) && !perk('illwind') ? e.counter : '';
+  if (!parts.length && !ctr) return '';
+  return `${e.name}: ${parts.length ? parts.join(', ') : e.fx.split(' · ')[0].toLowerCase()}.${ctr ? ` ${ctr}.` : ''} `;
 }
 
 // ---------- manual work
@@ -4699,8 +5448,8 @@ const eqRows = {};
 const BUY_NS = [1, 10, 25, 'max'];
 function buyPlan(e){
   const n = S.ui.buyN, o = own(e.id);
-  if (n === 'max'){ const m = Core.equipmentMaxAffordable(e.cost * bunkF(), o, S.cash); return m.count ? m : {count:1, total:eqCost(e), none:true}; }
-  return {count:n, total:Core.equipmentCostTotal(e.cost * bunkF(), o, n)};
+  if (n === 'max'){ const m = Core.equipmentMaxAffordable(e.cost * hireF(), o, S.cash); return m.count ? m : {count:1, total:eqCost(e), none:true}; }
+  return {count:n, total:Core.equipmentCostTotal(e.cost * hireF(), o, n)};
 }
 function buyEq(e){
   const p = buyPlan(e); if (p.none || S.cash < p.total) return 0;
@@ -4751,15 +5500,16 @@ function listingCard(t, i, fitKey){
     <span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}${g.twist ? ' · ' + g.twist : ''}</span>
     <p>Best for: ${main ? Core.BEST_FOR[main] : 'mixed use'}</p>
     <p class="fit fit-${fit.key}" data-fit="${fit.key}">${fit.text}</p></div>
-    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(t.price)}</button></div></div>`;
+    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
 function renderSales(){
   const fits = S.forSale.map(t => Core.campFit(campCaps(), {hp:t.hp, bf:t.bf, wt:t.wt || 1}).key).join(',');
-  const key = S.forSale.map(t => t.name+t.trees).join('|') + fits;
+  const key = S.forSale.map(t => t.name+t.trees+':'+tractCost(t)).join('|') + fits;
   list('sales', key, S.forSale.map((t,i) => listingCard(t, i)).join(''),
     box => box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)));
-  $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < t.price; });
-  $('saleMeta').textContent = `The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.`;
+  $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < tractCost(t); });
+  $('saleMeta').textContent = `The charter’s land office sells cutting rights up front. Farther and steeper tracts are cheaper but slower to work. New listings in ${mins(Math.max(0,S.saleT))}.` +
+    (S.weather.burnt ? ' Burnt-over ground after the slash fire: the next lot costs 20% less.' : '') + (evMult('tractPrice') < 1 ? ` ${evNow().name}: cutting rights 15% cheaper this season.` : '');
 }
 function renderHire(){
   const job = S.tracts.find(t => t.hire), o = S.hireOffer;
@@ -4844,7 +5594,7 @@ function drawSpark(){
 // ---------- render
 function render(force){
   if (force) Object.keys(sig).forEach(k => delete sig[k]);
-  renderStrip(); renderTabs();
+  renderStrip(); renderTabs(); renderDispatch();
   if (S.ui.camp === 'sawmill' && S.camps.sawmill){ renderMill(); return; }
   const t = tract();
   // tally
@@ -4854,8 +5604,12 @@ function render(force){
   $('tNet').textContent = money(net); $('tNet').className = net >= 0 ? 'pos' : 'neg';
   $('tNetSub').textContent = `${money(S.ema*60)} in · ${money(upkeep())} upkeep` + (fullUpkeep() - upkeep() > 1 ? ` (idle crews at ¼ pay)` : '');
   $('tSeason').textContent = `${season()} ${S.year}`;
-  const sn = season();
-  $('tSeasonSub').textContent = sn === 'Spring' ? 'Mud: skid and haul slowed' : sn === 'Winter' ? 'Frozen ground: skid and haul faster' : 'Fog on the water, normal work';
+  const sn = season(), ev = evNow();
+  const sub = ev && ev.tone !== 'none' ? `${ev.name}: ${evShort(ev)}, ${clockLeft(evLeft(ev))} left`
+    : sn === 'Spring' ? 'Mud: skid and haul slowed' : sn === 'Winter' ? 'Frozen ground: skid and haul faster' : 'Fog on the water, normal work';
+  if ($('tSeasonSub').textContent !== sub) $('tSeasonSub').textContent = sub;
+  const nx = meta('almanac') && S.weather.next ? Core.eventDef(S.weather.next) : null, nEl = $('tSeasonNext');
+  nEl.hidden = !nx; if (nx){ const t = `Next: ${nx.name}`; if (nEl.textContent !== t) nEl.textContent = t; nEl.title = `${nextSeason()}: ${nx.fx}`; }
   const mk = market(); $('tMkt').textContent = '×' + mk.toFixed(2);
   const prev = S.ph.length > 1 ? S.ph[S.ph.length-2] : mk;
   $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
@@ -4933,10 +5687,63 @@ function render(force){
   renderSales(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
 }
 
+// ---------- the season dispatch: a card under the tally at every season change. It folds away after 8 s, never opens a modal,
+// waits while a mini-game is open, and stays until clicked the first time an event is seen (it then enters the Almanac).
+const clockLeft = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s % 60).padStart(2, '0')}`; };
+const evLeft = ev => ev.lasts === 'half' && S.st < Core.HALF_SEC ? Core.HALF_SEC - S.st : SEASON_LEN - S.st;
+const fx2 = f => (Math.round(f*100)/100).toString();
+// the event's crew effect right now, in a few words ("skid ×0.8", "every stage ×0.6"), from the live factors
+function evShort(ev){
+  const f = {}; STAGES.forEach(st => { f[st.id] = Core.eventStageFactor(ev, st.id, S.st, evOpts(st.id)); });
+  const vals = Object.values(f), ch = STAGES.filter(st => f[st.id] !== 1);
+  if (ch.length === 4 && vals.every(v => v === vals[0])) return `every stage ×${fx2(vals[0])}`;
+  if (ch.length) return ch.map(st => `${st.name.toLowerCase()} ×${fx2(f[st.id])}`).join(', ');
+  if (ev.id === 'early_freeze') return 'winter rules';
+  return ev.fx.split(' · ')[0].replace(/^./, c => c.toLowerCase());
+}
+const DISPATCH_SEC = 8;
+function pumpDispatch(){
+  if (dCur && !dCur.sticky && S.t >= dCur.until) dCur = null;
+  if (dCur || !dispQ.length || !mgEl.hidden) return;
+  // a card for a season already over is dropped (first sightings and the return summary always show)
+  while (dispQ.length > 1 && dispQ[0].kind === 'event' && !dispQ[0].first && !(S.weather.cur && S.weather.cur.id === dispQ[0].id)) dispQ.shift();
+  const c = dispQ.shift(); dCur = Object.assign(c, {until: S.t + (c.kind === 'away' ? 20 : DISPATCH_SEC), sticky: !!c.first});
+}
+function dismissDispatch(){ dCur = null; pumpDispatch(); render(); }
+function renderDispatch(){
+  pumpDispatch();
+  const el = $('dispatch'); if (!el) return;
+  if (!dCur){ if (!el.hidden){ el.hidden = true; el.innerHTML = ''; el.dataset.k = ''; } return; }
+  const k = dCur.kind + ':' + (dCur.id || '') + ':' + dCur.sticky;
+  if (el.dataset.k !== k){
+    el.dataset.k = k; el.hidden = false;
+    if (dCur.kind === 'away'){
+      el.className = 'dispatch t-' + (dCur.net > 0.5 ? 'bad' : dCur.net < -0.5 ? 'good' : 'none');
+      el.innerHTML = `<div class="dh"><small>Season dispatch · while you were away</small></div><b class="dn">The weather this time away</b><ul></ul><p class="fx"></p><div class="dbtns"><button class="mbtn" type="button" id="dOk">Got it</button></div>`;
+      const ul = el.querySelector('ul'); dCur.lines.forEach(l => { const li = document.createElement('li'); li.textContent = l; ul.appendChild(li); });
+      el.querySelector('.fx').textContent = `Weather this time away: ${Math.abs(dCur.net) < 0.5 ? 'about the same as a quiet stretch' : `about ${Math.round(Math.abs(dCur.net))}% ${dCur.net > 0 ? 'slower' : 'faster'} than a quiet stretch`}.`;
+    } else {
+      const ev = Core.eventDef(dCur.id); el.className = 'dispatch t-' + ev.tone;
+      el.innerHTML = `<div class="dh"><small></small><small class="ds"></small></div><b class="dn"></b><p class="st"></p><p class="fx"></p><p class="ctr" hidden></p><p class="sv fx" hidden></p>
+        <div class="bar"><i></i></div><div class="dbtns"><button class="mbtn" type="button" id="dOk"></button></div>`;
+      el.querySelector('small').textContent = `Season dispatch · ${S.weather.cur && S.weather.cur.id === ev.id ? S.weather.cur.when : ev.season}`;
+      el.querySelector('.ds').textContent = dCur.first ? 'New in the almanac' : ev.tone === 'none' ? 'Quiet season' : ev.tone === 'bad' ? 'Bad weather' : ev.tone === 'good' ? 'Good weather' : 'Mixed weather';
+      el.querySelector('.dn').textContent = ev.name; el.querySelector('.st').textContent = ev.card;
+      el.querySelector('.fx').textContent = ev.fx + (S.weather.cur && S.weather.cur.detail && S.weather.cur.id === ev.id ? ` · ${S.weather.cur.detail}` : '');
+      const ctr = el.querySelector('.ctr'); ctr.hidden = !ev.counter || !!perk('illwind'); ctr.textContent = ev.counter ? `Counter: ${ev.counter}.` : '';
+      const sv = el.querySelector('.sv'); const ill = ev.tone === 'bad' && perk('illwind');
+      sv.hidden = !ev.silver && !ill; sv.textContent = ill ? 'Ill wind: this weather speeds your crews instead of slowing them.' : ev.silver ? `Silver lining: ${ev.silver}.` : '';
+      el.querySelector('#dOk').textContent = dCur.first ? 'Into the almanac' : 'Fold away';
+    }
+    el.querySelector('#dOk').onclick = dismissDispatch;
+  }
+  const bar = el.querySelector('.bar i'); if (bar) bar.style.width = (dCur.sticky ? 100 : Math.max(0, Math.min(1, (dCur.until - S.t)/DISPATCH_SEC))*100).toFixed(1) + '%';
+}
+
 // ---------- achievements (definitions are data in packages/core)
 const crewCount = () => Core.crewCount(S.own);
 const achMetric = m => m === 'deliv' ? S.stats.deliv : m === 'earned' ? S.earned : m === 'felled' ? S.felled : m === 'crew' ? crewCount() : m === 'era' ? S.era
-  : m === 'crewedStages' ? ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length : S.stats[m];
+  : m === 'crewedStages' ? ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length : m === 'almanac' ? Object.keys(S.weather.seen).length : S.stats[m];
 const ACH = Core.ACHIEVEMENTS;
 const achProg = a => Core.achievementProgress(a, achMetric);
 function checkAch(quiet){
@@ -4990,7 +5797,7 @@ function buttons(list){
   list.forEach(b => { const el = document.createElement('button'); el.type = 'button'; el.className = 'mbtn' + (b.primary ? ' primary' : '');
     el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; if (b.id) el.id = b.id; if (b.pressed != null) el.setAttribute('aria-pressed', String(!!b.pressed)); box.appendChild(el); });
 }
-const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace'));
+const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace')) + Core.gameRule(evNow(), 'fell', 'boostSec');
 // at most Core.BOOST_STAGES stages run boosted at once (the oldest drops; Fog lifts ignores the limit)
 function grantBoost(stage){ if (perk('absentee')) return; S.boost = Core.grantBoost(S.boost, S.t, stage, boostLen(), !!perk('golden')); }
 const mixPick = t => Core.pickFromMix(Math.random, t.mix) ?? t.mix[0][0];
@@ -5028,7 +5835,7 @@ function openMG(kind){
   else if (kind !== 'fell' && srcPile(kind).bf <= 0) return;
   MG.kind = kind; MG.LW = 640; MG.LH = kind === 'buck' ? 300 : 400; MG.keys = {}; MG.ptr = null;
   $('mgTitle').textContent = GAMES[kind];
-  $('mgHelp').textContent = MG_HELP[kind]();
+  $('mgHelp').textContent = MG_HELP[kind]() + (wxGameText(kind) ? ` Weather: ${wxGameText(kind).trim()}` : '');
   setGuide(kind);
   $('mgGuide').hidden = true; $('mgGuideBtn').hidden = kind !== 'buck' && kind !== 'saw'; $('mgPeek').hidden = kind !== 'buck' && kind !== 'saw'; $('mgPeek').textContent = '';
   if (kind === 'saw') $('mgGear').textContent = sawGearLine(); else gearLine(kind);
@@ -5086,15 +5893,17 @@ const polar = (a, r) => ({x: STUMP.x + r*Math.sin(a*Math.PI/180), y: STUMP.y - r
 const fellWindMult = sp => Core.fellRules(sp).wind * ((tract() && Core.GROUNDS[Core.groundId(tract().ground)].windMult) || 1);
 function fellInit(){
   const sp = S.vis, R = Core.fellRules(sp), gap = rnd(-45,45), half = R.half;
-  const windy = season() === 'Winter' || season() === 'Spring';
-  const wind = {dir: Math.random() < .5 ? -1 : 1, str: windy ? rnd(.35,1) : rnd(0,.6), mult: fellWindMult(sp)};
+  const windy = effSeason() === 'Winter' || effSeason() === 'Spring';
+  // wind: species and headlands (fellWindMult) × weather (an equinox gale ×1.5), product capped at Core.WIND_CAP
+  const evW = Core.gameRule(evNow(), 'fell', 'wind', 1);
+  const wind = {dir: Math.random() < .5 ? -1 : 1, str: windy ? rnd(.35,1) : rnd(0,.6), mult: Core.windMult(fellWindMult(sp), evW), ev: evW};
   const rocks = [];
   for (let k=0; k<2; k++){ let a, n=0; do { a = rnd(-80,80); n++; } while (n < 50 && (Math.abs(a-gap) < half+12 || rocks.some(r => Math.abs(r-a) < 16))); rocks.push(a); }
   const stand = [];
   for (let a=-88; a<=88; a+=9){ if (Math.abs(a-gap) < half+4) continue; stand.push({a:a+rnd(-2,2), r:240+rnd(-22,22), s:rnd(13,19)}); }
   F = {phase:'aim', sweep:Math.random()*6, aim:0, hinge:1, holding:false, armed:false, gap, half, wind, rocks, stand, fallP:0, final:0, out:null, sp, R, sat:false};
-  $('mgHelp').textContent = `${MG_HELP.fell()} ${R.tag}`;
-  status(`${R.tag} Press when the line points at the opening. Wind from the ${wind.dir > 0 ? 'left' : 'right'} will push the fall ${wind.dir > 0 ? 'right' : 'left'}, so aim against it.`);
+  $('mgHelp').textContent = `${MG_HELP.fell()} ${R.tag}` + (wxGameText('fell') ? ` Weather: ${wxGameText('fell').trim()}` : '');
+  status(wxGameText('fell') + `${R.tag} Press when the line points at the opening. Wind from the ${wind.dir > 0 ? 'left' : 'right'} will push the fall ${wind.dir > 0 ? 'right' : 'left'}, so aim against it.`);
   buttons([{label:'Done', fn:closeMG}]);
 }
 function fellPress(){
@@ -5151,9 +5960,11 @@ function fellFinish(){
   if (F.out.k === 'perfect'){ if (!perk('sparman')) grantBoost('fell'); S.stats.perfFell++; }
   const pr = fellPrime(F.out.k, F.sp);
   if (pr) F.out.text += ` The scaler stamped it Prime: +${pr.qty} ${pr.qty === 1 ? IDEF(pr.item).name : IDEF(pr.item).plural} to the warehouse.`;
+  // silver lining of a gale: a perfect fall in the wind stamps one more Prime
+  if (F.out.k === 'perfect' && Core.gameRule(evNow(), 'fell', 'galePrime')){ const g = Core.primeFromFall(F.sp) || {item:SPAR}; addItem(g.item, 1); F.out.text += ` A perfect fall in a gale: +1 ${IDEF(g.item).name}.`; }
   if (k > 1) F.out.text += ` Your fallers followed your lead: ${fmt(k)} trees down.`;
   if (dom) F.out.text += ` Domino fall: it took ${fmt(dom)} more ${dom === 1 ? 'tree' : 'trees'} down with it${chain > 1 ? `, chaining ${chain} times` : ''}.`;
-  runDone('fell', {perfect:1, good:.6, hung:.3, broke:.2, chair:.1}[F.out.k] ?? .3);
+  runDone('fell', {perfect:1, good:.6, hung:.3, broke:.2, chair:.1}[F.out.k] ?? .3); F.out.text += takeClear();
   if (F.out.k === 'perfect' || F.out.k === 'chair') note(F.out.k === 'perfect' ? 'Laid a tree perfectly into the opening.' : 'A tree barber-chaired on the back cut.');
   status(F.out.text);
   buttons([{label:'Fell another', primary:true, disabled:!tract(), fn:() => { fellInit(); }}, {label:'Done', fn:closeMG}]);
@@ -5176,7 +5987,7 @@ function fellDraw(){
   F.stand.forEach((s,i) => { const p = polar(s.a, s.r); circle(p.x, p.y, s.s, i % 2 ? C.needle : C.needle2); circle(p.x, p.y, 3, C.bark); });
   // wind
   cx.fillStyle = C.ink; cx.font = '600 13px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'right';
-  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph` + (F.wind.mult !== 1 ? ` · pushes this ${SP[F.sp] ? SP[F.sp].name.split(' ').pop() : 'tree'} ×${+F.wind.mult.toFixed(2)}` : ''), W-18, 26);
+  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph` + (F.wind.mult !== 1 ? ` · pushes this ${SP[F.sp] ? SP[F.sp].name.split(' ').pop() : 'tree'} ×${+F.wind.mult.toFixed(2)}${F.wind.ev > 1 ? ' with the gale' : ''}` : ''), W-18, 26);
   const wl = 20 + Math.min(1.6, F.wind.str*F.wind.mult)*50, wy = 42, wx = W-18-wl;
   cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath();
   if (F.wind.dir > 0){ cx.moveTo(wx, wy); cx.lineTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy-5); cx.moveTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy+5); }
@@ -5187,7 +5998,7 @@ function fellDraw(){
     const p = polar(F.aim, 250);
     cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.setLineDash(F.phase === 'aim' ? [8,6] : []);
     cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(p.x, p.y); cx.stroke(); cx.setLineDash([]);
-    if (has('gunstick')){ const pa = F.aim + F.wind.dir*F.wind.str*14*F.wind.mult, q = polar(pa, 280);
+    if (has('gunstick') || Core.gameRule(evNow(), 'fell', 'trueLine')){ const pa = F.aim + F.wind.dir*F.wind.str*14*F.wind.mult, q = polar(pa, 280);
       cx.strokeStyle = C.good; cx.lineWidth = 3; cx.setLineDash([2,5]); cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(q.x, q.y); cx.stroke(); cx.setLineDash([]);
       cx.fillStyle = C.good; cx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'center'; cx.fillText('fall line', q.x, q.y - 8); cx.textAlign = 'left'; }
   }
@@ -5305,7 +6116,7 @@ const segDollars = v => B && B.optPre && B.optPre.val > 0 && S.stems.bf > 0 ? v/
 const gradeName = x => x.g === 'P' ? `pulp (${x.why})` : `grade ${x.g} sawlog` + (x.why ? ` (${x.why})` : '');
 function buckStatus(){
   const sg = segsOf(B.cuts), saw = sg.filter(x => x.g !== 'P'), pen = buckPenalty();
-  status(`${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} sawlogs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft (Doyle scale)` +
+  status(wxGameText('buck') + `${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} sawlogs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft (Doyle scale)` +
     (B.hints ? ` · ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}, −${Math.round(pen*100)} points` : ''));
 }
 // the next cut of the best plan: first take out a cut that is not in it, otherwise add the first missing one
@@ -5362,7 +6173,7 @@ function buckSend(){
     (counts ? '' : `. A plan under ${pct(BUCK_COUNT_MIN)}% of the best value does not count as a bucking run`) +
     (prime ? `. The scaler stamped ${prime.qty} grade 1 ${prime.qty === 1 ? 'log' : 'logs'} Prime: +${prime.qty} to the warehouse` : '') +
     (pitch ? `. Pitch boiler: +${pitch} amber pitch` : '') +
-    (r >= .97 ? `. Your buckers work ${boostTxt()}.` : '. The green dashes show the best cuts.'));
+    (r >= .97 ? `. Your buckers work ${boostTxt()}.` : '. The green dashes show the best cuts.') + takeClear());
   buttons([{label:'Buck another', primary:true, disabled:S.stems.bf <= 0, fn:buckInit}, {label:'Done', fn:closeMG}]);
   buckPeek(); render();
 }
@@ -5477,7 +6288,7 @@ const skidMud = p => K.mud.some(m => Math.pow((p.x - m.x)/m.rx, 2) + Math.pow((p
 const logEnds = i => [K.chain[1 + 2*i], K.chain[2 + 2*i]];
 const logMid = i => { const [a, b] = logEnds(i); return {x:(a.x + b.x)/2, y:(a.y + b.y)/2}; };
 function skidInit(){
-  const winter = season() === 'Winter', spring = season() === 'Spring';
+  const winter = effSeason() === 'Winter', spring = effSeason() === 'Spring', ev = evNow();
   const WH = 1000, w = 100, ph = [rnd(0,6), rnd(0,6)], amp = [rnd(90,140), rnd(30,55)];
   const cxAt = y => 320 + amp[0]*Math.sin(y/260 + ph[0]) + amp[1]*Math.sin(y/90 + ph[1]);
   const stumps = []; for (let y = 230; y < WH - 190; y += rnd(105,165)) stumps.push({x: cxAt(y) + rnd(-w*.32, w*.32), y, r: rnd(9,13), cd: 0, hung:false});
@@ -5485,9 +6296,11 @@ function skidInit(){
   for (let i=0; i<nm; i++){ const y = rnd(260, WH - 220); mud.push({x: cxAt(y) + rnd(-20,20), y, rx: rnd(38,64), ry: rnd(24,38)}); }
   const woods = []; for (let i=0; i<120; i++){ const y = rnd(0, WH), side = Math.random() < .5 ? -1 : 1;
     const x = cxAt(y) + side*(w/2 + rnd(14, 260)); if (x > -20 && x < 660) woods.push({x, y, r: rnd(10,20)}); }
+  if (Core.gameRule(ev, 'skid', 'noMud')) mud.length = 0;
+  for (let i=0; i<Core.gameRule(ev, 'skid', 'mudPlus'); i++){ const y = rnd(260, WH - 220); mud.push({x: cxAt(y) + rnd(-30,30), y, rx: rnd(44,70), ry: rnd(26,40), flood:true}); }
   K = {phase:'pick', WH, w, cxAt, stumps: has('swamper') ? stumps.filter((_, i) => i % 2) : stumps, mud, woods, pos:{x: cxAt(40), y: 40}, vel:{x:0, y:0}, chain:[], links:[], logs:2, t:0, hits:0, stopT:0, winter, spring, cam:0, msg:'', msgT:0};
   const greased = perk('greased');
-  status(`Choose a turn. Bigger turns move more wood but drag slower and swing wide on the bends.${spring ? (greased ? ' Spring mud is everywhere, and your greased runners love it.' : ' Spring mud is everywhere.') : winter ? ' Frozen ground: no mud, and the team moves faster.' : ''}`);
+  status(wxGameText('skid') + `Choose a turn. Bigger turns move more wood but drag slower and swing wide on the bends.${spring ? (greased ? ' Spring mud is everywhere, and your greased runners love it.' : ' Spring mud is everywhere.') : winter ? ' Frozen ground: no mud, and the team moves faster.' : ''}`);
   const go = n => () => { K.logs = n; K.phase = 'run';
     K.speed = (105 + S.era*18) * Core.skidTurnSpeed(n) * slopeF() * (winter ? 1.15 : 1);
     K.par = Math.round((K.WH - 110)/K.speed*1.4);
@@ -5566,7 +6379,7 @@ function skidFinish(){
   runDone('skid', clean ? 1 : Math.max(.1, 1 - .2*K.hits) * (K.t <= K.par ? 1 : .7));
   if (clean) grantBoost('skid');
   status(`Landed a ${K.logs}-log turn in ${Math.round(K.t)} s (par ${K.par} s) with ${K.hits} stump ${K.hits === 1 ? 'hit' : 'hits'}. Moved ${bf(moved)} to the landing` +
-    (K.hits && !has('skyline') ? `, scarred logs lost ${Math.round((1 - vm)*100)}% of their value.` : '.') + (clean ? ` Clean run: your skidders work ${boostTxt()}.` : ''));
+    (K.hits && !has('skyline') ? `, scarred logs lost ${Math.round((1 - vm)*100)}% of their value.` : '.') + (clean ? ` Clean run: your skidders work ${boostTxt()}.` : '') + takeClear());
   if (clean){ note(K.logs >= 8 ? `Skidded a clean ${K.logs}-log train to the landing.` : 'Skidded a clean turn to the landing.'); S.stats.cleanSkid++; }
   buttons([{label:'Skid another', primary:true, disabled: S.cut.bf <= 0, fn:skidInit}, {label:'Done', fn:closeMG}]);
   render();
@@ -5589,7 +6402,7 @@ function skidDraw(){
   cx.fillStyle = C.muted; cx.font = '12px ' + font; cx.fillText('Stump area', K.cxAt(16), 18);
   // mud
   const greased = perk('greased');
-  K.mud.forEach(m => { cx.fillStyle = C.bark; cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1;
+  K.mud.forEach(m => { cx.fillStyle = m.flood ? C.sky : C.bark; if (m.flood){ cx.globalAlpha = .9; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx + 4, m.ry + 3, 0, 0, Math.PI*2); cx.fillStyle = C.muted; cx.fill(); cx.fillStyle = C.bark; } cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1;
     if (greased){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([5,5]); cx.stroke(); cx.setLineDash([]); } });
   // woods
   K.woods.forEach((t,i) => { if (t.y > cam - 30 && t.y < cam + Hh + 30) circle(t.x, t.y, t.r, i % 2 ? C.needle : C.needle2); });
@@ -5615,15 +6428,24 @@ function skidDraw(){
 }
 
 // --- hauling (road, physics, par and pay live in Core: packages/core/src/haul.ts)
-const haulRulesNow = () => Core.haulRules({era:S.era, season:season(), upg:S.upg, perks:S.run.perks});
+// the haul game's rules for this season and weather (Early freeze is a winter road; events change the limit, brakes and lookout)
+const haulRulesNow = () => { const ev = evNow(), R = Core.haulRules({era:S.era, season:effSeason(), upg:S.upg, perks:S.run.perks});
+  const lim = Core.gameRule(ev, 'haul', 'limit'), sb = Core.gameRule(ev, 'haul', 'summerBrakes'), full = Core.gameRule(ev, 'haul', 'fullRoad');
+  if (!lim && !sb && !full) return R;
+  const limit = Math.max(1, R.limit + lim);
+  return {...R, limit, lookout: R.lookout || !!full, phys: {...R.phys, brake: sb ? 240*(has('airbrakes') ? 2 : 1) : R.phys.brake, massCap: R.phys.massCap === Infinity ? Infinity : limit}}; };
 const runaway = () => (H && H.rules ? H.rules : haulRulesNow()).phys.runaway;
 function haulInit(){
-  const sn = season(), spring = sn === 'Spring', winter = sn === 'Winter', R = haulRulesNow();
+  const sn = effSeason(), spring = sn === 'Spring', winter = sn === 'Winter', R = haulRulesNow(), ev = evNow();
   const limit = R.limit, unit = (15 + baseRate('haul')*2) * (winter && perk('iceking') ? 2 : 1);
   const maxN = Math.max(1, Math.min(limit + R.maxOver, Math.ceil(S.landing.bf/unit)));
   const track = Core.genHaulTrack(Math.random);
   H = {phase:'load', rules:R, track, n: Math.min(limit, maxN), maxN, limit, unit, spring, winter, L: track.L, road: x => Core.haulRoadY(track, x),
        car:null, x:Core.HAUL_START, v:0, t:0, spill:0, flash:'', flashT:0, par:0, ghost:[0], delta:0, rig: ['Logging sled','Logging train','Log truck','Self-loading truck'][S.era]};
+  // weather views: a fog bank hides the road past 120 yd (Road lookout 240), a blizzard's snow shows 60% of the way ahead (first half)
+  const vy = Core.gameRule(ev, 'haul', 'viewYd'), snow = Core.gameRule(ev, 'haul', 'viewFrac') && S.st < Core.HALF_SEC;
+  H.fogPx = vy ? vy*(has('lookout') ? 2 : 1)/(Math.max(.1, S.site.miles)*1760)*track.L : 0;
+  H.snow = snow ? Core.gameRule(ev, 'haul', 'viewFrac') : 0; H.dashed = snow && !!Core.gameRule(ev, 'haul', 'dashedEdges');
   haulLoadUI();
 }
 const pct100 = f => Math.round(f*100);
@@ -5632,7 +6454,7 @@ function haulLoadUI(){
   haulParNow();
   const full = Math.min(H.limit, H.maxN), over = H.n - H.limit, pct = Math.round(Math.min(H.n, full)/full*100);
   const b = Core.haulBonus({n0:H.n, n:H.n, limit:full, spill:0, t:H.par, par:H.par, overPay:H.rules.overPay});
-  status(`${H.n} logs on the ${H.rig.toLowerCase()} · ${bf(Math.min(S.landing.bf, H.n*H.unit))} · ${pct}% of a full load. Road limit ${H.limit} logs${H.spring ? ' (spring posting)' : ''}. Par ${H.par} s for this road and load.` +
+  status(wxGameText('haul') + `${H.n} logs on the ${H.rig.toLowerCase()} · ${bf(Math.min(S.landing.bf, H.n*H.unit))} · ${pct}% of a full load. Road limit ${H.limit} logs${H.spring ? ' (spring posting)' : ''}. Par ${H.par} s for this road and load.` +
     (over > 0 ? ` Overweight by ${over}: +${Math.round(over*H.rules.overPay*100)}% pay if every log reaches the cove, but it is harder to stop and a runaway spills more.`
       : H.n < full ? ` A full load pays up to +${pct100(Core.HAUL_LOAD_BONUS)}%.` : ` Full load: +${Math.round(b.load*100)}% pay.`) +
     ` Deliver it whole for +${pct100(Core.HAUL_CLEAN_BONUS)}%, under par for +${pct100(Core.HAUL_PACE_MIN)} to +${pct100(Core.HAUL_PACE_MAX)}%.`);
@@ -5710,7 +6532,7 @@ function haulFinish(){
   row('Total', money(rev + bonus), 'tot');
   el.appendChild(tk);
   const extra = (H.spill ? ` Lost ${H.spill} ${H.spill === 1 ? 'log' : 'logs'} on the way.` : '') + (clean ? ` Clean haul: your haulers work ${boostTxt()}.` : '') +
-    (underPar && perk('highball') ? ' Highballer: counts twice toward your next draft.' : '') + (tip ? ' ' + tip : '');
+    (underPar && perk('highball') ? ' Highballer: counts twice toward your next draft.' : '') + (tip ? ' ' + tip : '') + takeClear();
   if (extra) el.append(extra);
   if (H.spill) note(`A load ran away on the haul road. ${H.spill} logs lost.`);
   buttons([{label:'Haul another', primary:true, disabled: S.landing.bf <= 0, fn:haulInit}, {label:'Done', fn:closeMG}]);
@@ -5740,9 +6562,9 @@ function haulDraw(){
   cx.fillStyle = C.line; cx.beginPath(); cx.moveTo(0, Hh);
   for (let sx=0; sx<=W; sx+=6) cx.lineTo(sx, H.road(camX + sx) + 4);
   cx.lineTo(W, Hh); cx.closePath(); cx.fill();
-  cx.strokeStyle = H.winter ? C.panel : C.muted; cx.lineWidth = 4; cx.beginPath();
+  cx.strokeStyle = H.winter ? C.panel : C.muted; cx.lineWidth = 4; cx.beginPath(); if (H.dashed) cx.setLineDash([10, 9]);
   for (let sx=0; sx<=W; sx+=6) sx ? cx.lineTo(sx, H.road(camX + sx)) : cx.moveTo(sx, H.road(camX));
-  cx.stroke();
+  cx.stroke(); cx.setLineDash([]);
   // mileposts and mill
   cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.textAlign = 'center';
   for (let m = 500; m < H.L; m += 500){ const sx = m - camX; if (sx > -20 && sx < W + 20){ const y = H.road(m); cx.fillRect(sx - 1, y - 22, 3, 22); cx.fillText(`${(m/H.L*S.site.miles).toFixed(1)} mi`, sx, y - 26); } }
@@ -5762,6 +6584,14 @@ function haulDraw(){
   // rig
   const sl = Core.haulGrade(H.track, H.x);
   drawRig(H.x - camX, H.road(H.x) - 4, Math.atan(sl), H.n);
+  // weather: fog or snow hides the road ahead of the rig
+  if ((H.fogPx || H.snow) && H.phase !== 'done'){
+    const fx = H.fogPx ? H.x - camX + H.fogPx : (H.x - camX) + (W - (H.x - camX))*H.snow;
+    if (fx < W){ const g = cx.createLinearGradient ? cx.createLinearGradient(fx, 0, fx + 60, 0) : null;
+      if (g && g.addColorStop){ g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, C.sky); }
+      cx.globalAlpha = .96; cx.fillStyle = g || C.sky; cx.fillRect(fx, 0, 60, Hh); cx.fillStyle = C.sky; cx.fillRect(fx + 60, 0, W - fx, Hh); cx.globalAlpha = 1;
+      cx.fillStyle = C.muted; cx.font = '600 12px ' + font; cx.textAlign = 'center'; cx.fillText(H.fogPx ? 'FOG' : 'SNOW', Math.min(W - 40, fx + 90), Hh/2); cx.textAlign = 'left'; }
+  }
   // HUD
   cx.textAlign = 'left';
   const ra = runaway(), driving = H.phase !== 'load';
@@ -5830,12 +6660,14 @@ const mktMod = () => hasMod('market') ? .85 : 1;
 const modMult = mods => Core.clauseMult(mods || S.run.mods);
 const eraCost = i => Core.eraCost(i, {steam: !!meta('steam'), gas: !!meta('gas')});
 // special orders filled this outpost add up to Core.ORDER_BONUS_CAP on top
-const legacyNow = () => Math.floor(Core.legacyGain(S.run.deliv, S.era, S.run.mods, !!meta('legacy')) * Core.orderBonus(S.orders.bonusPct));
+// the Storm season curse's bonus multiplies on its own, outside the special-order cap (owner, 2026-10-25)
+const stormMult = () => S.run.stormN ? Core.stormSeasonMult(S.run.stormN) : 1;
+const legacyNow = () => Math.floor(Core.legacyGain(S.run.deliv, S.era, S.run.mods, !!meta('legacy')) * Core.orderBonus(S.orders.bonusPct) * stormMult());
 const canClose = () => Core.canCloseCamp(S.era, S.run.deliv);
 // repeat bounties: achievements already earned pay Core.BOUNTY_RATE of their cash again once per run when this run's own numbers reach the target,
 // up to Core.BOUNTY_CAP of this outpost's next push inland, so perks and the board's support (not old rewards) drive most of the run-to-run speed-up
 const bountyCap = () => Core.bountyCap(eraCost(S.era+1), eraCost(S.era));
-const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul'];
+const BASEK = ['deliv','tracts','hires','contracts','winters','perfFell','perfBuck','cleanSkid','cleanHaul','storms'];
 function snapBase(){ const b = {earned:S.earned, felled:S.felled}; BASEK.forEach(k => b[k] = S.stats[k] || 0); S.run.base = b; }
 function checkBounties(){
   const r = S.run; if (!r.base || !r.bounty) return 0; let tot = 0, n = 0;
@@ -5863,7 +6695,7 @@ function runDone(kind, q, again, sp){
   const r = S.run; r.games = (r.games||0) + 1; r.pq = Math.max(r.pq || 0, q || 0); r.prog++;
   const need = 1 + (r.gameDrafts||0);
   if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
-  if (!again) gameFind(kind, q, sp);
+  if (!again){ gameFind(kind, q, sp); clearRoad(kind, q); }
 }
 function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met this outpost'); } }
 function contractFilled(){
@@ -5894,14 +6726,15 @@ function markerReroll(){ if (!canMarker()) return false; S.bank[MARKER]--; S.run
 
 function closeCamp(){
   if (!canClose()) return 0;
-  const gain = legacyNow(), r = S.run, bonus = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct);
+  const gain = legacyNow(), r = S.run, bonus = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct), storm = stormMult() - 1;
   S.meta.legacy += gain; S.meta.total += gain;
   S.runs.unshift({n:r.n, min:Math.round(runMin()), deliv:r.deliv, earned:r.earned, legacy:gain, era:S.era, mods:[...r.mods], perks:r.perks.length, eraT:r.eraT.map(x => x == null ? null : Math.round(x/60)), bonus});
   S.runs.length = Math.min(S.runs.length, 12);
   settleOrders(r.n);
   // the warehouse, special orders, structures and the Sawmill belong to the company, not this outpost (pillar 4)
   const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, season:S.season, st:S.st,
-    bank:S.bank, found:S.found, locks:S.locks, newCount:S.newCount, orders:S.orders, structures:S.structures, camps:S.camps, shares:S.shares, story:S.story, millShare:S.millShare, bulk:S.bulk, rng:S.rng, mruns:S.mruns};
+    bank:S.bank, found:S.found, locks:S.locks, newCount:S.newCount, orders:S.orders, structures:S.structures, camps:S.camps, shares:S.shares, story:S.story, millShare:S.millShare, bulk:S.bulk, rng:S.rng, mruns:S.mruns,
+    weather:S.weather}; // the weather is the coast's, not the outpost's: closing camp never touches it
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
   const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
   S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
@@ -5909,7 +6742,7 @@ function closeCamp(){
   if (meta('sled')){ S.own.axeman = 1; S.own.bucker = 1; S.own.oxen = 1; S.own.sled = 1; }
   S.run.rerolls = meta('reroll') ? 1 : 0; snapBase(); S.run.bounty = [];
   if (meta('starter')){ const c = PERKS.filter(p => p.r === 'common'); S.run.perks.push(pick(c).id); }
-  note(`Closed camp on outpost ${n-1} and loaded the charter ship: ${gain} Charter Shares sent home${bonus > 0 ? ` (special orders +${Math.round(bonus*100)}%)` : ''}. Outpost ${n} makes landfall at a fresh cove.`);
+  note(`Closed camp on outpost ${n-1} and loaded the charter ship: ${gain} Charter Shares sent home${bonus > 0 ? ` (special orders +${Math.round(bonus*100)}%)` : ''}${storm > 0 ? ` (storm season +${Math.round(storm*100)}%)` : ''}. Outpost ${n} makes landfall at a fresh cove.`);
   refreshSales(); refreshOffers(); S.hireOffer = genHire(); setSite(); newTree();
   if (!S.story.sawmillOpened) openSawmill(false);
   postOrders();
@@ -5968,6 +6801,15 @@ function normalize(){
   if (obj(S.contract)) fixOffer(S.contract); else S.contract = null;
   S.millShare = typeof S.millShare === 'number' && isFinite(S.millShare) ? Math.max(0, Math.min(Core.MILL_SHARE_MAX, S.millShare)) : Core.MILL_SHARE_DEFAULT;
   S.rng = Object.assign(freshRng(), obj(S.rng) ? S.rng : {});
+  // seasonal events (2026-10-25): older saves have no weather; the first roll comes at the next season change
+  S.weather = Object.assign(freshWeather(), obj(S.weather) ? S.weather : {});
+  if (!obj(S.weather.seen)) S.weather.seen = {};
+  S.weather.stats = Object.assign(freshWeather().stats, obj(S.weather.stats) ? S.weather.stats : {});
+  if (!(typeof S.weather.changes === 'number' && S.weather.changes >= 0)) S.weather.changes = (S.stats.winters || 0)*4;
+  if (S.weather.cur && !(obj(S.weather.cur) && Core.eventDef(S.weather.cur.id))) S.weather.cur = null;
+  if (S.weather.cur && !Array.isArray(S.weather.cur.cleared)) S.weather.cur.cleared = [];
+  if (S.weather.next && !Core.eventDef(S.weather.next)) S.weather.next = null;
+  if (typeof S.weather.streak !== 'number') S.weather.streak = 0;
   if (S.camps.sawmill){ const m = S.camps.sawmill = Object.assign(freshMill(S.camps.sawmill.n || 1), S.camps.sawmill);
     m.yard = Object.assign({clear:0, select:0, common:0}, obj(m.yard) ? m.yard : {});
     ['perks','dq'].forEach(k => { if (!Array.isArray(m[k])) m[k] = []; }); m.drafts = m.dq.length; }
@@ -6041,7 +6883,7 @@ function renderRun(){
   const key = ok ? `ok|${L}|${closeArmed}` : `no|${Math.floor(r.deliv/CLOSE_VOL*100)}`;
   list('closeBox', key, ok
     ? `<div class="line"><span>Closing now banks</span><span class="legbig">${fmt(L)} Charter Shares</span></div>
-       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${S.era ? ` + ${Core.ERA_SHARES*S.era} for ${S.era} ${S.era === 1 ? 'push' : 'pushes'} inland` : ''}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
+       <p class="meta">${r.deliv <= 1e7 ? `√(${bf(r.deliv)} ÷ 20,000)` : `22.4 + 8 × log₁₀(${bf(r.deliv)} ÷ 10M)`}${S.era ? ` + ${Core.ERA_SHARES*S.era} for ${S.era} ${S.era === 1 ? 'push' : 'pushes'} inland` : ''}${r.mods.length ? ` × ${modMult().toFixed(2)} clauses` : ''}${meta('legacy') ? ' × 1.15 chronicler' : ''}${S.run.stormN ? ` × ${stormMult().toFixed(2)} storm season (${S.run.stormN} ${S.run.stormN === 1 ? 'storm' : 'storms'})` : ''}. Delivering more raises it.${meta('nest') ? ` Nest egg keeps ${money(Math.floor(S.cash*.1))}.` : ''}</p>
        ${closeArmed ? `<div class="confirm"><b>Strip the outpost and sail?</b> You leave behind cash, equipment, tracts, orders, piles, the company stage and ${r.perks.length} ${r.perks.length === 1 ? 'perk' : 'perks'}${r.dq.length ? ` and ${r.dq.length} unspent ${r.dq.length === 1 ? 'draft' : 'drafts'}` : ''}. You keep achievements, reputation, improvements and Charter Shares, and the company keeps the warehouse, special orders${S.camps.sawmill ? ', every structure and the Sawmill, which keeps running' : ''}.
          <div class="cbtns"><button class="mbtn danger" type="button" id="closeYes">Load the ship · send ${fmt(L)} shares home</button><button class="mbtn" type="button" id="closeNo">Keep working</button></div></div>`
        : `<div class="cbtns"><button class="act" type="button" id="closeArm">Close camp…</button></div>`}`
@@ -6112,8 +6954,9 @@ function idleFinds(dt, full){
     if (!(full[k] > 0) || (k === 'fell' && !tract())) continue;
     S.dropT[k] = (S.dropT[k] || 0) + dt*Math.max(0, Math.min(1, S.util[k] ?? 0));
     while (S.dropT[k] >= Core.IDLE_DROP_SECONDS){ S.dropT[k] -= Core.IDLE_DROP_SECONDS;
-      const pb = k === 'buck' && perk('pitchboiler');
-      const st = Core.rollIdleDrop(Core.DROP_TABLES[k], drng, pb ? 3 : 1, pb ? {'logging.burl': 1/3} : {});
+      // weather: finds chance and item weights (a gale's wreck wash only reaches the haul road)
+      const pb = k === 'buck' && perk('pitchboiler'), ev = evNow(), wm = Object.assign(Core.eventFindWeights(ev && ev.id === 'equinox_gale' && k !== 'haul' ? undefined : ev), pb ? {'logging.burl': 1/3} : {});
+      const st = Core.rollIdleDrop(Core.DROP_TABLES[k], drng, (pb ? 3 : 1)*evMult('finds'), wm);
       if (st){ addItem(st.item, st.qty, true); S.run.idleFinds = (S.run.idleFinds || 0) + 1; } }
   }
 }
@@ -6583,6 +7426,14 @@ function renderWh(){
         : `<div class="witem"><span class="cnt">—</span><div class="info"><b>???</b><p>Not found yet.</p></div></div>`; }).join('');
     return;
   }
+  if (tab === 'almanac'){
+    const W = S.weather, seen = Core.SEASON_EVENTS.filter(e => W.seen[e.id]).length, tone = {none:'Quiet', good:'Good', neutral:'Mixed', bad:'Bad'};
+    box.innerHTML = `<p class="meta">${seen} of ${Core.SEASON_EVENTS.length} cards seen. Every season the coast deals one; the weather is the same for every camp.${meta('almanac') && W.next ? ` Next season: ${Core.eventDef(W.next).name}.` : ''}${meta('signals') ? ' Storm signals: bad weather 30% rarer.' : ''}</p>` +
+      SEASONS.map(sn => `<div class="group"><h3>${sn}</h3>` + Core.SEASON_EVENTS.filter(e => e.season === sn).map(e => { const f = W.seen[e.id];
+        return f ? `<div class="witem"><span class="cnt">${fmt(f.n || 1)}</span><div class="info"><b>${e.name}</b> <span class="chipl">${tone[e.tone]}</span><p>${e.card}</p><p>${e.fx}.${e.counter ? ` Counter: ${e.counter}.` : ''}${e.silver ? ` Silver lining: ${e.silver}.` : ''} First seen: ${f.first}.</p></div></div>`
+          : `<div class="witem"><span class="cnt">—</span><div class="info"><b>???</b><p>Not seen yet. A ${sn.toLowerCase()} card.</p></div></div>`; }).join('') + '</div>').join('');
+    return;
+  }
   if (tab === 'ledger'){
     const m = S.camps.sawmill, bon = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct), row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
     box.innerHTML = `<div class="group"><h3>Logging camp · outpost ${S.run.n}</h3><div class="facts">${row('Cash', money(S.cash))}${row('Earned this outpost', money(S.run.earned))}${row('Warehouse sales this outpost', money(S.run.itemSales || 0))}` +
@@ -6702,7 +7553,20 @@ function offline(){
   if (away < 30) return;
   const c0 = S.cash, f0 = S.felled;
   let left = away; const step = Math.max(.5, away/4000);
-  while (left > 0){ const dt = Math.min(step, left); tick(dt); left -= dt; }
+  // weather while away: rolled as usual; the bottleneck with and without the weather gives the net line
+  awayLog = []; let withW = 0, quiet = 0;
+  const neckCap = () => tract() ? Math.min(fellBf(rate('fell')), rate('buck'), rate('skid'), rate('haul')) : 0;
+  try {
+    while (left > 0){ const dt = Math.min(step, left);
+      if (evNow()){ const a = neckCap(); wxMute = true; const b = neckCap(); wxMute = false; withW += a*dt; quiet += b*dt; } else { const a = neckCap(); withW += a*dt; quiet += a*dt; }
+      tick(dt); left -= dt; }
+  } finally { wxMute = false; }
+  const log = awayLog; awayLog = null;
+  if (log.length){
+    const net = quiet > 0 ? (1 - withW/quiet)*100 : 0;
+    dispQ.push({kind:'away', lines:Core.awaySummary(log), net});
+    log.filter(a => a.first).forEach(a => dispQ.push({kind:'event', id:a.id, first:true}));
+  }
   if (S.felled > f0 || S.cash !== c0) note(`While you were away (${mins(away)}): ${fmt(S.felled-f0)} trees felled, cash ${S.cash >= c0 ? 'up' : 'down'} ${money(Math.abs(S.cash-c0))}.`);
 }
 const reset = $('reset'); let armed = null;

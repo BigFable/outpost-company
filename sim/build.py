@@ -7,7 +7,8 @@ s=s.replace(old,"""window.__G = {get S(){return S}, get W(){return typeof W!=="u
  checkAch: typeof checkAch==='function' ? checkAch : ()=>{},
  ...(typeof PERKS!=='undefined' ? {PERKS, ACH, META, MODS, queueDraft, currentOffer, pickPerk, reroll, closeCamp, startRun, buyMeta, legacyNow, canClose, eraCost, perk, runDone, normalize, PMAP} : {}),
  ...(typeof openSawmill!=='undefined' ? {drng, bankN, addItem, fellPrime, gameFind, sellSurplus, reserveFor, canMarker, markerReroll, canBuild, buildStructure, hireSawyer,
-   millSawyers, millRateNow, canCloseMill, millLegacyNow, closeMill, buyMillMeta, sawBlock, sawInit, sawPick, sawSaw, sawTurn, sawStep, sawEye, deckOk, mperk} : {})};""")
+   millSawyers, millRateNow, canCloseMill, millLegacyNow, closeMill, buyMillMeta, sawBlock, sawInit, sawPick, sawSaw, sawTurn, sawStep, sawEye, deckOk, mperk} : {}),
+ ...(typeof evNow!=='undefined' ? {evNow, effSeason, haulRulesNow, seasonF, setWxMute: v => { wxMute = v; }} : {})};""")
 s=s.replace("function render(force){","function render(force){ if (window.__SIM) return;",1)
 s=s.replace("function renderLedger(){","function renderLedger(){ if (window.__SIM) return;",1)
 open(sys.argv[2],'w').write(s)

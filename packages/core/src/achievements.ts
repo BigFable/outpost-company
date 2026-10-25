@@ -9,7 +9,9 @@ import { IMPROVEMENT_ALT_REQS, IMPROVEMENT_REQS, type StatRequirement } from './
 /** Numbers an achievement condition can test. `crewedStages` = stages with a working crew (0-4). */
 export type AchMetric =
   | 'deliv' | 'earned' | 'felled' | 'tracts' | 'hires' | 'contracts' | 'crew' | 'winters'
-  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul' | 'era' | 'crewedStages';
+  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul' | 'era' | 'crewedStages'
+  /** Bad weather events weathered in full; Almanac cards seen (seasonal events). */
+  | 'storms' | 'almanac';
 
 export interface AchCondition { readonly metric: AchMetric; readonly op: '>=' | '>'; readonly value: number }
 
@@ -73,7 +75,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   ladder('c1', 'Under contract', 'Fill a delivery contract.', 'contracts', 1, 250, 0),
   ladder('c5', 'Reliable supplier', 'Fill 5 delivery contracts.', 'contracts', 5, 1500, 1),
   ladder('c10', 'Steady supplier', 'Fill 10 delivery contracts.', 'contracts', 10, 8000, 1),
-  ladder('c20', 'Preferred supplier', 'Fill 20 delivery contracts.', 'contracts', 20, 25000, 2),
+  ladder('c20', 'Preferred supplier', 'Fill 16 delivery contracts.', 'contracts', 16, 25000, 2),
   ladder('crew10', 'Ten-crew outfit', 'Own 10 crews or machines.', 'crew', 10, 400, 0),
   ladder('crew30', 'Big outfit', 'Own 30 crews or machines.', 'crew', 30, 4000, 1),
   ladder('crew75', 'Industrial outfit', 'Own 75 crews or machines.', 'crew', 75, 80000, 2),
@@ -91,6 +93,8 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   ladder('ch1', 'Clean haul', 'Deliver a full load under par with nothing lost.', 'cleanHaul', 1, 60, 0),
   ladder('ch10', 'Road boss', 'Make 10 clean hauls.', 'cleanHaul', 10, 900, 1),
   once('allround', 'All-around logger', 'Do a clean run of every mini-game.', [atLeast('perfFell', 1), atLeast('perfBuck', 1), atLeast('cleanSkid', 1), atLeast('cleanHaul', 1)], 1500, 2),
+  ladder('wx10', 'Weathered 10 storms', 'Ride out 10 bad-weather events to the end of their season.', 'storms', 10, 900, 1),
+  once('wxall', 'Every season’s card', 'See every card in the weather almanac.', [atLeast('almanac', 16)], 1500, 2),
   once('era1', 'Full steam', 'Reach Steam Camp.', [atLeast('era', 1)], 0, 2),
   once('era2', 'Diesel Road', 'Reach Diesel Road.', [atLeast('era', 2)], 0, 2),
   once('era3', 'Into the Interior', 'Reach the Interior with mechanized logging.', [atLeast('era', 3)], 0, 3),
