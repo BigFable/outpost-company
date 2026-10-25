@@ -27,11 +27,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  g[2].click(); const four=[...d.querySelectorAll('#mgBtns button')].find(b=>/4 logs/.test(b.textContent));
  ok(!!four,'4-log turn offered by Four-log turns'); four.click();
  kd('ArrowDown'); await waitFor(()=>/Landed/.test(d.getElementById('mgStatus').textContent),120000); kd('ArrowDown','keyup');
- ok(/Landed a \d+-log turn/.test(d.getElementById('mgStatus').textContent),'skid run: '+d.getElementById('mgStatus').textContent.slice(0,70));
+ ok(/Landed \d+ logs?/.test(d.getElementById('mgStatus').textContent),'skid run: '+d.getElementById('mgStatus').textContent.slice(0,70));
  d.getElementById('mgClose').click();
  // haul in winter with ice road king
- g[3].click(); ok(/Logging sled|logs on/.test(d.getElementById('mgStatus').textContent),'haul load: '+d.getElementById('mgStatus').textContent.slice(0,90));
- [...d.querySelectorAll('#mgBtns button')].find(b=>b.textContent.startsWith('Head')).click();
+ g[3].click(); ok(/sled|logs on/.test(d.getElementById('mgStatus').textContent),'haul load: '+d.getElementById('mgStatus').textContent.slice(0,90));
+ [...d.querySelectorAll('#mgBtns button')].find(b=>b.textContent==='Drive').click();
  kd('ArrowRight'); await waitFor(()=>/Delivered|Lost/.test(d.getElementById('mgStatus').textContent)); kd('ArrowRight','keyup');
  ok(/Delivered|Lost/.test(d.getElementById('mgStatus').textContent),'haul run: '+d.getElementById('mgStatus').textContent.slice(0,90));
  d.getElementById('mgClose').click();

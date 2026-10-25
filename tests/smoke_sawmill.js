@@ -26,7 +26,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const SEED=+process.env.SAW_SEED||1234567;
  E(`S.rng.drops=${SEED}; S.rng.saw=${SEED*7+13}`);
  // ---------- 1. warehouse
- ok(E('bankTotal()')===0 && $('lsWhV').textContent==='0 items' && $('lsOrdV').textContent==='None open' && $('campTabs').hidden,'new company: empty warehouse in the ledger strip, no camp tabs yet');
+ ok(E('bankTotal()')===0 && $('lsWhV').textContent==='0 items' && $('lsOrdV').textContent==='None' && $('campTabs').hidden,'new company: empty warehouse in the ledger strip, no camp tabs yet');
  ok(E('Core.ITEMS.length')===8 && E(`Core.ITEMS.every(i=>i.id.includes('.'))`),'item definitions are data in core, namespaced by skill');
  E(`addItem('logging.burl', 3); addItem('logging.fog_glass', 1); render(true)`);
  ok($('lsWhV').textContent==='4 items' && !$('lsWhNew').hidden && /4 new/.test($('lsWhNew').textContent),'ledger strip counts items with a new badge: '+$('lsWhNew').textContent);
@@ -38,7 +38,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  $('whSurplus').click(); ok(E(`bankN('logging.burl')`)===0 && E(`bankN('logging.fog_glass')`)===1,'Sell surplus sells unlocked items and keeps locked ones');
  [...$('whTabs').querySelectorAll('button')].find(b=>b.dataset.t==='log').click();
  const logTxt=$('whBody').textContent; ok(/2 of 8 found/.test(logTxt) && /\?\?\?/.test(logTxt) && /Burl/.test(logTxt) && /3 in all/.test(logTxt),'collection log: found items with lifetime count, ??? for the rest');
- [...$('whTabs').querySelectorAll('button')].find(b=>b.dataset.t==='ledger').click(); ok(/Warehouse sales this outpost/.test($('whBody').textContent),'ledger tab');
+ [...$('whTabs').querySelectorAll('button')].find(b=>b.dataset.t==='ledger').click(); ok(/Item sales/.test($('whBody').textContent),'ledger tab');
  $('whClose').click();
  // ---------- 2. Prime timber and finds (separate seeded stream: no Math.random draws)
  E(`S.orders.autoFill=false; S.vis='pine'; F={sp:'pine', out:{k:'perfect', m:1.25, text:''}, phase:'fall'}; MG.kind='fell'`);
@@ -123,7 +123,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const cv=$('mgCanvas'); const pe=(type,x,y,button=0)=>cv.dispatchEvent(new w.MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y,button,buttons:type==='pointerup'?0:1}));
  const tap=(x,y,b=0)=>{ pe('pointerdown',x,y,b); pe('pointerup',x,y,b); };
  $('mSawBtn').click(); E('cancelAnimationFrame(MG.raf)');
- ok(E('MG.kind')==='saw' && E('W.phase')==='pick' && !$('mgGuide').hidden && /How to saw for grade/.test($('mgGuideT').textContent) && d.querySelectorAll('#mgGuide li').length===3,'Saw for grade opens on the log deck with its 3-step guide');
+ ok(E('MG.kind')==='saw' && E('W.phase')==='pick' && !$('mgGuide').hidden && /How to saw boards/.test($('mgGuideT').textContent) && d.querySelectorAll('#mgGuide li').length===3,'Saw boards opens on the log deck with its 3-step guide');
  $('mgGuideOk').click(); ok(E('S.ui.sawIntro')===true,'guide dismissed and remembered');
  const pos=E('deckPos(W.deck.length)'); tap(pos[0].x,pos[0].y);
  ok(E('W.phase')==='saw' && E('W.par')>0,'clicking a log on the deck rolls it onto the carriage; par is set from that log');
@@ -132,7 +132,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const B=E('SAW_BTN'); let acts=0;
  while(E('W.phase')==='saw' && acts<200){ const a=E('Core.sawAdvice(W.log, W.cut, sawEye())'); const r=a==='turn'?B.turn:B.saw; tap(r.x+10,r.y+10); E('sawStep(W.busy+.05)'); acts++; }
  const st1=$('mgStatus').textContent;
- ok(E('W.phase')==='done' && /% of par/.test(st1),'a mouse-only run finishes: '+st1.slice(0,100));
+ ok(E('W.phase')==='done' && /% of target/.test(st1),'a mouse-only run finishes: '+st1.slice(0,100));
  ok(E('S.camps.sawmill.sawn')>yard0 && E('S.camps.sawmill.games')===g0+1 && E('W.res.score')>=.95,`boards go to the yard; following the mark scores ${Math.round(E('W.res.score')*100)}% of par`);
  // right-click turns
  [...d.querySelectorAll('#mgBtns button')].find(b=>/Saw another/.test(b.textContent)).click(); E('cancelAnimationFrame(MG.raf)');

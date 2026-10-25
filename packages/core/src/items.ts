@@ -38,21 +38,21 @@ export interface CurrencyDef { readonly id: CurrencyId; readonly name: string; r
 
 export const ITEMS: readonly ItemDef[] = deepFreeze([
   {id:'logging.prime_spar', name:'Prime spar', plural:'Prime spars', skill:'logging', category:'prime', rarity:'made', sell:40,
-    desc:'A straight, knot-free conifer log the scaler stamped Prime. Mast and spar stock.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 cuts of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50'},
+    desc:'A straight, knot-free log stamped Prime. Good for ship masts.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50'},
   {id:'logging.burl', name:'Burl', plural:'Burls', skill:'logging', category:'find', rarity:'common', sell:30,
-    desc:'A swirled growth off a stump. The veneer men pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking'},
+    desc:'A swirly lump of wood. Buyers pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking'},
   {id:'logging.amber_pitch', name:'Amber pitch', plural:'Amber pitch', skill:'logging', category:'find', rarity:'common', sell:12,
-    desc:'A lump of hardened resin from a pitch pocket. Caulking for hulls and the mill pond dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pitch pockets)'},
+    desc:'Hard tree sap. Seals ship hulls and the mill pond dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pine has the most)'},
   {id:'logging.survey_marker', name:'Survey marker', plural:'Survey markers', skill:'logging', category:'find', rarity:'uncommon', sell:18,
-    desc:'An old brass marker from a survey nobody remembers. Turn one in for a draft reroll (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding'},
+    desc:'An old brass marker. Use one for a perk reroll (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding'},
   {id:'logging.ships_fitting', name:'Ship’s fitting', plural:'Ship’s fittings', skill:'logging', category:'find', rarity:'uncommon', sell:22,
-    desc:'Bronze hardware washed up from a wreck beside the cove road. Mounts a headrig.', uses:['order','structure','sell','future:raising'], from:'Hauling (wreck wash on the cove road)'},
+    desc:'Bronze parts from a wreck. Used to build the circular saw.', uses:['order','structure','sell','future:raising'], from:'Hauling (washed up by the cove road)'},
   {id:'logging.fog_glass', name:'Fog-glass', plural:'Fog-glass', skill:'logging', category:'find', rarity:'rare', sell:90,
-    desc:'A smoky, sea-worn lens. Nobody knows who ground it.', uses:['sell','collection','future:surveying'], from:'Top results in felling, skidding and hauling'},
+    desc:'A smoky, sea-worn lens. Nobody knows who made it.', uses:['sell','collection','future:surveying'], from:'Top results in felling, skidding and hauling'},
   {id:'sawmill.quarter_sawn', name:'Quarter-sawn board', plural:'Quarter-sawn boards', skill:'sawmill', category:'mill', rarity:'made', sell:25,
-    desc:'Clear board cut across the rings from a Prime log. The Admiralty pays for deck planking.', uses:['sell','future:raising'], from:'A great Saw for grade run on a Prime log'},
+    desc:'A top board from a Prime log. The Admiralty wants it for decks.', uses:['sell','future:raising'], from:'A great Saw boards run on a Prime log'},
   {id:'sawmill.plank_bundle', name:'Plank bundle', plural:'Plank bundles', skill:'sawmill', category:'mill', rarity:'made', sell:10,
-    desc:'500 bd ft of Common lumber, strapped. Raises the bunkhouse at the logging camp.', uses:['structure','sell'], from:'Common lumber at the Sawmill'},
+    desc:'500 bd ft of Common lumber. Builds the bunkhouse.', uses:['structure','sell'], from:'Common lumber at the Sawmill'},
 ]);
 const ITEM_BY_ID: ReadonlyMap<ItemId, ItemDef> = new Map(ITEMS.map((i) => [i.id, i]));
 export function itemDef(id: ItemId): ItemDef | undefined { return ITEM_BY_ID.get(id); }
@@ -223,11 +223,11 @@ export interface SpecialOrderDef {
 }
 export const SPECIAL_ORDERS: readonly SpecialOrderDef[] = deepFreeze([
   {id:'admiralty_spar', skill:'logging', client:'The Admiralty', name:'Admiralty spar order', short:'Admiralty',
-    text:'The Admiralty wants Prime spars for a new squadron’s masts, and pitch to seal them.',
+    text:'The Admiralty wants Prime spars for ship masts, and pitch to seal them.',
     needs:[{item:'logging.prime_spar', qty:16}, {item:'logging.amber_pitch', qty:2}], bonusPct:0.15, unlockPerk:'sparman',
     trigger:['logging.prime_spar'], dueOutposts:2},
-  {id:'caulk_perseverance', skill:'logging', client:'the captain of the Perseverance', name:'Caulk the Perseverance', short:'Perseverance',
-    text:'The charter ship is leaking at the seams. Her captain needs pitch and bronze fittings before the next sailing.',
+  {id:'caulk_perseverance', skill:'logging', client:'the captain of the Perseverance', name:'Patch the Perseverance', short:'Perseverance',
+    text:'The company ship is leaking. Her captain needs pitch and bronze fittings before she sails.',
     needs:[{item:'logging.amber_pitch', qty:6}, {item:'logging.ships_fitting', qty:3}], bonusPct:0.08,
     rewardItems:[{item:'logging.burl', qty:2}], unlockPerk:'pitchboiler',
     trigger:['logging.amber_pitch', 'logging.ships_fitting'], dueOutposts:2},
@@ -251,6 +251,6 @@ export function orderRemaining(def: SpecialOrderDef, given: Readonly<Record<Item
 
 /** Order perks: rare, rule-changing, offered in Logging drafts once their order is filled. */
 export const ORDER_PERKS: readonly PerkDef[] = deepFreeze([
-  {id:'sparman', r:'rare', name:'Spar man', desc:'Felling game: a good fall on a conifer is also stamped Prime (1 log), but perfect falls no longer give a pace boost.'},
-  {id:'pitchboiler', r:'rare', name:'Pitch boiler', desc:'Bucking game: each pulp piece in your plan boils down to amber pitch (2 at most) instead of pulp value. Idle buckers find pitch three times as often.'},
+  {id:'sparman', r:'rare', name:'Spar man', desc:'Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime, but perfect falls give no speed boost.'},
+  {id:'pitchboiler', r:'rare', name:'Pitch boiler', desc:'Bucking game: each pulp piece becomes amber pitch (2 at most) instead of pulp value. Idle buckers find pitch 3× as often.'},
 ]);

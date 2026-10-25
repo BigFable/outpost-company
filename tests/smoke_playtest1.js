@@ -34,10 +34,10 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const cv=d.getElementById('mgCanvas'); const key=(code,o={})=>cv.dispatchEvent(new w.KeyboardEvent('keydown',{code,key:code,bubbles:true,...o}));
  const goTo=ft=>{ for(let i=0;i<80;i++) key('ArrowLeft'); for(let i=1;i<ft;i++) key('ArrowRight'); };
  const peek=()=>d.getElementById('mgPeek').textContent;
- goTo(5); ok(/At 5 ft: a 5 ft piece from the butt, pulp \((too short|butt rot)\), worth \$/.test(peek()),'preview names pulp and why: '+peek());
+ goTo(5); ok(/At 5 ft: a 5 ft piece from the base, pulp \((too short|rot)\), worth \$/.test(peek()),'preview names pulp and why: '+peek());
  const L=E('B.L'); const best=E('B.optPre.cuts.slice()'); const first=best[0];
  goTo(first); const pv=E(`seg(0, ${first})`);
- ok(new RegExp(`At ${first} ft: .*(grade ${pv.g} sawlog|pulp)`).test(peek()) && /worth \$/.test(peek()),'preview names the grade and value of the hovered piece: '+peek());
+ ok(new RegExp(`At ${first} ft: .*(grade ${pv.g} log|pulp)`).test(peek()) && /worth \$/.test(peek()),'preview names the grade and value of the hovered piece: '+peek());
  // valid-length marks are anchored to the last cut
  key('Enter'); ok(E('B.cuts.length')===1,'Enter places a cut at the cursor');
  key('Enter'); ok(E('B.cuts.length')===0,'Enter again takes it out');
@@ -46,35 +46,35 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  ok(E('B.L')===L && E('B.cuts.length')===1 && d.getElementById('mgGuide').hidden,'reopening keeps the unsent stem and its cuts, guide stays dismissed');
  // hints: follow Suggest a cut to the best plan
  E('B.cuts=[]'); let hints=0;
- for(let i=0;i<20;i++){ btn(d,/Suggest a cut/).click(); const s=d.getElementById('mgStatus').textContent; if(/already match/.test(s)) break; hints++;
-   const m=/(cut at|take out the cut at) (\d+) ft/.exec(s); ok(!!m||i>0,'hint says where: '+s.slice(0,60)); if(!m) break; goTo(+m[2]); key('Enter'); }
- btn(d,/Suggest a cut/).click(); ok(E('B.hints')===hints,'asking again for a plan that matches costs nothing');
+ for(let i=0;i<20;i++){ btn(d,/^Hint$/).click(); const s=d.getElementById('mgStatus').textContent; if(/cuts match the best plan/.test(s)) break; hints++;
+   const m=/(cut at|remove the cut at) (\d+) ft/.exec(s); ok(!!m||i>0,'hint says where: '+s.slice(0,60)); if(!m) break; goTo(+m[2]); key('Enter'); }
+ btn(d,/^Hint$/).click(); ok(E('B.hints')===hints,'asking again for a plan that matches costs nothing');
  ok(hints===best.length && JSON.stringify(E('B.cuts.slice().sort((a,b)=>a-b)'))===JSON.stringify(best),`hints lead to the best plan (${hints} cuts)`);
  const before={pb:E('S.stats.perfBuck'), rb:E('S.stats.run_buck'), cv:E('S.cut.val'), base:E('B.amt*(S.stems.val/S.stems.bf)*vmult()')};
  btn(d,/Send/).click(); let s=d.getElementById('mgStatus').textContent;
  const want=Math.max(0,100-Math.min(15,3*hints));
- ok(new RegExp(`You got 100% .*less ${100-want} points for ${hints} hints?: ${want}%`).test(s),'hints reduce the score: '+s.slice(0,110));
+ ok(new RegExp(`You got 100% .*−${100-want} for ${hints} hints?: ${want}%`).test(s),'hints reduce the score: '+s.slice(0,110));
  ok(E('S.stats.perfBuck')===before.pb && E('S.stats.run_buck')===before.rb+1,'a hinted plan counts as a run but not as full value');
  // payout: hinted perfect plan pays .5+.7*score, below a self-planned perfect stem
  const paid=(E('S.cut.val')-before.cv)/before.base;
  ok(want<100 && Math.abs(paid-(.5+.7*want/100))<1e-6,`hinted perfect plan pays ×${paid.toFixed(3)} instead of ×1.2 for full value`);
  // exploit fix: an uncut stem sent straight away does not count as a run (no draft or goal farming)
- btn(d,/Buck another/).click(); const p0=E('S.run.prog'), g0=E('S.run.games||0'), r0=E('S.stats.run_buck');
+ btn(d,/Cut another/).click(); const p0=E('S.run.prog'), g0=E('S.run.games||0'), r0=E('S.stats.run_buck');
  btn(d,/Send/).click(); s=d.getElementById('mgStatus').textContent;
- ok(/does not count as a bucking run/.test(s) && E('S.stats.run_buck')===r0 && E('S.run.prog')===p0 && E('(S.run.games||0)')===g0,'an uncut stem gives no run, draft progress or goal credit');
+ ok(/does not count as a run/.test(s) && E('S.stats.run_buck')===r0 && E('S.run.prog')===p0 && E('(S.run.games||0)')===g0,'an uncut stem gives no run, draft progress or goal credit');
  // exploit fix: pulp is priced by volume, so chopping the top into 1 ft pieces adds nothing and the best plan has no slivers
- btn(d,/Buck another/).click();
+ btn(d,/Cut another/).click();
  const split=E('(()=>{ const a=seg(0,B.L).val; let b=0; for(let i=0;i<B.L;i++) b+=seg(i,i+1).val; return [a,b]; })()');
  ok(Math.abs(split[0]-split[1])<1e-6*split[0],'pulp value is the same however finely it is cut');
  ok(E('(()=>{ const c=[0,...B.optPre.cuts,B.L]; let tops=0; for(let i=1;i<c.length;i++) if(seg(c[i-1],c[i]).why==="top under 8 in") tops++; return tops<=1; })()'),'best plan leaves the top as one pulp piece');
  // exploit fix: Scaler's friend pays a 90% plan as 100% but no longer counts it as full value
  E(`S.run.perks.push('scaler'); B.cuts=B.optPre.cuts.slice(); B.hints=2;`); const pb=E('S.stats.perfBuck');
  btn(d,/Send/).click(); s=d.getElementById('mgStatus').textContent;
- ok(/scaler wrote it up as 100%/.test(s) && E('S.stats.perfBuck')===pb,"Scaler's friend pays 94% as 100% without granting full value");
- btn(d,/Buck another/).click(); E('B.cuts=B.optPre.cuts.slice();'); btn(d,/Send/).click();
+ ok(/counted as 100%/.test(s) && E('S.stats.perfBuck')===pb,"Scaler's friend pays 94% as 100% without granting full value");
+ btn(d,/Cut another/).click(); E('B.cuts=B.optPre.cuts.slice();'); btn(d,/Send/).click();
  ok(E('S.stats.perfBuck')===pb+1 && /You got 100% of the best/.test(d.getElementById('mgStatus').textContent),'a self-planned perfect stem is still full value');
  // guides toggle
- btn(d,/Buck another/).click(); const gb=d.getElementById('bGuide'); ok(gb && gb.getAttribute('aria-pressed')==='true','Guides toggle shows on');
+ btn(d,/Cut another/).click(); const gb=d.getElementById('bGuide'); ok(gb && gb.getAttribute('aria-pressed')==='true','Guides toggle shows on');
  gb.click(); ok(E('S.ui.buckGuide')===false && d.getElementById('bGuide').getAttribute('aria-pressed')==='false' && d.activeElement===d.getElementById('bGuide'),'Guides toggle turns off and keeps focus');
  goTo(12); ok(!/grade|pulp/.test(peek()),'with guides off the preview gives only the length');
  d.getElementById('bGuide').click();
@@ -90,7 +90,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  E2(`S.run.perks.push('swamp')`); ok(Math.abs(E2(`rate('skid')`)/r0s-2.4)<1e-9,'Swamp boots unchanged and does not cancel the boost');
  // mini-game: a team in mud moves faster with greased runners, slower without
  const g2=[...d.querySelectorAll('#chain .act.game')]; g2[2].click();
- ok(/drive through the mud/.test(d.getElementById('mgHelp').textContent),'skid help tells you to drive through mud');
+ ok(/drive through mud/.test(d.getElementById('mgHelp').textContent),'skid help tells you to drive through mud');
  btn(d,/2 logs/).click();
  const mudSpeed=perks=>E2(`(()=>{ S.run.perks=${JSON.stringify(perks)}; K.mud=[{x:K.pos.x,y:K.pos.y,rx:400,ry:400}]; K.cxAt=()=>K.pos.x; K.stumps=[]; K.vel={x:0,y:0}; K.stopT=0; MG.keys={ArrowDown:true}; const y=K.pos.y; for(let i=0;i<30;i++) skidStep(.05); MG.keys={}; const v=(K.pos.y-y)/1.5; K.pos.y=y; return v; })()`);
  const vNone=mudSpeed([]), vSwamp=mudSpeed(['swamp']), vGrease=mudSpeed(['greased']);
@@ -112,7 +112,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  kd('ArrowDown','keyup'); kd('ArrowLeft','keyup'); kd('ArrowRight','keyup');
  s=d.getElementById('mgStatus').textContent;
  const L0=E2(`60+baseRate('skid')*15`), wantBf=L0*E2('Core.skidTurnLoad(13)');
- ok(/Landed a 13-log turn/.test(s),'a 13-log train is completable: '+s.slice(0,90));
+ ok(/Landed 13 logs/.test(s),'a 13-log train is completable: '+s.slice(0,90));
  ok(Math.abs((cut0-E2('S.cut.bf'))-wantBf)<1e-6*wantBf && E2('S.stats.skidLogs')===sl0+13,`payout scales with logs (${Math.round(wantBf)} bd ft = 14.95 light turns), 13 logs counted toward the ladder`);
  const sw=E2('(()=>{ let m=0; for(let i=1;i<K.chain.length;i++){ const p=K.chain[i]; m=Math.max(m, Math.abs(p.x-K.cxAt(p.y))); } return m; })()');
  ok(isFinite(sw),'chain stays finite after the run');

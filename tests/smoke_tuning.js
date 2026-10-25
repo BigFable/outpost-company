@@ -19,7 +19,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // 1. Charter Shares: +8 per push inland, shown in the close-camp breakdown
  E(`S.run.deliv=180000; S.era=0;`); ok(E('legacyNow()')===3,'no era bonus at the cove: '+E('legacyNow()'));
  E(`S.era=2;`); ok(E('legacyNow()')===3+16,'two pushes inland add 16 shares: '+E('legacyNow()'));
- E(`render(true)`); ok(/\+ 16 for 2 pushes inland/.test(d.getElementById('closeBox').textContent),'close box explains the era bonus');
+ E(`render(true)`); ok(/\+ 16 for 2 eras/.test(d.getElementById('closeBox').textContent),'close box explains the era bonus');
  E(`S.era=0;`);
 
  // 2. Repeat bounties pay 25% and stop at 20% of the next push inland ($3,000 at the cove)
@@ -33,11 +33,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // 3. Crews' route: Swamping crew unlocks from 6 filled charter orders with no mini-game runs
  ok(!E(`has('swamper')`),'swamping crew locked at start');
- ok(/or fill 6 charter orders/i.test(E(`reqText(UPG.find(u=>u.id==='swamper'))`)),'requirement text names both routes');
+ ok(/or fill 6 orders/i.test(E(`reqText(UPG.find(u=>u.id==='swamper'))`)),'requirement text names both routes');
  E(`S.stats.contracts=6; checkUnlocks(true);`);
  ok(E(`has('swamper')`),'swamping crew unlocked by the crews\' route');
  ok(!E(`has('gunstick')`),'mini-game-only gear has no crews\' route');
- ok(/or finish 20 tracts/i.test(E(`reqText(UPG.find(u=>u.id==='wedges'))`)),'felling wedges idle route is 20 tracts');
+ ok(/or finish 20 lots/i.test(E(`reqText(UPG.find(u=>u.id==='wedges'))`)),'felling wedges idle route is 20 tracts');
  E(`S.stats.tracts=19; checkUnlocks(true);`); ok(!E(`has('wedges')`),'wedges still locked at 19 tracts');
  E(`S.stats.tracts=20; checkUnlocks(true);`); ok(E(`has('wedges')`),'wedges unlock at 20 tracts');
  E(`S.ach.length=0; for(let i=0;i<36;i++) S.ach.push('x'+i); checkUnlocks(true);`); ok(E(`has('grade')`),'grade unlocks from 36 achievements');

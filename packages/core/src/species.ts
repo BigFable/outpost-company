@@ -108,15 +108,15 @@ export interface GroundDef {
 const ANY_SLOPE: readonly SlopeId[] = ['flat', 'flat', 'rolling', 'rolling', 'steep'];
 export const GROUNDS: Readonly<Record<GroundId, GroundDef>> = deepFreeze({
   coast:    { id: 'coast', name: 'Coast bottoms', era: 0, main: 'pine', mainW: [60, 80], rest: ['spruce', 'hemlock'], slopes: ANY_SLOPE },
-  headland: { id: 'headland', name: 'Spruce headland', era: 0, main: 'spruce', mainW: [60, 90], rest: ['pine'], slopes: ANY_SLOPE, windMult: 1.2,
+  headland: { id: 'headland', name: 'Spruce point', era: 0, main: 'spruce', mainW: [60, 90], rest: ['pine'], slopes: ANY_SLOPE, windMult: 1.2,
     twist: 'Windy: felling-game wind ×1.2' },
   swamp:    { id: 'swamp', name: 'Hemlock swamp', era: 0, main: 'hemlock', mainW: [60, 90], rest: ['spruce'], slopes: ['flat', 'flat', 'rolling'], landMult: 0.9,
-    twist: 'Flat or rolling only; land ×0.9' },
+    twist: 'Flat or hilly only; land ×0.9' },
   // slice 1: later eras keep the old two-species draw until their own grounds land (slice 3)
   mixed:    { id: 'mixed', name: 'Mixed stand', era: 1, slopes: ANY_SLOPE },
   // the AFK lot (owner request 2026-10-25): see AFK_LOT in generators.ts
-  cutover:  { id: 'cutover', name: 'Cutover slash country', era: 0, slopes: ['flat', 'flat', 'rolling'],
-    twist: 'Second growth among old slash: small, pulpy trees, but acres of them' },
+  cutover:  { id: 'cutover', name: 'Logged-over land', era: 0, slopes: ['flat', 'flat', 'rolling'],
+    twist: 'Regrowth: small, poor trees, but lots of them' },
 });
 /** Cove Landing grounds, in draw order. */
 export const COVE_GROUNDS: readonly GroundId[] = deepFreeze(['coast', 'headland', 'swamp']);
@@ -159,17 +159,17 @@ export interface FellRules {
 }
 const FELL_STD: FellRules = { wind: 1, hinge: [0.08, 0.2], cut: 1, half: 10, fallS: 0.9, rockLoss: 0.4, chairBelow: 0, tag: '' };
 export const FELL_RULES: Readonly<Partial<Record<SpeciesId, FellRules>>> = deepFreeze({
-  pine: { ...FELL_STD, tag: 'Fogbound pine: the honest all-rounder. Standard wind, hinge and cut.' },
+  pine: { ...FELL_STD, tag: 'Pine: the all-rounder. Normal wind, hinge and cut.' },
   spruce: { ...FELL_STD, wind: 1.5, cut: 1.25, fallS: 0.8,
-    tag: 'Shore spruce: tall and shallow-rooted. The wind pushes it half again as hard, and the back cut goes quicker.' },
+    tag: 'Spruce: tall and shallow-rooted. Wind pushes it 1.5× as hard, but it cuts faster.' },
   hemlock: { ...FELL_STD, hinge: [0.1, 0.2], rockLoss: 0.6, chairBelow: 0.05,
-    tag: 'Mist hemlock: brittle. The green hinge starts at 10%, a hinge under 5% barber-chairs, and a rock break loses 60%.' },
+    tag: 'Hemlock: brittle. Green hinge starts at 10%, under 5% splits, and hitting a rock loses 60%.' },
 });
 
 /** Felling rules for a species (the standard rules when it has none of its own yet). */
 export function fellRules(sp: SpeciesId | string | null | undefined): FellRules {
   const id = speciesId(sp);
-  return (id && FELL_RULES[id]) || { ...FELL_STD, tag: id ? `${SPECIES[id].name}: standard wind, hinge and cut.` : '' };
+  return (id && FELL_RULES[id]) || { ...FELL_STD, tag: id ? `${SPECIES[id].name}: normal wind, hinge and cut.` : '' };
 }
 
 /** Green hinge zone for a species: Mill file widens every species alike (−2 points low, +5 high). */
@@ -212,22 +212,22 @@ const LEN_STD: Readonly<Record<number, number>> = { 8: 0.9, 10: 1, 12: 1.05, 14:
 const BUCK_STD: BuckRules = { L: [38, 62], d0: [20, 32], top: 8, knots: [2, 4], knotAt: [0.3, 0.95], rot: [0.5, 2, 6], sweep: 0.45,
   lenP: LEN_STD, g1Prime: 12, pitchMult: 1, tag: '', guide: '' };
 export const BUCK_RULES: Readonly<Partial<Record<SpeciesId, BuckRules>>> = deepFreeze({
-  pine: { ...BUCK_STD, pitchMult: 2, tag: 'Fogbound pine: pitch pockets. Bucking finds amber pitch twice as often.',
-    guide: '<b>Fogbound pine:</b> pitch pockets, so amber pitch turns up twice as often. 16 ft logs pay ×1.15.' },
+  pine: { ...BUCK_STD, pitchMult: 2, tag: 'Pine: finds amber pitch twice as often.',
+    guide: '<b>Pine:</b> amber pitch turns up twice as often. 16 ft logs pay ×1.15.' },
   spruce: { ...BUCK_STD, L: [44, 66], d0: [16, 26], knots: [3, 5], knotAt: [0.5, 0.95], rot: [0.2, 2, 4], sweep: 0.2,
     lenP: { ...LEN_STD, 16: 1.25 }, g1Prime: 14,
-    tag: 'Shore spruce: clear butt logs. Knots only in the top half, and 16 ft spar lengths pay ×1.25.',
-    guide: '<b>Shore spruce:</b> knots only in the top half, so the butt logs run clear. 16 ft spar lengths pay ×1.25; Prime needs a grade 1 log of 14 ft.' },
+    tag: 'Spruce: knots only in the top half. 16 ft logs pay ×1.25.',
+    guide: '<b>Spruce:</b> knots only in the top half, so the lower logs are clear. 16 ft logs pay ×1.25; Prime needs a grade 1 log of 14 ft.' },
   hemlock: { ...BUCK_STD, L: [36, 56], d0: [22, 34], knots: [2, 3], rot: [0.8, 4, 10], sweep: 0.3, shake: [0.4, 4, 6],
     lenP: { 8: 1, 10: 1, 12: 1, 14: 1, 16: 1 },
-    tag: 'Mist hemlock: deep butt rot, and ring shake can drop a band of the stem to grade 3. Every length pays the same.',
-    guide: '<b>Mist hemlock:</b> butt rot runs 4–10 ft, and ring shake makes any sawlog that crosses it grade 3. Every sawlog length pays the same.' },
+    tag: 'Hemlock: deep rot at the base, and cracks can make logs grade 3. Every length pays the same.',
+    guide: '<b>Hemlock:</b> rot runs 4–10 ft up from the base, and any log that crosses the cracks is grade 3. Every length pays the same.' },
 });
 
 /** Bucking rules for a species (the standard rules when it has none of its own yet). */
 export function buckRules(sp: SpeciesId | string | null | undefined): BuckRules {
   const id = speciesId(sp);
-  return (id && BUCK_RULES[id]) || { ...BUCK_STD, tag: id ? `${SPECIES[id].name}: standard stem.` : '' };
+  return (id && BUCK_RULES[id]) || { ...BUCK_STD, tag: id ? `${SPECIES[id].name}: normal trunk.` : '' };
 }
 
 // ---------- species charter orders
@@ -240,7 +240,7 @@ export const SPECIES_CLIENTS: Readonly<Record<SpeciesId, SpeciesClient>> = deepF
   hemlock: { client: 'Landfall Pier Works', line: 'hemlock for pilings and pier decking' },
   maple: { client: 'Harbor Planing Mill', line: 'maple for flooring' },
   oak: { client: 'the Cove cooperage', line: 'oak for staves' },
-  cloudwood: { client: 'the Landfall City works', line: 'cloudwood beams' },
+  cloudwood: { client: 'the Landfall City works', line: 'redwood beams' },
 });
 /** Chance a regular charter order is a species order. */
 export const SPECIES_ORDER_CHANCE = 1 / 3;
@@ -253,7 +253,7 @@ export const SPECIES_ORDER_OFF_TRACT = 0.6;
 
 /** "Best for" line per species. */
 export const BEST_FOR: Readonly<Record<SpeciesId, string>> = deepFreeze({
-  pine: 'boards and amber pitch', spruce: 'Prime spars (3 from a perfect fall)', hemlock: 'tanbark in Spring and Summer',
+  pine: 'boards and amber pitch', spruce: 'Prime spars (3 from a perfect fall)', hemlock: 'bark money in Spring and Summer',
   maple: 'boards', oak: 'boards', cloudwood: 'big timber',
 });
 
@@ -287,11 +287,11 @@ export interface CampFit { readonly key: 'none' | 'good' | 'teams' | 'fallers'; 
 export function campFit(c: CampCaps, t: { readonly hp: number; readonly bf: number; readonly wt: number }): CampFit {
   const fell = t.hp > 0 ? c.fell / t.hp * t.bf : 0;
   const move = Math.min(c.skid, c.haul) / (t.wt || 1);
-  if (!(fell > 0) || !(move > 0)) return { key: 'none', ratio: 0, text: 'Camp fit: hire fallers and teams to see how this lot suits your camp.' };
+  if (!(fell > 0) || !(move > 0)) return { key: 'none', ratio: 0, text: 'Camp fit: hire fallers and teams to see how this lot suits you.' };
   const ratio = fell / move;
-  if (ratio > CAMP_FIT_TEAMS_SHORT) return { key: 'teams', ratio, text: 'Camp fit: your fallers are ahead of your teams here, so this wood will pile up at the stump. Lighter wood suits this camp.' };
-  if (ratio < CAMP_FIT_FALLERS_SHORT) return { key: 'fallers', ratio, text: 'Camp fit: your teams are ahead of your fallers here. Heavy, easy-felling wood suits this camp.' };
-  return { key: 'good', ratio, text: 'Camp fit: good. Your fallers and teams are matched on this wood.' };
+  if (ratio > CAMP_FIT_TEAMS_SHORT) return { key: 'teams', ratio, text: 'Camp fit: your fallers outpace your teams here, so logs will pile up. Lighter wood suits you.' };
+  if (ratio < CAMP_FIT_FALLERS_SHORT) return { key: 'fallers', ratio, text: 'Camp fit: your teams outpace your fallers here. Heavy, easy-to-fell wood suits you.' };
+  return { key: 'good', ratio, text: 'Camp fit: good. Your fallers and teams match on this wood.' };
 }
 
 /**

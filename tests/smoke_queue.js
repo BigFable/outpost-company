@@ -31,7 +31,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(bestOf('contract')===1 && /Best for the spruce order/.test(cards[1].textContent),'the spruce headland carries the "Best for the spruce order" badge');
  ok(bestOf('admiralty_spar')===1 && /Best for the Admiralty order/.test(cards[1].textContent),'and the Admiralty badge (spruce stamps 3 Prime spars)');
  const sprFit=[...cards[1].querySelectorAll('.ofit')].map(p=>p.textContent).join(' | ');
- ok(/spruce order before it expires/.test(sprFit),'order fit names the spruce order: '+sprFit);
+ ok(/spruce order in time/.test(sprFit),'order fit names the spruce order: '+sprFit);
  ok(/≈ \d+(\.\d)? (of the 16 )?Prime spars/.test(sprFit) && /Admiralty order/.test(sprFit),'order fit estimates Prime spars toward the Admiralty');
  ok(cards[0].querySelector('[data-order="contract"]')===null,'a lot with no spruce makes no claim on the spruce order');
  ok(d.querySelectorAll('#sales [data-best="contract"]').length===1,'one best listing per order');
@@ -47,7 +47,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // ---------- 2. the camp note: plain advice, the slowest stage, and a details fold
  E(`S.own={crosscut:4, bucker:20, oxen:1, sled:3}; render(true);`); cards=[...d.querySelectorAll('#sales .row.lot')];
  const fit2=cards[2].querySelector('.fit');
- ok(['skid','haul'].includes(fit2.dataset.fit) && /^Heavy hemlock: your (teams|haulers) are the slowest stage here; expect (skidding|hauling) to fall behind felling by about \d+%/.test(fit2.textContent),'heavy hemlock with few teams: '+fit2.textContent);
+ ok(['skid','haul'].includes(fit2.dataset.fit) && /^Heavy hemlock: your (teams|haulers) are slowest here; (skidding|hauling) falls about \d+% behind felling/.test(fit2.textContent),'heavy hemlock with few teams: '+fit2.textContent);
  ok(/of logs an hour, \d+% (more|less) than Home lot|about the same as Home lot/.test(fit2.textContent),'value an hour against the lot crews are on');
  const det=cards[2].querySelector('details.fitmore');
  ok(det && !det.open && /On this lot: felling/.test(det.textContent) && /mi haul: hauling ×/.test(det.textContent),'details fold with the stage rates, haul and slope');
@@ -56,7 +56,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.own={}; render(true);`);
  ok(d.querySelector('#sales .fit').dataset.fit==='none' && /hire fallers/.test(d.querySelector('#sales .fit').textContent),'no crews: the note says what to hire');
  E(`S.own={axeman:2, bucker:20, oxen:4, sled:6}; S.season=0; render(true);`);
- ok(/Tanbark season: hemlock pays \+\$14 a tree in bark until Fall/.test(d.querySelectorAll('#sales .row.lot')[2].querySelector('.fit').textContent),'the note mentions tanbark season in Spring');
+ ok(/Bark season: hemlock pays \+\$14 a tree until Fall/.test(d.querySelectorAll('#sales .row.lot')[2].querySelector('.fit').textContent),'the note mentions tanbark season in Spring');
  E(`S.season=2; render(true);`);
 
  // ---------- 3. switching lots keeps each lot's progress
@@ -64,7 +64,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; render(true);`);
  let rows=()=>[...d.querySelectorAll('#tq .qrow')];
  ok(rows().length===3 && rows()[0].classList.contains('on') && /Crews here/.test(rows()[0].textContent),'queue lists the owned lots, crews on the first');
- ok(/33 of 40 trees left/.test(rows()[0].textContent) && /cut out in/.test(rows()[0].textContent) && /an hour/.test(rows()[0].textContent),'row shows trees left, time to cut out and value: '+rows()[0].querySelector('.spec').textContent);
+ ok(/33 of 40 trees left/.test(rows()[0].textContent) && /done in/.test(rows()[0].textContent) && /an hour/.test(rows()[0].textContent),'row shows trees left, time to cut out and value: '+rows()[0].querySelector('.spec').textContent);
  ok(/Crews are on Alpha/.test($('queue').textContent),'the active tract panel says which lot crews are on');
  const cash0=E('S.cash');
  rows()[1].querySelector('[data-qnow]').click();
@@ -115,7 +115,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.contract=null`);
  // a cut-out lot hands the crews to the next in the queue
  E(`S.ui.qOrder='hand'; S.tracts[0].left=1; S.hp=1; damage(1);`);
- ok(E('tract().name')==='Gamma' && /Crews moved on to Gamma/.test(E('S.log.find(e=>/Cut out/.test(e.text)).text')),'when the active lot is cut out, crews move to the next in the queue');
+ ok(E('tract().name')==='Gamma' && /Crews moved to Gamma/.test(E('S.log.find(e=>/^Finished /.test(e.text)).text')),'when the active lot is cut out, crews move to the next in the queue');
  // buying adds to the end; as bought keeps it there
  E(`S.ui.qOrder='bought'; S.forSale=[Core.makeTract('Delta, Lot 2',[['pine',1]],10,1,'flat')]; S.forSale[0].price=1; buyTract(0);`);
  ok(E('S.tracts[S.tracts.length-1].name')==='Delta, Lot 2' && E('S.tracts[S.tracts.length-1].seq')===3,'a bought lot joins the end of the queue with the next purchase number');
@@ -128,7 +128,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(sp>0,'the other slots can name a species ('+sp+' species offers in 40 boards)');
  E(`S.tracts=[]; S.hp=null; S.offers[1]={mill:'the Admiralty spar yard', sp:'spruce', vol:2000, dur:300, prem:.4, penalty:0}; S.forSale=[Core.makeTract('Spruce head, Lot 7',[['spruce',85],['pine',15]],60,2,'flat','headland')]; S.forSale[0].price=100; render(true);`);
  const ob=d.querySelector('#contracts [data-obest="offer1"]');
- ok(ob && /Best lot for it: Spruce head, Lot 7 \(at the land office\)/.test(ob.textContent),'a species offer names the best lot for it: '+(ob&&ob.textContent));
+ ok(ob && /Best lot: Spruce head, Lot 7 \(for sale\)/.test(ob.textContent),'a species offer names the best lot for it: '+(ob&&ob.textContent));
 
  // ---------- 6. the AFK lot: Cutover slash country
  let afkBoards=0, multi=false, afk=null;
@@ -140,8 +140,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(afk.price/afk.trees < regPrice/reg.trees*0.5 && afk.val/afk.bf < reg.val/reg.bf,'cheaper per tree and poorer per bd ft than a normal lot');
  E(`S.forSale=S.forSale.filter(t=>!t.afk); S.forSale.push(Core.genAfkLot(Core.streamRng(S.rng,'land'), 0, saleOpts())); render(true);`);
  const ac=d.querySelector('#sales .row.lot.afk');
- ok(ac && /Cutover slash country/.test(ac.textContent) && /For time away/.test(ac.textContent) && /Best for: leaving the camp running/.test(ac.textContent),'the AFK card names its ground and what it is for');
- ok(/^Best for leaving the camp running: poor wood, but acres of it\. It holds about [\d.]+ (h|min) of work/.test(ac.querySelector('.fit').textContent),'its camp note: '+ac.querySelector('.fit').textContent);
+ ok(ac && /Logged-over land/.test(ac.textContent) && /For time away/.test(ac.textContent) && /Best for: time away/.test(ac.textContent),'the AFK card names its ground and what it is for');
+ ok(/^Best for time away: poor wood, but lots of it\. It lasts about [\d.]+ (h|min) of work/.test(ac.querySelector('.fit').textContent),'its camp note: '+ac.querySelector('.fit').textContent);
  // worse an hour than a good lot for the same camp, but it lasts several times as long
  const r=E(`(()=>{ const a=S.forSale.find(t=>t.afk), g=Core.makeTract('Good',[['pine',100]],60,1,'flat','coast'), c=bareCaps();
    return {va:Core.lotValueRate(c,a,'Fall'), vg:Core.lotValueRate(c,g,'Fall'), ta:Core.cutOutSeconds(c,a), tg:Core.cutOutSeconds(c,g)}; })()`);

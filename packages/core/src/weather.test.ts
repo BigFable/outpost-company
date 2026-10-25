@@ -216,7 +216,7 @@ describe('other hooks', () => {
   });
   it('awaySummary groups quiet seasons and lists events, up to 6 lines', () => {
     const e = [{ id: 'grey_spring', when: 'Spring 1891' }, { id: 'long_light', when: 'Summer 1891' }, { id: 'thaw_flood', when: 'Spring 1892', detail: '3.1K bd ft floated to the cove' }];
-    expect(awaySummary(e)).toEqual(['2 quiet seasons', 'Thaw flood, Spring 1892: 3.1K bd ft floated to the cove']);
+    expect(awaySummary(e)).toEqual(['2 calm seasons', 'Spring flood, Spring 1892: 3.1K bd ft floated to the cove']);
     const many = Array.from({ length: 10 }, (_, i) => ({ id: 'blizzard', when: `Winter ${1890 + i}` }));
     const out = awaySummary(many);
     expect(out).toHaveLength(6);

@@ -49,23 +49,23 @@ describe('order fit', () => {
     const [f] = orderFit(spruce(), [spOrder], ctx);
     expect(f?.amount).toBeCloseTo(0.5, 9); // 50 s × 125 bd ft/s of 12,500
     expect(f?.fills).toBe(false);
-    expect(f?.text).toBe('Fills about 50% of the spruce order before it expires.');
+    expect(f?.text).toBe('Fills about 50% of the spruce order in time.');
   });
   it('counts the lots queued ahead: their time and their share of the species', () => {
     const [f] = orderFit(spruce(), [spOrder], ctx, [pine()]); // pine takes 20 s and has no spruce
     expect(f?.amount).toBeCloseTo(0.3, 9);
     const big = orderFit(spruce(), [{ ...spOrder, secondsLeft: 1000 }], ctx)[0];
     expect(big?.fills).toBe(true);
-    expect(big?.text).toBe('Enough to fill the spruce order before it expires.');
+    expect(big?.text).toBe('Enough to fill the spruce order in time.');
     const late = orderFit(spruce(), [{ ...spOrder, secondsLeft: 10 }], ctx, [pine()])[0];
     expect(late?.amount).toBe(0);
-    expect(late?.text).toMatch(/expires before crews reach it/);
+    expect(late?.text).toMatch(/order ends before crews get here/);
     const covered = orderFit(spruce(), [{ ...spOrder, need: 100 }], ctx, [spruce()])[0];
     expect(covered?.amount).toBe(0);
-    expect(covered?.text).toMatch(/lots ahead of it should already fill/);
+    expect(covered?.text).toMatch(/lots ahead already fill/);
   });
-  it('marks offers on the board as "if you sign it now", and skips lots without the species', () => {
-    expect(orderFit(spruce(), [{ ...spOrder, signed: false }], ctx)[0]?.text).toMatch(/offered spruce order.*\(if you sign it now\)$/);
+  it('marks offers on the board as "if you sign now", and skips lots without the species', () => {
+    expect(orderFit(spruce(), [{ ...spOrder, signed: false }], ctx)[0]?.text).toMatch(/offered spruce order.*\(if you sign now\)$/);
     expect(orderFit(pine(), [spOrder], ctx)).toEqual([]);
   });
   it('estimates Prime from the idle trickle and the felling-game pace', () => {
@@ -77,7 +77,7 @@ describe('order fit', () => {
     const [f] = orderFit(spruce(), [admiralty], ctx);
     expect(f?.amount).toBeCloseTo(32, 9);
     expect(f?.fills).toBe(true);
-    expect(f?.text).toBe('≈ 32 Prime spars toward the Admiralty order, enough to fill it.');
+    expect(f?.text).toBe('≈ 32 Prime spars for the Admiralty order, enough to fill it.');
     const part = orderFit(pine(), [admiralty], ctx)[0];
     expect(part?.text).toBe('≈ 1.2 of the 16 Prime spars the Admiralty order still needs.');
     expect(orderFit(pine(), [admiralty], ctx, [spruce()])[0]?.amount).toBe(0); // the spruce lot ahead covers it
@@ -96,7 +96,7 @@ describe('camp note', () => {
     const n = campNote({ fell: 10, buck: 1000, skid: 132, haul: 1000 }, heavy(), { season: 'Fall' });
     expect(n.key).toBe('skid');
     expect(n.behind).toBeCloseTo(0.2, 9); // 132 ÷ 1.1 = 120 against felling 150
-    expect(n.short).toMatch(/^Heavy hemlock: your teams are the slowest stage here; expect skidding to fall behind felling by about 20%\./);
+    expect(n.short).toMatch(/^Heavy hemlock: your teams are slowest here; skidding falls about 20% behind felling\./);
     expect(n.short).toMatch(/About \$\d+ of logs an hour\./);
     expect(n.details.length).toBeGreaterThanOrEqual(2);
   });
@@ -104,7 +104,7 @@ describe('camp note', () => {
     expect(campNote({ fell: 2, buck: 1000, skid: 1000, haul: 1000 }, spruce(), { season: 'Fall' }).key).toBe('fell');
     const m = campNote({ fell: 14, buck: 1000, skid: 144, haul: 1000 }, spruce(), { season: 'Fall' });
     expect(m.key).toBe('matched');
-    expect(m.short).toMatch(/^Light spruce: well matched/);
+    expect(m.short).toMatch(/^Light spruce: a good match/);
     const none = campNote({ fell: 1, buck: 0, skid: 0, haul: 0 }, spruce(), { season: 'Fall' });
     expect(none.key).toBe('none');
     expect(none.short).toMatch(/hire buckers and teams and haulers/);
@@ -121,13 +121,13 @@ describe('camp note', () => {
   });
   it('mentions the season (tanbark now or later) and weather on the slowest stage', () => {
     const now = campNote({ fell: 10, buck: 1000, skid: 132, haul: 1000 }, heavy(), { season: 'Spring', weather: { name: 'Storm season', factors: { skid: 0.8 } } });
-    expect(now.short).toMatch(/Tanbark season: hemlock pays \+\$14 a tree in bark until Fall\./);
+    expect(now.short).toMatch(/Bark season: hemlock pays \+\$14 a tree until Fall\./);
     expect(now.short).toMatch(/Storm season makes it worse for now/);
     expect(now.details.join(' ')).toMatch(/Storm season: skidding ×0\.8 this season/);
     const later = campNote(caps, heavy(), { season: 'Fall' });
-    expect(later.details.join(' ')).toMatch(/Hemlock pays \+\$14 a tree in tanbark from Spring\./);
-    expect(seasonLines([['maple', 1]], 'Winter').now[0]).toBe('Winter maple is worth ×1.15 felled now, until Spring.');
-    expect(seasonLines([['maple', 1]], 'Spring').now[0]).toMatch(/sap stain: maple is worth ×0\.85 until Summer/);
+    expect(later.details.join(' ')).toMatch(/Hemlock pays \+\$14 a tree in bark from Spring\./);
+    expect(seasonLines([['maple', 1]], 'Winter').now[0]).toBe('Winter maple is worth ×1.15 until Spring.');
+    expect(seasonLines([['maple', 1]], 'Spring').now[0]).toMatch(/sap stains maple: worth ×0\.85 until Summer/);
     expect(seasonLines([['pine', 95], ['hemlock', 5]], 'Spring')).toEqual({ now: [], later: [] });
   });
 });
@@ -180,7 +180,7 @@ describe('the AFK lot (Cutover slash country)', () => {
     const a = genAfkLot(rng(5), 0, opts), g = makeTract('Good', [['pine', 100]], 60, 1, 'flat');
     expect(cutOutSeconds(c, a)).toBeGreaterThan(2.5 * cutOutSeconds(c, g));
     expect(lotValueRate(c, a, 'Fall')).toBeLessThan(0.85 * lotValueRate(c, g, 'Fall'));
-    expect(campNote(c, a, { season: 'Fall' }).short).toMatch(/^Best for leaving the camp running: poor wood, but acres of it\. It holds about/);
+    expect(campNote(c, a, { season: 'Fall' }).short).toMatch(/^Best for time away: poor wood, but lots of it\. It lasts about/);
   });
   it('the charter board shows four orders', () => { expect(OFFER_BOARD_SIZE).toBe(4); });
 });

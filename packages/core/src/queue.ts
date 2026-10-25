@@ -10,7 +10,7 @@
  * slope, haul distance and weight, the same way `stageRate` does in play.
  */
 import { deepFreeze } from './freeze';
-import { SPECIES, SEASONS, type Season, type SlopeId, type SpeciesId } from './content';
+import { SLOPES, SPECIES, SEASONS, type Season, type SlopeId, type SpeciesId } from './content';
 import { distanceFactor, slopeFactor } from './formulas';
 import { idlePrimeChance, PRIME_RULES, type ItemId } from './items';
 import { mainSpecies, mixShare, speciesId, SPECIES_SEASON, type GroundId } from './species';
@@ -142,7 +142,7 @@ export function primeEstimate(l: QueueLot, item: ItemId, era: number, perfRate =
   return leftOf(l) * primePerTree(l, item, era, perfRate);
 }
 
-const spWord = (sp: SpeciesId): string => SPECIES[sp].name.split(' ').pop() as string;
+const spWord = (sp: SpeciesId): string => SPECIES[sp].name.toLowerCase();
 const pct = (x: number): number => Math.max(1, Math.min(99, Math.round(x * 100 / 5) * 5));
 
 /** Bd ft of the order's species that `lots` deliver in turn before `seconds` run out, and the seconds they take. */
@@ -172,26 +172,26 @@ export function orderFit(lot: QueueLot, orders: readonly FitOrder[], ctx: FitCtx
       const w = spWord(o.sp), tag = o.signed ? 'the' : 'the offered';
       const before = speciesFlow(ctx.caps, ahead, o.sp, o.secondsLeft, sky);
       const still = Math.max(0, o.need - before.bf);
-      if (still <= 0) { out.push({ orderId: o.id, kind: 'species', amount: 0, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}, but the lots ahead of it should already fill ${tag} ${w} order.` }); continue; }
+      if (still <= 0) { out.push({ orderId: o.id, kind: 'species', amount: 0, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}, but lots ahead already fill ${tag} ${w} order.` }); continue; }
       const thr = lotThroughput(ctx.caps, lot, sky);
-      if (!(thr > 0)) { out.push({ orderId: o.id, kind: 'species', amount: share * 0.01, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}: counts toward ${tag} ${w} order once crews are on it.` }); continue; }
+      if (!(thr > 0)) { out.push({ orderId: o.id, kind: 'species', amount: share * 0.01, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}: helps ${tag} ${w} order once crews are on it.` }); continue; }
       const time = Math.max(0, o.secondsLeft - before.t);
       const got = Math.min(still, Math.min(cutOutSeconds(ctx.caps, lot, sky), time) * thr * share);
-      if (got <= 0) { out.push({ orderId: o.id, kind: 'species', amount: 0, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}, but ${tag} ${w} order expires before crews reach it.` }); continue; }
+      if (got <= 0) { out.push({ orderId: o.id, kind: 'species', amount: 0, share: 0, fills: false, text: `${Math.round(share * 100)}% ${w}, but ${tag} ${w} order ends before crews get here.` }); continue; }
       const fills = got >= still - 1e-6, of = got / o.need;
       const text = fills
-        ? (before.bf > 0 ? `Finishes ${tag} ${w} order before it expires, after the lots ahead of it.` : `Enough to fill ${tag} ${w} order before it expires.`)
-        : `Fills about ${pct(of)}% of ${tag} ${w} order before it expires.`;
-      out.push({ orderId: o.id, kind: 'species', amount: of, share: got / still, fills, text: text + (o.signed ? '' : ' (if you sign it now)') });
+        ? (before.bf > 0 ? `Finishes ${tag} ${w} order in time, after the lots ahead.` : `Enough to fill ${tag} ${w} order in time.`)
+        : `Fills about ${pct(of)}% of ${tag} ${w} order in time.`;
+      out.push({ orderId: o.id, kind: 'species', amount: of, share: got / still, fills, text: text + (o.signed ? '' : ' (if you sign now)') });
     } else {
       const per = primePerTree(lot, o.item, ctx.era, ctx.perfRate ?? 0); if (per <= 0) continue;
       const est = leftOf(lot) * per;
       const before = ahead.reduce((a, l) => a + primeEstimate(l, o.item, ctx.era, ctx.perfRate ?? 0), 0);
       const still = Math.max(0, o.need - before);
       const n = est >= 10 ? Math.round(est) : Math.round(est * 10) / 10;
-      if (still <= 0) { out.push({ orderId: o.id, kind: 'item', amount: 0, share: 0, fills: false, text: `≈ ${n} ${o.itemName}, but the lots ahead of it should already cover ${o.short}.` }); continue; }
+      if (still <= 0) { out.push({ orderId: o.id, kind: 'item', amount: 0, share: 0, fills: false, text: `≈ ${n} ${o.itemName}, but lots ahead already cover ${o.short}.` }); continue; }
       const fills = est >= still - 1e-9;
-      const text = fills ? `≈ ${n} ${o.itemName} toward ${o.short}, enough to fill it.` : `≈ ${n} of the ${Math.ceil(still)} ${o.itemName} ${o.short} still needs.`;
+      const text = fills ? `≈ ${n} ${o.itemName} for ${o.short}, enough to fill it.` : `≈ ${n} of the ${Math.ceil(still)} ${o.itemName} ${o.short} still needs.`;
       out.push({ orderId: o.id, kind: 'item', amount: est, share: Math.min(1, est / still), fills, text });
     }
   }
@@ -241,7 +241,7 @@ export interface CampNote {
   readonly details: readonly string[];
 }
 /** The AFK lot's lead line. */
-export const AFK_NOTE = 'Best for leaving the camp running: poor wood, but acres of it.';
+export const AFK_NOTE = 'Best for time away: poor wood, but lots of it.';
 /** Below this gap the stages count as matched. */
 export const CAMP_NOTE_MATCHED = 0.1;
 /** Site factors under this are called out in the short note when they hit the slowest stage. */
@@ -265,14 +265,14 @@ export function seasonLines(mix: readonly (readonly [SpeciesId, number])[], seas
     const w = spWord(sp), t = tr[season];
     let until: Season = nextSeason(season);
     for (let i = 0; i < 3 && sameTrait(t, tr[until]); i++) until = nextSeason(until);
-    if (t && t.bark > 0) now.push(`Tanbark season: ${w} pays +$${t.bark} a tree in bark until ${until}.`);
-    else if (t && t.mult > 1) now.push(`${season} ${w} is worth ×${f2(t.mult)} felled now, until ${until}.`);
-    else if (t && t.mult < 1) now.push(`${season} sap stain: ${w} is worth ×${f2(t.mult)} until ${until}.`);
+    if (t && t.bark > 0) now.push(`Bark season: ${w} pays +$${t.bark} a tree until ${until}.`);
+    else if (t && t.mult > 1) now.push(`${season} ${w} is worth ×${f2(t.mult)} until ${until}.`);
+    else if (t && t.mult < 1) now.push(`${season} sap stains ${w}: worth ×${f2(t.mult)} until ${until}.`);
     else {
       let s = nextSeason(season);
       for (let i = 0; i < 3 && !pays(tr[s]); i++) s = nextSeason(s);
       const u = tr[s];
-      if (u && u.bark > 0) later.push(`${upper(w)} pays +$${u.bark} a tree in tanbark from ${s}.`);
+      if (u && u.bark > 0) later.push(`${upper(w)} pays +$${u.bark} a tree in bark from ${s}.`);
       else if (u && u.mult > 1) later.push(`${upper(w)} felled in ${s} is worth ×${f2(u.mult)}.`);
     }
   }
@@ -297,12 +297,12 @@ export function campNote(c: QueueCaps, lot: QueueLot, ctx: CampNoteCtx): CampNot
   const seas = seasonLines(lot.mix, ctx.season);
   const details: string[] = [];
   details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} bd ft/s.`);
-  details.push(`Weight ${f2(wt)}: skid and haul ×${f2(1 / wt)}. ${lot.miles} mi haul: hauling ×${f2(df)}. ${upper(lot.slope)} ground: skidding ×${f2(sf)}.`);
+  details.push(`Weight ${f2(wt)}: skid and haul ×${f2(1 / wt)}. ${lot.miles} mi haul: hauling ×${f2(df)}. ${upper(SLOPES[lot.slope].label)} ground: skidding ×${f2(sf)}.`);
 
   const anyCrew = r.fell > 0 && r.buck > 0 && r.skid > 0 && r.haul > 0;
   if (!anyCrew) {
     const miss = QUEUE_STAGES.filter((s) => !(r[s] > 0)).map((s) => CREW[s]);
-    const short = `${Lead}: hire ${miss.join(' and ')} to see how this lot would work for your camp.` + (seas.now[0] ? ` ${seas.now[0]}` : '');
+    const short = `${Lead}: hire ${miss.join(' and ')} to see how this lot suits your camp.` + (seas.now[0] ? ` ${seas.now[0]}` : '');
     return { key: 'none', behind: 0, perHour, perHourNow, short: lot.afk ? `${AFK_NOTE} ${short}` : short, details: [...details, ...seas.now.slice(1), ...seas.later] };
   }
   let neck: QueueStage = 'fell';
@@ -310,17 +310,17 @@ export function campNote(c: QueueCaps, lot: QueueLot, ctx: CampNoteCtx): CampNot
   const others = QUEUE_STAGES.filter((s) => s !== neck).map((s) => r[s]);
   const behind = neck === 'fell' ? 1 - r.fell / Math.min(...others) : 1 - r[neck] / r.fell;
   let s1: string, key: CampNote['key'];
-  if (behind < CAMP_NOTE_MATCHED) { key = 'matched'; s1 = `${Lead}: well matched to your camp, every stage within ${Math.round(CAMP_NOTE_MATCHED * 100)}% of the others.`; }
-  else if (neck === 'fell') { key = 'fell'; s1 = `${Lead}: your fallers are the slowest stage here, so the rest of the camp waits about ${Math.round(behind * 100)}% of the time.`; }
-  else { key = neck; s1 = `${Lead}: your ${CREW[neck]} are the slowest stage here; expect ${VERB[neck]} to fall behind felling by about ${Math.round(behind * 100)}%.`; }
+  if (behind < CAMP_NOTE_MATCHED) { key = 'matched'; s1 = `${Lead}: a good match for your camp, every stage within ${Math.round(CAMP_NOTE_MATCHED * 100)}%.`; }
+  else if (neck === 'fell') { key = 'fell'; s1 = `${Lead}: your fallers are slowest here, so the camp waits about ${Math.round(behind * 100)}% of the time.`; }
+  else { key = neck; s1 = `${Lead}: your ${CREW[neck]} are slowest here; ${VERB[neck]} falls about ${Math.round(behind * 100)}% behind felling.`; }
   // the site, when it is what slows the slowest stage
   const site: string[] = [];
-  if (key === 'skid' && sf < CAMP_NOTE_SITE_FLAG) site.push(`${lot.slope} ground slows skidding ×${f2(sf)}`);
+  if (key === 'skid' && sf < CAMP_NOTE_SITE_FLAG) site.push(`${SLOPES[lot.slope].label} ground slows skidding ×${f2(sf)}`);
   if (key === 'haul' && df < CAMP_NOTE_SITE_FLAG) site.push(`the ${lot.miles} mi haul slows hauling ×${f2(df)}`);
   if (site.length) s1 = s1.replace(/\.$/, '') + ` (${site.join('; ')}).`;
   // weather on the slowest stage
   const wf = ctx.weather && key !== 'matched' ? ctx.weather.factors[neck as QueueStage] : undefined;
-  if (ctx.weather && wf !== undefined && wf !== 1) details.push(`${ctx.weather.name}: ${VERB[neck as QueueStage]} ×${f2(wf)} this season, ${wf < 1 ? 'which deepens' : 'which eases'} this gap.`);
+  if (ctx.weather && wf !== undefined && wf !== 1) details.push(`${ctx.weather.name}: ${VERB[neck as QueueStage]} ×${f2(wf)} this season, ${wf < 1 ? 'which makes' : 'which shrinks'} this gap${wf < 1 ? ' worse' : ''}.`);
   let s2 = `About ${money(perHour)} of logs an hour`;
   if (perHourNow !== null && perHourNow > 0) {
     const d = perHour / perHourNow - 1;
@@ -334,8 +334,8 @@ export function campNote(c: QueueCaps, lot: QueueLot, ctx: CampNoteCtx): CampNot
     // the AFK lot: what it is for and how long it lasts come first; the bottleneck moves to the details
     const sec = cutOutSeconds(c, lot, sky);
     details.unshift(s1 + wline);
-    const last = isFinite(sec) ? `about ${sec >= 3600 ? `${f2(Math.round(sec / 360) / 10)} h` : `${Math.max(1, Math.round(sec / 60))} min`} of work for your camp as it stands` : 'a long stretch of work';
-    return { key, behind: Math.max(0, behind), perHour, perHourNow, short: `${AFK_NOTE} It holds ${last}, so crews keep cutting while you are away. ${s2}`.replace(/\s+/g, ' ').trim(), details };
+    const last = isFinite(sec) ? `about ${sec >= 3600 ? `${f2(Math.round(sec / 360) / 10)} h` : `${Math.max(1, Math.round(sec / 60))} min`} of work for your camp now` : 'a long time';
+    return { key, behind: Math.max(0, behind), perHour, perHourNow, short: `${AFK_NOTE} It lasts ${last}, so crews keep cutting while you are away. ${s2}`.replace(/\s+/g, ' ').trim(), details };
   }
   return { key, behind: Math.max(0, behind), perHour, perHourNow, short: `${s1}${wline} ${s2}`.replace(/\s+/g, ' ').trim(), details };
 }
@@ -345,7 +345,7 @@ export function campNote(c: QueueCaps, lot: QueueLot, ctx: CampNoteCtx): CampNot
 export type QueueMode = 'bought' | 'deadline' | 'value' | 'hand';
 export const QUEUE_MODES: readonly QueueMode[] = deepFreeze(['bought', 'deadline', 'value', 'hand']);
 export const QUEUE_MODE_LABEL: Readonly<Record<QueueMode, string>> = deepFreeze({
-  bought: 'As bought', deadline: 'By order deadline', value: 'By value an hour', hand: 'By hand',
+  bought: 'As bought', deadline: 'Deadline', value: 'Value', hand: 'By hand',
 });
 export interface QueueKey {
   /** Purchase order. */

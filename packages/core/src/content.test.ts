@@ -116,10 +116,10 @@ describe("improvements' crews' route", () => {
     expect(improvementProgress('gunstick', { contracts: 99 })).toEqual([0, 3]);
   });
   it('text names both routes', () => {
-    expect(improvementReqText('swamper')).toBe('Finish 3 skidding runs, or fill 6 charter orders');
-    expect(improvementReqText('wedges')).toBe('Land 3 falls in the opening, or finish 20 tracts');
-    expect(improvementReqText('gunstick')).toBe('Finish 3 felling runs');
-    expect(improvementReqText('chokers')).toBe('Skid 12 logs in skid-game turns, or finish 40 tracts');
+    expect(improvementReqText('swamper')).toBe('Play 3 skid games, or fill 6 orders');
+    expect(improvementReqText('wedges')).toBe('Land 3 good falls, or finish 20 lots');
+    expect(improvementReqText('gunstick')).toBe('Play 3 felling games');
+    expect(improvementReqText('chokers')).toBe('Skid 12 logs in the skid game, or finish 40 lots');
   });
   it('skid-train improvements progress on logs skidded or the idle milestone', () => {
     expect(improvementProgress('arch', { skidLogs: 30 })).toEqual([30, 60]);

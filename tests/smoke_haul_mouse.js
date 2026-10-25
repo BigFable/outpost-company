@@ -39,7 +39,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
      E(`closeMG(); S.season=${season}; S.landing={bf:1e6, val:2e5}; S.upg=[]; S.run.perks=[]; S.owed=0; openMG('haul'); cancelAnimationFrame(MG.raf);`);
      const n0=E('H.n'); click(btn(/^\+ Log/)); const n1=E('H.n'); click(btn(/^− Log/));
      if (name==='hold' && season===0) ok(n1===n0+1 && E('H.n')===n0 && E('H.maxN')>=n1,'loading: + Log and − Log work with mouse clicks');
-     click(btn(/Head for the cove/)); if (name==='hold' && season===0) ok(E('H.phase')==='drive','loading: Head for the cove works with a mouse click');
+     click(btn(/^Drive$/)); if (name==='hold' && season===0) ok(E('H.phase')==='drive','loading: Drive works with a mouse click');
      const state={}; let i=0;
      while (E('H.phase')==='drive' && i++ < 20000){
        const want=E('Core.haulPolicy(H.rules.phys, H.v, Core.haulGrade(H.track, H.x))'); drive(state, want);
@@ -57,7 +57,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  pe('pointermove', 100, 260); E('haulStep(1/60)'); ok(E('H.ctl.brk')===true,'dragging down while held brakes');
  pe('pointerup', 100, 260); E('haulStep(1/60)'); ok(!E('H.ctl.gas') && !E('H.ctl.brk'),'releasing coasts');
  pe('pointerdown', PD.x0+20, 400+PD.y0+20); E('haulStep(1/60)'); ok(E('H.ctl.brk')===true,'holding the brake pedal brakes'); pe('pointerup', 0, 0);
- ok(/Hold the mouse button/.test(d.getElementById('mgStatus').textContent),'drive instructions explain the one-button controls');
+ ok(/Hold on the road for gas/.test(d.getElementById('mgStatus').textContent),'drive instructions explain the one-button controls');
  E('haulDraw()');
  E(`closeMG(); openMG('haul'); cancelAnimationFrame(MG.raf); haulGo();`); ok(E('H.hint')===false,'later drives skip the hint');
 
