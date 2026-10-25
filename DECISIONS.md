@@ -4,6 +4,9 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-25 | Species + seasons tuning: first charter-board slot is always a regular (non-species) order; Fish run every-stage factor ×0.85→×0.92 (upkeep discount kept); bad-luck measure becomes time-weighted; "20 orders filled" achievement (c20) needs 16 | Balance review: species orders delayed early fills and Steam Camp; Fish run was the largest weather drag; the old measure overweighted late seconds |
+| 2026-10-25 | Next playtest build must be playable on a phone (touch controls, phone-width layout) | Owner: a playtester will play on his phone |
+| 2026-10-25 | Land office and queue: order-fit notes on listings, an actionable camp note, switch the active lot anytime (free for now), reworked cutting queue | Owner feedback |
 | 2026-10-25 | Seasonal events approved as designed in docs/design/seasonal-events.md: an event card every season change; one weather for both camps; the Storm season curse's bonus sits outside the 25% special-order cap | Owner's calls on the seasons design |
 | 2026-10-25 | Build species slice 1 and seasons slice 1 now, balance-check them, then a playtest file | Owner approved |
 | 2026-10-25 | Species overhaul approved as designed in docs/design/species-overhaul.md, with: Domino fall unchanged (it can chain through Giant cloudwood); Giant cloudwood stays near 4.8× pine value (not cut to 2.2×); Ghost cedar deferred to the Fishing camp | Owner's calls on the species design |
