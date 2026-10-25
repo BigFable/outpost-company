@@ -1,5 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "../../node_modules/.cache/tsc/platform", "rootDir": "src" },
-  "include": ["src"]
+  "compilerOptions": {
+    "outDir": "../../node_modules/.cache/tsc/platform",
+    "rootDir": "src",
+    "tsBuildInfoFile": "../../node_modules/.cache/tsc/platform.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [{ "path": "../core" }]
 }

@@ -1,14 +1,24 @@
 {
   "name": "@outpost/desktop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Electron shell. Opens the Vite build of the web app (week 1: the legacy prototype). No Steam yet.",
+  "description": "Electron shell for Outpost Company with the Steam bridge (week-2 spike, Valve test app 480).",
+  "author": "Outpost Company",
   "main": "main.cjs",
   "scripts": {
-    "start": "electron .",
-    "smoke": "node smoke.cjs"
+    "bundle": "node scripts/bundle-platform.mjs",
+    "start": "node scripts/bundle-platform.mjs && electron .",
+    "smoke": "node scripts/bundle-platform.mjs && node smoke.cjs",
+    "dist:linux": "node scripts/prepare-package.mjs && electron-builder --linux --publish never",
+    "dist:win": "node scripts/prepare-package.mjs && electron-builder --win --publish never",
+    "dist:mac": "node scripts/prepare-package.mjs && electron-builder --mac --publish never",
+    "smoke:packaged": "node smoke.cjs --packaged"
+  },
+  "dependencies": {
+    "steamworks-ffi-node": "0.11.3"
   },
   "devDependencies": {
-    "electron": "44.7.0"
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0"
   }
 }

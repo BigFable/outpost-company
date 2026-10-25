@@ -1,0 +1,49 @@
+# electron-builder config for the desktop shell (tech plan section 6).
+# Spike builds: unsigned, Valve test app 480, no auto-update, no publishing.
+appId: com.outpostcompany.game   # placeholder bundle id until the real Steam app exists
+productName: Outpost Company
+executableName: outpost-company
+artifactName: outpost-company-${version}-${os}-${arch}.${ext}
+directories:
+  output: dist/release
+publish: null          # spike builds are never published or auto-updated
+files:
+  - main.cjs
+  - preload.cjs
+  - steam-host.cjs
+  - dist/platform.cjs
+  - dist/web/**
+  - package.json
+  - "!**/*.map"
+# The Steam binding loads native code (koffi, the overlay addon, libsteam_api)
+# from real files, so it must live outside the ASAR archive.
+asarUnpack:
+  - node_modules/steamworks-ffi-node/**
+  - node_modules/koffi/**
+  - node_modules/@koromix/**
+# Valve's Steamworks redistributables are NOT in git (licence). CI copies them
+# into apps/desktop/steamworks_sdk/ when the STEAMWORKS_SDK_ZIP_URL secret is set;
+# without them the build runs normally with Steam reported as absent.
+extraResources:
+  - from: steamworks_sdk
+    to: steamworks_sdk
+    filter:
+      - redistributable_bin/**
+linux:
+  target:
+    - target: tar.gz   # keeps the executable bit through GitHub's artifact zip
+      arch: [x64]      # Steam Deck is x64
+  category: Game
+win:
+  target:
+    - target: zip
+      arch: [x64]
+mac:
+  target:
+    # Apple Silicon only: pnpm installs koffi's native package for the build
+    # machine's CPU, and the GitHub macOS runner is arm64.
+    - target: zip
+      arch: [arm64]
+  category: public.app-category.games
+  identity: "-"        # ad-hoc signature only; real signing needs an Apple Developer account
+  hardenedRuntime: false

@@ -1,0 +1,76 @@
+name: Desktop build (Steam spike)
+
+# Manual only: Actions tab -> "Desktop build (Steam spike)" -> Run workflow.
+# Produces unsigned Windows, macOS (Apple Silicon) and Linux/Steam Deck builds
+# as downloadable artifacts. See docs/steam/spike-test-plan.md.
+#
+# Steam needs Valve's Steamworks SDK redistributables, which are not in git
+# (Valve's licence). Set the repository secret STEAMWORKS_SDK_ZIP_URL to a
+# private download link of the Steamworks SDK zip to include them. Without it
+# the builds still work but always report "no Steam".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            artifact: outpost-company-linux-steamdeck
+          - os: windows-latest
+            target: win
+            artifact: outpost-company-windows
+          - os: macos-latest
+            target: mac
+            artifact: outpost-company-mac-apple-silicon
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4   # version comes from "packageManager" in package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fetch Steamworks SDK redistributables (optional)
+        shell: bash
+        env:
+          SDK_URL: ${{ secrets.STEAMWORKS_SDK_ZIP_URL }}
+        run: |
+          if [ -z "$SDK_URL" ]; then
+            echo "::warning::STEAMWORKS_SDK_ZIP_URL not set: this build will run without Steam."
+            exit 0
+          fi
+          curl -fsSL "$SDK_URL" -o "$RUNNER_TEMP/sdk.zip"
+          python3 -m zipfile -e "$RUNNER_TEMP/sdk.zip" "$RUNNER_TEMP/sdk"
+          redist="$(find "$RUNNER_TEMP/sdk" -type d -name redistributable_bin | head -n1)"
+          if [ -z "$redist" ]; then echo "::error::No redistributable_bin folder in the SDK zip"; exit 1; fi
+          mkdir -p apps/desktop/steamworks_sdk
+          cp -R "$redist" apps/desktop/steamworks_sdk/
+          echo "Steamworks redistributables included."
+
+      - name: Build the web app
+        run: pnpm run build
+      - name: Package the desktop app
+        run: pnpm --filter @outpost/desktop dist:${{ matrix.target }}
+
+      - name: Smoke test the packaged Linux build (Steam absent)
+        if: matrix.target == 'linux'
+        run: pnpm --filter @outpost/desktop smoke:packaged
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            apps/desktop/dist/release/*.zip
+            apps/desktop/dist/release/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30

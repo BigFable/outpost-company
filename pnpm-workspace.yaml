@@ -7,3 +7,7 @@ packages:
 onlyBuiltDependencies:
   - electron
   - esbuild
+
+# steamworks-ffi-node asks for koffi ^3.1.5; pin a release at least two weeks old.
+overrides:
+  koffi: 3.3.2

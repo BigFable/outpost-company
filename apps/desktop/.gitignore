@@ -1,0 +1,4 @@
+dist/
+# Valve's Steamworks SDK redistributables: never commit them (licence).
+steamworks_sdk/
+steam_appid.txt
