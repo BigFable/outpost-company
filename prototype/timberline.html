@@ -1932,7 +1932,7 @@ var Core = (function(exports) {
 		ladder("c1", "Under contract", "Fill a delivery contract.", "contracts", 1, 250, 0),
 		ladder("c5", "Reliable supplier", "Fill 5 delivery contracts.", "contracts", 5, 1500, 1),
 		ladder("c10", "Steady supplier", "Fill 10 delivery contracts.", "contracts", 10, 8e3, 1),
-		ladder("c20", "Preferred supplier", "Fill 20 delivery contracts.", "contracts", 20, 25e3, 2),
+		ladder("c20", "Preferred supplier", "Fill 16 delivery contracts.", "contracts", 16, 25e3, 2),
 		ladder("crew10", "Ten-crew outfit", "Own 10 crews or machines.", "crew", 10, 400, 0),
 		ladder("crew30", "Big outfit", "Own 30 crews or machines.", "crew", 30, 4e3, 1),
 		ladder("crew75", "Industrial outfit", "Own 75 crews or machines.", "crew", 75, 8e4, 2),
@@ -4343,11 +4343,11 @@ var Core = (function(exports) {
 			name: "Fish run",
 			lasts: "season",
 			card: "The salmon are in. Half the hands are down at the cannery with a gaff and a grin.",
-			fx: "Every stage ×0.85 · upkeep ×0.75",
+			fx: "Every stage ×0.92 · upkeep ×0.75",
 			effects: [{
 				kind: "stage",
 				stage: "all",
-				mult: .85
+				mult: .92
 			}, {
 				kind: "upkeep",
 				mult: .75
@@ -5168,9 +5168,10 @@ function offerSpecies(){
   const share = {}; if (t) species.forEach(id => { share[id] = Core.mixShare(t.mix, id); });
   return {species, share};
 }
-function genOffer(){
+// regular=true: a plain charter order (no species roll); the board's first slot always is one
+function genOffer(regular){
   const t = tract();
-  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, offerSpecies());
+  return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, regular ? undefined : offerSpecies());
 }
 // a species order counts only that species' share of each delivery, by the current tract's mix
 const orderShare = c => !c || !c.sp ? 1 : tract() ? Core.mixShare(tract().mix, c.sp) : 0;
@@ -5189,7 +5190,7 @@ const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, tractCost(t)), 
 const scripBlock = () => perk('scrip') && (!!tract() || S.cash >= cheapestSale());
 const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &&
   (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
-function refreshOffers(){ S.offers = [genOffer(), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
+function refreshOffers(){ S.offers = [genOffer(true), genOffer()]; S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
 function accept(i){
   if (S.contract) return;
   const o = S.offers[i]; if (!o) return;

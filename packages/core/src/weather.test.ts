@@ -145,7 +145,7 @@ describe('stage factors and the clamp', () => {
     expect(eventStageFactor(g, 'haul', 0, { illWind: true })).toBeCloseTo(1.15);
     expect(eventStageFactor(g, 'fell', 0, { illWind: true })).toBe(1.1); // bonuses stay as they are
     expect(eventStageFactor(ev('blizzard'), 'skid', 0, { illWind: true })).toBeCloseTo(1.4);
-    expect(eventStageFactor(ev('fish_run'), 'fell', 0, { illWind: true })).toBe(0.85); // mixed events are not bad weather
+    expect(eventStageFactor(ev('fish_run'), 'fell', 0, { illWind: true })).toBe(0.92); // mixed events are not bad weather
   });
   it('payroll guard pauses every harmful stage effect, never a good one', () => {
     expect(eventStageFactor(ev('equinox_gale'), 'haul', 0, { guard: true })).toBe(1);

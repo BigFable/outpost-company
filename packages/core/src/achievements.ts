@@ -75,7 +75,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
   ladder('c1', 'Under contract', 'Fill a delivery contract.', 'contracts', 1, 250, 0),
   ladder('c5', 'Reliable supplier', 'Fill 5 delivery contracts.', 'contracts', 5, 1500, 1),
   ladder('c10', 'Steady supplier', 'Fill 10 delivery contracts.', 'contracts', 10, 8000, 1),
-  ladder('c20', 'Preferred supplier', 'Fill 20 delivery contracts.', 'contracts', 20, 25000, 2),
+  ladder('c20', 'Preferred supplier', 'Fill 16 delivery contracts.', 'contracts', 16, 25000, 2),
   ladder('crew10', 'Ten-crew outfit', 'Own 10 crews or machines.', 'crew', 10, 400, 0),
   ladder('crew30', 'Big outfit', 'Own 30 crews or machines.', 'crew', 30, 4000, 1),
   ladder('crew75', 'Industrial outfit', 'Own 75 crews or machines.', 'crew', 75, 80000, 2),

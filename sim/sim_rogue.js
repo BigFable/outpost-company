@@ -13,7 +13,7 @@ function run(profile, seed, hours=4, opt={}){
   const EVENTS=!!S.weather && !(opt.noEvents || process.env.NOEVENTS);
   if(S.weather && !EVENTS) S.weather.off=true;
   const evNow=()=>EVENTS && G.evNow ? G.evNow() : null, gr=(game,rule,d=0)=>Core.gameRule(evNow()||undefined,game,rule,d);
-  const wx0=()=>S.weather?{...S.weather.stats, storms:S.stats.storms||0, cleared:S.stats.cleared||0}:{}; let wxRun=wx0(); const wxPace={on:0,q:0};
+  const wx0=()=>S.weather?{...S.weather.stats, storms:S.stats.storms||0, cleared:S.stats.cleared||0}:{}; let wxRun=wx0(); const wxPace={tw:0,n:0};
   const MILL=!!G.closeMill, SPAR='logging.prime_spar'; if(MILL && process.env.MILLSHARE!=null) S.millShare=+process.env.MILLSHARE; const XT={ev:[],pondDry:0,millDry:0,coveSpend:0,millNeg:0};
   const millRunsOut=[], millEv=[]; let millOpenT=null, slot=0, sawN=0, runItem0=null;
   const itemSnap=()=>({prime:(S.found[SPAR]||{}).total||0, sales:S.run.itemSales||0, orders:S.run.ordersFilled||0, toMill:S.run.toMill||0});
@@ -147,8 +147,9 @@ function run(profile, seed, hours=4, opt={}){
     if(G.tract()){ const neck=STG.reduce((a,b)=>cap(b)<cap(a)?b:a); const k=S.era+':'+neck; stats.neck[k]=(stats.neck[k]||0)+dt; }
     if(lastContract && (!S.contract || S.contract.mill!==lastContract.mill || S.contract.vol!==lastContract.vol)){ if(S.t < lastContract.end) stats.contractsWon++; else stats.contractsLost++; }
     lastContract=S.contract?{...S.contract}:null;
-    // weather pace: the bottleneck with the weather against the same moment with it muted (the bad-luck measure)
-    if(EVENTS && G.setWxMute && Math.round(S.t*2)%2===0){ const nc=()=>G.tract()?Math.min(...STG.map(cap)):0; const a=nc(); let b=a; if(evNow()){ G.setWxMute(true); b=nc(); G.setWxMute(false); } wxPace.on+=a; wxPace.q+=b; }
+    // weather pace (the bad-luck measure, time-weighted): each second's slowdown of the bottleneck with the weather against the
+    // same moment with it muted, averaged over the seconds with timber to cut (a slow second late in the run counts no more than an early one)
+    if(EVENTS && G.setWxMute && Math.round(S.t*2)%2===0){ const nc=()=>G.tract()?Math.min(...STG.map(cap)):0; const a=nc(); let b=a; if(evNow()){ G.setWxMute(true); b=nc(); G.setWxMute(false); } if(b>0){ wxPace.tw+=1-a/b; wxPace.n++; } }
     if(Math.round(S.t*2)%2!==0) continue; // decide once per second
     if(MILL && S.camps.sawmill) millBot();
     { const k=(S.ach.length)+'/'+S.upg.length+'/'+S.era+'/'+Object.values(S.structures||{}).reduce((a,b)=>a+b,0)+'/'+(S.weather?Object.keys(S.weather.seen).length:0); if(k!==XT.k){ XT.k=k; XT.ev.push(S.t); } }
@@ -162,10 +163,10 @@ function run(profile, seed, hours=4, opt={}){
         if(MILL) G.sellSurplus(); // sell surplus at close camp
         const L2=MILL ? G.legacyNow() : L, i0=runItem0||{prime:0,sales:0,orders:0,toMill:0}, i1=itemSnap();
         runsOut.push({n:S.run.n, min:Math.round(rm), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:L2, achCash, perks:S.run.perks.map(id=>id).join(','), drafts:curDrafts, mods:S.run.mods.join(','), deliv:Math.round(S.run.deliv),
-          ...(EVENTS ? {wx:(()=>{ const a=wxRun, b=wx0(); return {bad:b.bad-a.bad, storms:b.storms-a.storms, cleared:b.cleared-a.cleared, guard:b.guard-a.guard, fires:b.fires-a.fires, burned:Math.round(b.burned-a.burned), maxStreak:b.maxStreak, stormN:S.run.stormN||0, pacePct:+((1-wxPace.on/Math.max(1e-9,wxPace.q))*100).toFixed(2)}; })()} : {}),
+          ...(EVENTS ? {wx:(()=>{ const a=wxRun, b=wx0(); return {bad:b.bad-a.bad, storms:b.storms-a.storms, cleared:b.cleared-a.cleared, guard:b.guard-a.guard, fires:b.fires-a.fires, burned:Math.round(b.burned-a.burned), maxStreak:b.maxStreak, stormN:S.run.stormN||0, pacePct:+(wxPace.tw/Math.max(1,wxPace.n)*100).toFixed(2)}; })()} : {}),
           ...(MILL ? {prime:i1.prime-i0.prime, orders:i1.orders, bonus:Math.round(Math.min(.25,S.orders.bonusPct)*100), salesPct:+(i1.sales/Math.max(1,S.run.earned)*100).toFixed(2), toMill:Math.round(i1.toMill), bunk:S.structures['logging.bunkhouse']||0} : {})});
         if(runsOut.length>=RUNS) break;
-        G.closeCamp(); wxRun=wx0(); wxPace.on=0; wxPace.q=0; runItem0={prime:(S.found[SPAR]||{}).total||0, sales:0, orders:0, toMill:0}; if(!NOMETA) for(const id of META_ORDER){ const m=G.META.find(x=>x.id===id); if(S.meta.legacy<m.cost) break; G.buyMeta(id); }
+        G.closeCamp(); wxRun=wx0(); wxPace.tw=0; wxPace.n=0; runItem0={prime:(S.found[SPAR]||{}).total||0, sales:0, orders:0, toMill:0}; if(!NOMETA) for(const id of META_ORDER){ const m=G.META.find(x=>x.id===id); if(S.meta.legacy<m.cost) break; G.buyMeta(id); }
         G.startRun(opt.mods&&runsOut.length>=1?opt.mods:[]); S.run.t0=S.t; runStart=S.t; peakLpm=0; lHist.length=0; curDrafts=0; achCash=0; lastBuy=S.t; eraT.length=0;
         continue; } } if(!stats.upgT) stats.upgT=[]; while(S.upg.length>stats.upgT.length) stats.upgT.push(Math.round(S.t/60)); if(!stats.achT) stats.achT=[]; if(S.ach&&S.ach.length>stats.achT.length) stats.achT.push(Math.round(S.t/60));
     // bot decisions

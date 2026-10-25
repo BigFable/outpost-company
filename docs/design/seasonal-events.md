@@ -62,7 +62,7 @@ Effects are multipliers on idle crews unless marked. "Game" lists mini-game rule
 | --- | --- | --- | --- | --- | --- | --- |
 | Long light | — | 30 | — | none | — | — |
 | **Long days** | G | 18 | season | Every stage ×1.1 | All games: pace boosts +10 s | *Summer charter* makes it ×1.2 |
-| Fish run | N | 12 | season | Half the hands go to the salmon: every stage ×0.85, upkeep ×0.75; mill sawyers ×0.9 | — | Posts *Cannery shook* (rush order) |
+| Fish run | N | 12 | season | Half the hands go to the salmon: every stage ×0.92, upkeep ×0.75; mill sawyers ×0.9 | — | Posts *Cannery shook* (rush order) |
 | **Dry spell, fire watch** | B | 12 | season | Felling ×1.0. If stems on the ground exceed 2 min of bucking output, a slash fire can burn 15% of them (once) | — | Counter: keep stems moving (bucking game, *Bottleneck boss*). Silver: burnt-over ground, the next lot costs 20% less |
 | Low water | B (mill) | 10 | season | Mill water ×0.7. Logging: dry trails, skidding ×1.15 | Skid: no mud patches | Good for Logging, bad for the mill: a cross-camp trade |
 | Frigate in the cove | G | 10 | season | Prime spars sell ×2 this season | — | Posts *Topmast for the frigate* |

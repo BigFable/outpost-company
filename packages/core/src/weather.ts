@@ -117,8 +117,8 @@ export const SEASON_EVENTS: readonly SeasonEventDef[] = deepFreeze([
     effects:[{kind:'fire', share:0.15, minStemsMin:2}]},
   {id:'fish_run', season:'Summer', tone:'neutral', weight:12, name:'Fish run', lasts:'season',
     card:'The salmon are in. Half the hands are down at the cannery with a gaff and a grin.',
-    fx:'Every stage ×0.85 · upkeep ×0.75',
-    effects:[{kind:'stage', stage:'all', mult:0.85}, {kind:'upkeep', mult:0.75}]},
+    fx:'Every stage ×0.92 · upkeep ×0.75',
+    effects:[{kind:'stage', stage:'all', mult:0.92}, {kind:'upkeep', mult:0.75}]},
   // ---- Fall (base: normal)
   {id:'fog_water', season:'Fall', tone:'none', weight:30, name:'Fog on the water', lasts:'none', effects:[],
     card:'Grey mornings and still water in the cove.', fx:'No change: normal fall work'},

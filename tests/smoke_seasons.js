@@ -152,6 +152,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  d2.getElementById('dOk').click(); ok(!c2.hidden && /New in the almanac/.test(c2.textContent),'then the first sighting card opens');
  ok(E2('S.log.some(l=>/New in the weather almanac/.test(l.text))'),'activity log lines for the offline weather');
 
+ // owner tuning 2026-10-25: Fish run every stage ×0.92 (upkeep ×0.75 kept); 'Preferred supplier' needs 16 contracts
+ E(`S.season=1; S.weather.cur=null; S.upg=[]; S.run.perks=[];`); const fq=E(`seasonF('buck')`); setEv('fish_run');
+ ok(Math.abs(E(`seasonF('buck')`)-0.92*fq)<1e-9 && E(`Core.eventMult(Core.eventDef('fish_run'),'upkeep')`)===0.75,'Fish run: every stage ×0.92, upkeep ×0.75');
+ E(`S.weather.cur=null;`);
+ const c20=E(`(()=>{const a=ACH.find(a=>a.id==='c20'); return a?{d:a.desc||a.d||'',w:JSON.stringify(a)}:null})()`);
+ ok(!!c20 && /16/.test(c20.w) && !/20 delivery/.test(c20.w),'c20 Preferred supplier: fill 16 delivery contracts: '+(c20&&c20.w).slice(0,140));
+
  // 10. old saves load: a save without weather gets defaults, no gentle start for a veteran company
  const old=JSON.parse(E('JSON.stringify(S)')); delete old.weather; delete old.rng.events; delete old.run.stormN; delete old.stats.storms; old.stats.winters=5; old.last=Date.now();
  const dom3=mk({'timberline-v2':JSON.stringify(old)}); await sleep(400); const E3=s=>dom3.window.__eval(s); E3('clearInterval(loop)');
