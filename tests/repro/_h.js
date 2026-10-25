@@ -17,7 +17,7 @@ async function mk(store, opts={}){
     w.addEventListener('unhandledrejection',e=>errs.push('rej:'+e.reason));}});
   await sleep(opts.wait||300);
   const w=dom.window; const E=s=>w.__eval(s);
-  if(!opts.live) try{E('clearInterval(loop)');}catch(e){}
+  if(!opts.live) try{E('clearInterval(loop)');}catch{ /* loop may not exist yet */ }
   return {dom,w,d:w.document,E,errs,clock};
 }
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++;};
