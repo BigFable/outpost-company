@@ -1,4 +1,5 @@
 <title>Outpost Company</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -320,6 +321,60 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .storybox{font-size:.92rem}
 .storybox ul{margin:6px 0;padding-left:20px}
 .mbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* phones: touch, narrow and short screens (phone audit). Tokens and both themes as above. */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,summary,.stage,.mgc,.chipl,.camptabs,.tabs,.buyn,.qmode{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button,summary,input,.lcell{touch-action:manipulation}
+.mgwrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+#mgGuideBtn.new{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.saveio textarea{width:100%;min-height:88px;font-family:var(--f-num);font-size:12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;resize:vertical}
+.saveio .cbtns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.saveio .msg{margin:4px 0 0;font-size:.84rem;font-weight:600}
+.saveio .msg.bad{color:var(--bad)} .saveio .msg.good{color:var(--good)}
+@media (pointer:coarse){
+  button,summary{min-height:44px}
+  summary,#mgGuideBtn{min-width:44px}
+  button{min-width:44px}
+  .linkbtn{padding:12px 4px}
+  .buyn button,.tabs button,.camptabs button{padding-block:0}
+  input[type=range]{min-height:44px}
+}
+@media (max-width:520px),(pointer:coarse){
+  .eyebrow,.chipl,.tally small,.lcell small,.dispatch small,.toast small,.yard small,.newb,.brand h1 small,.pcard small{font-size:12px}
+}
+@media (max-width:520px){
+  .cards{grid-template-columns:minmax(0,1fr)}
+  .pcard{min-height:0}
+  .toasts{left:calc(12px + env(safe-area-inset-left,0px));right:calc(12px + env(safe-area-inset-right,0px));align-items:stretch;max-width:none}
+  .toast{min-width:0;max-width:none}
+}
+@media (max-width:520px),(max-height:520px){
+  .modal{padding:calc(4px + env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+  .sheet{padding:12px;gap:8px;overscroll-behavior:contain}
+  .sheet>header{position:sticky;top:-12px;z-index:2;background:var(--panel);margin:-12px -12px 0;padding:12px 12px 6px;border-bottom:1px solid var(--line)}
+  .sheet>.mgbar{position:sticky;bottom:-12px;z-index:2;background:var(--panel);margin:0 -12px -12px;padding:8px 12px 12px;border-top:1px solid var(--line)}
+  .sheet header h2{font-size:1.1rem}
+  /* mini-games: the sheet fills the screen and never scrolls; help, gear and the guide sit behind the ? button */
+  #mg .sheet{height:100%;overflow:hidden}
+  #mg:not(.info) #mgHelp,#mg:not(.info) #mgGear{display:none}
+  #mg.info header>div:first-child{max-height:40vh;overflow:auto}
+  #mg .mgbar{position:static;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;margin:0 -12px -12px}
+  #mgStatus{flex:1 1 auto;min-height:0;overflow:auto;font-size:13px}
+  #mgBtns{flex:none;gap:6px}
+  #mgBtns .mbtn{flex:1 1 auto;padding:6px 10px}
+  #mgPeek{flex:none;height:2.9em;overflow:auto;line-height:1.45}
+  .mgwrap{position:relative;flex:none;display:block}
+  .mgwrap .guide{position:absolute;inset:0;z-index:3;overflow:auto;margin:0;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .mgc{margin:0 auto}
+}
+@media (max-height:520px) and (orientation:landscape){
+  #mg .sheet{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:12px;row-gap:6px}
+  #mg .sheet>header{grid-column:1 / -1}
+  #mg .mgwrap{grid-column:1;grid-row:2 / 4;align-self:start}
+  #mg #mgPeek{grid-column:2;grid-row:2}
+  #mg .mgbar{grid-column:2;grid-row:3;margin:0 -12px -12px 0;padding:0 12px 12px 0;border-top:0}
+  #mg #mgPeek[hidden]+.mgbar{grid-row:2 / 4}
+}
 </style>
 
 <div class="app">
@@ -475,7 +530,7 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
       </section>
       <div class="foot">
         <span>Saves on this device. <span id="saved"></span></span>
-        <button class="linkbtn" id="reset" type="button">New company</button>
+        <span class="rbtns" style="flex-direction:row;flex-wrap:wrap;gap:6px 14px"><button class="linkbtn" id="saveBtn" type="button">Save backup</button><button class="linkbtn" id="reset" type="button">New company</button></span>
       </div>
     </div>
   </div>
@@ -527,12 +582,13 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 <div class="modal" id="mg" hidden role="dialog" aria-modal="true" aria-labelledby="mgTitle">
   <div class="sheet">
     <header><div><h2 id="mgTitle">Place a fall</h2><p id="mgHelp"></p><p id="mgGear"></p></div><div class="hbtns"><button class="closeb" id="mgGuideBtn" type="button" aria-label="How to cut logs" title="How to cut logs" hidden>?</button><button class="closeb" id="mgClose" type="button">Close</button></div></header>
+    <div class="mgwrap">
     <div class="guide" id="mgGuide" hidden role="note" aria-labelledby="mgGuideT"><b id="mgGuideT">How to cut logs</b>
       <ol id="mgGuideL"><li><b>Pick a spot.</b> Orange marks show where a log can end: 8, 10, 12, 14 or 16 ft from your last cut.</li>
         <li><b>Check the color.</b> Green is grade 1, dark is grade 2 (knots), amber is grade 3 (bend), grey is pulp. Tap or click to cut.</li>
         <li><b>Send it.</b> Cut off the rot and keep knots and bends out of your best logs. A top under 8 in is pulp. Stuck? Hint shows the next best cut, for a few points.</li></ol>
       <button class="mbtn primary" id="mgGuideOk" type="button">Got it</button></div>
-    <canvas class="mgc" id="mgCanvas" width="640" height="400" tabindex="0" aria-label="Mini-game field"></canvas>
+    <canvas class="mgc" id="mgCanvas" width="640" height="400" tabindex="0" aria-label="Mini-game field"></canvas></div>
     <p class="peek" id="mgPeek" aria-live="polite" hidden></p>
     <div class="mgbar"><span id="mgStatus"></span><div id="mgBtns"></div></div>
   </div>
@@ -6453,13 +6509,29 @@ function checkAch(quiet){
   else got.forEach(a => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
   render(true);
 }
+// toasts wait while a sheet (mini-game, draft, warehouse, ...) is open so they never cover it; at most 2 show on a phone
+const toastQ = [];
+const sheetOpen = () => !!document.querySelector('.modal:not([hidden])');
+const toastMax = () => mq('(max-width:520px)') ? 2 : 4;
 function toast(t){
+  if (sheetOpen()){ toastQ.push(t); if (toastQ.length > 8) toastQ.shift(); return; }
+  showToast(t);
+}
+function flushToasts(){
+  try {
+    const box = $('toasts'); if (!box) return;
+    if (sheetOpen()){ box.innerHTML = ''; return; }
+    toastQ.splice(0).slice(-toastMax()).forEach(showToast);
+  } catch(e){} // the page is closing
+}
+if (window.MutationObserver) document.querySelectorAll('.modal').forEach(m => new MutationObserver(flushToasts).observe(m, {attributes:true, attributeFilter:['hidden']}));
+function showToast(t){
   const box = $('toasts'); if (!box) return;
   const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status');
   el.innerHTML = '<small></small><b></b><span></span>'; el.querySelector('small').textContent = t.label || 'Achievement';
   el.querySelector('b').textContent = t.name; el.querySelector('span').textContent = t.line;
   box.appendChild(el);
-  while (box.childElementCount > 4) box.firstChild.remove();
+  while (box.childElementCount > toastMax()) box.firstChild.remove();
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4500);
 }
 function renderGoals(){
@@ -6477,17 +6549,57 @@ const MG = {kind:null, raf:0, lt:0, LW:640, LH:400};
 let C = {}, F = null, B = null, K = null, H = null, W = null;
 function readColors(){ const cs = getComputedStyle(document.documentElement);
   ['bg','panel','ink','muted','line','accent','bark','needle','needle2','sky','good','warn','bad','pile'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim()); }
+// phones (narrow or short screens): the sheet fills the screen, the canvas is sized to fit beside the header and buttons,
+// canvas text stays at 12 CSS px or more and on-canvas buttons at 44 CSS px or more
+const mq = q => { try { return !!(window.matchMedia && window.matchMedia(q).matches); } catch(e){ return false; } };
+const PHONE_Q = '(max-width:520px), (max-height:520px)', LAND_Q = '(max-height:520px) and (orientation:landscape)';
+const phoneUI = () => mq(PHONE_Q);
 function sizeCanvas(){
   cv.style.aspectRatio = `${MG.LW} / ${MG.LH}`;
-  const w = cv.clientWidth || MG.LW, dpr = window.devicePixelRatio || 1;
-  cv.width = Math.round(w*dpr); cv.height = Math.round(w*MG.LH/MG.LW*dpr);
+  let w = 0;
+  if (phoneUI() && !mgEl.hidden){
+    const sh = mgEl.querySelector('.sheet'), cs = getComputedStyle(sh), num = v => parseFloat(v) || 0;
+    const gap = num(cs.rowGap) || 8, head = sh.querySelector('header').offsetHeight;
+    const innerW = sh.clientWidth - num(cs.paddingLeft) - num(cs.paddingRight);
+    let aw = innerW, ah = sh.clientHeight - num(cs.paddingTop) - num(cs.paddingBottom) - head - gap;
+    if (mq(LAND_Q)) aw = innerW*.64;
+    else { const pk = $('mgPeek'); ah -= (pk.hidden ? 0 : pk.offsetHeight + gap) + $('mgBtns').offsetHeight + 8 + 6 + 58; } // keep three lines of status
+    w = Math.floor(Math.max(120, Math.min(aw, ah*MG.LW/MG.LH)));
+    cv.style.width = w + 'px'; cv.style.height = Math.round(w*MG.LH/MG.LW) + 'px';
+  } else { cv.style.width = ''; cv.style.height = ''; }
+  w = w || cv.clientWidth || MG.LW;
+  const dpr = window.devicePixelRatio || 1, cw = Math.round(w*dpr), ch = Math.round(w*MG.LH/MG.LW*dpr);
+  if (cv.width !== cw || cv.height !== ch){ cv.width = cw; cv.height = ch; }
   if (cx) cx.setTransform(cv.width/MG.LW, 0, 0, cv.height/MG.LH, 0, 0);
+  MG.k = w/MG.LW; MG.fmin = Math.ceil(12/MG.k); MG.font = getComputedStyle(document.body).fontFamily;
+  mgTargets();
 }
+// on-canvas buttons (Saw for grade's Turn and Saw, the haul brake pedal) grow to 44 CSS px or more on small canvases
+function mgTargets(){
+  const k = MG.k || 1, s = Math.max(1, 46/(58*k)), w = 172*s, h = 58*s, y = MG.LH - h - (s > 1 ? 6 : 12);
+  SAW_BTN = {turn:{x:12, y, w, h}, saw:{x:MG.LW - 12 - w, y, w, h}};
+  const ps = Math.max(1, 50/(64*k)); HAUL_PEDAL = {x0:10, y0:-10 - 64*ps, w:140*ps, h:64*ps};
+}
+// canvas text helpers: a font never under 12 CSS px; a HUD group drawn larger about its corner; text kept inside the canvas
+const fpx = n => Math.max(n, MG.fmin || 0);
+const cfont = (n, w) => `${w ? w + ' ' : ''}${fpx(n)}px ${MG.font || getComputedStyle(document.body).fontFamily}`;
+const hudS = n => Math.max(1, 12/(n*(MG.k || 1)));
+function hud(ax, ay, n, fn){ const s = hudS(n); if (s === 1){ fn(1); return; } cx.save(); cx.translate(ax, ay); cx.scale(s, s); cx.translate(-ax, -ay); try { fn(s); } finally { cx.restore(); } }
+const tw = t => (cx && cx.measureText ? cx.measureText(t).width : 0) || 0;
+// drop trailing " · " parts until the text fits
+function fitTxt(t, maxW){ while (tw(t) > maxW && t.includes(' · ')) t = t.slice(0, t.lastIndexOf(' · ')); return t; }
+// split text into lines no wider than maxW (by words)
+function wrapTxt(t, maxW){ if (tw(t) <= maxW) return [t]; const out = []; let cur = '';
+  t.split(' ').forEach(w => { const nx = cur ? cur + ' ' + w : w; if (cur && tw(nx) > maxW){ out.push(cur); cur = w; } else cur = nx; }); if (cur) out.push(cur);
+  return out.map(l => l.replace(/^· | ·$/g, '')); }
+// centered text, nudged so it stays inside the canvas
+function ctext(t, x, y, pad){ const p = pad == null ? 6 : pad, h = tw(t)/2; cx.fillText(t, Math.max(p + h, Math.min(MG.LW - p - h, x)), y); }
 function status(t){ $('mgStatus').textContent = t; }
 function buttons(list){
   const box = $('mgBtns'); box.innerHTML = '';
   list.forEach(b => { const el = document.createElement('button'); el.type = 'button'; el.className = 'mbtn' + (b.primary ? ' primary' : '');
     el.textContent = b.label; el.disabled = !!b.disabled; el.onclick = b.fn; if (b.id) el.id = b.id; if (b.pressed != null) el.setAttribute('aria-pressed', String(!!b.pressed)); box.appendChild(el); });
+  if (MG.kind && !mgEl.hidden && phoneUI()) sizeCanvas();
 }
 const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace')) + Core.gameRule(evNow(), 'fell', 'boostSec');
 // at most Core.BOOST_STAGES stages run boosted at once (the oldest drops; Fog lifts ignores the limit)
@@ -6525,18 +6637,23 @@ function openMG(kind){
   if (kind === 'fell' && !tract()) return;
   if (kind === 'saw'){ if (!S.camps.sawmill || sawBlock()) return; }
   else if (kind !== 'fell' && srcPile(kind).bf <= 0) return;
-  MG.kind = kind; MG.LW = 640; MG.LH = kind === 'buck' ? 300 : 400; MG.keys = {}; MG.ptr = null;
+  const phone = phoneUI();
+  MG.kind = kind; MG.LW = 640; MG.LH = kind === 'buck' ? (phone ? 372 : 300) : 400; MG.keys = {}; MG.ptr = null;
+  mgEl.classList.remove('info');
   $('mgTitle').textContent = GAMES[kind];
   $('mgHelp').textContent = MG_HELP[kind]() + (wxGameText(kind) ? ` Weather: ${wxGameText(kind).trim()}` : '');
   setGuide(kind);
-  $('mgGuide').hidden = true; $('mgGuideBtn').hidden = kind !== 'buck' && kind !== 'saw'; $('mgPeek').hidden = kind !== 'buck' && kind !== 'saw'; $('mgPeek').textContent = '';
+  const guided = kind === 'buck' || kind === 'saw';
+  $('mgGuide').hidden = true; $('mgGuideBtn').hidden = !guided && !phone; $('mgPeek').hidden = kind !== 'buck' && kind !== 'saw'; $('mgPeek').textContent = '';
   if (kind === 'saw') $('mgGear').textContent = sawGearLine(); else gearLine(kind);
+  if (!guided){ $('mgGuideBtn').setAttribute('aria-label', 'Help'); $('mgGuideBtn').title = 'Help'; }
+  $('mgGuideBtn').classList.toggle('new', phone && guided && !(kind === 'saw' ? S.ui.sawIntro : S.ui.buckIntro));
   mgEl.hidden = false; readColors(); sizeCanvas();
   ({fell:fellInit, buck:buckInit, skid:skidInit, haul:haulInit, saw:() => sawInit(0)})[kind]();
   cancelAnimationFrame(MG.raf); MG.lt = 0; MG.raf = requestAnimationFrame(frame);
   $('mgClose').focus();
 }
-function closeMG(){ mgEl.hidden = true; $('mgGuide').hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = W = null; render(); }
+function closeMG(){ mgEl.hidden = true; mgEl.classList.remove('info'); $('mgGuide').hidden = true; cancelAnimationFrame(MG.raf); MG.kind = null; F = B = K = H = W = null; render(); }
 function frame(ts){
   const dt = MG.lt ? Math.min(.05, (ts - MG.lt)/1000) : 0; MG.lt = ts;
   try {
@@ -6549,15 +6666,19 @@ function frame(ts){
   if (MG.kind){ if (MG.kind !== 'saw') gearLine(MG.kind); MG.raf = requestAnimationFrame(frame); }
 }
 function lpos(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left)/r.width*MG.LW, y:(e.clientY - r.top)/r.height*MG.LH}; }
+// a finger or pen (no hover): bucking previews a cut on the first tap and cuts on a second tap there
+const touchy = e => e.pointerType === 'touch' || e.pointerType === 'pen';
 cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch(_){}
   const p = lpos(e); MG.ptr = p; MG.down = true;
+  if (MG.kind === 'buck' && touchy(e)){ buckTouchDown(p); return; }
   if (MG.kind === 'fell') fellPress(); else if (MG.kind === 'buck') buckClick(p); else if (MG.kind === 'haul') haulPress(p); else if (MG.kind === 'saw') sawPress(p, e.button); });
 cv.addEventListener('contextmenu', e => { if (MG.kind === 'saw'){ e.preventDefault(); } });
-const up = () => { MG.down = false; if (MG.kind === 'fell') fellRelease(); if (MG.kind === 'haul') haulRelease(); };
+const up = e => { MG.down = false; if (MG.kind === 'fell') fellRelease(); if (MG.kind === 'haul') haulRelease();
+  if (MG.kind === 'buck' && e && touchy(e)) buckTouchUp(e.type === 'pointercancel'); };
 cv.addEventListener('pointerup', up);
 cv.addEventListener('pointercancel', up);
-cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B){ B.hover = p; buckPeek(); } });
-cv.addEventListener('pointerleave', () => { if (B){ B.hover = null; buckPeek(); } if (MG.kind === 'fell') fellRelease(); });
+cv.addEventListener('pointermove', e => { const p = lpos(e); MG.ptr = p; if (MG.kind === 'buck' && B){ if (touchy(e)){ if (MG.down) buckTouchMove(p); } else { B.hover = p; B.touch = false; buckPeek(); } } });
+cv.addEventListener('pointerleave', e => { if (B && !touchy(e)){ B.hover = null; buckPeek(); } if (MG.kind === 'fell') fellRelease(); });
 const GAME_KEYS = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'];
 window.addEventListener('keydown', e => {
   if (!MG.kind) return;
@@ -6573,8 +6694,15 @@ window.addEventListener('keyup', e => {
   MG.keys[e.code] = false;
 });
 window.addEventListener('resize', () => { if (MG.kind){ sizeCanvas(); } });
+window.addEventListener('orientationchange', () => setTimeout(() => { if (MG.kind) sizeCanvas(); }, 150));
 $('mgClose').onclick = closeMG;
-$('mgGuideBtn').onclick = () => { if ($('mgGuide').hidden) showGuide(true); else hideGuide(); };
+$('mgGuideBtn').onclick = () => {
+  if (phoneUI()){ // phones: ? opens the help and gear lines and, for bucking and sawing, the guide over the canvas
+    const open = !mgEl.classList.contains('info'), guided = MG.kind === 'buck' || MG.kind === 'saw';
+    if (!open) hideGuide(); else { mgEl.classList.add('info'); if (guided) showGuide(true); }
+    sizeCanvas(); return;
+  }
+  if ($('mgGuide').hidden) showGuide(true); else hideGuide(); };
 $('mgGuideOk').onclick = () => { hideGuide(); const f = $('mgBtns').querySelector('button'); if (f) f.focus(); };
 mgEl.addEventListener('click', e => { if (e.target === mgEl) closeMG(); });
 
@@ -6678,13 +6806,14 @@ function fellDraw(){
   // standing trees
   F.stand.forEach((s,i) => { const p = polar(s.a, s.r); circle(p.x, p.y, s.s, i % 2 ? C.needle : C.needle2); circle(p.x, p.y, 3, C.bark); });
   // wind
-  cx.fillStyle = C.ink; cx.font = '600 13px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'right';
-  cx.fillText(`Wind ${Math.round(F.wind.str*15)} mph` + (F.wind.mult !== 1 ? ` · ${SP[F.sp] ? SP[F.sp].name.toLowerCase() : 'tree'} ×${+F.wind.mult.toFixed(2)}${F.wind.ev > 1 ? ' with the gale' : ''}` : ''), W-18, 26);
+  hud(W, 0, 13, s => {
+  cx.fillStyle = C.ink; cx.font = '600 13px ' + MG.font; cx.textAlign = 'right';
+  cx.fillText(fitTxt(`Wind ${Math.round(F.wind.str*15)} mph` + (F.wind.mult !== 1 ? ` · ${SP[F.sp] ? SP[F.sp].name.toLowerCase() : 'tree'} ×${+F.wind.mult.toFixed(2)}${F.wind.ev > 1 ? ' with the gale' : ''}` : ''), (W - 36)/s), W-18, 26);
   const wl = 20 + Math.min(1.6, F.wind.str*F.wind.mult)*50, wy = 42, wx = W-18-wl;
   cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath();
   if (F.wind.dir > 0){ cx.moveTo(wx, wy); cx.lineTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy-5); cx.moveTo(wx+wl, wy); cx.lineTo(wx+wl-7, wy+5); }
   else { cx.moveTo(wx+wl, wy); cx.lineTo(wx, wy); cx.lineTo(wx+7, wy-5); cx.moveTo(wx, wy); cx.lineTo(wx+7, wy+5); }
-  cx.stroke();
+  cx.stroke(); });
   // aim line
   if (F.phase === 'aim' || F.phase === 'cut'){
     const p = polar(F.aim, 250);
@@ -6692,7 +6821,7 @@ function fellDraw(){
     cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(p.x, p.y); cx.stroke(); cx.setLineDash([]);
     if (has('gunstick') || Core.gameRule(evNow(), 'fell', 'trueLine')){ const pa = F.aim + F.wind.dir*F.wind.str*14*F.wind.mult, q = polar(pa, 280);
       cx.strokeStyle = C.good; cx.lineWidth = 3; cx.setLineDash([2,5]); cx.beginPath(); cx.moveTo(STUMP.x, STUMP.y); cx.lineTo(q.x, q.y); cx.stroke(); cx.setLineDash([]);
-      cx.fillStyle = C.good; cx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; cx.textAlign = 'center'; cx.fillText('fall line', q.x, q.y - 8); cx.textAlign = 'left'; }
+      cx.fillStyle = C.good; cx.font = cfont(11, 600); cx.textAlign = 'center'; ctext('fall line', q.x, Math.max(fpx(11), q.y - 8)); cx.textAlign = 'left'; }
   }
   // falling / fallen tree
   if (F.phase === 'fall' || F.phase === 'done'){
@@ -6712,8 +6841,9 @@ function fellDraw(){
   circle(STUMP.x, STUMP.y, 12, C.bark);
   // stump cross-section during the cut
   if (F.phase === 'cut' || (F.phase !== 'aim' && F.hinge < 1)){
-    const ox = 92, oy = 100, R = 58;
-    cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(ox-R-18, oy-R-30, 2*R+36, 2*R+58); cx.globalAlpha = 1;
+    const [zl0, zh0] = hingeZone(), lab1 = 'Stump from above', lab2 = `Hinge ${Math.round(F.hinge*100)}%  (aim ${Math.round(zl0*100)}–${Math.round(zh0*100)}%)`;
+    cx.font = cfont(12, 600); const fs = fpx(12), R = 58, bw = Math.max(2*R + 36, Math.max(tw(lab1), tw(lab2)) + 16), ox = 10 + bw/2, oy = 100 + Math.max(0, fs - 12);
+    cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(ox - bw/2, oy-R-18-fs, bw, 2*R + 34 + 2*fs); cx.globalAlpha = 1;
     circle(ox, oy, R, C.pile);
     cx.strokeStyle = C.bark; cx.lineWidth = 1; for (let r = 12; r < R; r += 12){ cx.beginPath(); cx.arc(ox, oy, r, 0, Math.PI*2); cx.stroke(); }
     // notch (top, facing the fall)
@@ -6726,9 +6856,9 @@ function fellDraw(){
     cx.fillStyle = good ? C.good : F.hinge < zl ? C.bad : C.warn; cx.globalAlpha = .75;
     cx.fillRect(ox-R+6, apex, 2*R-12, Math.max(2, lineY - apex)); cx.globalAlpha = 1;
     cx.strokeStyle = C.accent; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(ox-R-6, lineY); cx.lineTo(ox+R+6, lineY); cx.stroke();
-    cx.fillStyle = C.ink; cx.textAlign = 'center'; cx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
-    cx.fillText('Stump from above', ox, oy-R-14);
-    cx.fillText(`Hinge ${Math.round(F.hinge*100)}%  (aim ${Math.round(zl*100)}–${Math.round(zh*100)}%)`, ox, oy+R+20);
+    cx.fillStyle = C.ink; cx.textAlign = 'center'; cx.font = cfont(12, 600);
+    cx.fillText(lab1, ox, oy-R-14);
+    cx.fillText(lab2, ox, oy+R+8+fs);
   }
   cx.textAlign = 'left';
 }
@@ -6765,7 +6895,7 @@ function buckInit(){
   buckKeep = B;
   $('mgHelp').textContent = `${MG_HELP.buck()} ${B.R.tag}`;
   buckStatus(); status(`${B.R.tag} ` + $('mgStatus').textContent); buckButtons(); buckPeek();
-  if (!S.ui.buckIntro) showGuide(false);
+  if (!S.ui.buckIntro && !phoneUI()) showGuide(false);
 }
 function buckButtons(focusId){
   const bb = [{label:'Clear cuts', fn:() => { if (!B.done){ B.cuts = []; B.hint = null; buckStatus(); } }},
@@ -6838,6 +6968,27 @@ function buckClick(p){
   if (B.hint && B.hint.ft === ft) B.hint = null;
   buckStatus();
 }
+// touch: the first tap shows the cut and the piece (grade, value, reason) without cutting; a second tap on the same spot
+// cuts there (or takes an existing cut out); a tap elsewhere, or a drag, moves the preview
+const buckTol = () => 24/(MG.k || 1);
+const buckSnap = p => ({x: xOf(Math.max(1, Math.min(B.L - 1, Math.round((p.x - 40)/560*B.L)))), y: p.y});
+function buckTouchDown(p){
+  if (!B || B.done) return;
+  B.touch = true;
+  const same = !!B.hover && Math.abs(p.x - B.hover.x) <= buckTol();
+  B.tap = {x:p.x, commit:same};
+  if (!same){ B.hover = buckSnap(p); buckPeek(); }
+}
+function buckTouchMove(p){
+  if (!B || B.done || !B.tap) return;
+  if (B.tap.commit && Math.abs(p.x - B.tap.x) <= buckTol()*.5) return;
+  B.tap.commit = false; B.hover = buckSnap(p); buckPeek();
+}
+function buckTouchUp(cancel){
+  if (!B || !B.tap) return;
+  const t = B.tap; B.tap = null;
+  if (t.commit && !cancel && B.hover && !B.done){ buckClick(B.hover); buckPeek(); }
+}
 function buckSend(){
   if (!B || B.done) return;
   const mine = segsOf(B.cuts).reduce((a,x) => a + x.val, 0);
@@ -6870,14 +7021,19 @@ function buckSend(){
   buckPeek(); render();
 }
 // first-time guide (shown once, again from the ? button)
-function showGuide(focus){ const g = $('mgGuide'); g.hidden = false; if (focus) $('mgGuideOk').focus(); }
-function hideGuide(){ $('mgGuide').hidden = true; if (MG.kind === 'saw') S.ui.sawIntro = true; else S.ui.buckIntro = true; }
+function showGuide(focus){ const g = $('mgGuide'); g.hidden = false; if (focus){ try { $('mgGuideOk').focus({preventScroll:true}); } catch(e){ $('mgGuideOk').focus(); } } g.scrollTop = 0; }
+function hideGuide(){ const was = !$('mgGuide').hidden; $('mgGuide').hidden = true;
+  if (was || !phoneUI()){ if (MG.kind === 'saw') S.ui.sawIntro = true; else S.ui.buckIntro = true; }
+  if (was) $('mgGuideBtn').classList.remove('new');
+  if (mgEl.classList.contains('info')){ mgEl.classList.remove('info'); sizeCanvas(); } }
 const gradeCol = g => g === 1 ? C.good : g === 2 ? C.ink : g === 3 ? C.warn : C.muted;
 function buckDraw(){
   if (!cx || !B) return;
   const W = MG.LW, H = MG.LH, cy0 = 120, k = 1.6, guide = S.ui.buckGuide;
   const font = getComputedStyle(document.body).fontFamily;
   cx.clearRect(0,0,W,H); cx.fillStyle = C.sky; cx.fillRect(0,0,W,H);
+  const dy = Math.max(0, 2*(fpx(11) - 11)); let hovLab = null;
+  cx.save(); cx.translate(0, dy);
   const sw = B.def.sweep;
   const cyAt = ft => cy0 - (sw && ft > sw[0] && ft < sw[1] ? Math.sin(Math.PI*(ft - sw[0])/(sw[1]-sw[0]))*12 : 0);
   const stemPath = (a, b) => { cx.beginPath();
@@ -6888,43 +7044,46 @@ function buckDraw(){
   cx.fillStyle = C.bark; stemPath(0, B.L); cx.fill();
   // butt end
   cx.fillStyle = C.pile; cx.beginPath(); cx.ellipse(xOf(0), cy0, 9, B.d0*k, 0, 0, Math.PI*2); cx.fill();
-  cx.textAlign = 'center'; cx.font = '600 11px ' + font; cx.fillStyle = C.ink;
-  cx.fillText(`${Math.round(B.d0)} in base`, xOf(0)+4, cy0 + B.d0*k + 16);
+  const fs = fpx(11), lh = fs + 3;
+  cx.textAlign = 'center'; cx.font = cfont(11, 600); cx.fillStyle = C.ink;
+  ctext(`${Math.round(B.d0)} in base`, xOf(0)+4, cy0 + B.d0*k + 5 + fs);
   // defects
   if (B.def.rot){ const [a,b] = B.def.rot; cx.fillStyle = C.ink; cx.globalAlpha = .45;
     for (let i=0; i<26; i++){ const f = a + (b - a)*((i*7919 % 26)/26), y = cy0 + (((i*37) % 17)/8.5 - 1)*.8*dAt(f)*k; cx.beginPath(); cx.arc(xOf(f), y, 2 + (i % 4), 0, Math.PI*2); cx.fill(); }
-    cx.globalAlpha = 1; cx.fillText('rot', xOf((a+b)/2)+4, cy0 - B.d0*k - 8); }
+    cx.globalAlpha = 1; ctext('rot', xOf((a+b)/2)+4, cy0 - B.d0*k - 8); }
   B.def.knots.forEach((f,i) => { const y = cyAt(f) + (i % 2 ? .45 : -.45)*dAt(f)*k; cx.fillStyle = C.ink; cx.globalAlpha = .7;
     cx.beginPath(); cx.ellipse(xOf(f), y, 5, 3.5, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; });
-  if (B.def.knots.length){ cx.fillStyle = C.muted; cx.fillText('knots', xOf(B.def.knots[0]), cyAt(B.def.knots[0]) - dAt(B.def.knots[0])*k - 8); }
-  if (sw){ cx.fillStyle = C.ink; cx.fillText('bend', xOf((sw[0]+sw[1])/2), cyAt((sw[0]+sw[1])/2) - dAt(sw[0])*k - 22); }
+  if (B.def.knots.length){ cx.fillStyle = C.muted; ctext('knots', xOf(B.def.knots[0]), cyAt(B.def.knots[0]) - dAt(B.def.knots[0])*k - 8); }
+  if (sw){ cx.fillStyle = C.ink; ctext('bend', xOf((sw[0]+sw[1])/2), cyAt((sw[0]+sw[1])/2) - dAt(sw[0])*k - 11 - fs); }
   // hemlock ring shake: a band of split rings drawn across the stem
   const sh = B.def.shake;
   if (sh){ cx.strokeStyle = C.warn; cx.lineWidth = 1.5; cx.globalAlpha = .8;
     for (let f = sh[0]; f <= sh[1]; f += .5){ const r = dAt(f)*k*.55; cx.beginPath(); cx.arc(xOf(f), cyAt(f), Math.max(2, r), -.6, .6); cx.stroke(); }
-    cx.globalAlpha = 1; cx.fillStyle = C.warn; cx.font = '600 11px ' + font; cx.fillText('cracks', xOf((sh[0]+sh[1])/2), cyAt(sh[0]) + dAt(sh[0])*k + 16); }
+    cx.globalAlpha = 1; cx.fillStyle = C.warn; cx.font = cfont(11, 600); ctext('cracks', xOf((sh[0]+sh[1])/2), cyAt(sh[0]) + dAt(sh[0])*k + 5 + fs); }
   // the top: where the stem drops under the species' sawlog top, nothing above is a sawlog
   const topIn = B.R.top, top8 = (B.d0 - topIn)/(B.d0 - B.dTop)*B.L;
   if (guide && top8 < B.L){ cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.setLineDash([2,3]); cx.beginPath(); cx.moveTo(xOf(top8), cy0 - 30); cx.lineTo(xOf(top8), cy0 + 30); cx.stroke(); cx.setLineDash([]);
-    cx.fillStyle = C.muted; cx.font = '11px ' + font; cx.fillText(`${topIn} in top`, xOf(top8), cy0 + 44); }
+    cx.fillStyle = C.muted; cx.font = cfont(11); ctext(`${topIn} in top`, xOf(top8), cy0 + 33 + fs); }
   // hovered piece, colored by what it would make
   const hft = B.hover && !B.done ? Math.round((B.hover.x - 40)/560*B.L) : null, hov = hft != null && hft > 0 && hft < B.L;
   const anchor = hov ? Math.max(0, ...B.cuts.filter(c => c < hft)) : Math.max(0, ...B.cuts);
   if (guide && hov){ const sp = seg(anchor, hft); cx.fillStyle = gradeCol(sp.g); cx.globalAlpha = .45; stemPath(anchor, hft); cx.fill(); cx.globalAlpha = 1; }
   // valid sawlog lengths from the last cut
-  if (guide && !B.done){ cx.font = '600 10px ' + font;
+  if (guide && !B.done){ cx.font = cfont(10, 600); const crowd = tw('16') + 4 > xOf(2) - xOf(0);
     VALID.forEach(len => { const f = anchor + len; if (f > B.L) return; const x = xOf(f), yT = cyAt(f) - dAt(f)*k - 4;
       const col = has('scalestick') ? gradeCol(seg(anchor, f).g) : C.accent;
       cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, yT); cx.lineTo(x - 4, yT - 7); cx.lineTo(x + 4, yT - 7); cx.closePath(); cx.fill();
-      cx.fillText(String(len), x, yT - 10); }); }
+      if (!crowd || len % 4 === 0) cx.fillText(String(len), x, yT - 10); }); }
   // pieces
-  const sg = segsOf(B.cuts);
+  const sg = segsOf(B.cuts), y1 = Math.max(216, 200 + lh), y2 = y1 + Math.max(15, lh), y3 = y2 + Math.max(14, lh);
   sg.forEach(x => {
-    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g);
+    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g), lab = `${x.len}′ ${x.g === 'P' ? 'pulp' : 'G' + x.g}`;
     cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4);
-    if (xb - xa > 34){ cx.font = '600 12px ' + font; cx.fillText(`${x.len}′ ${x.g === 'P' ? 'pulp' : 'G' + x.g}`, (xa+xb)/2, 216);
-      cx.font = '11px ' + font; cx.fillStyle = C.muted; cx.fillText(x.g === 'P' ? 'cords' : `${Math.round(x.bf)} bd ft`, (xa+xb)/2, 231);
-      if (has('scalestick')){ cx.fillStyle = C.ink; cx.fillText(money(segDollars(x.val)), (xa+xb)/2, 245); } }
+    cx.font = cfont(12, 600);
+    if (xb - xa > Math.max(34, tw(lab) + 4)){ cx.fillText(lab, (xa+xb)/2, y1);
+      const l2 = x.g === 'P' ? 'cords' : `${Math.round(x.bf)} bd ft`; cx.font = cfont(11); cx.fillStyle = C.muted;
+      if (tw(l2) + 4 < xb - xa) cx.fillText(l2, (xa+xb)/2, y2);
+      if (has('scalestick')){ cx.fillStyle = C.ink; cx.fillText(money(segDollars(x.val)), (xa+xb)/2, y3); } }
   });
   // best cuts after sending
   if (B.done && B.opt){ cx.strokeStyle = C.good; cx.lineWidth = 2; cx.setLineDash([4,4]);
@@ -6932,7 +7091,7 @@ function buckDraw(){
   // suggested cut
   if (B.hint && !B.done){ const x = xOf(B.hint.ft); cx.strokeStyle = B.hint.remove ? C.bad : C.good; cx.lineWidth = 3; cx.setLineDash([6,4]);
     cx.beginPath(); cx.moveTo(x, 44); cx.lineTo(x, 186); cx.stroke(); cx.setLineDash([]);
-    cx.fillStyle = B.hint.remove ? C.bad : C.good; cx.font = '600 11px ' + font; cx.fillText(B.hint.remove ? 'remove' : 'cut here', x, 188 + 4); }
+    cx.fillStyle = B.hint.remove ? C.bad : C.good; cx.font = cfont(11, 600); ctext(B.hint.remove ? 'remove' : 'cut here', x, 188 + 4); }
   // cuts
   cx.strokeStyle = C.accent; cx.lineWidth = 3;
   B.cuts.forEach(f => { const h = dAt(f)*k + 10; cx.beginPath(); cx.moveTo(xOf(f), cyAt(f) - h); cx.lineTo(xOf(f), cyAt(f) + h); cx.stroke(); });
@@ -6943,14 +7102,16 @@ function buckDraw(){
     cx.beginPath(); cx.moveTo(xOf(hft), 40); cx.lineTo(xOf(hft), 186); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
     let lab = `${len}′`, col = ok ? C.good : C.muted;
     if (guide){ const sp = seg(anchor, hft); lab += ` ${gradeName(sp)} · ${money(segDollars(sp.val))}`; col = gradeCol(sp.g); }
-    cx.fillStyle = col; cx.font = '600 12px ' + font;
-    const tw = (cx.measureText(lab).width || 0)/2; cx.fillText(lab, Math.max(14 + tw, Math.min(W - 14 - tw, xOf(hft))), 26);
+    hovLab = {lab, col, x:xOf(hft)};
   }
   // ruler
-  cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.fillStyle = C.muted; cx.font = '11px ' + font;
-  for (let f=0; f<=B.L; f++){ const x = xOf(f), tall = f % 10 === 0; cx.beginPath(); cx.moveTo(x, 256); cx.lineTo(x, tall ? 266 : 260); cx.stroke();
-    if (tall) cx.fillText(`${f} ft`, x, 280); }
-  cx.textAlign = 'right'; cx.fillText(`${SP[B.sp] ? SP[B.sp].name : ''} · ${B.L} ft trunk`, W-14, 292);
+  const ry = Math.max(256, (has('scalestick') ? y3 : y2) + 10), rl = ry + Math.max(24, lh + 10), rn = rl + Math.max(12, lh - 2);
+  cx.strokeStyle = C.muted; cx.lineWidth = 1; cx.fillStyle = C.muted; cx.font = cfont(11);
+  for (let f=0; f<=B.L; f++){ const x = xOf(f), tall = f % 10 === 0; cx.beginPath(); cx.moveTo(x, ry); cx.lineTo(x, tall ? ry + 10 : ry + 4); cx.stroke();
+    if (tall) cx.fillText(`${f} ft`, x, rl); }
+  cx.textAlign = 'right'; cx.fillText(fitTxt(`${SP[B.sp] ? SP[B.sp].name : ''} · ${B.L} ft trunk`, W - 28), W-14, Math.min(H - 4 - dy, rn));
+  cx.restore();
+  if (hovLab){ cx.textAlign = 'center'; cx.fillStyle = hovLab.col; cx.font = cfont(12, 600); ctext(fitTxt(hovLab.lab, W - 28), hovLab.x, 14 + fpx(12), 14); }
   cx.textAlign = 'left';
 }
 // text readout of the piece under the pointer or keyboard cursor (the canvas is not readable by screen readers)
@@ -6960,7 +7121,7 @@ function buckPeek(){
   if (ft == null || ft <= 0 || ft >= B.L){ el.textContent = B && !B.done ? 'Tap along the trunk to place a cut.' : ''; return; }
   const a = Math.max(0, ...B.cuts.filter(c => c < ft)), sp = seg(a, ft);
   el.textContent = `At ${ft} ft: a ${sp.len} ft piece from ${a ? 'your cut at ' + a + ' ft' : 'the base'}` +
-    (S.ui.buckGuide ? `, ${gradeName(sp)}, worth ${money(segDollars(sp.val))}.` : '.') + (B.cuts.includes(ft) ? ' Tap again to remove this cut.' : '');
+    (S.ui.buckGuide ? `, ${gradeName(sp)}, worth ${money(segDollars(sp.val))}.` : '.') + (B.cuts.includes(ft) ? ' Tap again to remove this cut.' : B.touch ? ' Tap again to cut here.' : '');
 }
 function buckKey(e, onButton){
   if (!B || B.done) return false;
@@ -7089,9 +7250,9 @@ function skidDraw(){
     for (let y = cam - 60; y <= cam + Hh + 60; y += 8) y === cam - 60 ? cx.moveTo(K.cxAt(y), y) : cx.lineTo(K.cxAt(y), y); cx.stroke(); cx.setLineDash([]); }
   // landing
   cx.fillStyle = C.line; cx.fillRect(0, K.WH - 70, W, 70);
-  cx.fillStyle = C.ink; cx.font = '600 14px ' + font; cx.textAlign = 'center'; cx.fillText('LANDING', W/2, K.WH - 30);
+  cx.fillStyle = C.ink; cx.font = cfont(14, 600); cx.textAlign = 'center'; cx.fillText('LANDING', W/2, K.WH - 30);
   for (let i=0; i<6; i++) circle(W/2 + 70 + (i%3)*13, K.WH - 42 + Math.floor(i/3)*-11, 6, C.pile);
-  cx.fillStyle = C.muted; cx.font = '12px ' + font; cx.fillText('Stumps', K.cxAt(16), 18);
+  cx.fillStyle = C.muted; cx.font = cfont(12); ctext('Stumps', K.cxAt(16), 6 + fpx(12));
   // mud
   const greased = perk('greased');
   K.mud.forEach(m => { cx.fillStyle = m.flood ? C.sky : C.bark; if (m.flood){ cx.globalAlpha = .9; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx + 4, m.ry + 3, 0, 0, Math.PI*2); cx.fillStyle = C.muted; cx.fill(); cx.fillStyle = C.bark; } cx.globalAlpha = .5; cx.beginPath(); cx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1;
@@ -7112,11 +7273,12 @@ function skidDraw(){
   if (MG.down && MG.ptr && K.phase === 'run'){ cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.beginPath(); cx.arc(MG.ptr.x, MG.ptr.y + cam, 10, 0, Math.PI*2); cx.stroke(); }
   cx.restore();
   // HUD
-  cx.fillStyle = C.panel; cx.globalAlpha = .9; cx.fillRect(10, 10, 220, 46); cx.globalAlpha = 1;
+  hud(0, 0, 12, s => {
+  cx.fillStyle = C.panel; cx.globalAlpha = s > 1 ? .8 : .9; cx.fillRect(10, 10, 220, 46); cx.globalAlpha = 1;
   cx.fillStyle = C.ink; cx.textAlign = 'left'; cx.font = '600 13px ' + font;
   cx.fillText(K.phase === 'pick' ? 'Pick a load below' : `Time ${Math.round(K.t)} s · target ${K.par} s`, 20, 29);
-  cx.font = '12px ' + font; cx.fillStyle = C.muted; cx.fillText(`Stump hits ${K.hits} · ${K.logs} ${K.logs === 1 ? 'log' : 'logs'}`, 20, 47);
-  if (K.msgT > 0){ cx.fillStyle = C.bad; cx.font = '600 16px ' + font; cx.textAlign = 'center'; cx.fillText(K.msg, W/2, 90); cx.textAlign = 'left'; }
+  cx.font = '12px ' + font; cx.fillStyle = C.muted; cx.fillText(`Stump hits ${K.hits} · ${K.logs} ${K.logs === 1 ? 'log' : 'logs'}`, 20, 47); });
+  if (K.msgT > 0){ cx.fillStyle = C.bad; cx.font = cfont(16, 600); cx.textAlign = 'center'; ctext(fitTxt(K.msg, W - 12), W/2, Math.max(90, 56*hudS(12) + 10 + fpx(16))); cx.textAlign = 'left'; }
 }
 
 // --- hauling (road, physics, par and pay live in Core: packages/core/src/haul.ts)
@@ -7156,7 +7318,7 @@ function haulLoadUI(){
 }
 // one-button controls (primary): hold the mouse button or a finger anywhere on the road = gas, let go = coast;
 // brake by holding the on-screen brake pedal or by dragging down while held. No right-click. Arrow keys / WASD still work.
-const HAUL_PEDAL = {x0:10, y0:-74, w:140, h:64};
+let HAUL_PEDAL = {x0:10, y0:-74, w:140, h:64};
 const inPedal = p => p.x >= HAUL_PEDAL.x0 && p.x <= HAUL_PEDAL.x0 + HAUL_PEDAL.w && p.y >= MG.LH + HAUL_PEDAL.y0 && p.y <= MG.LH + HAUL_PEDAL.y0 + HAUL_PEDAL.h;
 function haulPress(p){ if (!H || H.phase !== 'drive') return; H.press = inPedal(p) ? 'pedal' : 'hold'; H.pressY = p.y; }
 function haulRelease(){ if (H) H.press = null; }
@@ -7258,17 +7420,17 @@ function haulDraw(){
   for (let sx=0; sx<=W; sx+=6) sx ? cx.lineTo(sx, H.road(camX + sx)) : cx.moveTo(sx, H.road(camX));
   cx.stroke(); cx.setLineDash([]);
   // mileposts and mill
-  cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.textAlign = 'center';
+  cx.fillStyle = C.ink; cx.font = cfont(11); cx.textAlign = 'center';
   for (let m = 500; m < H.L; m += 500){ const sx = m - camX; if (sx > -20 && sx < W + 20){ const y = H.road(m); cx.fillRect(sx - 1, y - 22, 3, 22); cx.fillText(`${(m/H.L*S.site.miles).toFixed(1)} mi`, sx, y - 26); } }
   const mx = H.L - camX + 40;
   if (mx < W + 100){ const y = H.road(H.L); cx.fillStyle = C.bark; cx.fillRect(mx - 10, y - 70, 90, 70); cx.fillStyle = C.ink; cx.fillRect(mx + 50, y - 96, 10, 26);
-    cx.fillStyle = C.panel; cx.font = '600 12px ' + font; cx.fillText('COVE', mx + 35, y - 30); }
+    cx.fillStyle = C.panel; cx.font = cfont(12, 600); cx.fillText('COVE', mx + 35, y - 30); }
   // road lookout: flags where steep downgrades begin on the road ahead
   const steep = [];
   if (H.rules.lookout && H.phase !== 'done'){
     let prev = Core.haulGrade(H.track, H.x);
     for (let x = H.x + 10; x < Math.min(H.L, H.x + 900); x += 10){ const g = Core.haulGrade(H.track, x); if (g > .1 && prev <= .1) steep.push(x); prev = g; }
-    cx.font = '600 11px ' + font; cx.textAlign = 'center';
+    cx.font = cfont(11, 600); cx.textAlign = 'center';
     steep.forEach(x => { const sx = x - camX; if (sx < -10 || sx > W + 10) return; const y = H.road(x);
       cx.fillStyle = C.bad; cx.fillRect(sx - 1, y - 34, 3, 34); cx.beginPath(); cx.moveTo(sx + 2, y - 34); cx.lineTo(sx + 22, y - 29); cx.lineTo(sx + 2, y - 24); cx.closePath(); cx.fill();
       cx.fillText('BRAKE', sx, y - 38); });
@@ -7282,12 +7444,13 @@ function haulDraw(){
     if (fx < W){ const g = cx.createLinearGradient ? cx.createLinearGradient(fx, 0, fx + 60, 0) : null;
       if (g && g.addColorStop){ g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, C.sky); }
       cx.globalAlpha = .96; cx.fillStyle = g || C.sky; cx.fillRect(fx, 0, 60, Hh); cx.fillStyle = C.sky; cx.fillRect(fx + 60, 0, W - fx, Hh); cx.globalAlpha = 1;
-      cx.fillStyle = C.muted; cx.font = '600 12px ' + font; cx.textAlign = 'center'; cx.fillText(H.fogPx ? 'FOG' : 'SNOW', Math.min(W - 40, fx + 90), Hh/2); cx.textAlign = 'left'; }
+      cx.fillStyle = C.muted; cx.font = cfont(12, 600); cx.textAlign = 'center'; ctext(H.fogPx ? 'FOG' : 'SNOW', Math.min(W - 40, fx + 90), Hh/2); cx.textAlign = 'left'; }
   }
   // HUD
   cx.textAlign = 'left';
   const ra = runaway(), driving = H.phase !== 'load';
-  cx.fillStyle = C.panel; cx.globalAlpha = .92; cx.fillRect(10, 10, 240, driving ? 76 : 58); cx.globalAlpha = 1;
+  hud(0, 0, 11, s => {
+  cx.fillStyle = C.panel; cx.globalAlpha = s > 1 ? .82 : .92; cx.fillRect(10, 10, 240, driving ? 76 : 58); cx.globalAlpha = 1;
   const vmax = Math.max(300, ra + 30), bw = 200; cx.fillStyle = C.line; cx.fillRect(20, 40, bw, 10);
   cx.fillStyle = H.v > ra ? C.bad : H.v > ra - 60 ? C.warn : C.good; cx.fillRect(20, 40, Math.min(1, H.v/vmax)*bw, 10);
   cx.fillStyle = C.bad; cx.fillRect(20 + ra/vmax*bw, 36, 2, 18);
@@ -7304,8 +7467,9 @@ function haulDraw(){
     cx.fillStyle = C.panel; cx.globalAlpha = .92; cx.fillRect(10, 90, 240, 22); cx.globalAlpha = 1;
     cx.fillStyle = C.line; cx.fillRect(110, 97, 130, 8); cx.fillStyle = ready ? C.good : C.accent; cx.fillRect(110, 97, f*130, 8);
     cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.fillText(ready ? 'Store: stops a runaway' : 'Gravity store', 20, 105);
-  }
+  } });
   if (H.rules.lookout && H.phase === 'drive'){ // lookout's profile of the next stretch
+    hud(W, 0, 11, () => {
     const px = W - 190, span = 900;
     cx.fillStyle = C.panel; cx.globalAlpha = .92; cx.fillRect(px, 10, 180, 58); cx.globalAlpha = 1;
     const y0 = H.road(H.x);
@@ -7314,7 +7478,7 @@ function haulDraw(){
       cx.strokeStyle = Core.haulGrade(H.track, x1) > .1 ? C.bad : C.muted; cx.beginPath();
       cx.moveTo(px + 10 + i, 46 + (H.road(x1) - y0)*.25); cx.lineTo(px + 10 + i + 4, 46 + (H.road(Math.min(H.L, x2)) - y0)*.25); cx.stroke(); }
     cx.fillStyle = C.ink; cx.font = '11px ' + font;
-    cx.fillText(steep.length ? `Brake in ${Math.max(0, Math.round((steep[0] - H.x)/H.L*S.site.miles*1760))} yd` : 'Road clear', px + 10, 24);
+    cx.fillText(steep.length ? `Brake in ${Math.max(0, Math.round((steep[0] - H.x)/H.L*S.site.miles*1760))} yd` : 'Road clear', px + 10, 24); });
   }
   if (H.phase === 'drive'){
     const ctl = H.ctl || {gas:false, brk:false};
@@ -7322,18 +7486,20 @@ function haulDraw(){
     const py = Hh + HAUL_PEDAL.y0;
     cx.fillStyle = ctl.brk ? C.bad : C.panel; cx.globalAlpha = ctl.brk ? .85 : .8; cx.fillRect(HAUL_PEDAL.x0, py, HAUL_PEDAL.w, HAUL_PEDAL.h); cx.globalAlpha = 1;
     cx.strokeStyle = C.bad; cx.lineWidth = 2; cx.strokeRect(HAUL_PEDAL.x0, py, HAUL_PEDAL.w, HAUL_PEDAL.h);
-    cx.fillStyle = ctl.brk ? C.panel : C.ink; cx.font = '600 13px ' + font; cx.textAlign = 'center';
-    cx.fillText('BRAKE', HAUL_PEDAL.x0 + HAUL_PEDAL.w/2, py + 28); cx.font = '11px ' + font; cx.fillText('hold to brake', HAUL_PEDAL.x0 + HAUL_PEDAL.w/2, py + 46);
+    cx.fillStyle = ctl.brk ? C.panel : C.ink; cx.font = cfont(13, 600); cx.textAlign = 'center';
+    const pf = fpx(13), pc = HAUL_PEDAL.x0 + HAUL_PEDAL.w/2, ph = HAUL_PEDAL.h, sub = pf + fpx(11) + 8 <= ph - 8;
+    cx.fillText('BRAKE', pc, py + (sub ? ph/2 - 4 : ph/2 + pf*.35));
+    if (sub){ cx.font = cfont(11); cx.fillText(fitTxt('hold to brake', HAUL_PEDAL.w - 8), pc, py + ph/2 + 3 + fpx(11)); }
     // what the rig is doing now
-    cx.font = '600 12px ' + font; cx.textAlign = 'right'; cx.fillStyle = ctl.gas ? C.good : ctl.brk ? C.bad : C.muted;
+    cx.font = cfont(12, 600); cx.textAlign = 'right'; cx.fillStyle = ctl.gas ? C.good : ctl.brk ? C.bad : C.muted;
     cx.fillText(ctl.gas ? 'GAS' : ctl.brk ? 'BRAKING' : 'COASTING', W - 16, Hh - 16);
     // first drive: a short hint on the road, until you have driven a little way
-    if (H.hint && H.t < 8){ const bx = W/2 - 170, by = 128;
+    if (H.hint && H.t < 8 && hudS(12) === 1) hud(W/2, 128, 12, () => { const bx = W/2 - 170, by = 128;
       cx.fillStyle = C.panel; cx.globalAlpha = .94; cx.fillRect(bx, by, 340, 66); cx.globalAlpha = 1; cx.strokeStyle = C.accent; cx.lineWidth = 2; cx.strokeRect(bx, by, 340, 66);
       cx.textAlign = 'center'; cx.fillStyle = C.ink; cx.font = '600 13px ' + font; cx.fillText('Hold anywhere for gas · let go to coast', W/2, by + 26);
-      cx.font = '12px ' + font; cx.fillText('Brake: hold the pedal, or drag down', W/2, by + 48); }
+      cx.font = '12px ' + font; cx.fillText('Brake: hold the pedal, or drag down', W/2, by + 48); });
   }
-  if (H.flashT > 0){ cx.fillStyle = C.bad; cx.font = '600 16px ' + font; cx.textAlign = 'center'; cx.fillText(H.flash, W/2, 100); }
+  if (H.flashT > 0){ cx.fillStyle = C.bad; cx.font = cfont(16, 600); cx.textAlign = 'center'; ctext(fitTxt(H.flash, W - 12), W/2, hudS(11) > 1 ? 86*hudS(11) + 12 + fpx(16) : 100); }
   cx.textAlign = 'left';
 }
 
@@ -7837,7 +8003,7 @@ function millQueueDraft(q, why){
 }
 
 // --- Saw for grade (log, boards, par and the sawyer's mark live in Core)
-const SAW_BTN = {turn:{x:12, y:330, w:172, h:58}, saw:{x:456, y:330, w:172, h:58}};
+let SAW_BTN = {turn:{x:12, y:330, w:172, h:58}, saw:{x:456, y:330, w:172, h:58}};
 const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 const sawTurnTime = () => mperk('turndog') ? 0 : S.structures['sawmill.headrig'] ? Core.TURN_TIME_CARRIAGE : Core.TURN_TIME_PIT;
 const sawMarkOn = () => S.ui.sawMark == null ? S.ui.sawRuns < 5 : !!S.ui.sawMark;
@@ -7879,7 +8045,7 @@ function sawInit(chain){
     buttons(W.deck.map((d, i) => ({label:deckLabel(d, i), disabled:!deckOk(d), fn:() => sawPick(i)})).concat([{label:'Done', fn:closeMG}]));
     sawPeek();
   }
-  if (!S.ui.sawIntro) showGuide(false);
+  if (!S.ui.sawIntro && !phoneUI()) showGuide(false);
 }
 function sawPick(i){
   const d = W && W.deck && W.deck[i]; if (!d || W.phase !== 'pick' || !deckOk(d)) return;
@@ -7987,22 +8153,31 @@ function drawEnd(log, x, y, r){ // a log end on the deck: bark ring, zones (with
 function sawButtonDraw(r, label, sub, hot, mark){
   cx.fillStyle = hot ? C.accent : C.panel; cx.globalAlpha = .92; cx.fillRect(r.x, r.y, r.w, r.h); cx.globalAlpha = 1;
   cx.strokeStyle = mark ? C.accent : C.ink; cx.lineWidth = mark ? 3 : 1.5; cx.strokeRect(r.x, r.y, r.w, r.h);
-  cx.fillStyle = hot ? C.panel : C.ink; cx.textAlign = 'center'; cx.font = '600 15px ' + getComputedStyle(document.body).fontFamily;
-  cx.fillText(label, r.x + r.w/2, r.y + 26); cx.font = '11px ' + getComputedStyle(document.body).fontFamily; cx.fillText(sub, r.x + r.w/2, r.y + 44);
-  if (mark){ cx.fillStyle = C.accent; cx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; cx.fillText('▼ best move', r.x + r.w/2, r.y - 6); }
+  // big buttons on small canvases: the label grows with the button, the sub-line is trimmed or dropped to fit
+  const lf = Math.max(fpx(15), 15*r.h/58), sf = fpx(11), two = lf + sf + 10 <= r.h - 6;
+  cx.fillStyle = hot ? C.panel : C.ink; cx.textAlign = 'center'; cx.font = `600 ${lf}px ${MG.font}`;
+  cx.fillText(label, r.x + r.w/2, r.y + (two ? r.h/2 - 3 : r.h/2 + lf*.35));
+  if (two){ cx.font = cfont(11); const t = fitTxt(sub, r.w - 10); if (tw(t) <= r.w - 10) cx.fillText(t, r.x + r.w/2, r.y + r.h/2 + 3 + sf); }
+  if (mark && r.h <= 58){ cx.fillStyle = C.accent; cx.font = cfont(11, 600); cx.fillText('▼ best move', r.x + r.w/2, r.y - 6); }
 }
 function sawDraw(){
   if (!cx || !W) return;
   const Wd = MG.LW, Hh = MG.LH, font = getComputedStyle(document.body).fontFamily;
   cx.clearRect(0, 0, Wd, Hh); cx.fillStyle = C.sky; cx.fillRect(0, 0, Wd, Hh);
   if (W.phase === 'pick'){
-    cx.fillStyle = C.ink; cx.font = '600 15px ' + font; cx.textAlign = 'center'; cx.fillText('Tap a log to saw it', Wd/2, 34);
-    const pos = deckPos(W.deck.length);
+    let title = 'Tap a log to saw it';
+    cx.fillStyle = C.ink; cx.font = cfont(15, 600); cx.textAlign = 'center'; cx.fillText(fitTxt(title, Wd - 12), Wd/2, 19 + fpx(15));
+    const pos = deckPos(W.deck.length), room = W.deck.length > 1 ? Math.abs(pos[1].x - pos[0].x) - 10 : Wd - 12, f13 = fpx(13), f11 = fpx(11);
     W.deck.forEach((d, i) => { const p = pos[i], r = logR(d.log); drawEnd(d.log, p.x, p.y, r);
-      cx.textAlign = 'center'; cx.fillStyle = C.ink; cx.font = '600 13px ' + font; cx.fillText(`${i + 1} · ${d.log.dia} in · grade ${d.log.logGrade}`, p.x, p.y + r + 26);
-      cx.font = '11px ' + font; cx.fillStyle = deckOk(d) ? C.muted : C.bad;
-      cx.fillText(d.src === 'prime' ? 'uses 1 Prime spar' : `${bf(deckNeed(d))}${S.bulk.logs >= deckNeed(d) ? ' from the pond' : ` · buy for ${money(coveCost(deckNeed(d)))}`}`, p.x, p.y + r + 42);
-      if (d.src !== 'pond'){ cx.fillStyle = C.accent; cx.font = '600 12px ' + font; cx.fillText(d.src === 'prime' ? 'PRIME' : 'GIANT · BIG STICK', p.x, p.y - r - 12); } });
+      // labels under each log; on a small canvas they wrap instead of running into the next log
+      const l1 = `${i + 1} · ${d.log.dia} in · grade ${d.log.logGrade}`, l2 = d.src === 'prime' ? 'uses 1 Prime spar' : `${bf(deckNeed(d))}${S.bulk.logs >= deckNeed(d) ? ' from the pond' : ` · buy for ${money(coveCost(deckNeed(d)))}`}`;
+      cx.textAlign = 'center'; cx.fillStyle = C.ink; cx.font = cfont(13, 600);
+      const a = wrapTxt(l1, room);
+      let y = p.y + r + 13 + f13; a.forEach(t => { ctext(t, p.x, y); y += f13 + 3; });
+      cx.font = cfont(11); cx.fillStyle = deckOk(d) ? C.muted : C.bad;
+      const b = wrapTxt(l2, room);
+      y += Math.max(0, 16 - f13 - 3); b.forEach(t => { ctext(t, p.x, Math.min(Hh - 4, y)); y += f11 + 3; });
+      if (d.src !== 'pond'){ cx.fillStyle = C.accent; cx.font = cfont(12, 600); ctext(fitTxt(d.src === 'prime' ? 'PRIME' : 'GIANT · BIG STICK', room), p.x, p.y - r - 12); } });
     cx.textAlign = 'left'; return;
   }
   const L = W.log, c = W.cut, n = L.n, cs = sawCs(L), R = n/2*cs, ox = 320, oy = 175, k = {eye:sawEye()}, guide = S.ui.sawGuide;
@@ -8024,26 +8199,29 @@ function sawDraw(){
   // the saw
   const sx = ox + R + 22; cx.strokeStyle = C.ink; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(sx, oy - R - 10); cx.lineTo(sx, oy + R + 10); cx.stroke();
   cx.fillStyle = C.ink; for (let y = oy - R - 10; y < oy + R + 10; y += 8){ cx.beginPath(); cx.moveTo(sx, y); cx.lineTo(sx - 6, y + 4); cx.lineTo(sx, y + 8); cx.fill(); }
-  cx.font = '11px ' + font; cx.textAlign = 'center'; cx.fillText('SAW', sx, oy + R + 24);
+  cx.font = cfont(11); cx.textAlign = 'center'; cx.fillText('SAW', sx, Math.min(oy + R + 24, SAW_BTN.saw.y - 6));
   // HUD: clock and value against par
   const tl = Math.max(0, Core.SAW_LIMIT - W.t), v = Core.sawValue(L, c) - Core.cantCells(L, c);
-  cx.fillStyle = C.panel; cx.globalAlpha = .92; cx.fillRect(10, 10, 200, 66); cx.globalAlpha = 1;
+  hud(0, 0, 11, s => {
+  cx.fillStyle = C.panel; cx.globalAlpha = s > 1 ? .6 : .92; cx.fillRect(10, 10, 200, 66); cx.globalAlpha = 1;
   cx.textAlign = 'left'; cx.fillStyle = C.ink; cx.font = '600 13px ' + font; cx.fillText(W.phase === 'done' ? 'Log done' : `${tl.toFixed(1)} s left`, 20, 28);
   cx.fillStyle = C.line; cx.fillRect(20, 34, 180, 6); cx.fillStyle = tl < 5 ? C.bad : C.good; cx.fillRect(20, 34, 180*tl/Core.SAW_LIMIT, 6);
   const scale = 180/Math.max(1, W.par*1.3); cx.fillStyle = C.line; cx.fillRect(20, 52, 180, 8); cx.fillStyle = C.accent; cx.fillRect(20, 52, Math.min(180, v*scale), 8);
-  cx.fillStyle = C.ink; cx.fillRect(20 + W.par*scale, 48, 2, 16); cx.font = '11px ' + font; cx.fillText(`boards ${fmt(v)} · target ${fmt(W.par)}`, 20, 72);
-  // boards off so far
+  cx.fillStyle = C.ink; cx.fillRect(20 + W.par*scale, 48, 2, 16); cx.font = '11px ' + font; cx.fillText(`boards ${fmt(v)} · target ${fmt(W.par)}`, 20, 72); });
+  // boards off so far (fewer rows when the list is drawn larger)
+  const bs = hudS(11), rows = Math.max(2, Math.min(9, Math.floor(((W.phase === 'saw' ? SAW_BTN.saw.y - 8 : Hh - 40)/bs - 32)/22)));
+  hud(Wd, 0, 11, () => {
   cx.textAlign = 'right'; cx.font = '600 11px ' + font; cx.fillStyle = C.muted; cx.fillText('Boards cut', 630, 24);
-  c.boards.slice(-9).forEach((b, i) => { const y = 32 + i*22; cx.fillStyle = boardCol(b.grade); cx.globalAlpha = .85; cx.fillRect(630 - b.width*9, y, b.width*9, 14); cx.globalAlpha = 1;
-    cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.fillText(b.grade < 0 ? 'scrap' : `${Core.boardGradeName(b.grade)} ${b.width}`, 625 - b.width*9, y + 11); });
+  c.boards.slice(-rows).forEach((b, i) => { const y = 32 + i*22; cx.fillStyle = boardCol(b.grade); cx.globalAlpha = .85; cx.fillRect(630 - b.width*9, y, b.width*9, 14); cx.globalAlpha = 1;
+    cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.fillText(b.grade < 0 ? 'scrap' : `${Core.boardGradeName(b.grade)} ${b.width}`, 625 - b.width*9, y + 11); }); });
   if (W.phase === 'saw'){
     const here = Core.nextBoard(L, c, c.face, k), adv = sawMarkOn() ? Core.sawAdvice(L, c, k.eye) : null;
-    if (guide){ cx.textAlign = 'center'; cx.fillStyle = boardCol(here.grade); cx.font = '600 13px ' + font; cx.fillText(`Next: ${boardTxt(here)}${here.knots ? ` (${here.knots} ${here.knots === 1 ? 'knot' : 'knots'})` : ''}`, Wd/2, 312); }
+    if (guide){ cx.textAlign = 'center'; cx.fillStyle = boardCol(here.grade); cx.font = cfont(13, 600); ctext(`Next: ${boardTxt(here)}${here.knots ? ` (${here.knots} ${here.knots === 1 ? 'knot' : 'knots'})` : ''}`, Wd/2, Math.min(312, SAW_BTN.saw.y - 5)); }
     sawButtonDraw(SAW_BTN.turn, 'TURN ⟳', `next side · ${sawTurnTime() ? sawTurnTime() + ' s' : 'instant'}`, false, adv === 'turn');
     sawButtonDraw(SAW_BTN.saw, 'SAW ▸', 'cut a board · or tap the log', true, adv === 'saw');
-    if (W.flashT > 0 && W.flash){ cx.textAlign = 'center'; cx.fillStyle = boardCol(W.flash.grade); cx.font = '600 16px ' + font; cx.fillText(W.flash.grade < 0 ? 'Scrap' : `${Core.boardGradeName(W.flash.grade).toUpperCase()} board`, sx, oy - R - 18); }
-    if (W.busy > 0){ cx.textAlign = 'center'; cx.fillStyle = C.muted; cx.font = '12px ' + font; cx.fillText('…', Wd/2, 296); }
-  } else if (W.res){ cx.textAlign = 'center'; cx.fillStyle = W.res.q >= .97 ? C.good : C.ink; cx.font = '600 18px ' + font; cx.fillText(`${Math.round(W.res.score*100)}% of target`, Wd/2, 340); }
+    if (W.flashT > 0 && W.flash){ cx.textAlign = 'center'; cx.fillStyle = boardCol(W.flash.grade); cx.font = cfont(16, 600); ctext(W.flash.grade < 0 ? 'Scrap' : `${Core.boardGradeName(W.flash.grade).toUpperCase()} board`, sx, Math.max(fpx(16) + 4, oy - R - 18)); }
+    if (W.busy > 0){ cx.textAlign = 'center'; cx.fillStyle = C.muted; cx.font = cfont(12); cx.fillText('…', Wd/2, 296); }
+  } else if (W.res){ cx.textAlign = 'center'; cx.fillStyle = W.res.q >= .97 ? C.good : C.ink; cx.font = cfont(18, 600); cx.fillText(`${Math.round(W.res.score*100)}% of target`, Wd/2, 340); }
   cx.textAlign = 'left';
 }
 
@@ -8137,7 +8315,8 @@ function renderWh(){
       `${row('Close now for', canClose() ? fmt(legacyNow()) + ' shares' : '—')}${S.run.toMill ? row('Logs sent to the mill', bf(S.run.toMill)) : ''}</div></div>` +
       (m ? `<div class="group"><h3>Sawmill · mill run ${m.n}</h3><div class="facts">${row('Cash', money(m.cash))}${row('Earned', money(m.earned))}${row('Spent on logs', money(m.logCost || 0))}` +
         `${row('Sawmill shares to spend', fmt(S.shares.sawmill.legacy))}${row('Earned in all', fmt(S.shares.sawmill.total))}</div></div>` : '') +
-      '<p class="meta">Each camp has its own cash. Logs and items move between camps; cash does not.</p>';
+      '<p class="meta">Each camp has its own cash. Logs and items move between camps; cash does not.</p>' + saveIoHtml();
+    bindSaveIo(box);
     return;
   }
   const sv = Object.keys(S.bank).reduce((a, id) => a + surplusOf(id)*sellPrice(id), 0);
@@ -8152,6 +8331,50 @@ function renderWh(){
   box.querySelectorAll('[data-sa]').forEach(b => b.onclick = () => { sellItem(b.dataset.sa, bankN(b.dataset.sa)); again(); });
   box.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { const id = b.dataset.lk; S.locks = S.locks.includes(id) ? S.locks.filter(x => x !== id) : [...S.locks, id]; again(); const f = box.querySelector(`[data-lk="${id}"]`); if (f) f.focus(); });
   const sb = box.querySelector('#whSurplus'); if (sb) sb.onclick = () => { sellSurplus(); again(); };
+}
+// save backup: copy the save as text, paste one back (text only: the artifact viewer blocks downloads)
+const SAVE_TAG = 'OUTPOST-SAVE:';
+function saveText(){ save(); return SAVE_TAG + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+// returns the save object, or throws with a plain reason
+function readSaveText(txt){
+  const t = String(txt || '').trim();
+  if (!t) throw new Error('Paste a save first.');
+  let json = t;
+  if (t.startsWith(SAVE_TAG)){ try { json = decodeURIComponent(escape(atob(t.slice(SAVE_TAG.length).replace(/\s+/g, '')))); } catch(e){ throw new Error('That save text is damaged or cut short. Copy it again.'); } }
+  else if (t[0] !== '{') throw new Error('That is not an Outpost Company save.');
+  let d; try { d = JSON.parse(json); } catch(e){ throw new Error('That save text is damaged or cut short. Copy it again.'); }
+  if (!d || typeof d !== 'object' || d.v !== 2 || typeof d.cash !== 'number' || !isFinite(d.cash) || !Array.isArray(d.tracts) || !d.stems || typeof d.stems !== 'object')
+    throw new Error('That is not an Outpost Company save.');
+  return d;
+}
+let saveArmed = null;
+const saveIoHtml = () => `<div class="group saveio" id="saveIo"><h3>Save backup</h3>
+  <p class="meta">Copy your save as text to keep it or move it to another device. Paste a save below to load it.</p>
+  <div class="cbtns"><button class="mbtn" type="button" id="svCopy">Copy save</button></div>
+  <textarea id="svOut" readonly hidden aria-label="Your save as text"></textarea>
+  <textarea id="svIn" aria-label="Paste a save here" placeholder="Paste a save here" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  <div class="cbtns"><button class="mbtn" type="button" id="svLoad">Load save</button></div>
+  <p class="msg" id="svMsg" role="status" aria-live="polite"></p></div>`;
+function bindSaveIo(box){
+  const msg = (t, cls) => { const m = box.querySelector('#svMsg'); m.textContent = t; m.className = 'msg' + (cls ? ' ' + cls : ''); };
+  const out = box.querySelector('#svOut'), inp = box.querySelector('#svIn'), load = box.querySelector('#svLoad');
+  const disarm = () => { saveArmed = null; load.textContent = 'Load save'; load.classList.remove('danger'); };
+  box.querySelector('#svCopy').onclick = async () => {
+    out.value = saveText(); out.hidden = false; let done = false;
+    try { if (navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(out.value); done = true; } } catch(e){}
+    if (!done){ try { out.focus(); out.select(); done = !!(document.execCommand && document.execCommand('copy')); } catch(e){} }
+    try { out.focus(); out.select(); } catch(e){}
+    msg(done ? 'Copied. Keep it somewhere safe, like a note.' : 'Copy the text in the box.', done ? 'good' : '');
+  };
+  inp.oninput = disarm;
+  load.onclick = () => {
+    let d; try { d = readSaveText(inp.value); } catch(e){ disarm(); msg(e.message, 'bad'); return; }
+    if (saveArmed !== inp.value){ saveArmed = inp.value; load.textContent = 'Replace company'; load.classList.add('danger');
+      msg(`Save found: Logging outpost ${d.run && d.run.n || 1}, ${money(d.cash)} cash. This replaces your current company. Press again to load it.`); return; }
+    disarm(); buckKeep = null;
+    S = Object.assign(fresh(), d); normalize(); boot(); save();
+    S.ui.whTab = 'ledger'; renderWh(); msg('Save loaded.', 'good');
+  };
 }
 // the one-time story card
 function maybeStory(){ if (S.story && S.story.card && $('newrun').hidden && mgEl.hidden && dEl.hidden) openStory(); }
@@ -8273,6 +8496,7 @@ reset.onclick = () => {
   S = fresh(); normalize(); boot(); save();
 };
 $('road').onclick = buildRoad;
+$('saveBtn').onclick = () => { openWh('ledger'); const b = $('svCopy'); if (b) b.scrollIntoView({block:'nearest'}); };
 
 function boot(){
   if (!S.forSale.length) refreshSales();
