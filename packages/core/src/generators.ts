@@ -151,16 +151,16 @@ export function genListings(rng: Rng, era: number, o: TractListingOpts, n = 3, m
 
 /** AFK lot numbers (balance agent to tune). Trees are × TRACT_BASE[era]; per-tree stats multiply the mix average. */
 export const AFK_LOT = deepFreeze({
-  /** Chance a fresh land-office board carries one (never more than one). */
-  chance: 0.6,
-  /** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5). */
-  trees: [4, 6] as readonly [number, number],
+  /** Chance a fresh land-office board carries one (never more than one; owner-approved 2026-10-25: always one). */
+  chance: 1,
+  /** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5; owner-approved 2026-10-25: was 4-6). */
+  trees: [12, 18] as readonly [number, number],
   /** Small second-growth stems: board feet and chops per tree. */
   bfMult: 0.7, hpMult: 0.75,
   /** Poor grade, more pulp: value per tree (value per bd ft is valMult ÷ bfMult, about 0.71). */
   valMult: 0.5,
-  /** Land price on top of the usual 42% of gross (cheaper per tree). */
-  landMult: 0.8,
+  /** Land price on top of the usual 42% of gross (cheaper per tree; owner-approved 2026-10-25: was 0.8). */
+  landMult: 0.4,
   /** Close to the cove: haul miles. */
   miles: [1, 3] as readonly [number, number],
 });
@@ -173,8 +173,8 @@ export const AFK_MIX: readonly (readonly (readonly [SpeciesId, number])[])[] = d
 ]);
 
 /**
- * An AFK lot for the era: 4-6× the trees of a normal tract, small poor stems,
- * flat or rolling, 1-3 mi out, land ×0.8. Draws, in order: trees, miles,
+ * An AFK lot for the era: 12-18× the trees of a normal tract, small poor stems,
+ * flat or rolling, 1-3 mi out, land ×0.4. Draws, in order: trees, miles,
  * slope, place, lot. The prototype feeds it its own stream ('land'), so the
  * board's other draws are untouched.
  */

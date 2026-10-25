@@ -133,8 +133,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // ---------- 6. the AFK lot: Cutover slash country
  let afkBoards=0, multi=false, afk=null;
  for(let i=0;i<40;i++){ E('refreshSales()'); const n=E('S.forSale.filter(t=>t.afk).length'); if(n>1) multi=true; if(n){ afkBoards++; afk=E('JSON.parse(JSON.stringify(S.forSale.find(t=>t.afk)))'); } }
- ok(!multi && afkBoards>5 && afkBoards<40,'at most one AFK lot on a board, on some boards ('+afkBoards+' of 40)');
- ok(afk && afk.ground==='cutover' && afk.trees>=4*60 && afk.trees<=6*60 && ['flat','rolling'].includes(afk.slope) && afk.miles<=3,'Cove AFK lot: 4-6x the trees, flat or rolling, close in: '+(afk&&afk.trees)+' trees');
+ ok(!multi && afkBoards===40,'exactly one AFK lot on every board ('+afkBoards+' of 40)');
+ ok(afk && afk.ground==='cutover' && afk.trees>=12*60 && afk.trees<=18*60 && ['flat','rolling'].includes(afk.slope) && afk.miles<=3,'Cove AFK lot: 12-18x the trees, flat or rolling, close in: '+(afk&&afk.trees)+' trees');
  const reg=E(`Core.makeTract('x',[['pine',50],['hemlock',30],['spruce',20]],60,${afk.miles},'${afk.slope}','coast')`);
  const regPrice=E(`Core.tractPrice(${reg.trees*reg.val}, ${afk.miles}, '${afk.slope}', 1)`);
  ok(afk.price/afk.trees < regPrice/reg.trees*0.5 && afk.val/afk.bf < reg.val/reg.bf,'cheaper per tree and poorer per bd ft than a normal lot');
@@ -152,6 +152,29 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(E('S.forSale.filter(t=>t.afk).length')===0 && E('S.forSale.length')===3,'buying the AFK lot takes it off the board until the next listing');
  const left0=E('tract().left'); for(let i=0;i<600;i++) E('tick(1)');
  ok(E('tract() && tract().afk') && E('tract().left')<left0 && E('tract().left')>0,'after ten idle minutes crews are still on the AFK lot: '+E('tract().left')+' of '+left0+' trees left');
+ // queue order: a normal lot bought after the AFK lot is cut first in every auto mode; a lot moved by hand stays put
+ const mkLot=n=>`Object.assign(Core.makeTract('${n}',[['pine',100]],60,1,'flat','coast'),{price:10})`;
+ for(const m of ['bought','deadline','value']){
+   E(`S.ui.qOrder='${m}'; S.tracts=[]; S.hp=null; S.tractSeq=0; S.forSale=[${mkLot('Home')}]; buyTract(0);
+     S.forSale=[Core.genAfkLot(Core.streamRng(S.rng,'land'),0,saleOpts())]; buyTract(0);
+     S.forSale=[${mkLot('Later A')}]; buyTract(0); S.forSale=[${mkLot('Later B')}]; buyTract(0); render(true);`);
+   const order=E('S.tracts.map(t=>t.afk?"AFK":t.name).join()');
+   ok(order==='Home,Later A,Later B,AFK','mode '+m+': lots bought after the AFK lot go ahead of it: '+order);
+ }
+ E(`S.ui.qOrder='bought'; S.tracts=[]; S.hp=null; S.forSale=[Core.genAfkLot(Core.streamRng(S.rng,'land'),0,saleOpts())]; buyTract(0); S.forSale=[${mkLot('Next')}]; buyTract(0);`);
+ ok(E('S.tracts.map(t=>t.afk?"AFK":t.name).join()')==='AFK,Next','crews already on the AFK lot stay there; the new lot is next');
+ E(`S.ui.qOrder='bought'; S.tracts=[]; S.hp=null; S.forSale=[${mkLot('Home')}]; buyTract(0); S.forSale=[${mkLot('Mid')}]; buyTract(0);
+   S.forSale=[Core.genAfkLot(Core.streamRng(S.rng,'land'),0,saleOpts())]; buyTract(0); moveTract(2,1);`);
+ ok(E('S.ui.qOrder')==='hand' && E('S.tracts.map(t=>t.afk?"AFK":t.name).join()')==='Home,AFK,Mid','moving the AFK lot by hand switches to by-hand order');
+ E(`S.forSale=[${mkLot('Late')}]; buyTract(0); render(true);`);
+ ok(E('S.tracts.map(t=>t.afk?"AFK":t.name).join()')==='Home,AFK,Mid,Late','by hand, the player\'s order is kept: a new lot joins the end');
+ // the AFK lot never takes a "Best for" badge, even when it is the only lot that serves an order
+ E(`S.ui.qOrder='bought'; S.tracts=[]; S.hp=null; S.contract={mill:'the box factory', sp:'pine', vol:3000, done:0, dur:4000, end:S.t+4000, prem:.4, penalty:0};
+   S.forSale=[Core.genAfkLot(Core.streamRng(S.rng,'land'),0,saleOpts())]; render(true);`);
+ ok(d.querySelectorAll('#sales [data-best]').length===0,'the AFK lot never carries a Best for badge');
+ const obA=d.querySelector('#contracts [data-obest="contract"]');
+ ok(obA && /No lot has enough pine/.test(obA.textContent),'and is never named the best lot for an order: '+(obA&&obA.textContent));
+ E('S.contract=null; S.tracts=[]; S.hp=null; render(true);');
 
  // ---------- 7. old saves: tracts become the queue in their current order
  E(`S.ui.qOrder='hand'; save();`);

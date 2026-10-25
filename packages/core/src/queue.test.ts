@@ -88,6 +88,12 @@ describe('order fit', () => {
     expect(bestFor(fits)).toEqual({ c: 1, admiralty_spar: 1 });
     expect(bestFor([[], []])).toEqual({});
   });
+  it('never gives the AFK lot a best-lot badge', () => {
+    const lots = [pine(), { ...spruce(), afk: true }, spruce()];
+    const fits = lots.map((l) => orderFit(l, [spOrder, admiralty], ctx));
+    expect(bestFor(fits, lots)).toEqual({ c: 2, admiralty_spar: 2 });
+    expect(bestFor(fits.slice(0, 2), lots.slice(0, 2))).toEqual({ admiralty_spar: 0 }); // only the pine lot is left: no spruce badge
+  });
 });
 
 describe('camp note', () => {
@@ -145,6 +151,17 @@ describe('queue order', () => {
     expect(queueOrder(keys, 'value')).toEqual([3, 0, 2, 1]);
     expect(queueOrder(keys, 'hand')).toEqual([0, 1, 2, 3]);
   });
+  it('puts a later normal lot ahead of an AFK lot in every auto mode, not by hand', () => {
+    const k2 = [
+      { seq: 0, deadline: 50, perHour: 999, afk: true },
+      { seq: 4, deadline: Infinity, perHour: 1 },
+      { seq: 2, deadline: Infinity, perHour: 5 },
+    ];
+    expect(queueOrder(k2, 'bought')).toEqual([2, 1, 0]);
+    expect(queueOrder(k2, 'deadline')).toEqual([2, 1, 0]);
+    expect(queueOrder(k2, 'value')).toEqual([2, 1, 0]);
+    expect(queueOrder(k2, 'hand')).toEqual([0, 1, 2]);
+  });
   it('moves an entry, clamping the target', () => {
     expect(moveEntry(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c']);
     expect(moveEntry(['a', 'b', 'c'], 0, 9)).toEqual(['b', 'c', 'a']);
@@ -153,6 +170,11 @@ describe('queue order', () => {
 });
 
 describe('the AFK lot (Cutover slash country)', () => {
+  it('owner-approved numbers: always on the board, 12-18x the trees, land x0.4', () => {
+    expect(AFK_LOT.chance).toBe(1);
+    expect(AFK_LOT.trees).toEqual([12, 18]);
+    expect(AFK_LOT.landMult).toBe(0.4);
+  });
   const opts = { stumpMult: 1, thinSurvey: false, cruiser: false };
   const rng = (seed: number) => { let x = seed; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
   it('is big, poor, cheap per tree, flat or rolling and close in, in every era', () => {

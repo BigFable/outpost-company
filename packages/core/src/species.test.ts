@@ -167,5 +167,6 @@ describe('camp fit', () => {
     expect(tractScore(c, a)).toBeGreaterThan(tractScore(c, { ...a, price: 900 }));
     expect(tractScore(c, a)).toBeGreaterThan(tractScore({ ...c, skid: 5 }, a));
     expect(tractScore({ fell: 0, buck: 0, skid: 0, haul: 0 }, a)).toBeGreaterThan(0);
+    expect(tractScore(c, { ...a, afk: true })).toBe(0); // the AFK lot is never ranked a best buy
   });
 });

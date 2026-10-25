@@ -308,9 +308,11 @@ export function tractThroughput(c: CampCaps, t: { readonly hp: number; readonly 
  * A buyer's score for a listing, "best value per work for my camp": value per
  * dollar of land (× distance factor) times the dollars a second the camp would
  * earn on it. With no crews the throughput floors at a token rate, so the
- * score falls back to value per dollar and value per bd ft.
+ * score falls back to value per dollar and value per bd ft. The AFK lot
+ * scores 0: it is never ranked as a best buy.
  */
-export function tractScore(c: CampCaps, t: { readonly hp: number; readonly bf: number; readonly wt: number; readonly trees: number; readonly val: number; readonly price?: number }, distance = 1): number {
+export function tractScore(c: CampCaps, t: { readonly hp: number; readonly bf: number; readonly wt: number; readonly trees: number; readonly val: number; readonly price?: number; readonly afk?: boolean }, distance = 1): number {
+  if (t.afk) return 0; // the AFK lot is a choice for time away, never a "best buy"
   const thr = Math.max(0.01, tractThroughput(c, t, distance));
   return (t.trees * t.val * distance / Math.max(1, t.price ?? 1)) * thr * (t.bf > 0 ? t.val / t.bf : 0);
 }

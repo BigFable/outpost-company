@@ -1,6 +1,11 @@
 const {JSDOM}=require('jsdom');const fs=require('fs');
 const html=fs.readFileSync(__dirname+'/'+(process.env.GAME||'game_rogue.html'),'utf8'); const NEW=!process.env.GAME;
 function run(profile, seed, hours=4, opt={}){
+  // 'idle-away' plays exactly like 'idle' while present, but checks in on a schedule (AWAY_MIN present / away minutes, default
+  // 20/40). While away the bot makes no decisions; the game just ticks. Policy (balance agent, 2026-10-25): on leaving, if the
+  // queue would run out before it is back and the AFK lot costs <= cash - 1.5x upkeep, buy it, then top the queue up with normal
+  // lots; on return, put the crews on the first normal lot (cutNow). Never buy the AFK lot while present. NOAFK=1 skips the AFK buy.
+  const AWAYP = profile==='idle-away', PB = AWAYP ? 'idle' : profile;
   const RUNS=opt.runs||3, NOPERK=!!process.env.NOPERK, NOMETA=!!process.env.NOMETA, CAP=(opt.capMin||150)*60, POLICY=opt.policy||'gas';
   // seeded random
   let x=seed*9301+49297; const rnd=()=>{x=(x*9301+49297)%233280; return x/233280;};
@@ -40,7 +45,7 @@ function run(profile, seed, hours=4, opt={}){
   function millBot(){
     const m=S.camps.sawmill; if(millOpenT==null) millOpenT=S.t;
     // log slider: idle keeps the 10% default; the others aim for 10-30 minutes of logs in the pond, between 10% and 40%
-    if(profile!=='idle' && !process.env.MILLFIX){ const r=G.millRateNow()*60, left=r>0 ? S.bulk.logs/r : 99; S.millShare = left>30 ? .1 : left<10 ? .4 : .2; }
+    if(PB!=='idle' && !process.env.MILLFIX){ const r=G.millRateNow()*60, left=r>0 ? S.bulk.logs/r : 99; S.millShare = left>30 ? .1 : left<10 ? .4 : .2; }
     for(const id of ['sawmill.pond','sawmill.headrig','logging.bunkhouse']) while(G.canBuild(id)){ G.buildStructure(id); millEv.push({id:id.split('.')[1]+S.structures[id], min:+((S.t-millOpenT)/60).toFixed(1)}); }
     let keep=0; for(const id of ['sawmill.pond','sawmill.headrig']){ const nx=Core.structureNext(S.structures,id); if(nx && nx.items.every(x=>G.bankN(x.item)>=x.qty)) keep=Math.max(keep,nx.cash); }
     for(let n=0; n<10 && G.millSawyers()<Core.maxSawyers(S.structures) && m.cash>=Core.sawyerCost(m.hired)+keep; n++) G.hireSawyer();
@@ -50,22 +55,27 @@ function run(profile, seed, hours=4, opt={}){
   }
   const RANK={legendary:0,rare:1,common:2,curse:3}; let achCash=0, achSeen=0;
   const runsOut=[]; let peakLpm=0, runStart=0, runT=0, curDrafts=0;
-  const META_ORDER = profile==='idle' ? ['sled','gas','foremen','cash','steam','starter','legacy','lore','reroll','nest','pace','four'] : ['sled','foremen','cash','gas','steam','pace','starter','legacy','lore','reroll','four','nest'];
+  const META_ORDER = PB==='idle' ? ['sled','gas','foremen','cash','steam','starter','legacy','lore','reroll','nest','pace','four'] : ['sled','foremen','cash','gas','steam','pace','starter','legacy','lore','reroll','four','nest'];
   const draftAll=()=>{ if(NOPERK){ S.run.dq.length=0; return; } let n=0; while(S.run.dq.length && n<50){ const off=G.currentOffer(); if(!off) break; const best=off.slice().sort((a,b)=>score(b)-score(a))[0];
       if(S.run.rerolls>0 && score(best)<2){ G.reroll(); continue; }
       if(MILL && score(best)<2 && G.canMarker()){ G.markerReroll(); continue; } // a survey marker buys a reroll (2 per outpost)
       G.pickPerk(best); curDrafts++; n++; } };
   const P=id=>G.perk(id);
-  const IDLE_RULES={illwind:3,neck:4,store:3,snowball:4,handshake:2,cruiser:3,scrip:3,absentee:profile==='idle'?4:1,iceking:2,swamp:2,greased:3,pitchboiler:2};
+  const IDLE_RULES={illwind:3,neck:4,store:3,snowball:4,handshake:2,cruiser:3,scrip:3,absentee:PB==='idle'?4:1,iceking:2,swamp:2,greased:3,pitchboiler:2};
   const GAME_RULES={illwind:3,domino:5,bull:4,golden:5,hotsaw:4,widow:3,scaler:3,four:4,daredevil:2,iceking:3,swamp:3,pacer:2,greased:4,absentee:-5,gravity:4,overload:3,highball:3,sparman:2,pitchboiler:2};
   function score(id){ const p=G.PMAP[id]; const base={legendary:3,rare:2,common:1.5,curse:1}[p.r];
-    if(profile==='idle') return (IDLE_RULES[id]||0) + (p.m && !p.m.click ? 2 : 0) + base*.1;
+    if(PB==='idle') return (IDLE_RULES[id]||0) + (p.m && !p.m.click ? 2 : 0) + base*.1;
     if(profile==='minigame') return (GAME_RULES[id]||0) + (IDLE_RULES[id]||0)*.3 + (p.m && !p.m.click ? 1.5 : 0) + base*.2;
     return Math.max(GAME_RULES[id]||0, IDLE_RULES[id]||0)*.8 + (p.m && !p.m.click ? 1.8 : 0) + base*.2; }
   const lHist=[];
   const dt=0.5, T=hours*3600; const ev=[]; let lastBuy=0, longest={gap:0,at:0,era:0}; const stats={stump:0,noTimber:0,short:0,neg:0,neck:{}, hire:0, contractsWon:0, contractsLost:0};
   const eraT=[0]; let lastContract=null;
   const reserve=()=>G.upkeep()*1.5;
+  const AWAY=(process.env.AWAY_MIN||'20,40').split(',').map(Number), NOAFK=!!process.env.NOAFK;
+  const AX={awayMin:0, dryAwayMin:0, leaves:0, queueOk:0, afkBuys:0, afkBroke:0, fillBuys:0, afkCutMin:0}; let wasAway=false;
+  const capsNow=()=>({fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)});
+  const queueSec=()=>S.tracts.reduce((a,t)=>a+Core.cutOutSeconds(capsNow(),t),0);
+  const bestNormal=()=>S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(capsNow(),t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
   const cap = st => st==='fell' ? G.fellBf(G.rate('fell')) : G.rate(st);
   const STG=['fell','buck','skid','haul'];
   const bought=(what)=>{ const gap=S.t-lastBuy; if(gap>longest.gap) longest={gap, at:S.t, era:S.era, what}; lastBuy=S.t; };
@@ -150,6 +160,17 @@ function run(profile, seed, hours=4, opt={}){
     // weather pace (the bad-luck measure, time-weighted): each second's slowdown of the bottleneck with the weather against the
     // same moment with it muted, averaged over the seconds with timber to cut (a slow second late in the run counts no more than an early one)
     if(EVENTS && G.setWxMute && Math.round(S.t*2)%2===0){ const nc=()=>G.tract()?Math.min(...STG.map(cap)):0; const a=nc(); let b=a; if(evNow()){ G.setWxMute(true); b=nc(); G.setWxMute(false); } if(b>0){ wxPace.tw+=1-a/b; wxPace.n++; } }
+    if(AWAYP){
+      if(G.tract() && G.tract().afk) AX.afkCutMin+=dt/60;
+      const cyc=(AWAY[0]+AWAY[1])*60, ph=(S.t-runStart)%cyc, away=(S.t-runStart)>OPEN_SEC && ph>=AWAY[0]*60;
+      if(away){ AX.awayMin+=dt/60; if(!G.tract()) AX.dryAwayMin+=dt/60; }
+      if(away && !wasAway){ // leaving
+        const i=S.forSale.findIndex(t=>t.afk), t=S.forSale[i], need=queueSec() < AWAY[1]*60; AX.leaves++; if(!need) AX.queueOk++;
+        if(!NOAFK && t && need){ if(t.price<=S.cash-reserve()){ stats.stump+=t.price; G.buyTract(i); AX.afkBuys++; } else AX.afkBroke++; }
+        for(let g=0; g<5 && S.tracts.length<5 && queueSec() < AWAY[1]*60; g++){ const o=bestNormal(); if(!o) break; stats.stump+=o.price; G.buyTract(o.i); AX.fillBuys++; } }
+      if(!away && wasAway && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } // back
+      wasAway=away; if(away) continue;
+    }
     if(Math.round(S.t*2)%2!==0) continue; // decide once per second
     if(MILL && S.camps.sawmill) millBot();
     { const k=(S.ach.length)+'/'+S.upg.length+'/'+S.era+'/'+Object.values(S.structures||{}).reduce((a,b)=>a+b,0)+'/'+(S.weather?Object.keys(S.weather.seen).length:0); if(k!==XT.k){ XT.k=k; XT.ev.push(S.t); } }
@@ -173,12 +194,13 @@ function run(profile, seed, hours=4, opt={}){
     // Company scrip allows a hire job only when out of timber and cash; atRisk() and acceptHire() apply the game's own rule
     if(G.atRisk() && S.hireOffer && !G.hireActive()){ const h=S.tracts.length; G.acceptHire(); if(S.tracts.length>h) stats.hire++; }
     const queued=S.tracts.reduce((a,t)=>a+t.left,0);
-    if(S.tracts.length<2){
+    if(S.tracts.filter(t=>!t.afk).length<2 && S.tracts.length<3){ // an owned AFK lot does not count as a lot in hand
       // species overhaul: every profile buys by "best value per work for my camp" (Core.tractScore on pine-weight capacities); no draws
       const caps={fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)};
-      // the AFK lot (cutover) is left alone for now: buying it is a choice for time away; the balance agent decides whether a profile should
+      // the AFK lot (cutover) is never bought here: only idle-away buys it, on leaving (Core.tractScore scores it 0 anyway)
       const best=S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
-      if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract'); }
+      if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract');
+        if(AWAYP && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } } // present: crews off the AFK lot
     }
     if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1; const o=S.offers.find(o=>sh(o)>0 && o.vol/sh(o)<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }
     const nx=G.ERAS[S.era+1];
@@ -199,13 +221,13 @@ function run(profile, seed, hours=4, opt={}){
   const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games}, shares:S.shares.sawmill.total} : null;
   const endT=runsOut.length? (runsOut.reduce((a,r)=>a+r.min,0)*60):S.t; let gap=0,gapAt=0,prev=0; for(const t of XT.ev.concat([Math.min(S.t,endT)])){ if(t>endT) break; if(t-prev>gap){gap=t-prev;gapAt=prev;} prev=t; }
   const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire};
-  return {xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
+  return {...(AWAYP ? {AX:Object.fromEntries(Object.entries(AX).map(([k,v])=>[k,Math.round(v*10)/10]))} : {}), xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
 }
 module.exports={run};
 if(require.main===module){
   const hours=+process.argv[2]||8, policy=process.argv[3]||'gas', profs=(process.argv[4]||'idle,casual,minigame').split(','), seeds=(process.argv[5]||'1,2,3').split(',').map(Number);
   const mods=process.env.MODS?process.env.MODS.split(','):null;
   for(const p of profs) for(const seed of seeds){ const r=run(p,seed,hours,{policy,mods});
-    console.log(JSON.stringify({p, seed, runs:r.runsOut.map(x=>({n:x.n,min:x.min,steam:x.steam,gas:x.gas,L:x.legacy,ach$:x.achCash,deliv:x.deliv,drafts:x.drafts,perks:x.perks,unf:x.unfinished,wx:x.wx,
+    console.log(JSON.stringify({p, seed, ...(r.AX ? {AX:r.AX} : {}), runs:r.runsOut.map(x=>({n:x.n,min:x.min,steam:x.steam,gas:x.gas,L:x.legacy,ach$:x.achCash,deliv:x.deliv,drafts:x.drafts,perks:x.perks,unf:x.unfinished,wx:x.wx,
       ...(x.prime!=null ? {prime:x.prime, orders:x.orders, bonus:x.bonus, salesPct:x.salesPct, toMill:x.toMill, bunk:x.bunk} : {})})), meta:r.meta.nodes.join(','), bank:r.meta.legacy, xt:r.xt, items:r.items, mill:r.mill})); }
 }

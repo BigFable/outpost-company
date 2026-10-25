@@ -200,15 +200,16 @@ export function orderFit(lot: QueueLot, orders: readonly FitOrder[], ctx: FitCtx
 
 /**
  * For each order, the index of the lot that serves it best (the most of the
- * order covered; the first on a tie). Orders no lot helps are left out.
+ * order covered; the first on a tie). Orders no lot helps are left out. With
+ * `lots` (the same order as `fits`), the AFK lot never takes the badge.
  */
-export function bestFor(fits: readonly (readonly FitLine[])[]): Record<string, number> {
+export function bestFor(fits: readonly (readonly FitLine[])[], lots?: readonly { readonly afk?: boolean }[]): Record<string, number> {
   const best: Record<string, { i: number; a: number }> = {};
-  fits.forEach((lines, i) => lines.forEach((f) => {
+  fits.forEach((lines, i) => { if (lots?.[i]?.afk) return; lines.forEach((f) => {
     if (!(f.amount > 0)) return;
     const b = best[f.orderId];
     if (!b || f.amount > b.a + 1e-9) best[f.orderId] = { i, a: f.amount };
-  }));
+  }); });
   const out: Record<string, number> = {};
   for (const k in best) out[k] = (best[k] as { i: number }).i;
   return out;
@@ -354,13 +355,16 @@ export interface QueueKey {
   readonly deadline: number;
   /** Value an hour on the lot. */
   readonly perHour: number;
+  /** The AFK lot: in every auto mode it waits behind the normal lots (owner-approved 2026-10-25). */
+  readonly afk?: boolean;
 }
 
 /**
  * The order of the waiting lots (indices into `keys`) under a mode. Stable:
  * 'hand' keeps the given order; 'bought' sorts by purchase; 'deadline' puts
  * lots that serve the soonest order first (then value, then purchase);
- * 'value' sorts by value an hour (then purchase).
+ * 'value' sorts by value an hour (then purchase). In every mode but 'hand',
+ * AFK lots go behind the normal lots, so a lot bought later is cut first.
  */
 export function queueOrder(keys: readonly QueueKey[], mode: QueueMode): number[] {
   const idx = keys.map((_, i) => i);
@@ -368,6 +372,7 @@ export function queueOrder(keys: readonly QueueKey[], mode: QueueMode): number[]
   const k = (i: number): QueueKey => keys[i] as QueueKey;
   return idx.sort((a, b) => {
     const A = k(a), B = k(b);
+    if (!!A.afk !== !!B.afk) return A.afk ? 1 : -1;
     if (mode === 'deadline' && A.deadline !== B.deadline) return A.deadline < B.deadline ? -1 : 1;
     if (mode !== 'bought' && A.perHour !== B.perHour) return B.perHour - A.perHour;
     return (A.seq - B.seq) || (a - b);

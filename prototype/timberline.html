@@ -2787,9 +2787,11 @@ var Core = (function(exports) {
 	* A buyer's score for a listing, "best value per work for my camp": value per
 	* dollar of land (× distance factor) times the dollars a second the camp would
 	* earn on it. With no crews the throughput floors at a token rate, so the
-	* score falls back to value per dollar and value per bd ft.
+	* score falls back to value per dollar and value per bd ft. The AFK lot
+	* scores 0: it is never ranked as a best buy.
 	*/
 	function tractScore(c, t, distance = 1) {
+		if (t.afk) return 0;
 		const thr = Math.max(.01, tractThroughput(c, t, distance));
 		return t.trees * t.val * distance / Math.max(1, t.price ?? 1) * thr * (t.bf > 0 ? t.val / t.bf : 0);
 	}
@@ -2915,17 +2917,17 @@ var Core = (function(exports) {
 	}
 	/** AFK lot numbers (balance agent to tune). Trees are × TRACT_BASE[era]; per-tree stats multiply the mix average. */
 	var AFK_LOT = deepFreeze({
-		/** Chance a fresh land-office board carries one (never more than one). */
-		chance: .6,
-		/** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5). */
-		trees: [4, 6],
+		/** Chance a fresh land-office board carries one (never more than one; owner-approved 2026-10-25: always one). */
+		chance: 1,
+		/** Trees, × a normal tract for the era (a normal listing draws 0.6-1.5; owner-approved 2026-10-25: was 4-6). */
+		trees: [12, 18],
 		/** Small second-growth stems: board feet and chops per tree. */
 		bfMult: .7,
 		hpMult: .75,
 		/** Poor grade, more pulp: value per tree (value per bd ft is valMult ÷ bfMult, about 0.71). */
 		valMult: .5,
-		/** Land price on top of the usual 42% of gross (cheaper per tree). */
-		landMult: .8,
+		/** Land price on top of the usual 42% of gross (cheaper per tree; owner-approved 2026-10-25: was 0.8). */
+		landMult: .4,
 		/** Close to the cove: haul miles. */
 		miles: [1, 3]
 	});
@@ -2953,8 +2955,8 @@ var Core = (function(exports) {
 		]
 	]);
 	/**
-	* An AFK lot for the era: 4-6× the trees of a normal tract, small poor stems,
-	* flat or rolling, 1-3 mi out, land ×0.8. Draws, in order: trees, miles,
+	* An AFK lot for the era: 12-18× the trees of a normal tract, small poor stems,
+	* flat or rolling, 1-3 mi out, land ×0.4. Draws, in order: trees, miles,
 	* slope, place, lot. The prototype feeds it its own stream ('land'), so the
 	* board's other draws are untouched.
 	*/
@@ -4508,18 +4510,22 @@ var Core = (function(exports) {
 	}
 	/**
 	* For each order, the index of the lot that serves it best (the most of the
-	* order covered; the first on a tie). Orders no lot helps are left out.
+	* order covered; the first on a tie). Orders no lot helps are left out. With
+	* `lots` (the same order as `fits`), the AFK lot never takes the badge.
 	*/
-	function bestFor(fits) {
+	function bestFor(fits, lots) {
 		const best = {};
-		fits.forEach((lines, i) => lines.forEach((f) => {
-			if (!(f.amount > 0)) return;
-			const b = best[f.orderId];
-			if (!b || f.amount > b.a + 1e-9) best[f.orderId] = {
-				i,
-				a: f.amount
-			};
-		}));
+		fits.forEach((lines, i) => {
+			if (lots?.[i]?.afk) return;
+			lines.forEach((f) => {
+				if (!(f.amount > 0)) return;
+				const b = best[f.orderId];
+				if (!b || f.amount > b.a + 1e-9) best[f.orderId] = {
+					i,
+					a: f.amount
+				};
+			});
+		});
 		const out = {};
 		for (const k in best) out[k] = best[k].i;
 		return out;
@@ -4675,7 +4681,8 @@ var Core = (function(exports) {
 	* The order of the waiting lots (indices into `keys`) under a mode. Stable:
 	* 'hand' keeps the given order; 'bought' sorts by purchase; 'deadline' puts
 	* lots that serve the soonest order first (then value, then purchase);
-	* 'value' sorts by value an hour (then purchase).
+	* 'value' sorts by value an hour (then purchase). In every mode but 'hand',
+	* AFK lots go behind the normal lots, so a lot bought later is cut first.
 	*/
 	function queueOrder(keys, mode) {
 		const idx = keys.map((_, i) => i);
@@ -4683,6 +4690,7 @@ var Core = (function(exports) {
 		const k = (i) => keys[i];
 		return idx.sort((a, b) => {
 			const A = k(a), B = k(b);
+			if (!!A.afk !== !!B.afk) return A.afk ? 1 : -1;
 			if (mode === "deadline" && A.deadline !== B.deadline) return A.deadline < B.deadline ? -1 : 1;
 			if (mode !== "bought" && A.perHour !== B.perHour) return B.perHour - A.perHour;
 			return A.seq - B.seq || a - b;
@@ -5725,12 +5733,13 @@ function resumeTree(){
   delete t.cur; delete t.curSp;
 }
 const qMode = () => Core.QUEUE_MODES.includes(S.ui.qOrder) ? S.ui.qOrder : 'bought';
-// sort the waiting lots (and the first one too when no crews are on it yet) by the queue mode; 'by hand' leaves them alone
+// sort the waiting lots (and the first one too when no crews are on it yet) by the queue mode; 'by hand' leaves them alone.
+// In every auto mode the AFK lot waits behind the normal lots, so a lot bought after it is cut first (Core.queueOrder)
 function applyQueue(all){
   const m = qMode(); if (m === 'hand' || S.tracts.length < 2) return;
   const head = all ? [] : S.tracts.slice(0, 1), rest = all ? S.tracts.slice() : S.tracts.slice(1);
   const caps = bareCaps(), orders = m === 'deadline' ? fitOrders() : [], sn = effSeason(), sky = has('skyline');
-  const keys = rest.map(t => ({seq: t.seq || 0, perHour: m === 'value' ? Core.lotValueRate(caps, t, sn, sky) : 0, deadline: m === 'deadline' ? lotDeadline(t, orders) : Infinity}));
+  const keys = rest.map(t => ({seq: t.seq || 0, afk: !!t.afk, perHour: m === 'value' ? Core.lotValueRate(caps, t, sn, sky) : 0, deadline: m === 'deadline' ? lotDeadline(t, orders) : Infinity}));
   S.tracts = head.concat(Core.queueOrder(keys, m).map(i => rest[i]));
 }
 // the soonest deadline among the orders a lot serves: a signed species order in seconds, then special orders and structures
@@ -6176,10 +6185,12 @@ function listingCard(t, i, fits, note, best, orders){
     ${fitHtml(fits)}${pitchHint(t)}${noteHtml(note, 'l'+t.name)}</div>
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
+const aheadOfNew = t => t.afk || qMode() === 'hand' ? S.tracts : S.tracts.filter((x, j) => j === 0 || !x.afk);
 function renderSales(){
   const orders = fitOrders(), cur = tract();
-  // a bought lot joins the end of the queue, so every lot under contract is ahead of it
-  const fits = S.forSale.map(t => lotFits(t, S.tracts, orders)), best = Core.bestFor(fits), notes = S.forSale.map(t => noteFor(t, cur));
+  // a bought lot joins the end of the queue, so every lot under contract is ahead of it (in an auto mode a normal lot
+  // goes ahead of a waiting AFK lot); the AFK lot never takes a "Best for" badge
+  const fits = S.forSale.map(t => lotFits(t, aheadOfNew(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur));
   const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)).join('|') + JSON.stringify(best);
   list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join(''),
     box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
@@ -6269,8 +6280,9 @@ function renderHire(){
 // order fit on the charter board: for a species order (signed, or each offer), the lot that serves it best, owned or listed
 function orderBestLot(id){
   const ord = fitOrders().find(x => x.id === id); if (!ord) return '';
+  // the AFK lot is never named the best lot
   const lots = S.tracts.map((t, j) => ({t, ahead:S.tracts.slice(0, j), where: j === 0 ? 'crews are on it' : 'in your list'}))
-    .concat(S.forSale.map(t => ({t, ahead:S.tracts, where:'for sale'})));
+    .concat(S.forSale.map(t => ({t, ahead:aheadOfNew(t), where:'for sale'}))).filter(l => !l.t.afk);
   let best = null;
   lots.forEach(l => { const f = lotFits(l.t, l.ahead, [ord])[0]; if (f && f.amount > 0 && (!best || f.amount > best.f.amount + 1e-9)) best = {l, f}; });
   return best ? `<p class="ofit" data-obest="${id}">Best lot: ${best.l.t.name} (${best.l.where}). ${best.f.text.replace(' (if you sign now)', '')}</p>`
