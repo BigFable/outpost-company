@@ -181,6 +181,26 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .chipl.afkchip{color:var(--muted);margin-left:4px}
 .chipl.best,.chipl.ofb{white-space:normal;max-width:100%}
 .row.lot .info,.qrow .info{overflow-wrap:anywhere}
+/* the lot stash: the Trees tab of the cutting queue */
+.qtabs{margin:8px 0 2px}
+.qtabs button{min-height:44px}
+.meta.pick{color:var(--accent);font-weight:600}
+.stash{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.scard{border:1px solid var(--line);border-radius:6px;padding:6px 10px 10px;min-width:0;overflow-wrap:anywhere}
+.scard summary{cursor:pointer;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
+.scard summary b{font-weight:600}
+.scard summary .num{font-family:var(--f-num);font-size:.8rem;color:var(--muted)}
+.scard .spec{display:block;font-family:var(--f-num);font-size:.75rem;color:var(--muted)}
+.scard p{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+.scard p.skipv{color:var(--accent)}
+.slots{list-style:none;margin:6px 0 0;padding:0}
+.slots li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;border-top:1px dotted var(--line);font-size:.8rem;min-height:44px}
+.slots li>span:first-child{min-width:0}
+.slots button{min-height:44px;min-width:44px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:4px;padding:4px 10px;font-weight:600;font-size:.8rem;flex:none}
+.srule{display:flex;gap:6px;margin-top:8px}
+.srule button{flex:1 1 0;min-width:44px;min-height:44px;border:1px solid var(--line);background:transparent;border-radius:4px;font-weight:600;font-size:.84rem}
+.srule button:hover{border-color:var(--ink)}
+.srule button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 @media (max-width:460px){.qrow{grid-template-columns:44px minmax(0,1fr)}.qbtns{grid-column:1 / -1;justify-content:flex-start;max-width:none}}
 .wt-light{color:var(--good)} .wt-heavy{color:var(--warn)}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
@@ -457,9 +477,17 @@ button,summary,input,.lcell{touch-action:manipulation}
       <section class="panel" id="queuePanel">
         <p class="eyebrow">Cutting queue</p>
         <h2>Your lots</h2>
-        <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
-        <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
-        <ol class="tq" id="tq"></ol>
+        <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="true">Lots</button><button type="button" data-v="trees" aria-pressed="false">Trees</button></div>
+        <p class="meta pick" id="pickNote" hidden></p>
+        <div id="qLots">
+          <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
+          <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
+          <ol class="tq" id="tq"></ol>
+        </div>
+        <div id="qTrees" hidden>
+          <p class="meta" id="stashMeta">Every tree on your lots. Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one tree slows felling and skidding.</p>
+          <div class="stash" id="stash"></div>
+        </div>
       </section>
 
       <section class="panel">
@@ -4340,11 +4368,11 @@ var Core = (function(exports) {
 	var leftOf = (l) => Math.max(0, l.left ?? l.trees);
 	/** Bd ft a second each stage would work on this lot (felling as chops ÷ hp × bf). */
 	function lotRates(c, l, skyline = false) {
-		const wt = l.wt && l.wt > 0 ? l.wt : 1;
+		const wt = l.wt && l.wt > 0 ? l.wt : 1, pk = l.pick && l.pick > 0 ? l.pick : 1;
 		return {
-			fell: l.hp > 0 ? c.fell / l.hp * l.bf : 0,
+			fell: l.hp > 0 ? c.fell / l.hp * l.bf * pk : 0,
 			buck: c.buck,
-			skid: c.skid * slopeFactor(l.slope, skyline) / wt,
+			skid: c.skid * slopeFactor(l.slope, skyline) / wt * pk,
 			haul: c.haul * distanceFactor(l.miles) / wt
 		};
 	}
@@ -4704,6 +4732,246 @@ var Core = (function(exports) {
 		const [x] = out.splice(from, 1);
 		out.splice(t, 0, x);
 		return out;
+	}
+	//#endregion
+	//#region packages/core/src/stash.ts
+	/**
+	* The lot stash (docs/design/lot-stash-and-camp-money.md, part A, slice 1):
+	* a tree count per species on each lot, a rule per species (Any, First,
+	* Skip), which trees crews cut under those rules, and what picking costs.
+	* Pure helpers, no randomness.
+	*
+	* Counts (`Stand`) may be fractional: under Any every species is felled in
+	* proportion, so a lot's mix never drifts. Show them rounded.
+	*/
+	var STASH_RULES = deepFreeze([
+		"any",
+		"first",
+		"skip"
+	]);
+	var STASH_RULE_LABEL = deepFreeze({
+		any: "Any",
+		first: "First",
+		skip: "Skip"
+	});
+	/** A species counts as standing from half a tree (it shows as 1). */
+	var STAND_MIN = .5;
+	/** The picking cost: felling and skidding run at 0.5 + 0.5 × the share of the lot's standing trees being cut. */
+	function pickFactor(share) {
+		return .5 + .5 * Math.max(0, Math.min(1, share));
+	}
+	/** The rule for a species (Any when unset or unknown). */
+	function stashRule(rules, sp) {
+		const r = rules ? rules[sp] : void 0;
+		return r === "first" || r === "skip" ? r : "any";
+	}
+	/** True when every species is on Any (today's behaviour). */
+	function rulesAllAny(rules) {
+		if (!rules) return true;
+		for (const k in rules) {
+			const r = rules[k];
+			if (r === "first" || r === "skip") return false;
+		}
+		return true;
+	}
+	/** Sum of a stand. */
+	function standTotal(stand) {
+		let n = 0;
+		for (const k in stand) n += Math.max(0, stand[k] ?? 0);
+		return n;
+	}
+	/**
+	* A stand from a lot's mix and its trees left (save migration and new lots):
+	* round(left × share) per species, the remainder to the main species. Whole trees.
+	*/
+	function standFromMix(mix, left) {
+		const out = {}, n = Math.max(0, Math.round(left));
+		const tot = mix.reduce((a, m) => a + Math.max(0, m[1]), 0);
+		const main = mainSpecies(mix);
+		if (!main || tot <= 0) {
+			if (n > 0) out.pine = n;
+			return out;
+		}
+		let given = 0;
+		for (const [id, w] of mix) {
+			const c = Math.round(n * Math.max(0, w) / tot);
+			out[id] = (out[id] ?? 0) + c;
+			given += c;
+		}
+		out[main] = (out[main] ?? 0) + (n - given);
+		for (const id of Object.keys(out)) if (out[id] < 0) {
+			let debt = -out[id];
+			out[id] = 0;
+			for (const [o] of mix) {
+				if (debt <= 0) break;
+				const c = out[o] ?? 0;
+				const d = Math.min(c, debt);
+				out[o] = c - d;
+				debt -= d;
+			}
+		}
+		return out;
+	}
+	/**
+	* A lot's stand made sound: a missing or broken one comes from the mix; one
+	* whose sum is off from `left` is rescaled to it (keeping its proportions).
+	*/
+	function fixStand(stand, mix, left) {
+		const L = Math.max(0, left);
+		if (!stand || typeof stand !== "object" || Array.isArray(stand)) return standFromMix(mix, L);
+		const out = {};
+		for (const [k, v] of Object.entries(stand)) {
+			const id = speciesId(k), n = typeof v === "number" && isFinite(v) ? Math.max(0, v) : 0;
+			if (id && n > 0) out[id] = (out[id] ?? 0) + n;
+		}
+		const tot = standTotal(out);
+		if (tot <= 0) return standFromMix(mix, L);
+		if (Math.abs(tot - L) > 1e-6) for (const k of Object.keys(out)) out[k] = out[k] * L / tot;
+		return out;
+	}
+	/** Species standing on a lot, in the lot's mix order (then any others). */
+	function standingSpecies(stand, mix) {
+		const out = [];
+		for (const [id] of mix) if (!out.includes(id) && (stand[id] ?? 0) >= .5) out.push(id);
+		for (const k of Object.keys(stand)) if (!out.includes(k) && (stand[k] ?? 0) >= .5) out.push(k);
+		return out;
+	}
+	/**
+	* Which trees crews fell on a lot under the rules. First species standing
+	* come first (sharing the effort in their counts); with none, everything not
+	* Skipped; with only Skipped trees left, those (never stall). `ignore` (the
+	* AFK lot, hire jobs) cuts everything.
+	*/
+	function cutPlan(stand, mix, rules, ignore = false) {
+		const standing = standingSpecies(stand, mix);
+		const all = (mode) => ({
+			species: standing,
+			mode,
+			share: 1,
+			factor: 1,
+			count: standTotal(stand),
+			picking: false
+		});
+		if (ignore || standing.length < 2 || rulesAllAny(rules)) {
+			if (!ignore && standing.length === 1 && stashRule(rules, standing[0]) === "skip") return all("skipped");
+			return all("all");
+		}
+		const first = standing.filter((s) => stashRule(rules, s) === "first");
+		const rest = standing.filter((s) => stashRule(rules, s) !== "skip");
+		let pick, mode;
+		if (first.length) {
+			pick = first;
+			mode = "first";
+		} else if (rest.length) {
+			pick = rest;
+			mode = "rest";
+		} else return all("skipped");
+		if (pick.length === standing.length) return all(mode === "first" ? "first" : "all");
+		const tot = standTotal(stand), count = pick.reduce((a, s) => a + (stand[s] ?? 0), 0);
+		const share = tot > 0 ? count / tot : 1;
+		return {
+			species: pick,
+			mode,
+			share,
+			factor: pickFactor(share),
+			count,
+			picking: true
+		};
+	}
+	/**
+	* Fell `k` trees: from `species` in proportion to their counts, and once they
+	* run out, from the rest in proportion. Returns a new stand that sums to the
+	* old total − k (never below 0).
+	*/
+	function fellFromStand(stand, species, k) {
+		const out = { ...stand };
+		let left = Math.max(0, k);
+		const take = (ids) => {
+			const tot = ids.reduce((a, s) => a + Math.max(0, out[s] ?? 0), 0);
+			if (tot <= 0 || left <= 0) return;
+			const n = Math.min(left, tot);
+			for (const s of ids) {
+				const c = Math.max(0, out[s] ?? 0);
+				out[s] = n >= tot ? 0 : c - n * c / tot;
+			}
+			left -= n;
+		};
+		take(species);
+		if (left > 0) take(Object.keys(out).filter((s) => !species.includes(s)));
+		for (const s of Object.keys(out)) if (!(out[s] > 1e-9)) out[s] = 0;
+		return out;
+	}
+	/** Plain (pine-rule) averages of a mix: chops, bd ft and value a tree. */
+	function mixAvg(mix) {
+		let hp = 0, bf = 0, val = 0, w = 0;
+		for (const [id, n] of mix) {
+			const s = SPECIES[id];
+			if (!s || !(n > 0)) continue;
+			hp += s.hp * n;
+			bf += s.bf * n;
+			val += treeValue(s) * n;
+			w += n;
+		}
+		return w > 0 ? {
+			hp: hp / w,
+			bf: bf / w,
+			val: val / w
+		} : {
+			hp: 0,
+			bf: 0,
+			val: 0
+		};
+	}
+	/**
+	* Chops, bd ft, value and weight a tree for `species` on a lot, weighted by
+	* their counts. Each is the species' own figure × (the lot's average ÷ its
+	* mix's plain average), so lot multipliers carry over.
+	*/
+	function standStats(lot, stand, species) {
+		const mix = species.filter((s) => (stand[s] ?? 0) > 0).map((s) => [s, stand[s]]);
+		const use = mix.length ? mix : lot.mix.map((m) => [m[0], m[1]]);
+		const base = mixAvg(lot.mix), now = mixAvg(use);
+		const k = (a, b) => b > 0 ? a / b : 1;
+		return {
+			mix: use,
+			hp: now.hp * k(lot.hp, base.hp),
+			bf: now.bf * k(lot.bf, base.bf),
+			val: now.val * k(lot.val, base.val),
+			wt: mixWeight(use)
+		};
+	}
+	/**
+	* Every owned tree by species: count, bd ft and value, and the lots holding
+	* each (share = that species' share of the lot's standing trees). Species in
+	* first-seen order across the queue.
+	*/
+	function stashTotals(lots) {
+		const rows = /* @__PURE__ */ new Map();
+		lots.forEach((l, i) => {
+			const tot = standTotal(l.stand);
+			for (const sp of standingSpecies(l.stand, l.mix)) {
+				const n = l.stand[sp] ?? 0, st = standStats(l, l.stand, [sp]);
+				const r = rows.get(sp) ?? {
+					trees: 0,
+					bf: 0,
+					val: 0,
+					lots: []
+				};
+				r.trees += n;
+				r.bf += n * st.bf;
+				r.val += n * st.val;
+				r.lots.push({
+					i,
+					n,
+					share: tot > 0 ? n / tot : 0
+				});
+				rows.set(sp, r);
+			}
+		});
+		return [...rows.entries()].map(([sp, r]) => ({
+			sp,
+			...r
+		}));
 	}
 	//#endregion
 	//#region packages/core/src/weather.ts
@@ -5415,7 +5683,10 @@ var Core = (function(exports) {
 	exports.SPECIES_ORDER_PREM = SPECIES_ORDER_PREM;
 	exports.SPECIES_SEASON = SPECIES_SEASON;
 	exports.STAGES = STAGES;
+	exports.STAND_MIN = STAND_MIN;
 	exports.START_SAWYERS = START_SAWYERS;
+	exports.STASH_RULES = STASH_RULES;
+	exports.STASH_RULE_LABEL = STASH_RULE_LABEL;
 	exports.STORM_SEASON_CAP = STORM_SEASON_CAP;
 	exports.STORM_SEASON_MULT = STORM_SEASON_MULT;
 	exports.STORM_SEASON_STEP = STORM_SEASON_STEP;
@@ -5459,6 +5730,7 @@ var Core = (function(exports) {
 	exports.crewUpkeep = crewUpkeep;
 	exports.crewUpkeepFull = crewUpkeepFull;
 	exports.cutOutSeconds = cutOutSeconds;
+	exports.cutPlan = cutPlan;
 	exports.deepFreeze = deepFreeze;
 	exports.distanceFactor = distanceFactor;
 	exports.draftPool = draftPool;
@@ -5477,8 +5749,10 @@ var Core = (function(exports) {
 	exports.eventSlows = eventSlows;
 	exports.eventStageFactor = eventStageFactor;
 	exports.eventWeights = eventWeights;
+	exports.fellFromStand = fellFromStand;
 	exports.fellRules = fellRules;
 	exports.fitTractPrice = fitTractPrice;
+	exports.fixStand = fixStand;
 	exports.freeSawyers = freeSawyers;
 	exports.gameRule = gameRule;
 	exports.genAfkLot = genAfkLot;
@@ -5540,6 +5814,7 @@ var Core = (function(exports) {
 	exports.payrollGuard = payrollGuard;
 	exports.perkCount = perkCount;
 	exports.perkMult = perkMult;
+	exports.pickFactor = pickFactor;
 	exports.pickFromMix = pickFromMix;
 	exports.primeEstimate = primeEstimate;
 	exports.primeFromBuck = primeFromBuck;
@@ -5556,6 +5831,7 @@ var Core = (function(exports) {
 	exports.rollDrop = rollDrop;
 	exports.rollEvent = rollEvent;
 	exports.rollIdleDrop = rollIdleDrop;
+	exports.rulesAllAny = rulesAllAny;
 	exports.sawAdvice = sawAdvice;
 	exports.sawBest = sawBest;
 	exports.sawBestPlan = sawBestPlan;
@@ -5579,6 +5855,12 @@ var Core = (function(exports) {
 	exports.speciesSeasonValue = speciesSeasonValue;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
+	exports.standFromMix = standFromMix;
+	exports.standStats = standStats;
+	exports.standTotal = standTotal;
+	exports.standingSpecies = standingSpecies;
+	exports.stashRule = stashRule;
+	exports.stashTotals = stashTotals;
 	exports.stormSeasonMult = stormSeasonMult;
 	exports.streamRng = streamRng;
 	exports.structureDef = structureDef;
@@ -5643,7 +5925,8 @@ function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
-function freshUi(){ return {qOrder:'bought', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
+// stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees')
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'lots', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -5697,11 +5980,12 @@ const cmult = () => umult('click') * pmult('click');
 const boostF = () => Core.boostFactor(!!perk('bull'));
 const boostTxt = () => perk('absentee') ? 'no faster (Absent board)' : `${Math.round((boostF()-1)*100)}% faster for ${boostLen()} s` + (perk('golden') ? ', and so does every stage' : ` (up to ${Core.BOOST_STAGES} stages at once)`);
 // skid and haul weight of the wood being worked: the current tract's mix (species overhaul; the landing does not track species)
-const wtNow = () => { const t = tract(); return t && t.wt > 0 ? t.wt : 1; };
+const wtNow = () => { const t = tract(), v = t && cutOf(t); return v && v.wt > 0 ? v.wt : 1; };
 // effective per second, before payroll efficiency; idle skidding and hauling move bd ft ÷ weight (pass wt = 1 for pine-weight capacity)
+// the lot stash's picking factor slows felling and skidding on the lot crews are on (exactly 1 when they cut everything)
 const rate = (stage, wt = wtNow()) => Core.stageRate(stage, {base: baseRate(stage), season: seasonF(stage), boost: (S.boost[stage]||0) > S.t ? boostF() : 1,
-  slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1, weight: wt});
-function fellBf(chops){ const t = tract(); return t ? chops / t.hp * t.bf : 0; }
+  slope: stage === 'skid' ? slopeF() : 1, distance: stage === 'haul' ? distF() : 1, weight: wt}) * (stage === 'fell' || stage === 'skid' ? pickF() : 1);
+function fellBf(chops){ const t = tract(), v = t && cutOf(t); return v ? chops / v.hp * v.bf : 0; }
 // per minute; crews with nothing to do are paid a quarter rate
 // the bunkhouse (raised with plank bundles from the Sawmill) makes crews cheaper to keep and to hire
 const bunkF = () => Core.bunkhouseMult(S.structures || {});
@@ -5722,8 +6006,8 @@ function note(text){
 // ---------- tracts
 function newTree(){
   const t = tract(); if (!t){ S.hp = null; return; }
-  S.hp = t.hp;
-  const id = Core.pickFromMix(Math.random, t.mix); if (id) S.vis = id;
+  const v = cutOf(t); S.hp = v.hp;
+  const id = Core.pickFromMix(Math.random, v.mix); if (id) S.vis = id;
 }
 function setSite(){ const t = tract(); if (t) S.site = {miles:t.miles, slope:t.slope}; }
 // the cutting queue: S.tracts in order, crews on the first. A lot crews leave keeps its trees left and the tree they were on
@@ -5734,6 +6018,68 @@ function resumeTree(){
   if (t.cur > 0){ S.hp = t.cur; if (SP[t.curSp]) S.vis = t.curSp; } else newTree();
   delete t.cur; delete t.curSp;
 }
+// ---------- the lot stash (Core: packages/core/src/stash.ts): a tree count per species on each lot (t.stand), a rule per species
+// (S.ui.stashRule: Any, First, Skip) and the picking cost. With every rule on Any, nothing here changes a draw or a number:
+// cutOf returns the lot's own mix and averages, and felling takes every species in proportion.
+// The AFK lot and hire jobs ignore the rules (crews cut everything). t.picked marks a lot cut by species; its averages then come from its stand.
+let rulesAny = true, rulesV = 0; // Core.rulesAllAny(S.ui.stashRule), cached; rulesV bumps on every rule change
+const ignoresRules = t => !!(t && (t.afk || t.hire));
+function standOf(t){ if (!t.stand || typeof t.stand !== 'object') t.stand = Core.fixStand(t.stand, t.mix, t.left); return t.stand; }
+const cutCache = new WeakMap();
+// what crews fell on a lot now: {mode, species, mix, hp, bf, val, wt, pf (picking factor), picking, count}
+function cutOf(t){
+  if (!t) return null;
+  const c = cutCache.get(t);
+  if (c && c.left === t.left && c.rv === rulesV && c.picked === !!t.picked && c.mix === t.mix) return c.v;
+  const st = standOf(t);
+  let v;
+  if (!t.picked && (rulesAny || ignoresRules(t))) v = {mode:'all', species:t.mix.map(m => m[0]), mix:t.mix, hp:t.hp, bf:t.bf, val:t.val, wt:t.wt, pf:1, picking:false, count:t.left};
+  else {
+    const plan = Core.cutPlan(st, t.mix, S.ui.stashRule, ignoresRules(t));
+    const x = !plan.picking && !t.picked ? {mix:t.mix, hp:t.hp, bf:t.bf, val:t.val, wt:t.wt} : Core.standStats(t, st, plan.species);
+    v = {mode:plan.mode, species:plan.species, mix:x.mix, hp:x.hp, bf:x.bf, val:x.val, wt:x.wt, pf:plan.factor, picking:plan.picking, count:plan.count};
+  }
+  cutCache.set(t, {left:t.left, rv:rulesV, picked:!!t.picked, mix:t.mix, v});
+  return v;
+}
+const pickF = () => { const t = tract(); return t ? cutOf(t).pf : 1; };
+// a lot as the queue helpers should read it: the lot itself, or (once picked by species) its standing trees;
+// for the lot crews are on (head), what they cut now, with the picking factor
+function lotView(t, head){
+  if (!t.picked && (!head || rulesAny || ignoresRules(t))) return t;
+  const v = head ? cutOf(t) : null;
+  if (v && v.picking) return Object.assign({}, t, {mix:v.mix, hp:v.hp, bf:v.bf, val:v.val, wt:v.wt, pick:v.pf});
+  if (!t.picked) return t;
+  const st = standOf(t), x = Core.standStats(t, st, Core.standingSpecies(st, t.mix));
+  return Object.assign({}, t, {mix:x.mix, hp:x.hp, bf:x.bf, val:x.val, wt:x.wt});
+}
+const skippedOut = t => !rulesAny && !!t && !ignoresRules(t) && t.left >= 1 && cutOf(t).mode === 'skipped';
+const spList = ids => ids.map(id => SP[id].name.toLowerCase()).join(' and ');
+const upFirst = x => x.charAt(0).toUpperCase() + x.slice(1);
+// Skip: a lot whose only trees left are Skipped drops to the bottom of the queue while another lot has other wood.
+// With none anywhere, crews cut the Skipped trees (they never stall), with one note.
+function skipOut(){
+  if (rulesAny) return false;
+  const t = tract(); if (!t || !skippedOut(t)) return false;
+  if (!S.tracts.some((x, i) => i > 0 && !skippedOut(x))){
+    if (!t.skipNoted){ t.skipNoted = true; note(`Out of other wood, cutting ${spList(cutOf(t).species)} on ${t.name}.`); }
+    return false;
+  }
+  stashTree();
+  let n = 0; while (skippedOut(S.tracts[0]) && n++ < S.tracts.length) S.tracts.push(S.tracts.shift());
+  setSite(); resumeTree();
+  note(`${upFirst(spList(cutOf(t).species))} left standing on ${t.name}. Crews moved to ${tract().name}.`);
+  return true;
+}
+function setStashRule(sp, r){
+  if (!SP[sp] || !Core.STASH_RULES.includes(r)) return;
+  const R = S.ui.stashRule = Object.assign({}, S.ui.stashRule);
+  if (r === 'any') delete R[sp]; else R[sp] = r;
+  rulesAny = Core.rulesAllAny(R); rulesV++;
+  S.tracts.forEach(t => { delete t.skipNoted; });
+  skipOut(); applyQueue(); render(true);
+  const b = document.querySelector(`#stash [data-rsp="${sp}"][data-r="${r}"]`); if (b) b.focus();
+}
 const qMode = () => Core.QUEUE_MODES.includes(S.ui.qOrder) ? S.ui.qOrder : 'bought';
 // sort the waiting lots (and the first one too when no crews are on it yet) by the queue mode; 'by hand' leaves them alone.
 // In every auto mode the AFK lot waits behind the normal lots, so a lot bought after it is cut first (Core.queueOrder)
@@ -5741,8 +6087,10 @@ function applyQueue(all){
   const m = qMode(); if (m === 'hand' || S.tracts.length < 2) return;
   const head = all ? [] : S.tracts.slice(0, 1), rest = all ? S.tracts.slice() : S.tracts.slice(1);
   const caps = bareCaps(), orders = m === 'deadline' ? fitOrders() : [], sn = effSeason(), sky = has('skyline');
-  const keys = rest.map(t => ({seq: t.seq || 0, afk: !!t.afk, perHour: m === 'value' ? Core.lotValueRate(caps, t, sn, sky) : 0, deadline: m === 'deadline' ? lotDeadline(t, orders) : Infinity}));
-  S.tracts = head.concat(Core.queueOrder(keys, m).map(i => rest[i]));
+  const keys = rest.map(t => { const lv = lotView(t); return {seq: t.seq || 0, afk: !!t.afk, perHour: m === 'value' ? Core.lotValueRate(caps, lv, sn, sky) : 0, deadline: m === 'deadline' ? lotDeadline(lv, orders) : Infinity}; });
+  const sorted = Core.queueOrder(keys, m).map(i => rest[i]);
+  // the lot stash: lots with only Skipped trees left wait at the bottom
+  S.tracts = head.concat(rulesAny ? sorted : sorted.filter(t => !skippedOut(t)).concat(sorted.filter(skippedOut)));
 }
 // the soonest deadline among the orders a lot serves: a signed species order in seconds, then special orders and structures
 function lotDeadline(t, orders){
@@ -5787,7 +6135,7 @@ const tractCost = t => { const m = evMult('tractPrice') * (S.weather.burnt ? Cor
 function buyTract(i){
   const t = S.forSale[i]; if (!t || S.cash < tractCost(t)) return;
   S.cash -= tractCost(t); delete t.price; if (S.weather.burnt){ S.weather.burnt = false; t.burnt = true; }
-  t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++;
+  t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++; standOf(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
   if (t.afk) S.forSale.splice(i, 1); // the AFK lot is not relisted until the next board
@@ -5815,15 +6163,16 @@ function genOffer(regular){
   const t = tract();
   return Core.genOffer(Math.random, baseRate('haul')*distF(), t ? t.val/t.bf : .2, regular ? undefined : offerSpecies());
 }
-// a species order counts only that species' share of each delivery, by the current tract's mix
-const orderShare = c => !c || !c.sp ? 1 : tract() ? Core.mixShare(tract().mix, c.sp) : 0;
+// a species order counts only that species' share of each delivery: the share of the trees crews are cutting now
+// (the lot's mix under Any; the picked species under First or Skip)
+const orderShare = c => !c || !c.sp ? 1 : tract() ? Core.mixShare(cutOf(tract()).mix, c.sp) : 0;
 const genHire = () => Core.genHire(Math.random, S.era);
 const hireActive = () => S.tracts.some(t => t.hire);
 const mobilization = t => Core.mobilization(t.trees, t.val, upkeep());
 function acceptHire(){
   const t = S.hireOffer; if (!t || hireActive() || scripBlock()) return;
   const mob = mobilization(t);
-  t.seq = S.tractSeq++; S.cash += mob; S.tracts.push(t); S.hireOffer = genHire();
+  t.seq = S.tractSeq++; standOf(t); S.cash += mob; S.tracts.push(t); S.hireOffer = genHire();
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
   note(`Hire job: ${t.name} for ${t.hire.mill}. Got a ${money(mob)} advance.`);
   render(true);
@@ -5846,8 +6195,19 @@ function accept(i){
 // ---------- simulation
 // species seasonal traits (hemlock tanbark in Spring and Summer, maple in Winter) come in through Core.seasonValueFactor
 function fellK(t, k){
-  t.left -= k; S.felled += k;
-  S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, effSeason()); // an Early freeze counts as Winter for species traits too (maple)
+  if (!t.picked && (rulesAny || ignoresRules(t))){
+    t.left -= k; S.felled += k;
+    S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, effSeason()); // an Early freeze counts as Winter for species traits too (maple)
+    const st = standOf(t); t.stand = Core.fellFromStand(st, Object.keys(st), k); // every species in proportion
+    return;
+  }
+  // the lot stash: fell what the rules pick, a set at a time (First trees, then the rest), at those trees' own figures
+  for (let guard = 0; k > 0 && guard < 20; guard++){
+    const v = cutOf(t), n = v.picking ? Math.min(k, Math.max(1, Math.floor(v.count + 1e-9))) : k;
+    t.left -= n; S.felled += n; k -= n;
+    S.stems.bf += n*v.bf; S.stems.val += n*v.val*Core.seasonValueFactor(v.mix, effSeason());
+    t.stand = Core.fellFromStand(standOf(t), v.species, n); if (v.picking) t.picked = true;
+  }
 }
 function finishTract(){
   const t = S.tracts.shift();
@@ -5859,13 +6219,14 @@ function finishTract(){
 function damage(chops){
   let t = tract(), n = 0;
   if (!t || chops <= 0) return 0;
+  if (!rulesAny && skipOut()) t = tract();
   if (S.hp == null) newTree();
   while (chops > 0 && t){
     if (chops < S.hp){ S.hp -= chops; break; }
     chops -= S.hp; fellK(t,1); n++;
-    const more = Math.min(t.left, Math.floor(chops / t.hp));
-    if (more > 0){ fellK(t, more); n += more; chops -= more*t.hp; }
-    if (t.left < 1){ finishTract(); t = tract(); } else newTree();
+    const v = cutOf(t), more = Math.min(t.left, Math.floor(chops / v.hp), v.picking ? Math.floor(v.count + 1e-9) : Infinity);
+    if (more > 0){ fellK(t, more); n += more; chops -= more*v.hp; }
+    if (t.left < 1){ finishTract(); t = tract(); } else if (!rulesAny && skipOut()) t = tract(); else newTree();
   }
   return n;
 }
@@ -5921,9 +6282,9 @@ function tick(dt){
   used.skid = move(S.cut, S.landing, cap.skid);
   used.buck = move(S.stems, S.cut, cap.buck, vmult());
   used.fell = tract() ? cap.fell : 0;
-  const fT = tract(), f0 = S.felled;
+  const fT = tract(), f0 = S.felled, fMix = fT ? cutOf(fT).mix : null;
   damage(cap.fell);
-  if (fT && S.felled > f0) idlePrime(fT, S.felled - f0);
+  if (fT && S.felled > f0) idlePrime(fT, S.felled - f0, fMix);
   if (baseRate('haul') <= 0 && S.landing.bf > 0){ // a local buyer carts logs off your landing
     const L = S.landing, amt = Math.min(L.bf, 6*dt), avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
     S.run.deliv += amt; const rev = amt*avg*.6*mktMod()*market(); S.earned += rev; S.run.earned += rev; S.bucket += rev; const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back; }
@@ -6158,6 +6519,8 @@ function fitOrders(){
   });
   return out;
 }
+// owned lots as the queue helpers read them (the lot stash: picked lots by their standing trees, the crews' lot by what they cut)
+const queueViews = () => S.tracts.map((t, j) => lotView(t, j === 0));
 const lotFits = (t, ahead, orders) => Core.orderFit(t, orders, {caps:bareCaps(), era:S.era, perfRate:perfRate(), skyline:has('skyline')}, ahead);
 // pine bucking finds amber pitch twice as often: a plain hint when special orders still want pitch (no estimate, no badge)
 function pitchHint(t){
@@ -6188,11 +6551,13 @@ function listingCard(t, i, fits, note, best, orders){
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
 const aheadOfNew = t => t.afk || qMode() === 'hand' ? S.tracts : S.tracts.filter((x, j) => j === 0 || !x.afk);
+// the same lots as the queue helpers read them (the lot stash: picked lots by their standing trees, the crews' lot by what they cut)
+const aheadView = t => aheadOfNew(t).map(x => lotView(x, x === S.tracts[0]));
 function renderSales(){
   const orders = fitOrders(), cur = tract();
   // a bought lot joins the end of the queue, so every lot under contract is ahead of it (in an auto mode a normal lot
   // goes ahead of a waiting AFK lot); the AFK lot never takes a "Best for" badge
-  const fits = S.forSale.map(t => lotFits(t, aheadOfNew(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur));
+  const fits = S.forSale.map(t => lotFits(t, aheadView(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur && lotView(cur, true)));
   const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)).join('|') + JSON.stringify(best);
   list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join(''),
     box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
@@ -6231,17 +6596,24 @@ function bindQueueDrag(box){
   });
 }
 function renderQueue(){
+  const tabs = $('qTabs'), view = S.ui.qView === 'trees' ? 'trees' : 'lots';
+  if (!tabs.dataset.bound){ tabs.dataset.bound = '1'; tabs.querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.qView = b.dataset.v; render(true); b.focus(); }); }
+  tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  $('qLots').hidden = view !== 'lots'; $('qTrees').hidden = view !== 'trees';
+  const pn = pickNoteText(), pe = $('pickNote'); pe.hidden = !pn; if (pe.textContent !== pn) pe.textContent = pn;
+  if (view === 'trees'){ renderStash(); return; }
   const mb = $('qMode');
   if (!mb.querySelector('button')){ mb.insertAdjacentHTML('beforeend', Core.QUEUE_MODES.map(m => `<button type="button" data-m="${m}" aria-pressed="false">${Core.QUEUE_MODE_LABEL[m]}</button>`).join(''));
     mb.querySelectorAll('button').forEach(b => b.onclick = () => setQueueMode(b.dataset.m)); }
   mb.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === qMode())));
   const orders = fitOrders(), caps = bareCaps(), sky = has('skyline'), n = S.tracts.length;
-  const rows = S.tracts.map((t, i) => ({t, i, fits: lotFits(t, S.tracts.slice(0, i), orders), note: noteFor(t, i ? tract() : null)}));
+  const qv = queueViews();
+  const rows = S.tracts.map((t, i) => ({t, i, lv: qv[i], fits: lotFits(qv[i], qv.slice(0, i), orders), note: noteFor(qv[i], i ? qv[0] : null)}));
   const key = qMode() + '|' + rows.map(r => `${r.t.seq}:${r.t.name}:${r.fits.map(f => fitChip(f, orders) + f.text).join('/')}:${r.note.short}${r.note.details.join('/')}`).join('|');
-  if (!qDrag) list('tq', key, n ? rows.map(({t, i, fits, note}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
+  if (!qDrag) list('tq', key, n ? rows.map(({t, i, lv, fits, note}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
     <button type="button" class="qgrip" aria-label="Drag ${t.name} to reorder" title="Drag to reorder">⠿</button>
     <div class="info"><b>${i + 1}. ${t.name}</b>${i === 0 ? '<span class="chipl crew">Crews here</span>' : ''}${t.hire ? `<span class="chipl ground">Hire job: ${t.hire.mill}</span>` : ''}${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${fits.filter(f => f.amount > 0).map(f => fitChip(f, orders)).join('')}
-      <p>${mixText(t)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</p>${speciesBar(t)}
+      <p>${mixText(lotView(t))} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</p>${speciesBar(lotView(t))}
       <span class="spec" data-qs="${i}"></span>${fitHtml(fits)}${noteHtml(note, 'q'+t.seq, 'Camp note')}</div>
     <div class="qbtns"><button type="button" data-qu="${i}" aria-label="Move ${t.name} up" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-qd="${i}" aria-label="Move ${t.name} down" title="Move down" ${i === n - 1 ? 'disabled' : ''}>▼</button>${i > 1 ? `<button type="button" data-qnext="${i}">Cut next</button>` : ''}${i > 0 ? `<button type="button" class="now" data-qnow="${i}">Cut now</button>` : ''}</div></li>`).join('')
     : '<li class="empty">No lots. Buy one at the land office or take a hire job.</li>',
@@ -6253,13 +6625,58 @@ function renderQueue(){
       box.querySelectorAll('[data-qnow]').forEach(b => b.onclick = () => cutNow(+b.dataset.qnow));
       bindQueueDrag(box); bindDetails(box);
     });
-  rows.forEach(({t, i, note}) => { const el = document.querySelector(`#tq [data-qs="${i}"]`); if (!el) return;
-    const eta = Core.cutOutSeconds(caps, t, sky);
-    const txt = `${fmt(t.left)} of ${fmt(t.trees)} trees left · done in ${isFinite(eta) ? mins(eta) : '—'} · ${money(t.left*t.val)} of logs · ${money(note.perHour)} an hour`;
+  rows.forEach(({t, i, lv, note}) => { const el = document.querySelector(`#tq [data-qs="${i}"]`); if (!el) return;
+    const eta = Core.cutOutSeconds(caps, lv, sky);
+    const txt = `${fmt(t.left)} of ${fmt(t.trees)} trees left · done in ${isFinite(eta) ? mins(eta) : '—'} · ${money(t.left*lotView(t).val)} of logs · ${money(note.perHour)} an hour`;
     if (el.textContent !== txt) el.textContent = txt; });
   const m = qMode();
   $('qMeta').textContent = 'Crews cut the top lot, then move down the list. ' + (n > 1 ? 'Drag or use the arrows to reorder. Moving is free and lots keep their progress. ' : '') +
     (m === 'hand' ? 'Order: by hand.' : m === 'bought' ? 'Order: as bought.' : m === 'deadline' ? 'Order: soonest deadline first.' : 'Order: most value an hour first.') + (m !== 'hand' ? ' Crews finish their lot before moving.' : '');
+}
+// ---------- the Trees tab (the lot stash): every owned tree by species, its rule, and the lots that hold it.
+// The cards rebuild only when species, rules, lots or orders change; the numbers update in place.
+const PRIME_ITEMS = [...new Set(Core.PRIME_RULES.map(r => r.item))];
+// the open orders a species serves: its tree order, and Prime needs it can make
+const stashOrders = (sp, orders) => orders.filter(o => o.kind === 'species' ? o.sp === sp : Core.PRIME_RULES.some(r => r.species === sp && r.item === o.item)).map(o => o.short);
+function primeOdds(sp){
+  const p = PRIME_ITEMS.reduce((a, item) => a + Core.primePerTree({mix:[[sp, 1]]}, item, S.era, perfRate()), 0);
+  return p > 0 ? `Prime: 1 in ${Math.max(1, Math.round(1/p))} trees` : 'No Prime';
+}
+// one line on what the rules do on the lot crews are on now (empty with every rule on Any)
+function pickNoteText(){
+  const t = tract(); if (!t || rulesAny) return '';
+  if (ignoresRules(t)) return `${t.name} ignores tree rules: crews cut everything.`;
+  const v = cutOf(t), R = S.ui.stashRule;
+  if (v.picking) return `Picking ${spList(v.species)} on ${t.name}: felling and skidding ×${fx2(v.pf)}.`;
+  if (v.mode === 'skipped') return `Out of other wood: cutting ${spList(v.species)} on ${t.name}.`;
+  const firsts = Object.keys(R).filter(k => R[k] === 'first');
+  if (firsts.length && v.mode !== 'first') return `No ${spList(firsts)} on ${t.name}. Cutting the rest.`;
+  return '';
+}
+const wtWord = k => k === 'light' ? 'Light' : k === 'heavy' ? 'Heavy' : 'Average';
+function renderStash(){
+  const rows = Core.stashTotals(S.tracts.map(t => Object.assign({}, t, {stand: standOf(t)}))), orders = fitOrders(), sn = effSeason(), R = S.ui.stashRule;
+  const key = rows.map(r => `${r.sp}:${Core.stashRule(R, r.sp)}:${r.lots.map(l => S.tracts[l.i].seq).join(',')}:${stashOrders(r.sp, orders).join('/')}`).join('|') + '|' + (tract() ? tract().seq : '');
+  list('stash', key, rows.length ? rows.map(r => {
+    const sp = r.sp, d = SP[sp], rule = Core.stashRule(R, sp), w = Core.weightTag(d.wt), od = stashOrders(sp, orders);
+    return `<div class="scard" data-sp="${sp}"><details data-d="s:${sp}"${openD.has('s:' + sp) ? ' open' : ''}><summary><b>${d.name}</b><span class="chipl wt-${w.key}">${wtWord(w.key)}</span><span class="num" data-sn="${sp}"></span></summary>
+      <span class="spec">${fmt(d.hp)} chops a tree · ${w.text} · ${primeOdds(sp)}</span>
+      <ul class="slots">${r.lots.map(l => `<li><span data-sl="${sp}:${l.i}"></span>${l.i === 0 ? '<span class="chipl crew">Crews here</span>' : `<button type="button" data-cut="${l.i}">Cut here</button>`}</li>`).join('')}</ul></details>
+      <p>${od.length ? 'Serves ' + od.join(', ') + '.' : 'No open order wants it.'}</p><p class="skipv" data-sk="${sp}"${rule === 'skip' ? '' : ' hidden'}></p>
+      <div class="srule" role="group" aria-label="${d.name}: which trees crews cut">${Core.STASH_RULES.map(x => `<button type="button" data-rsp="${sp}" data-r="${x}" aria-pressed="${x === rule}">${Core.STASH_RULE_LABEL[x]}</button>`).join('')}</div></div>`;
+  }).join('') : '<p class="empty">No trees yet. Buy a lot at the land office.</p>',
+  box => {
+    box.querySelectorAll('[data-rsp]').forEach(b => b.onclick = () => setStashRule(b.dataset.rsp, b.dataset.r));
+    box.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => cutNow(+b.dataset.cut));
+    bindDetails(box);
+  });
+  const box = $('stash'), put = (sel, txt) => { const el = box.querySelector(sel); if (el && el.textContent !== txt) el.textContent = txt; };
+  rows.forEach(r => {
+    const tr = Core.speciesSeasonTrait(r.sp, sn), val = r.val*tr.mult + tr.bark*r.trees;
+    put(`[data-sn="${r.sp}"]`, `${fmt(Math.round(r.trees))} trees · ${bf(r.bf)} · ${money(val)}`);
+    r.lots.forEach(l => { const t = S.tracts[l.i]; put(`[data-sl="${r.sp}:${l.i}"]`, `${t.name}: ${fmt(Math.max(1, Math.round(l.n)))} trees (${Math.max(1, Math.round(l.share*100))}%) · ${SLOPES[t.slope].label} · ${t.miles} mi`); });
+    put(`[data-sk="${r.sp}"]`, `Skip leaves ${money(val)} standing.`);
+  });
 }
 function renderHire(){
   const job = S.tracts.find(t => t.hire), o = S.hireOffer;
@@ -6283,8 +6700,8 @@ function renderHire(){
 function orderBestLot(id){
   const ord = fitOrders().find(x => x.id === id); if (!ord) return '';
   // the AFK lot is never named the best lot
-  const lots = S.tracts.map((t, j) => ({t, ahead:S.tracts.slice(0, j), where: j === 0 ? 'crews are on it' : 'in your list'}))
-    .concat(S.forSale.map(t => ({t, ahead:aheadOfNew(t), where:'for sale'}))).filter(l => !l.t.afk);
+  const qv = queueViews(), lots = qv.map((t, j) => ({t, ahead:qv.slice(0, j), where: j === 0 ? 'crews are on it' : 'in your list'}))
+    .concat(S.forSale.map(t => ({t, ahead:aheadView(t), where:'for sale'}))).filter(l => !l.t.afk);
   let best = null;
   lots.forEach(l => { const f = lotFits(l.t, l.ahead, [ord])[0]; if (f && f.amount > 0 && (!best || f.amount > best.f.amount + 1e-9)) best = {l, f}; });
   return best ? `<p class="ofit" data-obest="${id}">Best lot: ${best.l.t.name} (${best.l.where}). ${best.f.text.replace(' (if you sign now)', '')}</p>`
@@ -6297,7 +6714,7 @@ function renderContracts(){
   const key = (c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|')) + JSON.stringify(bestLine);
   // a species order: the client wants one species; only its share of each delivery counts, and missing it costs nothing
   const spLine = o => o.sp ? `<p class="sporder">${SP[o.sp].name} only: “${Core.SPECIES_CLIENTS[o.sp].line}”. Only the ${spWord(o.sp)} counts` +
-    (tract() ? ` (${Math.round(Core.mixShare(tract().mix, o.sp)*100)}% of ${tract().name})` : '') + '.</p>' : '';
+    (tract() ? ` (${Math.round(Core.mixShare(cutOf(tract()).mix, o.sp)*100)}% of ${tract().name})` : '') + '.</p>' : '';
   list('contracts', key, c
     ? `<div class="contract"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Tree order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on sales</span>${spLine(c)}${bestLine}
        <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
@@ -6380,16 +6797,16 @@ function render(force){
   // tract
   if (t){
     $('tName').textContent = t.name;
-    $('tMeta').textContent = `${mixText(t)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}` + (t.hire ? ` · for ${t.hire.mill}` : '');
+    $('tMeta').textContent = `${mixText(lotView(t))} · ${t.miles} mi haul · ${SLOPES[t.slope].label}` + (t.hire ? ` · for ${t.hire.mill}` : '');
     const s = SP[S.vis] || SP.pine;
     $('conifer').hidden = s.shape !== 'con'; $('decid').hidden = s.shape !== 'dec';
     $('fTree').textContent = s.name;
-    const hp = S.hp == null ? t.hp : S.hp; const prog = 1 - hp/t.hp;
+    const cv = cutOf(t), hp = S.hp == null ? cv.hp : S.hp; const prog = Math.max(0, Math.min(1, 1 - hp/cv.hp));
     $('fHp').textContent = fmt(Math.ceil(hp));
     $('notch').setAttribute('points', `136,250 ${(136 + prog*26).toFixed(1)},262 136,274`);
     $('fLeft').textContent = `${fmt(t.left)} / ${fmt(t.trees)}`;
     $('tBar').style.width = ((1 - t.left/t.trees)*100).toFixed(1)+'%';
-    const tps = rate('fell')/t.hp;
+    const tps = rate('fell')/cv.hp;
     const totalLeft = S.tracts.reduce((a,x) => a + x.left, 0);
     $('fEta').textContent = tps > 0 ? mins(t.left/tps) : 'by hand';
     const rd = $('road');
@@ -6621,7 +7038,7 @@ function buttons(list){
 const boostLen = () => Core.boostLength(has('radios'), perk('pacer'), !!meta('pace')) + Core.gameRule(evNow(), 'fell', 'boostSec');
 // at most Core.BOOST_STAGES stages run boosted at once (the oldest drops; Fog lifts ignores the limit)
 function grantBoost(stage){ if (perk('absentee')) return; S.boost = Core.grantBoost(S.boost, S.t, stage, boostLen(), !!perk('golden')); }
-const mixPick = t => Core.pickFromMix(Math.random, t.mix) ?? t.mix[0][0];
+const mixPick = t => Core.pickFromMix(Math.random, cutOf(t).mix) ?? t.mix[0][0];
 const GAMES = {fell:'Fell tree', buck:'Cut logs', skid:'Skid logs', haul:'Drive load', saw:'Saw boards'};
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
 const MG_HELP = {
@@ -6787,12 +7204,12 @@ function fellFinish(){
   F.phase = 'done';
   const t = tract();
   let k = 0;
-  if (t){ k = Math.min(t.left, Math.max(1, Math.round(rate('fell')/t.hp*20)) * (perk('hotsaw') ? 2 : 1));
-    fellK(t, k); S.stems.val += t.val*k*(F.out.m - 1); if (t.left < 1) finishTract(); else newTree(); }
+  if (t){ const v = cutOf(t); k = Math.min(t.left, Math.max(1, Math.round(rate('fell')/v.hp*20)) * (perk('hotsaw') ? 2 : 1));
+    fellK(t, k); S.stems.val += v.val*k*(F.out.m - 1); if (t.left < 1) finishTract(); else newTree(); }
   let dom = 0, chain = 0;
   if (t && F.out.k === 'perfect' && perk('domino')){
-    do { const t2 = tract(); if (!t2) break; const k2 = Math.min(t2.left, Math.max(1, k));
-      fellK(t2, k2); S.stems.val += t2.val*k2*.25; dom += k2; chain++; if (t2.left < 1) finishTract(); else newTree();
+    do { const t2 = tract(); if (!t2) break; const k2 = Math.min(t2.left, Math.max(1, k)), v2 = cutOf(t2);
+      fellK(t2, k2); S.stems.val += v2.val*k2*.25; dom += k2; chain++; if (t2.left < 1) finishTract(); else newTree();
     } while (Math.random() < .5 && chain < 6);
   }
   S.stats.run_fell++; if (F.out.k === 'perfect' || F.out.k === 'good') S.stats.goodFell++;
@@ -7677,6 +8094,11 @@ function normalize(){
     if (!(t.wt > 0)) t.wt = Core.mixWeight(t.mix);
     return t; };
   S.tracts = (Array.isArray(S.tracts) ? S.tracts : []).filter(obj).map(fixTract);
+  // the lot stash (2026-10-25): an old lot's tree counts come from its mix and trees left; rules merge with the default (Any)
+  S.tracts.forEach(t => { t.left = Math.max(0, +t.left || 0); t.stand = Core.fixStand(t.stand, t.mix, t.left); });
+  S.ui.stashRule = Object.fromEntries(Object.entries(obj(S.ui.stashRule) ? S.ui.stashRule : {}).filter(([k, r]) => SP[k] && (r === 'first' || r === 'skip')));
+  if (!['lots','trees'].includes(S.ui.qView)) S.ui.qView = 'lots';
+  rulesAny = Core.rulesAllAny(S.ui.stashRule); rulesV++;
   S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
   // the cutting queue (2026-10-25): an old save's tracts become the queue in their current order; each gets a purchase number
   S.tracts.forEach((t, i) => { if (!(typeof t.seq === 'number' && isFinite(t.seq))) t.seq = i; if (t.cur != null && !(t.cur > 0)) { delete t.cur; delete t.curSp; } });
@@ -7832,9 +8254,9 @@ function fellPrime(k, sp){
   return st;
 }
 // idle crews: each crew-felled tree may be Prime (Core.idlePrimeChance: 2% at Cove Landing, about 1.2 a tract in every era)
-function idlePrime(t, k){
+function idlePrime(t, k, mix){
   const n = Core.countEvents(drng, k, Core.idlePrimeChance(S.era)); if (!n) return;
-  for (let i = 0; i < n; i++){ const sp = Core.pickFromMix(drng, t.mix), r = sp ? Core.primeFromFall(sp) : null;
+  for (let i = 0; i < n; i++){ const sp = Core.pickFromMix(drng, mix || t.mix), r = sp ? Core.primeFromFall(sp) : null;
     if (r){ addItem(r.item, 1, true); S.run.idlePrime = (S.run.idlePrime || 0) + 1; } }
 }
 // idle finds: each crewed stage rolls once per 60 s of work (time × utilisation, so a starved stage rolls less often)

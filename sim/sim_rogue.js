@@ -19,7 +19,11 @@ function run(profile, seed, hours=4, opt={}){
   if(S.weather && !EVENTS) S.weather.off=true;
   const evNow=()=>EVENTS && G.evNow ? G.evNow() : null, gr=(game,rule,d=0)=>Core.gameRule(evNow()||undefined,game,rule,d);
   const wx0=()=>S.weather?{...S.weather.stats, storms:S.stats.storms||0, cleared:S.stats.cleared||0}:{}; let wxRun=wx0(); const wxPace={tw:0,n:0};
-  const MILL=!!G.closeMill, SPAR='logging.prime_spar'; if(MILL && process.env.MILLSHARE!=null) S.millShare=+process.env.MILLSHARE; const XT={ev:[],pondDry:0,millDry:0,coveSpend:0,millNeg:0};
+  const MILL=!!G.closeMill, SPAR='logging.prime_spar'; if(MILL && process.env.MILLSHARE!=null) S.millShare=+process.env.MILLSHARE; const XT={ev:[],pondDry:0,millDry:0,coveSpend:0,millNeg:0,spFill:0,spMiss:0,pickLow:0};
+  // the lot stash: every profile keeps every species on Any (the default) unless opt.stash / STASH=first, which sets First on
+  // the signed tree order's species (and back to Any when it ends); the xt line then reports tree orders filled and missed
+  // and the minutes crews spent under a picking factor below 0.8
+  const STASH=(opt.stash||process.env.STASH||'any')==='first' && !!G.setStashRule; let stashSp=null;
   const millRunsOut=[], millEv=[]; let millOpenT=null, slot=0, sawN=0, runItem0=null;
   const itemSnap=()=>({prime:(S.found[SPAR]||{}).total||0, sales:S.run.itemSales||0, orders:S.run.ordersFilled||0, toMill:S.run.toMill||0});
   // Saw for grade, played through the game's own functions: the expert takes the full-knowledge best plan 7 runs in 10,
@@ -86,7 +90,10 @@ function run(profile, seed, hours=4, opt={}){
   const mg = profile==='minigame';
   let mgClock=0;
   for(let t=0;t<T;t+=dt){
+    const c0=S.contract;
     G.tick(dt);
+    if(c0 && c0.sp && S.contract!==c0){ if(c0.done>=c0.vol-1e-6) XT.spFill++; else XT.spMiss++; }
+    if(G.cutOf && G.tract() && G.cutOf(G.tract()).pf<0.8) XT.pickLow+=dt;
     // manual clicks
     const cr=clickRate(S.t);
     if(cr>0){
@@ -202,7 +209,11 @@ function run(profile, seed, hours=4, opt={}){
       if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract');
         if(AWAYP && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } } // present: crews off the AFK lot
     }
-    if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1; const o=S.offers.find(o=>sh(o)>0 && o.vol/sh(o)<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }
+    if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1;
+      // with First on the order's species the whole delivery counts, but crews pick at 0.5 + 0.5 × its share
+      const need=o=>STASH && o.sp ? o.vol/Core.pickFactor(sh(o)) : o.vol/sh(o);
+      const o=S.offers.find(o=>sh(o)>0 && need(o)<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }
+    if(STASH){ const want=S.contract&&S.contract.sp||null; if(want!==stashSp){ if(stashSp) G.setStashRule(stashSp,'any'); if(want) G.setStashRule(want,'first'); stashSp=want; } }
     const nx=G.ERAS[S.era+1];
     const ec=G.eraCost(S.era+1);
     if(nx && S.cash>=ec+reserve()){ S.cash-=ec; S.era++; S.year=Math.max(S.year,nx.year); G.refreshSales(); G.refreshOffers(); eraT.push(S.t); bought('era'); continue; }
@@ -220,7 +231,8 @@ function run(profile, seed, hours=4, opt={}){
     return {primeTotal:(S.found[SPAR]||{}).total||0, findsPerHour:{common:+(by.common/hours).toFixed(1), uncommon:+(by.uncommon/hours).toFixed(1), rare:+(by.rare/hours).toFixed(2)}, ordersFilled:S.orders.filled, openOrders:S.orders.open.map(o=>o.id+":"+JSON.stringify(o.given)), pitchFound:(S.found["logging.amber_pitch"]||{}).total||0, stockEnd:Object.values(S.bank).reduce((a,n)=>a+n,0)}; })() : null;
   const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games}, shares:S.shares.sawmill.total} : null;
   const endT=runsOut.length? (runsOut.reduce((a,r)=>a+r.min,0)*60):S.t; let gap=0,gapAt=0,prev=0; for(const t of XT.ev.concat([Math.min(S.t,endT)])){ if(t>endT) break; if(t-prev>gap){gap=t-prev;gapAt=prev;} prev=t; }
-  const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire};
+  const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire,
+    stash:STASH?'first':'any', spFill:XT.spFill, spMiss:XT.spMiss, pickLowMin:Math.round(XT.pickLow/60)};
   return {...(AWAYP ? {AX:Object.fromEntries(Object.entries(AX).map(([k,v])=>[k,Math.round(v*10)/10]))} : {}), xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
 }
 module.exports={run};

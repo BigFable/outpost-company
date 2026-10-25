@@ -90,6 +90,20 @@ async function run(devName) {
   for (let i = 0; i < panels.length; i++) await shot('log-' + i + '-' + panels[i].replace(/\W+/g, '_').toLowerCase(), `[data-shot=p${i}]`);
   await shot('ledger-strip', '.top');
   ok(await page.evaluate(() => { const r = document.getElementById('reset').getBoundingClientRect(); return r.height >= 44; }), `${devName}: Start a new company is 44 px tall`);
+  // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
+  await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
+  await tapEl('#qTabs [data-v=trees]'); await sleep(150);
+  ok(await page.evaluate(() => !document.getElementById('qTrees').hidden && document.querySelectorAll('#stash .scard').length >= 2), `${devName}: the Trees tab opens with a tap`);
+  await tapEl('#stash .scard[data-sp=spruce] summary'); await sleep(100);
+  await tapEl('#stash [data-rsp=spruce][data-r=first]'); await sleep(100);
+  ok((await E(`S.ui.stashRule.spruce`)) === 'first' && (await E(`tract().name`)) !== 'Spruce head, Lot 7', `${devName}: tap First sets the rule`);
+  ok(await noSideScroll(), `${devName}: Trees tab has no sideways scroll`);
+  const st3 = await smallTargets(); ok(st3.length === 0, `${devName}: Trees tab tap targets are 44 px or more` + (st3.length ? ': ' + st3.slice(0, 12).join(' ') : ''));
+  const sx3 = await smallText(); ok(sx3.length === 0, `${devName}: Trees tab text is 12 px or more` + (sx3.length ? ': ' + sx3.slice(0, 12).join(' ') : ''));
+  await tapEl('#stash .scard[data-sp=spruce] [data-cut]'); await sleep(150);
+  ok((await E(`tract().name`)) === 'Spruce head, Lot 7' && /Picking spruce/.test(await page.evaluate(() => document.getElementById('pickNote').textContent)), `${devName}: Cut here moves the crews; the picking note shows`);
+  await shot('queue-trees', '#queuePanel');
+  await E(`setStashRule('spruce', 'any')`); await tapEl('#qTabs [data-v=lots]'); await sleep(100);
   // Sawmill tab
   await tapEl('#tabMill'); await sleep(200);
   ok(await page.evaluate(() => !document.getElementById('millView').hidden), `${devName}: Sawmill tab opens with a tap`);

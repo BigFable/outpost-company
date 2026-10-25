@@ -15,6 +15,7 @@ export * from './items';
 export * from './sawmill';
 export * from './species';
 export * from './queue';
+export * from './stash';
 export * from './weather';
 export * from './rng';
 export { deepFreeze } from './freeze';

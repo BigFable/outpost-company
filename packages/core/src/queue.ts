@@ -38,17 +38,19 @@ export interface QueueLot {
   readonly ground?: GroundId;
   /** The AFK lot (Cutover slash country): the note says what it is for. */
   readonly afk?: boolean;
+  /** The lot stash's picking factor on felling and skidding (1 when crews cut everything). */
+  readonly pick?: number;
 }
 
 const leftOf = (l: QueueLot): number => Math.max(0, l.left ?? l.trees);
 
 /** Bd ft a second each stage would work on this lot (felling as chops ÷ hp × bf). */
 export function lotRates(c: QueueCaps, l: QueueLot, skyline = false): Record<QueueStage, number> {
-  const wt = l.wt && l.wt > 0 ? l.wt : 1;
+  const wt = l.wt && l.wt > 0 ? l.wt : 1, pk = l.pick && l.pick > 0 ? l.pick : 1;
   return {
-    fell: l.hp > 0 ? c.fell / l.hp * l.bf : 0,
+    fell: l.hp > 0 ? c.fell / l.hp * l.bf * pk : 0,
     buck: c.buck,
-    skid: c.skid * slopeFactor(l.slope, skyline) / wt,
+    skid: c.skid * slopeFactor(l.slope, skyline) / wt * pk,
     haul: c.haul * distanceFactor(l.miles) / wt,
   };
 }
