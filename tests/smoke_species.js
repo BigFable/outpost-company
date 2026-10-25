@@ -109,7 +109,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`closeMG(); S.tracts=[Core.makeTract('Mix',[['spruce',70],['pine',30]],500,1,'flat','headland')]; setSite(); S.contract=null;`);
  let found=null; for(let i=0;i<60 && !found;i++){ E('refreshOffers()'); found=E(`S.offers.find(o=>o.sp)||null`); }
  let slot0Plain=true; for(let i=0;i<60;i++){ E('refreshOffers()'); if(E('S.offers[0].sp')) slot0Plain=false; }
- ok(slot0Plain && E('S.offers.length')===2,'the first charter-board slot is always a regular order (60 boards)');
+ ok(slot0Plain && E('S.offers.length')===E('Core.OFFER_BOARD_SIZE'),'the first charter-board slot is always a regular order (60 boards)');
  ok(!!found && found.prem>=.3 && found.prem<=.55 && found.penalty===0,'species orders turn up, +30–55%, no penalty: '+(found&&found.mill));
  E(`S.offers=[{mill:'the Admiralty spar yard', vol:1000, dur:300, prem:.4, penalty:0, sp:'spruce'}]; render(true);`);
  const ctxt=$('contracts').textContent;
