@@ -11,6 +11,9 @@ import {
 } from './content';
 import { treeValue } from './formulas';
 import { rngPick, rngRange, type Rng } from './rng';
+import {
+  COVE_GROUNDS, GROUNDS, groundMix, mixWeight, SPECIES_CLIENTS, SPECIES_ORDER_CHANCE, SPECIES_ORDER_OFF_TRACT, SPECIES_ORDER_PREM, type GroundId,
+} from './species';
 
 /** A species and its weight in a tract's mix. Mutable tuples: tracts live in the save. */
 export type MixEntry = [SpeciesId, number];
@@ -29,16 +32,20 @@ export interface Tract {
   /** Average dollar value per tree. */
   val: number;
   road: boolean;
+  /** Ground type (species overhaul): sets the mix and its twist. */
+  ground: GroundId;
+  /** Mix-weighted skid and haul weight (pine = 1): idle skidding and hauling move bd ft ÷ wt. */
+  wt: number;
   /** Asking price; present on land-office listings only. */
   price?: number;
   hire?: { mill: string; rate: number };
 }
 
-/** Build a tract with weight-averaged tree stats. No randomness. */
-export function makeTract(name: string, mix: MixEntry[], trees: number, miles: number, slope: SlopeId): Tract {
+/** Build a tract with weight-averaged tree stats (and skid/haul weight). No randomness. */
+export function makeTract(name: string, mix: MixEntry[], trees: number, miles: number, slope: SlopeId, ground: GroundId = 'coast'): Tract {
   let hp = 0, bf = 0, val = 0, w = 0;
   mix.forEach(([id, wt]) => { const s = SPECIES[id]; hp += s.hp * wt; bf += s.bf * wt; val += treeValue(s) * wt; w += wt; });
-  return { name, mix, trees, left: trees, miles, slope, hp: hp / w, bf: bf / w, val: val / w, road: false };
+  return { name, mix, trees, left: trees, miles, slope, hp: hp / w, bf: bf / w, val: val / w, road: false, ground, wt: mixWeight(mix) };
 }
 
 function lotName(rng: Rng): string {
@@ -57,21 +64,32 @@ export interface TractListingOpts {
 
 /**
  * A land-office listing for the current era.
- * Draws, in order: older-tier roll, species a, species b, weight, trees, miles, slope, place, lot.
+ * Draws, in order: older-tier roll, then
+ * - on Cove ground (era 0, or the older-tier roll down to Cove Landing): ground, main share, rest species, trees, miles, slope, place, lot;
+ * - otherwise (the slice-1 mixed stand): species a, species b, weight, trees, miles, slope, place, lot.
+ * Nine draws either way. Hemlock swamps are flat or rolling and price ×0.9.
  */
 export function genTract(rng: Rng, era: number, o: TractListingOpts): Tract {
   const tier = Math.max(0, era - (rng() < 0.3 ? 1 : 0));
-  const pool = ERA_SPECIES[era] ?? [];
-  const a = rngPick(rng, pool);
-  let b = rngPick(rng, pool);
-  if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length] as SpeciesId;
-  const wa = Math.round(rngRange(rng, 5, 8));
-  const mix: MixEntry[] = [[a, wa], [b, 10 - wa]];
+  let mix: MixEntry[], ground: GroundId;
+  if (tier === 0) {
+    ground = rngPick(rng, COVE_GROUNDS);
+    mix = groundMix(rng, GROUNDS[ground]);
+  } else {
+    ground = 'mixed';
+    const pool = ERA_SPECIES[era] ?? [];
+    const a = rngPick(rng, pool);
+    let b = rngPick(rng, pool);
+    if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length] as SpeciesId;
+    const wa = Math.round(rngRange(rng, 5, 8));
+    mix = [[a, wa], [b, 10 - wa]];
+  }
+  const g = GROUNDS[ground];
   const trees = Math.round((TRACT_BASE[tier] ?? 0) * rngRange(rng, 0.6, 1.5));
   const miles = Math.round(rngRange(rng, 1, 12) * 2) / 2;
-  const slope = rngPick<SlopeId>(rng, ['flat', 'flat', 'rolling', 'rolling', 'steep']);
-  const t = makeTract(lotName(rng), mix, trees, miles, slope);
-  t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult);
+  const slope = rngPick<SlopeId>(rng, g.slopes);
+  const t = makeTract(lotName(rng), mix, trees, miles, slope, ground);
+  t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * (g.landMult ?? 1));
   const sz = (o.thinSurvey ? 0.8 : 1) * (o.cruiser ? 1.25 : 1);
   if (sz !== 1) { t.trees = t.left = Math.max(5, Math.round(t.trees * sz)); }
   return t;
@@ -156,27 +174,48 @@ export function genHire(rng: Rng, era: number): Tract {
   const trees = Math.round((TRACT_BASE[era] ?? 0) * rngRange(rng, 1, 1.5));
   const miles = Math.round(rngRange(rng, 1, 4) * 2) / 2;
   const slope = rngPick<SlopeId>(rng, ['flat', 'flat', 'rolling']);
-  const t = makeTract(name, [[a, wa], [b, 10 - wa]], trees, miles, slope);
+  const t = makeTract(name, [[a, wa], [b, 10 - wa]], trees, miles, slope, 'mixed');
   t.hire = { mill: rngPick(rng, MILLS), rate: HIRE_RATE };
   t.val *= t.hire.rate;
   return t;
 }
 
-export interface Offer { mill: string; vol: number; dur: number; prem: number; penalty: number }
+/** A regular charter order. `sp` marks a species order: only that species' share of each delivery counts, and missing it costs nothing. */
+export interface Offer { mill: string; vol: number; dur: number; prem: number; penalty: number; sp?: SpeciesId }
+
+/** Species a species order may name, and each one's share of the current tract (for sizing the order). */
+export interface OfferSpeciesOpts {
+  readonly species: readonly SpeciesId[];
+  readonly share: Readonly<Partial<Record<SpeciesId, number>>>;
+}
+
+const sig2 = (raw: number): number => { const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1); return Math.round(raw / mag) * mag; };
 
 /**
  * A charter order sized to haul capacity (bd ft/s, floor 8): volume over a
  * 4-8 minute window, rounded to two significant figures.
  * `perBf` is the current tract's value per board foot (0.2 with no tract).
- * Draws, in order: duration, volume share, mill, premium.
+ * Draws, in order: duration, volume share, mill, premium; then, only with
+ * `so` naming at least one species: species roll, and on a hit (1 in 3) the
+ * species and its premium. A species order is sized by that species' share
+ * of the current tract (SPECIES_ORDER_OFF_TRACT when it is not in it), pays
+ * +30–55%, names the species' client and carries no penalty.
  */
-export function genOffer(rng: Rng, haulCapacity: number, perBf: number): Offer {
+export function genOffer(rng: Rng, haulCapacity: number, perBf: number, so?: OfferSpeciesOpts): Offer {
   const cap = Math.max(8, haulCapacity);
   const dur = Math.round(rngRange(rng, 240, 480) / 30) * 30;
   const raw = Math.max(2000, cap * dur * rngRange(rng, 0.4, 0.75));
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
-  const vol = Math.round(raw / mag) * mag;
-  return { mill: rngPick(rng, MILLS), vol, dur, prem: Math.round(rngRange(rng, 0.15, 0.4) * 100) / 100, penalty: Math.round(vol * perBf * 0.25) };
+  const vol = sig2(raw);
+  const o: Offer = { mill: rngPick(rng, MILLS), vol, dur, prem: Math.round(rngRange(rng, 0.15, 0.4) * 100) / 100, penalty: Math.round(vol * perBf * 0.25) };
+  if (!so || !so.species.length || rng() >= SPECIES_ORDER_CHANCE) return o;
+  const sp = rngPick(rng, so.species);
+  const share = so.share[sp] ?? 0;
+  o.sp = sp;
+  o.mill = SPECIES_CLIENTS[sp].client;
+  o.vol = Math.max(1000, sig2(raw * (share > 0 ? share : SPECIES_ORDER_OFF_TRACT)));
+  o.prem = Math.round(rngRange(rng, SPECIES_ORDER_PREM[0], SPECIES_ORDER_PREM[1]) * 100) / 100;
+  o.penalty = 0;
+  return o;
 }
 
 /** Weighted pick of a species from a tract mix. One draw. Null only if float rounding exhausts the loop. */

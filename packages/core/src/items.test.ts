@@ -30,10 +30,25 @@ describe('items', () => {
 });
 
 describe('Prime timber', () => {
-  it('perfect falls by species; hardwoods make none yet', () => {
-    expect(primeFromFall('pine')).toEqual({ item: 'logging.prime_spar', qty: 2 });
+  it('perfect falls by species: the Prime spar split 1/3/1; hardwoods make none yet', () => {
+    expect(primeFromFall('pine')).toEqual({ item: 'logging.prime_spar', qty: 1 });
+    expect(primeFromFall('spruce')).toEqual({ item: 'logging.prime_spar', qty: 3 });
     expect(primeFromFall('hemlock')?.qty).toBe(1);
     expect(primeFromFall('oak')).toBeNull();
+    // the Cove average per perfect fall stays 5/3 (Admiralty pacing)
+    expect((['pine', 'spruce', 'hemlock'] as const).reduce((a, sp) => a + (primeFromFall(sp)?.qty ?? 0), 0) / 3).toBeCloseTo(5 / 3, 12);
+  });
+  it('bucking spruce needs a 14 ft grade 1 log; pine and hemlock 12 ft', () => {
+    expect(primeFromBuck('spruce', [{ len: 12, g: 1 }], 1)).toBeNull();
+    expect(primeFromBuck('spruce', [{ len: 14, g: 1 }], 1)?.qty).toBe(1);
+    expect(primeFromBuck('pine', [{ len: 12, g: 1 }], 1)?.qty).toBe(1);
+    expect(primeFromBuck('hemlock', [{ len: 12, g: 1 }], 1)?.qty).toBe(1);
+  });
+  it('rollDrop weightMult favours an item without changing the draws', () => {
+    const t = DROP_TABLES.buck;
+    // chance roll 0, then entry pick at 0.8: plain weights 70/20 pick burl (0.8*90=72 > 70), pitch x2 picks pitch (0.8*160=128 < 140)
+    expect(rollDrop(t, 2, scripted([0, 0.8]))?.item).toBe('logging.burl');
+    expect(rollDrop(t, 2, scripted([0, 0.8]), 1, { 'logging.amber_pitch': 2 })?.item).toBe('logging.amber_pitch');
   });
   it('bucking: grade 1 logs of 12 ft or more at 90%+, capped', () => {
     const segs = [{ len: 12, g: 1 }, { len: 16, g: 1 }, { len: 14, g: 1 }, { len: 10, g: 1 }, { len: 16, g: 2 }];

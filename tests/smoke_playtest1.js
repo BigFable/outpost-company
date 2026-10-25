@@ -25,7 +25,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const g=()=>[...d.querySelectorAll('#chain .act.game')];
  g()[1].click();
  ok(!d.getElementById('mgGuide').hidden && /8, 10, 12, 14 or 16 ft/.test(d.getElementById('mgGuide').textContent),'first bucking run shows the 3-step guide');
- ok(d.querySelectorAll('#mgGuide li').length===3 && !d.getElementById('mgGuideBtn').hidden,'guide has 3 steps and a ? button');
+ ok(d.querySelectorAll('#mgGuide li:not(.sprules)').length===3 && d.querySelectorAll('#mgGuide li.sprules').length===1 && !d.getElementById('mgGuideBtn').hidden,'guide has 3 steps, the species rules and a ? button');
  d.getElementById('mgGuideOk').click();
  ok(d.getElementById('mgGuide').hidden && E('S.ui.buckIntro')===true,'Got it dismisses the guide and remembers it');
  d.getElementById('mgGuideBtn').click(); ok(!d.getElementById('mgGuide').hidden,'? shows the guide again'); d.getElementById('mgGuideBtn').click();

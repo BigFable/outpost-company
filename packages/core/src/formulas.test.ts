@@ -14,7 +14,7 @@ describe('treeValue', () => {
   it('prices sawlog share at sawlog price and the rest as pulp', () => {
     // pine: 200 * (.75*.25 + .25*.06) = 40.5
     expect(treeValue(SPECIES.pine)).toBeCloseTo(40.5, 12);
-    expect(treeValue(SPECIES.walnut)).toBeCloseTo(280 * (0.7 * 1.4 + 0.3 * 0.04), 12);
+    expect(treeValue(SPECIES.cloudwood)).toBeCloseTo(280 * (0.7 * 1.4 + 0.3 * 0.04), 12);
   });
 });
 

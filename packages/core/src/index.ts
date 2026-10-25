@@ -13,6 +13,7 @@ export * from './generators';
 export * from './haul';
 export * from './items';
 export * from './sawmill';
+export * from './species';
 export * from './rng';
 export { deepFreeze } from './freeze';
 

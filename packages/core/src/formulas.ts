@@ -212,13 +212,16 @@ export interface StageRateInput {
   readonly boost: number;
   readonly slope: number;
   readonly distance: number;
+  /** Skid and haul weight of the wood being worked (species overhaul; pine = 1, default 1). */
+  readonly weight?: number;
 }
 
-/** Effective per-second rate of a stage (before payroll efficiency). */
+/** Effective per-second rate of a stage (before payroll efficiency). Skidding and hauling move bd ft ÷ weight. */
 export function stageRate(stage: Stage, i: StageRateInput): number {
   let r = i.base * i.season * i.boost;
   if (stage === 'skid') r *= i.slope;
   if (stage === 'haul') r *= i.distance;
+  if ((stage === 'skid' || stage === 'haul') && i.weight !== undefined && i.weight !== 1 && i.weight > 0) r /= i.weight;
   return r;
 }
 
@@ -244,9 +247,9 @@ export function mobilization(trees: number, val: number, upkeepPerMin: number): 
   return Math.round(Math.max(40, Math.min(upkeepPerMin * 4, trees * val * 0.3)));
 }
 
-/** Penalty for a missed charter order, scaled by the share left undelivered. */
-export function missedPenalty(penalty: number, done: number, vol: number, handshake: boolean): number {
-  return handshake ? 0 : Math.round(penalty * (1 - done / vol));
+/** Penalty for a missed charter order, scaled by the share left undelivered. A species order (`speciesOrder`) is free to miss. */
+export function missedPenalty(penalty: number, done: number, vol: number, handshake: boolean, speciesOrder = false): number {
+  return handshake || speciesOrder ? 0 : Math.round(penalty * (1 - done / vol));
 }
 
 // ---------- eras
