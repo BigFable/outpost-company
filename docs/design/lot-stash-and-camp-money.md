@@ -28,7 +28,7 @@ The **Stash** sits at the top of the cutting queue panel as a second tab: **Lots
 | Orders | Admiralty, mill Oak | species orders, special orders and mill orders it serves |
 | Rule | Any · First · Skip | the switch (three buttons, one word each) |
 
-Tap a row to open it: the lots holding that species, each with its count, share, slope and miles, and **Cut here** (moves crews, as `cutNow` does today). On a phone it is one card per species, with the switch along the bottom. No scrolling tables.
+Tap a row for the lots holding it (count, share, slope, miles) and **Cut here** (`cutNow`). On a phone: one card per species, switch along the bottom.
 
 ### A2. The rule
 
@@ -40,7 +40,7 @@ One setting per species, saved for the camp (it survives close camp, like queue 
 | **First** | On a lot that holds a First species, fell only those until gone, then the rest of the lot. The queue prefers lots with a First species (new queue mode **By stash**, auto-selected when you set any First) |
 | **Skip** | Never fell it. A lot whose only trees left are Skipped counts as cut out and drops to the bottom of the queue, marked "Hemlock left standing" |
 
-Several species can be First: they share the effort in their mix ratio. No ranked list in slice 1; one ordering axis is enough.
+Several First species share the effort in their mix ratio. No ranked list in slice 1.
 
 ### A3. The cost of picking
 
@@ -48,9 +48,9 @@ Selective cutting must cost something, or every player always picks the best tre
 
 > **Picking factor** = 0.5 + 0.5 × (share of the lot's standing trees you are cutting). A lot that is 80% spruce cuts spruce at ×0.9; 20% spruce at ×0.6.
 
-It applies to **felling and skidding** (walking to scattered stems and longer skid trails), not bucking or hauling. It shows in the camp note: "Picking Spruce here: felling and skidding ×0.6." The lot's slope and miles still apply as they do now (`lotRates`). Under **Any** the factor is 1.
+It applies to **felling and skidding** (scattered stems, longer skid trails), on top of slope and miles in `lotRates`. The camp note says "Picking Spruce here: felling and skidding ×0.6." Under **Any** it is 1.
 
-The second cost is land: you paid for the hemlock you Skip. The Skip line says "Leaves $420 of timber standing." Skipped trees are lost at close camp, like all lots.
+The second cost is land: Skip shows "Leaves $420 standing", and those trees are lost at close camp.
 
 ### A4. How it meets the rest of the game
 
@@ -61,9 +61,7 @@ The second cost is land: you paid for the hemlock you Skip. The Skip line says "
 | **Order fit notes** | `orderFit` reads the cut mix and the picking factor, so "Fills about 60% of the Spruce order" stays honest |
 | **Idle and AFK** | Default Any never changes idle play. **Fallback:** if no owned lot has a First species standing, crews cut Any until one does, with a note. Skip never strands crews: if only Skipped trees remain everywhere, crews cut them (note: "Out of other wood, cutting Hemlock") rather than sit idle. The AFK lot ignores rules (it is the never-stall lot) |
 | **Prime and finds** | Prime comes from the species felled, so First on spruce raises Prime spars. Idle 2% rule unchanged per tree |
-| **Mini-games** | The felling game shows a First species tree when one is on the lot. Bucking and skidding draw from the cut mix |
 | **Mill** | The pond receives the cut mix (needs the per-species pond from species slice 2; until then it stays one stock) |
-| **Auto-buy land** | Not touched. The land office still shows fit notes per listing |
 
 ### A5. Data and saves
 
@@ -71,11 +69,11 @@ The second cost is land: you paid for the hemlock you Skip. The Skip line says "
 - Felling decrements `leftBy[S.vis]`. `newTree` draws from the **cut mix**: `leftBy` filtered by rules, weighted. `hp`, `bf`, `val`, `wt` of the cut mix replace the lot averages in `lotRates` while picking.
 - The landing gets `mix` (a running bd ft per species), so deliveries and orders credit the species actually cut, replacing today's "split by current tract mix" approximation.
 - `S.ui.stashRule: Record<SpeciesId, 'any'|'first'|'skip'>`, merged with defaults; queue mode list adds `'stash'`.
-- Core: `stashTotals(lots)`, `cutMix(lot, rules)`, `pickFactor(lot, rules)`, pure and tested.
+- Core (pure, tested): `stashTotals`, `cutMix`, `pickFactor`.
 
 ### A6. Sim measures
 
-Idle bot leaves all rules on Any (no change to targets). The casual bot sets First on the open species order's species. Report: species-order fill rate with and without rules, time spent under a picking factor below 0.8, Prime spars per outpost, and **active vs casual must stay ≤ 2×**: rules are menu play, so casual can use them too. Stall check: zero seconds of idle crews caused by rules.
+Idle bot: all Any. Casual and active bots: First on the open species order. Report species-order fill rate with and without rules, time under a picking factor below 0.8, Prime spars per outpost, zero seconds of crews stalled by rules, and active vs casual ≤ 2×.
 
 ---
 
@@ -83,7 +81,7 @@ Idle bot leaves all rules on Any (no change to targets). The casual bot sets Fir
 
 ### B1. Today
 
-Separate cash per camp (assumed 2026-10-24, not yet confirmed). The slider sends 10% of deliveries to the pond; Logging is paid half price for that share; the **mill pays nothing**. The mill earns only from lumber. Bundles go to Logging free. So Logging pays for the mill's logs, and neither camp sees the other's money. The link is a tax, not a trade.
+Separate cash per camp (assumed, unconfirmed). The slider sends 10% of deliveries to the pond at half price to Logging; the **mill pays nothing**, and bundles go to Logging free. Logging funds the mill's logs and neither camp sees the other's money: a tax, not a trade.
 
 ### B2. Four models
 
@@ -98,7 +96,7 @@ Separate cash per camp (assumed 2026-10-24, not yet confirmed). The slider sends
 
 ### B3. Recommendation: Model 4, "the mill pays"
 
-It is the only model where money crossing camps always means something happened in the world: logs floated down, planks carted up. It turns the slider from a tax into a sale, ties straight into Part A (mill orders name species), and keeps per-skill prestige clean.
+Money crosses camps only when goods do: logs floated down, planks carted up. The slider becomes a sale, mill orders feed Part A, and per-skill prestige stays clean.
 
 **Rules (starting values):**
 
@@ -114,7 +112,7 @@ It is the only model where money crossing camps always means something happened 
 - **Ledger strip** shows both camps: "Logging $8,200 · Mill $1,900", plus "Between camps this season: logs +$1,240, bundles −$160."
 - **Founding crate** gains $300 of mill cash, so the first logs can be paid for.
 
-**Why a big Logging run cannot buy the mill:** cash only enters the mill by selling lumber or bundles, and the bundle price is capped by bundles still needed. Cash only enters Logging from the mill at the mill's saw rate. A $1M Logging run changes nothing at the mill.
+**No buyout:** mill cash comes only from lumber and bundles, and bundle income is capped by bundles still needed. A $1M Logging run changes nothing at the mill.
 
 **Prestige:** closing Logging resets Logging cash only; the mill keeps sawing and buying from the cove. Closing the mill resets mill cash; the slider pays Logging nothing until the new mill earns.
 
@@ -140,10 +138,8 @@ It is the only model where money crossing camps always means something happened 
 
 ## Reviewer's notes
 
-- **The risk in A is busywork.** Three buttons per species across six species is the ceiling. If playtesters set rules every few minutes, the picking factor is too soft; if nobody sets them, too hard. The sim's "time under ×0.8" tells us which.
-- **Do not add a ranked priority list** until slice 1 shows players want it. First/Skip covers "cut only Spruce" and "skip Hemlock".
+- **The risk in A is busywork.** If playtesters reset rules every few minutes, the picking factor is too soft; if nobody uses them, too hard.
 - **Model 4 makes the mill poorer early.** That is the honest cost of the mill paying its way. Watch the edger time; the fix is the crate cash or the 0.8×, not the transfer rule.
-- **Setting fit is good:** a company mill that buys from its own logging side and a timber cruiser marking "spruce only" are both true to 1890 practice.
 
 ## Owner questions
 
