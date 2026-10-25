@@ -91,7 +91,7 @@ export function mainSpecies(mix: readonly (readonly [SpeciesId, number])[]): Spe
 
 // ---------- grounds (land-office listings)
 
-export type GroundId = 'coast' | 'headland' | 'swamp' | 'mixed';
+export type GroundId = 'coast' | 'headland' | 'swamp' | 'mixed' | 'cutover';
 export interface GroundDef {
   readonly id: GroundId; readonly name: string; readonly era: number;
   /** Main species and its share range in percent; absent on the legacy mixed stand. */
@@ -114,6 +114,9 @@ export const GROUNDS: Readonly<Record<GroundId, GroundDef>> = deepFreeze({
     twist: 'Flat or rolling only; land ×0.9' },
   // slice 1: later eras keep the old two-species draw until their own grounds land (slice 3)
   mixed:    { id: 'mixed', name: 'Mixed stand', era: 1, slopes: ANY_SLOPE },
+  // the AFK lot (owner request 2026-10-25): see AFK_LOT in generators.ts
+  cutover:  { id: 'cutover', name: 'Cutover slash country', era: 0, slopes: ['flat', 'flat', 'rolling'],
+    twist: 'Second growth among old slash: small, pulpy trees, but acres of them' },
 });
 /** Cove Landing grounds, in draw order. */
 export const COVE_GROUNDS: readonly GroundId[] = deepFreeze(['coast', 'headland', 'swamp']);

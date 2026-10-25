@@ -25,8 +25,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    worst=Math.max(worst, cheapest());
  }
  ok(worst<=7500,`every Steam Camp push lists a tract at or under $7,500 (worst cheapest of ${tries}: $${worst})`);
- const shown=[...d.querySelectorAll('#sales button[data-i]')].length;
- ok(shown===3,'land office still shows three listings: '+shown);
+ const shown=[...d.querySelectorAll('#sales .row.lot:not(.afk) button[data-i]')].length; // plus at most one AFK lot (cutover), on its own stream
+ ok(shown===3,'land office still shows three regular listings: '+shown);
  // the 3-minute board refresh keeps the guarantee
  let worstR=0; for(let i=0;i<60;i++){ E(`S.saleT=0; tick(0.5);`); worstR=Math.max(worstR, cheapest()); }
  ok(worstR<=7500,'refreshed boards at Steam Camp keep a tract at or under $7,500: $'+worstR);

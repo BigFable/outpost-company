@@ -8,7 +8,7 @@ function run(profile, seed, hours=4, opt={}){
   const G=dom.window.__G; const S=G.S; const Core=dom.window.Core;
   G.normalize(); G.refreshSales(); G.refreshOffers(); S.hireOffer=G.genHire(); G.setSite(); G.newTree();
   // playtest 2: finds and the Sawmill draw from their own seeded streams, so the logging draws above stay byte-exact
-  if(S.rng){ S.rng.drops=(seed*7919+1)>>>0; S.rng.saw=(seed*104729+3)>>>0; S.rng.events=(seed*15485863+5)>>>0; }
+  if(S.rng){ S.rng.drops=(seed*7919+1)>>>0; S.rng.saw=(seed*104729+3)>>>0; S.rng.events=(seed*15485863+5)>>>0; S.rng.land=(seed*32452843+7)>>>0; }
   // seasonal events (slice 1): on unless NOEVENTS=1 or opt.noEvents; the weather rolls on its own stream, so Math.random draws stay the bot's
   const EVENTS=!!S.weather && !(opt.noEvents || process.env.NOEVENTS);
   if(S.weather && !EVENTS) S.weather.off=true;
@@ -176,7 +176,8 @@ function run(profile, seed, hours=4, opt={}){
     if(S.tracts.length<2){
       // species overhaul: every profile buys by "best value per work for my camp" (Core.tractScore on pine-weight capacities); no draws
       const caps={fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)};
-      const best=S.forSale.map((t,i)=>({i,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
+      // the AFK lot (cutover) is left alone for now: buying it is a choice for time away; the balance agent decides whether a profile should
+      const best=S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
       if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract'); }
     }
     if(!S.contract && S.offers.length){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1; const o=S.offers.find(o=>sh(o)>0 && o.vol/sh(o)<=hc*o.dur*0.8); if(o){ G.accept(S.offers.indexOf(o)); } }

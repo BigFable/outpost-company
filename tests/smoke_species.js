@@ -23,7 +23,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // ---------- 1. land office: Cove grounds and the camp-fit card
  ok(E(`S.tracts[0].ground`)==='coast' && Math.abs(E(`S.tracts[0].wt`)-1.04)<1e-9,'the starting woodlot is coast bottoms, weight 1.04');
- const grounds=new Set(); for(let i=0;i<30;i++){ E('refreshSales()'); E('S.forSale').forEach(t=>grounds.add(t.ground)); }
+ const grounds=new Set(); for(let i=0;i<30;i++){ E('refreshSales()'); E('S.forSale').forEach(t=>{ if(!t.afk) grounds.add(t.ground); }); } // the AFK lot (cutover) is covered in smoke_queue.js
  ok([...grounds].sort().join()==='coast,headland,swamp','Cove listings come from the three Cove grounds: '+[...grounds].join());
  ok(E(`S.forSale.every(t=>t.ground!=='swamp' || t.slope!=='steep')`),'hemlock swamps are never steep');
  E(`S.forSale=[Core.makeTract('Test spruce, Lot 1',[['spruce',80],['pine',20]],50,2,'flat','headland'), Core.makeTract('Test swamp, Lot 2',[['hemlock',80],['spruce',20]],50,2,'flat','swamp'), Core.makeTract('Test coast, Lot 3',[['pine',70],['hemlock',30]],50,2,'flat','coast')];
@@ -41,10 +41,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // lots of fallers, few teams: the heavy lot is "teams short", the light one fits better
  E(`S.own={crosscut:4, bucker:20, oxen:1, sled:3}; render(true);`);
  const fits=[...d.querySelectorAll('#sales .fit')].map(p=>p.dataset.fit), ratio=i=>E(`Core.campFit(campCaps(), S.forSale[${i}]).ratio`);
- ok(fits[1]==='teams' && /fallers are ahead/.test(d.querySelectorAll('#sales .fit')[1].textContent),'fallers ahead of teams: the hemlock swamp warns the wood will pile up: '+fits.join());
+ // the camp note (2026-10-25) replaced the camp-fit hint: it names the slowest stage and how far it falls behind
+ ok(fits[1]==='skid' && /teams are the slowest stage here; expect skidding to fall behind felling/.test(d.querySelectorAll('#sales .fit')[1].textContent),'fallers ahead of teams: the hemlock swamp says skidding will fall behind: '+fits.join());
+ const behind=i=>E(`Core.campNote(bareCaps(), S.forSale[${i}], {season:'Fall'}).behind`);
+ ok(behind(0)<behind(1),'the light spruce lot falls behind less than the heavy swamp in a team-short camp');
  ok(ratio(0)<ratio(1),'the light spruce lot fits a team-short camp better than the heavy swamp');
  E(`S.own={axeman:1, bucker:20, horses:6, wagon:4}; render(true);`);
- ok(d.querySelectorAll('#sales .fit')[0].dataset.fit==='fallers','teams ahead of fallers: the card says so');
+ ok(d.querySelectorAll('#sales .fit')[0].dataset.fit==='fell' && /fallers are the slowest stage/.test(d.querySelectorAll('#sales .fit')[0].textContent),'teams ahead of fallers: the card says so');
 
  // ---------- 2. weight: idle skid and haul move bd ft / weight; felling unchanged
  E(`S.own={oxen:2, sled:2, axeman:1}; S.tracts=[Core.makeTract('W',[['pine',1]],50,1,'flat')]; setSite();`);
@@ -106,7 +109,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`closeMG(); S.tracts=[Core.makeTract('Mix',[['spruce',70],['pine',30]],500,1,'flat','headland')]; setSite(); S.contract=null;`);
  let found=null; for(let i=0;i<60 && !found;i++){ E('refreshOffers()'); found=E(`S.offers.find(o=>o.sp)||null`); }
  let slot0Plain=true; for(let i=0;i<60;i++){ E('refreshOffers()'); if(E('S.offers[0].sp')) slot0Plain=false; }
- ok(slot0Plain && E('S.offers.length')===2,'the first charter-board slot is always a regular order (60 boards)');
+ ok(slot0Plain && E('S.offers.length')===E('Core.OFFER_BOARD_SIZE'),'the first charter-board slot is always a regular order (60 boards)');
  ok(!!found && found.prem>=.3 && found.prem<=.55 && found.penalty===0,'species orders turn up, +30–55%, no penalty: '+(found&&found.mill));
  E(`S.offers=[{mill:'the Admiralty spar yard', vol:1000, dur:300, prem:.4, penalty:0, sp:'spruce'}]; render(true);`);
  const ctxt=$('contracts').textContent;
