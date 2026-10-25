@@ -1,24 +1,49 @@
 # Roadmap
 
-Status values: done · in progress · next · later.
+*Updated 2026-10-25. Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
 
-| # | Milestone | Status | Notes |
-| --- | --- | --- | --- |
-| 1 | Roguelite prototype in Timberline (drafts, close camp, Legacy, meta tree) | done | Interim balance fixes landed 2026-10-24; see open tuning items below |
-| 2 | Decisions: engine, business model, per-skill vs global prestige, working title | in progress | Decided: TypeScript + Electron; $9.99 full experience; 3-year support. Also decided: per-skill prestige, Early Access ($7.99) then 1.0 ($9.99), all updates free. Open: working title, what the 3-year clock counts from |
-| 3 | Re-theme Logging to Outpost Company (names, regions as biomes, close-camp fiction) | done | Display text only; balance identical. Owner to confirm era years, Charter Shares, species names |
-| 3b | Build foundation (tech plan M0–M1): balance baseline, TypeScript workspace, Vite, Electron shell, CI | done | `pnpm run check` runs everything CI runs |
-| 4a | Core extraction (tech plan M2): formulas, generators and content data in packages/core, inlined into the prototype | done | Behavior byte-identical; 58 unit tests. Next: M3 (game state, tick, seeded RNG streams) |
-| 4b | Playtest round 2 build: warehouse, Prime timber, finds, special orders, Sawmill camp | done | Landed 2026-10-24 with the owner's Sawmill fixes (log slider 10% and half price for logs the company takes, more amber pitch, smaller special orders); balance baseline re-recorded. Deferred: Sawmill finds and special orders, the edger and later mill structures, 3 more finds, the Lamp-lighter, collection achievements. Open misses: mill active vs casual about 1.26× (target 1.5–2×); idle unlock gaps late in runs 2–3 |
-| 4 | Electron + Steam go/no-go spike (achievements, cloud save on Windows, Mac, Steam Deck) | later | Week 2 of the tech plan |
-| 5 | Vertical slice: shared core + Logging + Sawmilling + Raising + roguelite layer | later | About 10 weeks after the stack decision |
-| 6 | Playtest round with a small group | later | Bot checks balance targets on every change |
-| 7 | Steam page, trailer, demo; aim for a 2027 Next Fest (June or October) | later | Needs 2,000+ wishlists going in |
-| 8 | Launch on Steam at $9.99 | later | Months 10–14 by the research estimate |
-| 9 | Three-year update cycle | later | Draft plan in `docs/service-plan.md`: 8-skill 1.0 scope, pre-launch gates, Early Access vs 1.0, quarterly cadence for years 1-3. Decided: Early Access ($7.99) then 1.0 ($9.99), all updates free, prestige per skill. Open: what the 3-year clock counts from |
+## Done
+| Date | Milestone | Notes |
+| --- | --- | --- |
+| 2026-10-22 | Roguelite prototype in Timberline (drafts, close camp, Legacy, meta tree) | Balance fixes accepted and landed 2026-10-24 |
+| 2026-10-22 | Direction, setting, stack, price, support, Early Access path, per-skill prestige | See `DECISIONS.md`. Still open: working title, what the 3-year clock counts from |
+| 2026-10-22 | Re-theme to Outpost Company | Display text only. Owner still to confirm era years, Charter Shares, species names |
+| 2026-10-22 | Build foundation (M0-M1): balance baseline, TypeScript workspace, Vite, Electron shell, CI | `pnpm run check` runs what CI runs |
+| 2026-10-22 | Core extraction (M2): formulas, generators and content data in `packages/core` | Behavior identical; 58 unit tests |
+| 2026-10-24 | Playtest round 1 | Owner and two friends; feedback in `reports/2026-10-24-playtest-1.md` |
+| 2026-10-24 | Playtest 1 fixes: hauling overhaul, bucking guides, skid perks, bulk buys | Plus pre-round-2 balance fixes (Steam Camp cash trap, mid-game achievement, haul bonus trim) |
+| 2026-10-24 | Design specs: Prime timber and warehouse; Sawmill camp; Fishing camp; mini-game value options | `docs/design/` |
+| 2026-10-24 | Playtest round 2 build: warehouse, Prime timber, finds, special orders, Sawmill camp | Owner's Sawmill fixes applied; baseline re-recorded |
+| 2026-10-25 | Design specs: species overhaul and seasonal events | Both approved by the owner with rulings |
+| 2026-10-25 | Species slice 1 (Cove trio) and seasons slice 1 (weather cards), built and merged for testing | Preview file delivered to the owner |
+| 2026-10-25 | Owner tuning applied to the preview: regular first order, Fish run x0.92, time-weighted bad-luck measure, c20 needs 16 | Branch `build/species-seasons`; not yet on main |
 
-## Open tuning items
-Landed 2026-10-24: bounty rate .25 with a 20% per-outpost cap, +8 Charter Shares per era, idle unlock routes for 17 improvements, at most 2 boosted stages; the bot now gives every profile the same opening clicks, and the balance baseline is re-recorded. Further tuning waits for playtest feedback (owner, 2026-10-24). Remaining misses (6 seeds, 3 runs, 8 h):
-- Active play pays too little: mini-game vs casual is 1.29× by time to Diesel Road (gas policy) and 1.10–1.37× by Charter Shares per minute (target 1.5–2×). The owner picked Prime timber + special charter orders to address this (DECISIONS.md, 2026-10-24).
-- Mini-game players' run 2 is only 15% faster than run 1 (gas policy; target 25–40%). Idle 25%, casual 39% pass. Under the shares-per-minute policy, run 2 barely beats run 1 for idle and mini-game players.
-- Achievement/unlock gaps run 28–48 min, longest late in run 3 when early ladders are already held (target under 20 min). Counting perk drafts as events, every profile stays under 16 min.
+## In progress
+| Work | Where | Notes |
+| --- | --- | --- |
+| Species slice 1 + seasons slice 1 | `build/species-1`, `build/seasons-1`, merged in `build/species-seasons` | Awaiting owner playtest, then merge to main |
+| Land office and cutting-queue rework (order-fit notes, camp note, switch lot, new queue) | `build/tract-queue` (owner-named; not yet pushed) | Owner decision 2026-10-25 |
+| Phone build: touch controls, phone-width layout | Agents: phone audit under way | Required for the next playtest file |
+| Bug hunt | QA agent, no branch yet | |
+| Steam spike (achievements, cloud save, Win/Mac/Deck) | Agent under way | Gate G1 |
+| Store-page plan | Launch agent | Nothing goes public without the owner |
+| Late-run active-play design | Design reviewer | Aimed at the active-play miss below |
+
+## Next
+1. Phone build ships; playtest round 3 (species + seasons, on phones too).
+2. Steam spike result and the owner's Steam fee call (G1).
+3. itch.io web build for friends.
+4. Species slice 2 (mill and heavy-wood games), after the phone build.
+5. Seasons slice 2 (full coast, Sawmill hooks, dispatch orders), after species slice 1 is accepted.
+
+## Later
+- Species slice 3 (hardwoods, giant cloudwood); Sawmill finds, special orders and later mill structures.
+- Fishing camp (third camp, 9 skills in 1.0); Raising, Surveying, then the rest.
+- Vertical slice, fun check (G3), public demo, Next Fest (June 2027, needs 2,000 wishlists), Early Access about Sep 2027 at $7.99, 1.0 about Mar 2028 at $9.99, three-year update cycle. Details in `docs/service-plan.md`.
+
+## Open balance misses
+Last recorded baseline (6 seeds, 3 runs, 8 h), after the 2026-10-24 fixes:
+- Active play pays too little: mini-game vs casual about 1.29x by time to Diesel Road and 1.10-1.37x by Charter Shares per minute (target 1.5-2x). Sawmill active vs casual about 1.26x. Prime timber and special orders were the answer; the late-run design is the next step.
+- Mini-game run 2 is 15% faster than run 1 (target 25-40%). Idle 25% and casual 39% pass.
+- Achievement/unlock gaps of 28-48 min late in run 3 (target under 20). Counting perk drafts, every profile is under 16 min. Idle unlock gaps also persist late in Sawmill runs 2-3.
+- Species and seasons slice 1 balance runs: owner tuning applied; re-check after merge.

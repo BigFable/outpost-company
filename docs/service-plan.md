@@ -12,7 +12,7 @@ A player who buys at 1.0 should be able to play from a first outpost to founding
 | Regions (3) | Fogbound Coast (starter), Giant Groves, Glacier Valleys |
 | Run system | Drafted perks in every skill (about 12 each, plus about 15 shared, so roughly 125), about 10 charter clauses (difficulty modifiers), a Legacy tree per skill plus a company-wide one |
 | Mini-games | 12 to 14, no more than 2 per skill, all optional (idle always works) |
-| Shared systems | Fog map, camp grid, seasons, two eras (hand tools, then steam), offline progress, about 100 achievements |
+| Shared systems | Fog map, camp grid, seasons with weather events (`docs/design/seasonal-events.md`), a species system with trade-offs and orders (`docs/design/species-overhaul.md`), two eras (hand tools, then steam), offline progress, about 100 achievements |
 | Ending | Clearing all three regions founds Landfall City (stage one). The credits moment is real, and the city keeps growing in later updates |
 | Platform | Steam Cloud saves, Windows, Mac, Linux, Steam Deck playable with a controller, English text |
 | Length | About 25 to 40 hours to the ending, with replay value (my estimate, to be checked in playtests) |
@@ -28,12 +28,12 @@ Week 1 starts today. Dates include no buffer unless noted. The tech plan advises
 | When | Weeks | What happens | Gate |
 | --- | --- | --- | --- |
 | Oct 22 to Nov 5, 2026 | 1-2 | Project set up; Steam and Electron spike | **G1: Steam spike go/no-go.** Achievements and cloud save work on Windows, Mac and Deck, or we switch the wrapper |
-| Nov 2026 to Dec 31 | 3-10 | Shared core, Logging port, Sawmilling, Raising, roguelite layer | **G2: Vertical slice** (about Dec 31; realistically mid-January). Play it start to finish. Note the tech plan used Firemaking as the second skill; here it is Sawmilling and Raising |
+| Nov 2026 to Dec 31 | 3-10 | Shared core, Logging port, Sawmilling (playable since playtest round 2), species and seasons slices, Raising, roguelite layer | **G2: Vertical slice** (about Dec 31; realistically mid-January). Play it start to finish. Note the tech plan used Firemaking as the second skill; here it is Sawmilling (decided 2026-10-24), then Raising. Fishing comes later |
 | Jan to Feb 2027 | 11-17 | Small playtest group; Surveying added; polish, controller support | **G3: Fun check.** Is run 2 fun, and are the balance targets met? If not, fix before adding content |
 | Jan 2027 | - | Steam page ("Coming soon") goes live as soon as capsule art exists, to start collecting wishlists | Owner approves anything public |
 | Feb 25 to Apr 1, 2027 | 18-23 | Public demo (itch.io web build, then Steam demo) | **G4: Demo ready** |
 | Early May 2027 | - | Demo build submitted to Steam, 3 to 5 weeks ahead of the festival | **G5: Wishlist check.** 2,000 or more wishlists enter **Next Fest, June 14-21, 2027**. Under 2,000: wait for the October 2027 Next Fest |
-| Jun to Aug 2027 | - | Prospecting, Smelting, Smithing, Hauling; Glacier Valleys | |
+| Jun to Aug 2027 | - | Fishing, Prospecting, Smelting, Smithing, Hauling; Glacier Valleys (species slice 3 hardwoods) | |
 | About Sep 2027 | - | Early Access release at $7.99 | **G6: Release readiness.** Balance bots inside targets, no soft-locks, old saves load, owner signs off |
 | About Mar 2028 | - | 1.0 | G6 again |
 
