@@ -477,14 +477,14 @@ button,summary,input,.lcell{touch-action:manipulation}
       <section class="panel" id="queuePanel">
         <p class="eyebrow">Cutting queue</p>
         <h2>Your lots</h2>
-        <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="true">Lots</button><button type="button" data-v="trees" aria-pressed="false">Trees</button></div>
+        <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="false">Lots</button><button type="button" data-v="trees" aria-pressed="true">Trees</button></div>
         <p class="meta pick" id="pickNote" hidden></p>
-        <div id="qLots">
+        <div id="qLots" hidden>
           <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
           <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
           <ol class="tq" id="tq"></ol>
         </div>
-        <div id="qTrees" hidden>
+        <div id="qTrees">
           <p class="meta" id="stashMeta">Every tree on your lots. Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one tree slows felling and skidding.</p>
           <div class="stash" id="stash"></div>
         </div>
@@ -5925,8 +5925,9 @@ function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
-// stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees')
-function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'lots', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
+// stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees';
+// Trees by default, owner request 2026-10-26; a switch lasts for the session: every load opens on Trees again)
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -6596,7 +6597,7 @@ function bindQueueDrag(box){
   });
 }
 function renderQueue(){
-  const tabs = $('qTabs'), view = S.ui.qView === 'trees' ? 'trees' : 'lots';
+  const tabs = $('qTabs'), view = S.ui.qView === 'lots' ? 'lots' : 'trees';
   if (!tabs.dataset.bound){ tabs.dataset.bound = '1'; tabs.querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.qView = b.dataset.v; render(true); b.focus(); }); }
   tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
   $('qLots').hidden = view !== 'lots'; $('qTrees').hidden = view !== 'trees';
@@ -8097,7 +8098,7 @@ function normalize(){
   // the lot stash (2026-10-25): an old lot's tree counts come from its mix and trees left; rules merge with the default (Any)
   S.tracts.forEach(t => { t.left = Math.max(0, +t.left || 0); t.stand = Core.fixStand(t.stand, t.mix, t.left); });
   S.ui.stashRule = Object.fromEntries(Object.entries(obj(S.ui.stashRule) ? S.ui.stashRule : {}).filter(([k, r]) => SP[k] && (r === 'first' || r === 'skip')));
-  if (!['lots','trees'].includes(S.ui.qView)) S.ui.qView = 'lots';
+  S.ui.qView = 'trees';
   rulesAny = Core.rulesAllAny(S.ui.stashRule); rulesV++;
   S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
   // the cutting queue (2026-10-25): an old save's tracts become the queue in their current order; each gets a purchase number

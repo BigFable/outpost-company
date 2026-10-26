@@ -61,7 +61,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // ---------- 3. switching lots keeps each lot's progress
  E(`S.contract=null; S.orders.open=[]; S.tracts=[Object.assign(Core.makeTract('Alpha',[['pine',100]],40,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Beta',[['spruce',100]],30,6,'steep','headland'),{seq:1}), Object.assign(Core.makeTract('Gamma',[['hemlock',100]],20,2,'rolling','swamp'),{seq:2})];
-   S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; render(true);`);
+   S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; S.ui.qView='lots'; render(true);`);
  let rows=()=>[...d.querySelectorAll('#tq .qrow')];
  ok(rows().length===3 && rows()[0].classList.contains('on') && /Crews here/.test(rows()[0].textContent),'queue lists the owned lots, crews on the first');
  ok(/33 of 40 trees left/.test(rows()[0].textContent) && /done in/.test(rows()[0].textContent) && /an hour/.test(rows()[0].textContent),'row shows trees left, time to cut out and value: '+rows()[0].querySelector('.spec').textContent);
@@ -185,6 +185,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const E2=s=>w.__eval(s);
  ok(E2('S.tracts.map(t=>t.name).join()')==='Old one,Old two' && E2('S.tracts.map(t=>t.seq).join()')==='0,1' && E2('S.tractSeq')===2,'old save: the tracts arrays become the queue in their order, numbered 0 and 1');
  ok(E2('S.ui.qOrder')==='bought' && E2('S.hp')===4 && E2('tract().left')===12,'old save: as-bought order, and the current tree and trees left kept');
+ ok(E2('S.ui.qView')==='trees' && !d.getElementById('qTrees').hidden,'old save: the queue opens on the Trees tab');
+ d.querySelector('#qTabs [data-v="lots"]').click();
  ok(d.querySelectorAll('#tq .qrow').length===2 && /Crews here/.test(d.querySelector('#tq .qrow').textContent),'old save: the queue panel shows both lots');
 
  ok(errs.length===0,'no console errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
