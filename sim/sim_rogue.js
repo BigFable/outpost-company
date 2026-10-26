@@ -48,8 +48,8 @@ function run(profile, seed, hours=4, opt={}){
   const MILL_PERKS=['sawyerseye','chaincarriage','bigstick','pondmonkey','turndog'];
   function millBot(){
     const m=S.camps.sawmill; if(millOpenT==null) millOpenT=S.t;
-    // log slider: idle keeps the 10% default; the others aim for 10-30 minutes of logs in the pond, between 10% and 40%
-    if(PB!=='idle' && !process.env.MILLFIX){ const r=G.millRateNow()*60, left=r>0 ? S.bulk.logs/r : 99; S.millShare = left>30 ? .1 : left<10 ? .4 : .2; }
+    // auto slider: the flow follows the mill's saw rate by itself; idle keeps the 10% default cap, the others raise the cap to 30% once
+    if(PB!=='idle' && !process.env.MILLFIX && process.env.MILLSHARE==null) S.millShare=.3;
     for(const id of ['sawmill.pond','sawmill.headrig','logging.bunkhouse']) while(G.canBuild(id)){ G.buildStructure(id); millEv.push({id:id.split('.')[1]+S.structures[id], min:+((S.t-millOpenT)/60).toFixed(1)}); }
     let keep=0; for(const id of ['sawmill.pond','sawmill.headrig']){ const nx=Core.structureNext(S.structures,id); if(nx && nx.items.every(x=>G.bankN(x.item)>=x.qty)) keep=Math.max(keep,nx.cash); }
     for(let n=0; n<10 && G.millSawyers()<Core.maxSawyers(S.structures) && m.cash>=Core.sawyerCost(m.hired)+keep; n++) G.hireSawyer();

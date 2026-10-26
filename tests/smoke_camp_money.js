@@ -1,7 +1,9 @@
 // Camp money, model 4 slice 1 (docs/design/lot-stash-and-camp-money.md, part B): each camp keeps its own cash and money
-// crosses only with goods. The mill pays 0.8x the cove price for slider logs (only what it can afford; the rest sells at
-// the cove), Logging pays $40 per plank bundle for the bunkhouse, the crate brings $300 of mill cash, a ledger line in
-// each camp, and old saves load with the new fields defaulted (and the crate cash given once).
+// crosses only with goods. The mill pays half the cove price for slider logs (only what it can afford; the rest sells at
+// the cove), Logging pays $40 per plank bundle for the bunkhouse, the crate brings $300 of mill cash every mill run, a ledger
+// line in each camp, and old saves load with the new fields defaulted (and the crate cash given once).
+// Tuning (2026-10-26): 0.5x price, crate cash every mill run, the mill board's saw.advance is now the Log crate, and the
+// auto slider: Logging sends what the mill can saw (rate x buffer minus the pond), up to the slider's cap.
 const {JSDOM, VirtualConsole}=require('jsdom');const fs=require('fs');
 const errs=[]; const vc=new VirtualConsole(); vc.on('error',e=>errs.push(String(e&&e.stack||e))); vc.on('jsdomError',e=>errs.push('jsdom:'+e.message));
 const START="window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});";
@@ -18,25 +20,45 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 const near=(a,b)=>Math.abs(a-b)<1e-9;
 (async()=>{
   let dom=mk(); await sleep(300); let w=dom.window, d=w.document, E=s=>w.__eval(s); const $=id=>d.getElementById(id);
-  ok(E('Core.CAMP_MONEY.logPriceMult')===.8 && E('Core.CAMP_MONEY.bundlePrice')===40 && E('Core.CAMP_MONEY.crateCash')===300,'camp money constants are data in core');
+  ok(E('Core.CAMP_MONEY.logPriceMult')===.5 && E('Core.CAMP_MONEY.bundlePrice')===40 && E('Core.CAMP_MONEY.crateCash')===300,'camp money constants are data in core');
   // ---------- the crate
   E('openSawmill(true)');
   ok(E('S.camps.sawmill.cash')===E('Core.FOUNDING_CRATE.cash')+300 && E('S.story.crateCash')===true,'the opening crate adds $300 of mill cash');
-  E('closeMill === undefined || (S.camps.sawmill.sawn = Core.MILL_CLOSE_BF, closeMill())');
-  ok(E('S.camps.sawmill.n')===2 && E('S.camps.sawmill.cash')===E('Core.FOUNDING_CRATE.cash'),'the crate cash comes once: mill run 2 starts without it');
+  E('S.camps.sawmill.sawn = Core.MILL_CLOSE_BF; closeMill()');
+  ok(E('S.camps.sawmill.n')===2 && E('S.camps.sawmill.cash')===E('Core.FOUNDING_CRATE.cash')+300,'the crate cash comes every mill run: mill run 2 starts with it too');
+  // ---------- the mill board's saw.advance: the Log crate (logs, not cash)
+  const node=E(`JSON.stringify(Core.MILL_META.find(x=>x.id==='saw.advance'))`);
+  ok(/"name":"Log crate"/.test(node) && /3,000 bd ft of logs/.test(node),'saw.advance is the Log crate: '+node);
+  E(`S.shares.sawmill.legacy=99; buyMillMeta('saw.advance'); S.bulk.logs=0; S.camps.sawmill.sawn = Core.MILL_CLOSE_BF; closeMill()`);
+  ok(E('S.camps.sawmill.n')===3 && E('S.bulk.logs')===3000 && E('S.camps.sawmill.cash')===E('Core.millStartCash()'),'with the Log crate, mill run 3 starts with 3,000 bd ft in the pond and no extra cash');
+  E(`S.bulk.logs=0; S.camps.sawmill.sawn = Core.MILL_CLOSE_BF; closeMill()`); ok(E('S.bulk.logs')===3000,'and every mill run after');
   // ---------- the slider sale
-  const del=(cash)=>{ E(`S.millShare=.1; S.landing={bf:1000,val:200}; S.contract=null; S.owed=0; S.bulk.logs=0; S.camps.sawmill.cash=${cash}`);
+  const del=(cash,pond=0)=>{ E(`S.millShare=.1; S.landing={bf:1000,val:200}; S.contract=null; S.owed=0; S.bulk.logs=${pond}; S.camps.sawmill.cash=${cash}`);
     const c0=E('S.cash'), r=E('deliver(1000)'); return {rev:r, got:E('S.cash')-c0, pond:E('S.bulk.logs'), mill:E('S.camps.sawmill.cash')}; };
   E(`S.millShare=0; S.landing={bf:1000,val:200}; S.contract=null; S.owed=0`); const full=E('deliver(1000)');
   E('S.run.millPaid=0; S.camps.sawmill.logPaid=0');
   const a=del(1e4);
-  ok(a.pond===100 && near(a.rev, full*.98) && near(1e4-a.mill, full*.08) && near(a.got, a.rev),'mill with cash: takes 10%, pays 0.8× the cove price; Logging gets the cove sale plus the mill’s payment');
-  ok(near(E('S.run.millPaid'), full*.08) && near(E('S.camps.sawmill.logPaid'), full*.08),'both camps record the log payment');
-  const b=del(full*.04);
-  ok(near(b.pond, 50) && b.mill===0 && near(b.rev, full*(1-.05) + full*.04),'short of cash: the mill takes only the logs it can pay for, the rest sells at the cove');
+  ok(E('millRateNow()*Core.MILL_FLOW_BUFFER_S')>=100,'test setup: the mill can saw more than the 10% cap of a delivery');
+  ok(a.pond===100 && near(a.rev, full*.95) && near(1e4-a.mill, full*.05) && near(a.got, a.rev),'empty pond, mill with cash: takes the 10% cap, pays half the cove price; Logging gets the cove sale plus the mill’s payment');
+  ok(near(E('S.run.millPaid'), full*.05) && near(E('S.camps.sawmill.logPaid'), full*.05),'both camps record the log payment');
+  const b=del(full*.025);
+  ok(near(b.pond, 50) && b.mill===0 && near(b.rev, full*(1-.05) + full*.025),'short of cash: the mill takes only the logs it can pay for, the rest sells at the cove');
   const c=del(0);
   ok(c.pond===0 && c.mill===0 && near(c.rev, full),'no mill cash: every log sells at the cove, Logging is paid in full, no debt');
-  E('render(true)'); ok(/short of cash/.test($('millSlMeta').textContent) && /80% of the cove price/.test($('millSlMeta').textContent),'slider note says the mill pays 80% and when it is short of cash: '+$('millSlMeta').textContent);
+  E('render(true)'); ok(/short of cash/.test($('millSlMeta').textContent) && /The mill pays half the cove price\./.test($('millSlMeta').textContent),'slider note says the mill pays half and when it is short of cash: '+$('millSlMeta').textContent);
+  // ---------- the auto slider: sends what the mill can saw, up to the cap
+  const tgt=E('millRateNow()*Core.MILL_FLOW_BUFFER_S');
+  const f1=del(1e4, tgt-40); ok(near(f1.pond, tgt) && near(1e4-f1.mill, full*.04*.5),'pond nearly full: Logging sends only the 40 bd ft the mill can saw (4%), and the mill pays for those');
+  const f2=del(1e4, tgt+500); ok(near(f2.pond, tgt+500) && f2.mill===1e4 && near(f2.rev, full),'pond full: nothing goes to the mill, every log sells at the cove');
+  E('millFlow.sent=0; millFlow.amt=0'); del(1e4, tgt-40); E('render(true)');
+  ok($('millFlow').textContent==='Sending 4% now. Cap 10%.' && $('millShareV').textContent==='up to 10%','flow line under the slider: '+$('millFlow').textContent+' / '+$('millShareV').textContent);
+  E('millFlow.sent=0; millFlow.amt=0'); del(1e4, 0); E('render(true)');
+  ok($('millFlow').textContent==='Sending 10% now. Cap 10%.','empty pond: sending the full cap: '+$('millFlow').textContent);
+  const inp=$('millShare'); inp.value='30'; inp.dispatchEvent(new w.Event('input',{bubbles:true}));
+  ok(E('S.millShare')===.3 && $('millFlow').textContent==='Sending 10% now. Cap 30%.','moving the slider sets the cap: '+$('millFlow').textContent);
+  inp.value='0'; inp.dispatchEvent(new w.Event('input',{bubbles:true}));
+  ok($('millFlow').textContent==='Sending 0% now. Cap 0%.' && $('millShareV').textContent==='off' && E(`S.landing={bf:1000,val:200}; S.bulk.logs=0; deliver(1000); S.bulk.logs`)===0,'cap 0%: nothing is sent');
+  E('S.millShare=.1'); del(0,0);
   ok(/^With the mill this outpost: logs sold \+\$[\d.]+K? · bundles bought −\$0\.$/.test($('millLedger').textContent),'Logging ledger line: '+$('millLedger').textContent);
   // ---------- bundles for the bunkhouse
   E(`S.bank[BUNDLE]=4; S.cash=100; S.camps.sawmill.cash=0; render(true)`);

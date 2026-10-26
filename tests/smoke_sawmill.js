@@ -105,7 +105,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  E(`S.landing={bf:1000,val:200}; S.contract=null; S.owed=0; S.bulk.logs=0; S.camps.sawmill.cash=1e4`); const cashA=E('S.cash'), mc6=E('S.camps.sawmill.cash'); const rev=E('deliver(1000)');
  const paid6=mc6-E('S.camps.sawmill.cash');
  E(`S.millShare=0; S.landing={bf:1000,val:200}`); const rev0=E('deliver(1000)');
- ok(E('S.bulk.logs')===100 && Math.abs(rev/rev0-.98)<1e-9 && Math.abs(paid6-rev0*.08)<1e-9,'10% of a delivery floats to the pond; the mill pays 0.8× the cove price for it from mill cash');
+ ok(E('S.bulk.logs')===100 && Math.abs(rev/rev0-.95)<1e-9 && Math.abs(paid6-rev0*.05)<1e-9,'empty pond: the 10% cap of a delivery floats to the pond; the mill pays half the cove price for it from mill cash');
  const inp=$('millShare'); inp.value='50'; inp.dispatchEvent(new w.Event('input',{bubbles:true})); ok(E('S.millShare')===.5 && /50%/.test($('millShareV').textContent),'slider goes up to 50%');
  inp.value='0'; inp.dispatchEvent(new w.Event('input',{bubbles:true})); ok(E('S.millShare')===0,'and down to 0%'); E('S.millShare=.1'); void cashA;
  // ---------- 7. plank bundles and the bunkhouse
