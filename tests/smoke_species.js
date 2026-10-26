@@ -106,7 +106,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(E(`B.R.lenP[16]===1 && B.R.lenP[8]===1`),'hemlock: every length pays the same');
 
  // ---------- 6. species charter orders: share counting, premium, free to miss
- E(`closeMG(); S.tracts=[Core.makeTract('Mix',[['spruce',70],['pine',30]],500,1,'flat','headland')]; setSite(); S.contract=null;`);
+ E(`closeMG(); S.tracts=[Core.makeTract('Mix',[['spruce',70],['pine',30]],500,1,'flat','headland')]; setSite(); S.contracts=[];`);
  let found=null; for(let i=0;i<60 && !found;i++){ E('refreshOffers()'); found=E(`S.offers.find(o=>o.sp)||null`); }
  let slot0Plain=true; for(let i=0;i<60;i++){ E('refreshOffers()'); if(E('S.offers[0].sp')) slot0Plain=false; }
  ok(slot0Plain && E('S.offers.length')===E('Core.OFFER_BOARD_SIZE'),'the first charter-board slot is always a regular order (60 boards)');
@@ -115,9 +115,9 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const ctxt=$('contracts').textContent;
  ok(/Tree order/.test(ctxt) && /Spruce only/.test(ctxt) && /long straight spruce/.test(ctxt) && /No fine if missed/.test(ctxt) && /70%/.test(ctxt),'the order card names the species, client line, share and no penalty');
  E(`accept(0); S.landing={bf:500,val:100}; S.cash=0; S.owed=0; S.rep=0; S.camps={};`); E(`deliver(100)`);
- ok(Math.abs(E('S.contract.done')-70)<1e-9,'only the spruce share (70%) of a delivery counts toward it');
- E(`S.cash=500; S.contract.end=S.t; tick(.01);`);
- ok(E('S.contract')===null && E('S.cash')>=499 && /no fine/.test(E('S.log[0].text')),'a missed species order costs nothing: '+E('S.log[0].text'));
+ ok(Math.abs(E('S.contracts[0].done')-70)<1e-9,'only the spruce share (70%) of a delivery counts toward it');
+ E(`S.cash=500; S.contracts[0].end=S.t; tick(.01);`);
+ ok(E('S.contracts.length')===0 && E('S.cash')>=499 && /no fine/.test(E('S.log[0].text')),'a missed species order costs nothing: '+E('S.log[0].text'));
 
  // ---------- 7. old save converts: walnut -> cloudwood, grounds and weights, pond kept
  w.dispatchEvent(new w.Event('pagehide'));

@@ -1855,6 +1855,25 @@ var Core = (function(exports) {
 			name: "Absent board",
 			desc: "Mini-games give no speed boosts, but every crew works ×1.2.",
 			m: { all: 1.2 }
+		},
+		{
+			id: "clerk",
+			r: "rare",
+			name: "Extra clerk",
+			desc: "+1 active order this outpost."
+		},
+		{
+			id: "rush",
+			r: "rare",
+			name: "Rush clerk",
+			desc: "Orders for the same trees fill from the same logs. Each log pays one bonus.",
+			cap: 2
+		},
+		{
+			id: "overbook",
+			r: "curse",
+			name: "Overbooked",
+			desc: "+2 active orders, but missed tree orders cost a fine too."
 		}
 	]);
 	var RARITY = deepFreeze({
@@ -1959,6 +1978,19 @@ var Core = (function(exports) {
 			cost: 12,
 			name: "Storm signals",
 			desc: "A mast on Foghorn Point: bad weather comes 30% less often (calm seasons instead)."
+		},
+		{
+			id: "clerks",
+			cost: 10,
+			name: "Second clerk",
+			desc: "+1 active order."
+		},
+		{
+			id: "office",
+			cost: 18,
+			name: "Charter office",
+			desc: "+1 more active order.",
+			req: "clerks"
 		}
 	]);
 	/** Charter clauses: optional hard modifiers that multiply Charter Shares. */
@@ -2374,6 +2406,88 @@ var Core = (function(exports) {
 	/** The charter ship takes a cargo once the outpost reaches Steam Camp or delivers CLOSE_VOL. */
 	function canCloseCamp(era, delivered) {
 		return era >= 1 || delivered >= 25e4;
+	}
+	//#endregion
+	//#region packages/core/src/charter.ts
+	/** Most active charter orders a run can reach (1 + 2 board nodes + Extra clerk + Overbooked). */
+	var ORDER_CAP_MAX = 6;
+	/** Overbooked curse: a missed tree order costs this much cash per board foot left undelivered. */
+	var OVERBOOK_FINE_PER_BF = .02;
+	/** Active charter orders allowed at once. */
+	function orderCapacity(o = {}) {
+		return Math.min(6, 1 + (o.clerks ? 1 : 0) + (o.office ? 1 : 0) + (o.clerkPerk ? 1 : 0) + (o.overbook ? 2 : 0));
+	}
+	/** The fill order: tree orders before regular ones, then soonest deadline, then signing order. */
+	function splitOrder(orders) {
+		return orders.map((_, i) => i).sort((a, b) => {
+			const A = orders[a], B = orders[b];
+			return (A.sp ? 0 : 1) - (B.sp ? 0 : 1) || A.end - B.end || a - b;
+		});
+	}
+	/**
+	* Split `amt` board feet of one delivery between active orders. `share(sp)` is that species' share of the
+	* logs crews cut now (0..1). With one order this matches the old single-contract rule exactly:
+	* a tree order takes min(amt × share, need), a regular order min(amt, need).
+	*/
+	function splitDelivery(amt, orders, share, rush = false) {
+		const into = orders.map(() => 0), paid = orders.map(() => 0);
+		if (!(amt > 0)) return {
+			into,
+			paid
+		};
+		let left = amt;
+		const spLeft = /* @__PURE__ */ new Map();
+		const pool = (sp) => {
+			if (!spLeft.has(sp)) spLeft.set(sp, amt * share(sp));
+			return spLeft.get(sp);
+		};
+		const idx = splitOrder(orders);
+		if (!rush) {
+			for (const i of idx) {
+				const o = orders[i], need = Math.max(0, o.need);
+				const x = o.sp ? Math.min(pool(o.sp), need, left) : Math.min(left, need);
+				if (o.sp) spLeft.set(o.sp, pool(o.sp) - x);
+				left -= x;
+				into[i] = x;
+				paid[i] = x;
+			}
+			return {
+				into,
+				paid
+			};
+		}
+		const groups = [], key = (o) => o.sp || "";
+		for (const i of idx) {
+			const k = key(orders[i]), g = groups.find((x) => key(orders[x[0]]) === k);
+			if (g) g.push(i);
+			else groups.push([i]);
+		}
+		for (const g of groups) {
+			const sp = orders[g[0]].sp, avail = sp ? Math.min(pool(sp), left) : left;
+			let used = 0;
+			for (const i of g) {
+				const x = Math.min(avail, Math.max(0, orders[i].need));
+				into[i] = x;
+				used = Math.max(used, x);
+			}
+			let covered = 0;
+			for (const i of g.slice().sort((a, b) => orders[b].prem - orders[a].prem || a - b)) {
+				paid[i] = Math.max(0, into[i] - covered);
+				covered = Math.max(covered, into[i]);
+			}
+			if (sp) spLeft.set(sp, pool(sp) - used);
+			left -= used;
+		}
+		return {
+			into,
+			paid
+		};
+	}
+	/** Fine for a missed order: regular orders scale their fine by what is left; tree orders are free unless Overbooked. */
+	function missedOrderFine(o, handshake, overbook) {
+		if (handshake) return 0;
+		if (o.sp) return overbook ? Math.round(Math.max(0, o.vol - o.done) * OVERBOOK_FINE_PER_BF) : 0;
+		return Math.round(o.penalty * (1 - o.done / o.vol));
 	}
 	//#endregion
 	//#region packages/core/src/rng.ts
@@ -3090,9 +3204,12 @@ var Core = (function(exports) {
 		}
 		return null;
 	}
-	/** Perks that can be offered: set-2 perks need Old Reach hands; non-commons appear once per run. */
-	function draftPool(drafted, lore) {
-		return PERKS.filter((p) => (!p.set || lore) && (p.r === "common" || !drafted.includes(p.id)));
+	/**
+	* Perks that can be offered: set-2 perks need Old Reach hands; non-commons appear once per run;
+	* a perk with `cap` needs at least that many active charter orders (`orderCap`, default 1).
+	*/
+	function draftPool(drafted, lore, orderCap = 1) {
+		return PERKS.filter((p) => (!p.set || lore) && (p.r === "common" || !drafted.includes(p.id)) && (!p.cap || orderCap >= p.cap));
 	}
 	/** Draft weight of a rarity at draft quality q (0..1): better runs favour rare and legendary perks. */
 	function draftWeight(r, q) {
@@ -5648,9 +5765,11 @@ var Core = (function(exports) {
 	exports.MODS = MODS;
 	exports.OFFER_BOARD_SIZE = OFFER_BOARD_SIZE;
 	exports.ORDER_BONUS_CAP = ORDER_BONUS_CAP;
+	exports.ORDER_CAP_MAX = ORDER_CAP_MAX;
 	exports.ORDER_OPEN_MAX = ORDER_OPEN_MAX;
 	exports.ORDER_PERKS = ORDER_PERKS;
 	exports.ORDER_RETURN_OUTPOSTS = ORDER_RETURN_OUTPOSTS;
+	exports.OVERBOOK_FINE_PER_BF = OVERBOOK_FINE_PER_BF;
 	exports.PAYROLL_GUARD_MIN = PAYROLL_GUARD_MIN;
 	exports.PERKS = PERKS;
 	exports.PILES = PILES;
@@ -5800,6 +5919,7 @@ var Core = (function(exports) {
 	exports.millLegacyGain = millLegacyGain;
 	exports.millPower = millPower;
 	exports.millRate = millRate;
+	exports.missedOrderFine = missedOrderFine;
 	exports.missedPenalty = missedPenalty;
 	exports.mixShare = mixShare;
 	exports.mixWeight = mixWeight;
@@ -5809,6 +5929,7 @@ var Core = (function(exports) {
 	exports.newSawCut = newSawCut;
 	exports.nextBoard = nextBoard;
 	exports.orderBonus = orderBonus;
+	exports.orderCapacity = orderCapacity;
 	exports.orderFit = orderFit;
 	exports.orderRemaining = orderRemaining;
 	exports.payrollGuard = payrollGuard;
@@ -5853,6 +5974,8 @@ var Core = (function(exports) {
 	exports.speciesId = speciesId;
 	exports.speciesSeasonTrait = speciesSeasonTrait;
 	exports.speciesSeasonValue = speciesSeasonValue;
+	exports.splitDelivery = splitDelivery;
+	exports.splitOrder = splitOrder;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
 	exports.standFromMix = standFromMix;
@@ -5913,7 +6036,7 @@ const makeTract = Core.makeTract;
 const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
-  site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contract:null,
+  site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
   boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
@@ -6184,10 +6307,13 @@ const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &
   (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
 // the charter board: Core.OFFER_BOARD_SIZE orders; the first slot is always a regular (any wood) order, the rest may name a species
 function refreshOffers(){ S.offers = Array.from({length: Core.OFFER_BOARD_SIZE}, (_, i) => genOffer(i === 0)); S.offerT = 150; if (!hireActive()) S.hireOffer = genHire(); }
+// active charter orders (2026-10-26): S.contracts holds up to ordCap() signed orders (Core: packages/core/src/charter.ts)
+const ordCap = () => Core.orderCapacity({clerks: !!meta('clerks'), office: !!meta('office'), clerkPerk: !!perk('clerk'), overbook: !!perk('overbook')});
+const ordFull = () => S.contracts.length >= ordCap();
 function accept(i){
-  if (S.contract) return;
+  if (ordFull()) return;
   const o = S.offers[i]; if (!o) return;
-  S.contract = {...o, done:0, end:S.t + o.dur};
+  S.contracts.push({...o, done:0, end:S.t + o.dur});
   S.offers.splice(i,1); applyQueue();
   note(`Signed with ${o.mill}: ${bf(o.vol)} in ${mins(o.dur)}, +${Math.round(o.prem*100)}%.`);
   render(true);
@@ -6246,9 +6372,12 @@ function deliver(amt){
   if (sh > 0){ S.bulk.logs += amt*sh; S.run.toMill = (S.run.toMill || 0) + amt*sh; }
   const base = amt*avg*umult('scale')*pmult('price')*mktMod()*market()*(1 + S.rep/100)*(sh > 0 ? 1 - sh*.5 : 1);
   let rev = base;
-  const c = S.contract;
-  if (c){ const into = Math.min(amt*orderShare(c), c.vol - c.done); rev += base*(into/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += into;
-    if (c.done >= c.vol - 1e-6){ S.stats.contracts++; note(`Filled the ${c.mill} order: ${bf(c.vol)}.`); S.contract = null; contractFilled(c); } }
+  // the split: tree orders first (their species' share of the load), then the soonest deadline; one bonus per log
+  const cs = S.contracts;
+  if (cs.length){ const sh = tract() ? cutOf(tract()).mix : null;
+    const sp = Core.splitDelivery(amt, cs.map(c => ({sp:c.sp, need:c.vol - c.done, end:c.end, prem:c.prem})), id => sh ? Core.mixShare(sh, id) : 0, !!perk('rush'));
+    cs.forEach((c, j) => { rev += base*(sp.paid[j]/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += sp.into[j]; });
+    for (const c of cs.filter(c => c.done >= c.vol - 1e-6)){ S.stats.contracts++; note(`Filled the ${c.mill} order: ${bf(c.vol)}.`); S.contracts.splice(S.contracts.indexOf(c), 1); contractFilled(c); } }
   S.earned += rev; S.bucket += rev; S.run.earned += rev;
   const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back;
   if (S.owed < .01) S.owed = 0;
@@ -6296,12 +6425,12 @@ function tick(dt){
   if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
     queueDraft(.65, `Reached ${ERAS[S.run.era].name}`); } }
   // contracts
-  if (S.contract && S.t >= S.contract.end){
-    const c = S.contract; const pen = Core.missedPenalty(c.penalty, c.done, c.vol, !!perk('handshake'), !!c.sp); S.cash = Math.max(0, S.cash - pen);
-    note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. ` + (c.sp ? 'Tree orders have no fine.' : `Paid a ${money(pen)} fine.`));
-    S.contract = null;
+  for (const c of S.contracts.filter(c => S.t >= c.end)){
+    const pen = Core.missedOrderFine(c, !!perk('handshake'), !!perk('overbook')); S.cash = Math.max(0, S.cash - pen);
+    note(`Missed the ${c.mill} deadline at ${Math.round(c.done/c.vol*100)}%. ` + (pen > 0 ? `Paid a ${money(pen)} fine.` : c.sp ? 'Tree orders have no fine.' : 'No fine.'));
+    S.contracts.splice(S.contracts.indexOf(c), 1);
   }
-  S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !S.contract)) refreshOffers();
+  S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !ordFull())) refreshOffers();
   S.saleT -= dt; if (S.saleT <= 0) refreshSales();
   // income average
   const k = Math.min(1, dt/20);
@@ -6505,10 +6634,11 @@ const perfRate = () => Math.min(Core.FIT_PERF_RATE_MAX, (S.stats.perfFell || 0) 
 const spWord = sp => SP[sp].name.toLowerCase();
 // the player's open orders a lot can serve: the species charter order (or species offers on the board when none is signed),
 // then Prime needs: structures still to build (the warehouse keeps their share back), then special orders, each after warehouse stock
+const cId = j => j ? 'contract' + j : 'contract';
 function fitOrders(){
-  const out = [], c = S.contract;
-  if (c && c.sp && c.vol > c.done) out.push({kind:'species', id:'contract', short:`the ${spWord(c.sp)} order`, sp:c.sp, need:c.vol - c.done, secondsLeft:Math.max(0, c.end - S.t), signed:true});
-  if (!c) S.offers.forEach((o, i) => { if (o.sp) out.push({kind:'species', id:'offer'+i, short:`the offered ${spWord(o.sp)} order${S.offers.filter(x => x.sp === o.sp).length > 1 ? ` (${o.mill})` : ''}`, sp:o.sp, need:o.vol, secondsLeft:o.dur, signed:false}); });
+  const out = [];
+  S.contracts.forEach((c, j) => { if (c.sp && c.vol > c.done) out.push({kind:'species', id:cId(j), short:`the ${spWord(c.sp)} order${S.contracts.filter(x => x.sp === c.sp).length > 1 ? ` (${c.mill})` : ''}`, sp:c.sp, need:c.vol - c.done, secondsLeft:Math.max(0, c.end - S.t), signed:true}); });
+  if (!ordFull()) S.offers.forEach((o, i) => { if (o.sp) out.push({kind:'species', id:'offer'+i, short:`the offered ${spWord(o.sp)} order${S.offers.filter(x => x.sp === o.sp).length > 1 ? ` (${o.mill})` : ''}`, sp:o.sp, need:o.vol, secondsLeft:o.dur, signed:false}); });
   [...new Set(Core.PRIME_RULES.map(r => r.item))].forEach(item => {
     let stock = bankN(item); const name = IDEF(item).plural;
     if (S.story.sawmillOpened) for (const d of Core.STRUCTURES){
@@ -6710,26 +6840,30 @@ function orderBestLot(id){
 }
 function renderContracts(){
   renderHire(); renderSpecials();
-  const c = S.contract;
-  const bestLine = c ? (c.sp ? orderBestLot('contract') : '') : S.offers.map((o, i) => o.sp ? orderBestLot('offer'+i) : '');
-  const key = (c ? 'c'+c.mill+c.vol : 'o'+S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|')) + JSON.stringify(bestLine);
+  const cs = S.contracts, cap = ordCap(), full = cs.length >= cap;
+  const bestC = cs.map((c, j) => c.sp ? orderBestLot(cId(j)) : ''), bestO = full ? [] : S.offers.map((o, i) => o.sp ? orderBestLot('offer'+i) : '');
+  const key = 'c' + cap + cs.map(c => c.mill+c.vol+c.end).join('|') + (full ? '' : 'o' + S.offers.map(o => o.mill+o.vol+(o.sp||'')).join('|')) + JSON.stringify(bestC) + JSON.stringify(bestO);
   // a species order: the client wants one species; only its share of each delivery counts, and missing it costs nothing
   const spLine = o => o.sp ? `<p class="sporder">${SP[o.sp].name} only: “${Core.SPECIES_CLIENTS[o.sp].line}”. Only the ${spWord(o.sp)} counts` +
     (tract() ? ` (${Math.round(Core.mixShare(cutOf(tract()).mix, o.sp)*100)}% of ${tract().name})` : '') + '.</p>' : '';
-  list('contracts', key, c
-    ? `<div class="contract"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Tree order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on sales</span>${spLine(c)}${bestLine}
-       <div class="bar"><i id="cBar"></i></div><div class="line"><span id="cDone"></span><span id="cLeft"></span></div></div>`
+  const head = cs.length || cap > 1 ? `<p class="spec ocap" id="oCap">${cs.length} of ${cap} active${cs.length > 1 ? (perk('rush') ? '. Orders for the same trees fill from the same logs.' : '. Each load fills tree orders first, then the order due soonest.') : ''}</p>` : '';
+  const active = cs.map((c, j) => `<div class="contract" data-ci="${j}"><b>${c.mill}</b>${c.sp ? ' <span class="chipl sp">Tree order</span>' : ''}<span class="spec"> · +${Math.round(c.prem*100)}% on sales</span>${spLine(c)}${bestC[j]}
+       <div class="bar"><i data-cbar="${j}"></i></div><div class="line"><span data-cdone="${j}"></span><span data-cleft="${j}"></span></div></div>`).join('');
+  const fine = o => o.sp ? (perk('overbook') && !perk('handshake') ? 'Small fine if missed' : 'No fine if missed') : `Fine if missed: up to ${money(o.penalty)}`;
+  const board = full ? (cs.length ? `<p class="empty">Board full. Fill an order to sign more.</p>` : '')
     : (S.offers.length ? S.offers.map((o,i) => `<div class="row"><div class="info"><b>${o.mill}</b>${o.sp ? ' <span class="chipl sp">Tree order</span>' : ''}
-       <p>${bf(o.vol)}${o.sp ? ' of ' + spWord(o.sp) : ''} in ${mins(o.dur)} · +${Math.round(o.prem*100)}% bonus</p>${spLine(o)}${bestLine[i]}<span class="spec">${o.sp ? 'No fine if missed' : `Fine if missed: up to ${money(o.penalty)}`}</span></div>
-       <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No orders right now.</p>'),
+       <p>${bf(o.vol)}${o.sp ? ' of ' + spWord(o.sp) : ''} in ${mins(o.dur)} · +${Math.round(o.prem*100)}% bonus</p>${spLine(o)}${bestO[i]}<span class="spec">${fine(o)}</span></div>
+       <div class="btns"><button class="buy" type="button" data-o="${i}">Sign</button></div></div>`).join('') : '<p class="empty">No orders right now.</p>');
+  list('contracts', key, head + active + board,
     box => box.querySelectorAll('button[data-o]').forEach(b => b.onclick = () => accept(+b.dataset.o)));
-  if (c){
-    $('cBar').style.width = (c.done/c.vol*100).toFixed(1)+'%';
-    $('cDone').textContent = `${bf(c.done)} of ${bf(c.vol)}`;
+  cs.forEach((c, j) => {
+    const bar = document.querySelector(`[data-cbar="${j}"]`), dn = document.querySelector(`[data-cdone="${j}"]`), lf = document.querySelector(`[data-cleft="${j}"]`); if (!bar || !dn || !lf) return;
+    bar.style.width = (c.done/c.vol*100).toFixed(1)+'%';
+    dn.textContent = `${bf(c.done)} of ${bf(c.vol)}`;
     const left = c.end - S.t, need = (c.vol - c.done)/Math.max(1e-9, rate('haul')*orderShare(c));
-    $('cLeft').textContent = `${mins(Math.max(0,left))} left` + (need > left ? ' · behind' : ' · on time');
-    $('cLeft').className = need > left ? 'neg' : 'pos';
-  }
+    lf.textContent = `${mins(Math.max(0,left))} left` + (need > left ? ' · behind' : ' · on time');
+    lf.className = need > left ? 'neg' : 'pos';
+  });
 }
 function renderCompany(){
   $('coName').textContent = ERAS[S.era].name;
@@ -7999,7 +8133,7 @@ function contractFilled(){
 }
 // order perks join the Logging pool once their special order is filled (appended, so the pool is unchanged until then)
 const orderPerkPool = () => Core.ORDER_PERKS.filter(p => S.orders.perks.includes(p.id) && !S.run.perks.includes(p.id));
-const perkPool = () => Core.draftPool(S.run.perks, !!meta('lore')).concat(orderPerkPool());
+const perkPool = () => Core.draftPool(S.run.perks, !!meta('lore'), ordCap()).concat(orderPerkPool());
 // drafts per camp: 'logging' uses S.run, 'sawmill' the mill outpost (its own perks, from Core.SAW_PERKS)
 const dRun = camp => camp === 'sawmill' ? S.camps.sawmill : S.run;
 const rollCards = (q, camp) => camp === 'sawmill' ? Core.rollDraft(sawRng, Core.sawDraftPool(S.camps.sawmill.perks), 3, q)
@@ -8049,7 +8183,7 @@ function startRun(mods){
   if (r.mods.length){ refreshSales(); note(`Outpost ${r.n} rules: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')}. Shares ×${modMult().toFixed(2)}.`); }
 }
 function buyMeta(id){
-  const m = META.find(x => x.id === id); if (!m || meta(id) || S.meta.legacy < m.cost) return false;
+  const m = META.find(x => x.id === id); if (!m || meta(id) || (m.req && !meta(m.req)) || S.meta.legacy < m.cost) return false;
   S.meta.legacy -= m.cost; S.meta.nodes.push(id);
   if (id === 'reroll') S.run.rerolls++;
   note(`Board gift: ${m.name}.`); toast({label:'From the board', name:m.name, line:m.desc});
@@ -8109,7 +8243,11 @@ function normalize(){
   S.vis = Core.speciesId(S.vis) || (S.tracts[0] ? S.tracts[0].mix[0][0] : 'pine');
   const fixOffer = o => { if (obj(o) && o.sp != null){ const sp = Core.speciesId(o.sp); if (sp) o.sp = sp; else delete o.sp; } return o; };
   S.offers = (Array.isArray(S.offers) ? S.offers : []).filter(obj).map(fixOffer);
-  if (obj(S.contract)) fixOffer(S.contract); else S.contract = null;
+  // several active orders (2026-10-26): an old save's single contract becomes the first entry of the list
+  S.contracts = (Array.isArray(S.contracts) ? S.contracts : []).filter(c => obj(c) && c.vol > 0).map(fixOffer);
+  if (obj(S.contract) && S.contract.vol > 0) S.contracts.push(fixOffer(S.contract));
+  delete S.contract;
+  S.contracts.forEach(c => { c.done = Math.max(0, +c.done || 0); if (!(typeof c.end === 'number' && isFinite(c.end))) c.end = S.t + (+c.dur || 300); if (!(c.penalty >= 0)) c.penalty = 0; if (!(c.prem >= 0)) c.prem = 0; });
   S.millShare = typeof S.millShare === 'number' && isFinite(S.millShare) ? Math.max(0, Math.min(Core.MILL_SHARE_MAX, S.millShare)) : Core.MILL_SHARE_DEFAULT;
   S.rng = Object.assign(freshRng(), obj(S.rng) ? S.rng : {});
   // seasonal events (2026-10-25): older saves have no weather; the first roll comes at the next season change
@@ -8208,7 +8346,7 @@ function renderRun(){
   // meta tree
   $('legMeta').textContent = `${fmt(S.meta.legacy)} shares to spend · ${fmt(S.meta.total)} earned over ${S.runs.length} ${S.runs.length === 1 ? 'outpost' : 'outposts'}. Board gifts last forever and build toward Landfall City.`;
   list('metaList', S.meta.nodes.join() + '|' + META.map(m => S.meta.legacy >= m.cost ? 1 : 0).join(''), META.map(m => `<div class="row"><div class="info"><b>${m.name}</b><p>${m.desc}</p></div>
-    <div class="btns">${meta(m.id) ? '<span class="chipl ownd">Owned</span>' : `<button class="buy" type="button" data-meta="${m.id}" ${S.meta.legacy < m.cost ? 'disabled' : ''}>${m.cost} shares</button>`}</div></div>`).join(''),
+    <div class="btns">${meta(m.id) ? '<span class="chipl ownd">Owned</span>' : m.req && !meta(m.req) ? `<span class="chipl">Needs ${META.find(x => x.id === m.req).name}</span>` : `<button class="buy" type="button" data-meta="${m.id}" ${S.meta.legacy < m.cost ? 'disabled' : ''}>${m.cost} shares</button>`}</div></div>`).join(''),
     box => box.querySelectorAll('[data-meta]').forEach(b => b.onclick = () => { if (buyMeta(b.dataset.meta)){ render(true); const nx = $('metaList').querySelector('.buy:not(:disabled)'); if (nx) nx.focus(); } }));
   list('pastRuns', S.runs.map(x => x.n + ':' + x.legacy).join(), S.runs.length ? S.runs.map(x => `<div><span>Outpost ${x.n}${x.mods.length ? ' · ' + x.mods.map(id => MODS.find(m => m.id === id)?.name).join(', ') : ''}</span><span><b>${x.min} min</b> · ${ERAS[x.era].name} · ${bf(x.deliv)} · <b>+${x.legacy}</b> shares</span></div>`).join('')
     : '<p class="empty">No camps closed yet.</p>');
@@ -8990,7 +9128,7 @@ $('saveBtn').onclick = () => { openWh('ledger'); const b = $('svCopy'); if (b) b
 
 function boot(){
   if (!S.forSale.length) refreshSales();
-  if (!S.offers.length && !S.contract) refreshOffers();
+  if (!S.offers.length && !ordFull()) refreshOffers();
   if (!S.hireOffer && !hireActive()) S.hireOffer = genHire();
   if (!S.log.length) note('Landed on the Fogbound Coast with an axe and no crew. Forty trees stand by the cove. Chop, buck, skid and haul by hand to earn your first dollars.');
   setSite(); if (S.hp == null) newTree();
