@@ -11,6 +11,8 @@ function run(profile, seed, hours=4, opt={}){
   let x=seed*9301+49297; const rnd=()=>{x=(x*9301+49297)%233280; return x/233280;};
   const dom=new JSDOM(html,{runScripts:'dangerously',beforeParse(w){w.Math.random=rnd; w.__SIM=true;}});
   const G=dom.window.__G; const S=G.S; const Core=dom.window.Core;
+  // builds before several active orders (2026-10-26) keep one S.contract: read it as a list of 0 or 1
+  const CS=()=>S.contracts||(S.contract?[S.contract]:[]), ordFull=()=>G.ordFull?G.ordFull():!!S.contract, ordCap=()=>G.ordCap?G.ordCap():1;
   G.normalize(); G.refreshSales(); G.refreshOffers(); S.hireOffer=G.genHire(); G.setSite(); G.newTree();
   // playtest 2: finds and the Sawmill draw from their own seeded streams, so the logging draws above stay byte-exact
   if(S.rng){ S.rng.drops=(seed*7919+1)>>>0; S.rng.saw=(seed*104729+3)>>>0; S.rng.events=(seed*15485863+5)>>>0; S.rng.land=(seed*32452843+7)>>>0; }
@@ -90,9 +92,9 @@ function run(profile, seed, hours=4, opt={}){
   const mg = profile==='minigame';
   let mgClock=0;
   for(let t=0;t<T;t+=dt){
-    const c0=(S.contracts||[]).slice();
+    const c0=CS().slice();
     G.tick(dt);
-    for(const c of c0) if(c.sp && !S.contracts.includes(c)){ if(c.done>=c.vol-1e-6) XT.spFill++; else XT.spMiss++; }
+    for(const c of c0) if(c.sp && !CS().includes(c)){ if(c.done>=c.vol-1e-6) XT.spFill++; else XT.spMiss++; }
     if(G.cutOf && G.tract() && G.cutOf(G.tract()).pf<0.8) XT.pickLow+=dt;
     // manual clicks
     const cr=clickRate(S.t);
@@ -163,8 +165,8 @@ function run(profile, seed, hours=4, opt={}){
     if((S.ema-S.upEma)<0) stats.neg+=dt;
     if(G.tract()){ const neck=STG.reduce((a,b)=>cap(b)<cap(a)?b:a); const k=S.era+':'+neck; stats.neck[k]=(stats.neck[k]||0)+dt; }
     // several active orders (2026-10-26): an order that left the list was filled (before its deadline) or missed
-    for(const c of lastContract) if(!S.contracts.includes(c)){ if(c.done>=c.vol-1e-6){ stats.contractsWon++; XT.cFill++; } else { stats.contractsLost++; XT.cMiss++; } }
-    lastContract=S.contracts.slice(); XT.capMax=Math.max(XT.capMax,G.ordCap()); XT.activeMax=Math.max(XT.activeMax,S.contracts.length);
+    for(const c of lastContract) if(!CS().includes(c)){ if(c.done>=c.vol-1e-6){ stats.contractsWon++; XT.cFill++; } else { stats.contractsLost++; XT.cMiss++; } }
+    lastContract=CS().slice(); XT.capMax=Math.max(XT.capMax,ordCap()); XT.activeMax=Math.max(XT.activeMax,CS().length);
     // weather pace (the bad-luck measure, time-weighted): each second's slowdown of the bottleneck with the weather against the
     // same moment with it muted, averaged over the seconds with timber to cut (a slow second late in the run counts no more than an early one)
     if(EVENTS && G.setWxMute && Math.round(S.t*2)%2===0){ const nc=()=>G.tract()?Math.min(...STG.map(cap)):0; const a=nc(); let b=a; if(evNow()){ G.setWxMute(true); b=nc(); G.setWxMute(false); } if(b>0){ wxPace.tw+=1-a/b; wxPace.n++; } }
@@ -211,12 +213,12 @@ function run(profile, seed, hours=4, opt={}){
         if(AWAYP && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } } // present: crews off the AFK lot
     }
     // several active orders: sign up to capacity while the orders already signed leave room (the haul rate they still need)
-    for(let g=0; g<6 && !G.ordFull() && S.offers.length; g++){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1;
+    for(let g=0; g<6 && !ordFull() && S.offers.length; g++){ const hc=Math.min(...STG.map(cap))||1; const sh=o=>o.sp ? (G.tract()?Core.mixShare(G.tract().mix,o.sp):0) : 1;
       // with First on the order's species the whole delivery counts, but crews pick at 0.5 + 0.5 × its share
       const need=o=>STASH && o.sp ? o.vol/Core.pickFactor(sh(o)) : o.vol/sh(o);
-      const busy=S.contracts.reduce((a,c)=>a+(c.vol-c.done)/Math.max(.1,sh(c))/Math.max(30,c.end-S.t),0);
+      const busy=CS().reduce((a,c)=>a+(c.vol-c.done)/Math.max(.1,sh(c))/Math.max(30,c.end-S.t),0);
       const o=S.offers.find(o=>sh(o)>0 && need(o)<=(hc-busy)*o.dur*0.8); if(!o) break; G.accept(S.offers.indexOf(o)); }
-    if(STASH){ const want=(S.contracts.find(c=>c.sp)||{}).sp||null; if(want!==stashSp){ if(stashSp) G.setStashRule(stashSp,'any'); if(want) G.setStashRule(want,'first'); stashSp=want; } }
+    if(STASH){ const want=(CS().find(c=>c.sp)||{}).sp||null; if(want!==stashSp){ if(stashSp) G.setStashRule(stashSp,'any'); if(want) G.setStashRule(want,'first'); stashSp=want; } }
     const nx=G.ERAS[S.era+1];
     const ec=G.eraCost(S.era+1);
     if(nx && S.cash>=ec+reserve()){ S.cash-=ec; S.era++; S.year=Math.max(S.year,nx.year); G.refreshSales(); G.refreshOffers(); eraT.push(S.t); bought('era'); continue; }
