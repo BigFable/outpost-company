@@ -123,13 +123,57 @@ export const FOUNDING_CRATE = deepFreeze({
   items:[{item:'logging.prime_spar', qty:6}, {item:'logging.amber_pitch', qty:2}, {item:'logging.ships_fitting', qty:1}] as readonly ItemStack[],
   logsBf:20000, cash:60,
 });
-/** Share of Logging deliveries sent to the log pond: default and bounds of the slider. */
+/** The log slider is a cap: the most of each Logging delivery the auto flow may send to the log pond. Default and bounds. */
 export const MILL_SHARE_DEFAULT = 0.1;
 export const MILL_SHARE_MAX = 0.5;
+/** Auto flow: Logging keeps the log pond topped up to this many seconds of the mill's current sawing. */
+export const MILL_FLOW_BUFFER_S = 300;
+/**
+ * Auto slider: board feet of a delivery of `amt` that Logging sends to the mill. It sends what the mill can saw
+ * (sawing rate `rate` bd ft/s × the buffer, minus the `pond` stock), never more than the `cap` share of the delivery.
+ */
+export function millFlowBf(amt: number, cap: number, rate: number, pond: number): number {
+  if (!(amt > 0) || !(cap > 0) || !(rate > 0)) return 0;
+  const need = rate * MILL_FLOW_BUFFER_S - Math.max(0, pond);
+  return need > 0 ? Math.min(amt * Math.min(cap, MILL_SHARE_MAX), need) : 0;
+}
+
+// ---------- camp money (docs/design/lot-stash-and-camp-money.md, part B, model 4, slice 1)
+// Each camp keeps its own cash. Money crosses camps only with goods: logs floated down, plank bundles carted up.
+
+/**
+ * - `logPriceMult`: the mill pays Logging this share of the cove price (what Logging would get at the cove) for slider logs, from mill cash.
+ * - `bundlePrice`: Logging pays the mill this much mill cash per plank bundle used in the bunkhouse.
+ * - `crateCash`: mill cash in the Sawmill crate, given at the start of every mill run (on top of `FOUNDING_CRATE.cash`).
+ */
+export const CAMP_MONEY = deepFreeze({ logPriceMult: 0.5, bundlePrice: 40, crateCash: 300 });
+/** Cash every mill run starts with: the founding crate's cash plus the camp-money crate cash. */
+export function millStartCash(): number { return FOUNDING_CRATE.cash + CAMP_MONEY.crateCash; }
+/** The mill board's "Log crate" node (saw.advance): bd ft of logs added to the log pond at the start of each mill run. */
+export const LOG_CRATE_BF = 3000;
+
+export interface MillLogSale { readonly bf: number; readonly cost: number }
+/**
+ * The slider's sale to the mill. `wantBf` is the auto flow's part of a delivery and `coveValue` what those logs would fetch at the cove.
+ * Can't-afford rule: the mill takes only the logs it can pay for in full; Logging sells the rest at the cove as usual.
+ * No debt, no stall: Logging is never short-paid and the mill never goes below $0.
+ */
+export function millLogSale(wantBf: number, coveValue: number, millCash: number): MillLogSale {
+  if (!(wantBf > 0)) return { bf: 0, cost: 0 };
+  const price = Math.max(0, coveValue) * CAMP_MONEY.logPriceMult, cash = Math.max(0, millCash);
+  if (price <= cash) return { bf: wantBf, cost: price };
+  return { bf: wantBf * (cash / price), cost: cash };
+}
+/** What Logging pays the mill for `bundles` plank bundles. */
+export function bundleCost(bundles: number): number { return Math.max(0, bundles) * CAMP_MONEY.bundlePrice; }
+/** Plank bundles one structure level uses. */
+export function levelBundles(l: StructureLevel): number {
+  return l.items.reduce((a, i) => a + (i.item === 'sawmill.plank_bundle' ? i.qty : 0), 0);
+}
 
 /** The mill's board (spent with Sawmill Charter Shares). */
 export const MILL_META: readonly MetaNodeDef[] = deepFreeze([
-  {id:'saw.advance', cost:3, name:'Mill cash', desc:'Start each mill run with $300.'},
+  {id:'saw.advance', cost:3, name:'Log crate', desc:'Start each mill run with 3,000 bd ft of logs.'},
   {id:'saw.crew', cost:5, name:'Extra sawyers', desc:'Start each mill run with 2 more sawyers.'},
   {id:'saw.sharp', cost:8, name:'Saw filer', desc:'Every sawyer saws ×1.2.'},
   {id:'saw.chronicler', cost:10, name:'Mill clerk', desc:'Shares from closing the mill +15%.'},

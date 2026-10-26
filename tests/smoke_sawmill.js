@@ -80,7 +80,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  ok(E(`bankN('logging.prime_spar')`)>=5+6-5 && E(`S.orders.back.admiralty_spar`)===3 && !E(`S.orders.open.some(o=>o.id==='admiralty_spar')`),'missed order: withdrawn, hand-ins returned, back in two outposts, no penalty');
  ok(E('S.story.sawmillOpened') && E('!!S.camps.sawmill') && E('S.bulk.logs')===20000 && E('S.structures["sawmill.pit"]')===1,'first close camp opens the Sawmill: saw pit and 20,000 bd ft in the log pond');
  ok(E(`bankN('logging.amber_pitch')`)>=2 && E(`bankN('logging.ships_fitting')`)>=1 && E('S.camps.sawmill.cash')===Core_c(E),'founding crate: Prime spars, pitch, a fitting, and the mill’s own starting cash');
- function Core_c(E){ return E('Core.FOUNDING_CRATE.cash'); }
+ function Core_c(E){ return E('Core.FOUNDING_CRATE.cash + Core.CAMP_MONEY.crateCash'); }
  ok(E('S.story.card')===true && E('S.bank.logging_burl===undefined') && E(`bankN('logging.burl')`)===2,'warehouse contents survive close camp; story card waits');
  E(`$('newrun').hidden=true; maybeStory()`); ok(!$('story').hidden && /Saw them here/.test($('stBody').textContent),'one-time story card');
  $('stGo').click(); ok($('story').hidden && E('S.ui.camp')==='sawmill' && !$('millView').hidden && $('logView').hidden && !$('campTabs').hidden,'Open the Sawmill switches to the Sawmill tab');
@@ -102,9 +102,10 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  void mc;
  // ---------- 6. slider and the log pond
  $('tabLog').click(); ok(!$('millSl').hidden && E('S.millShare')===.1 && $('millShare').value==='10','log slider on the logging board, default 10%');
- E(`S.landing={bf:1000,val:200}; S.contracts=[]; S.owed=0; S.bulk.logs=0`); const cashA=E('S.cash'); const rev=E('deliver(1000)');
+ E(`S.landing={bf:1000,val:200}; S.contracts=[]; S.owed=0; S.bulk.logs=0; S.camps.sawmill.cash=1e4`); const cashA=E('S.cash'), mc6=E('S.camps.sawmill.cash'); const rev=E('deliver(1000)');
+ const paid6=mc6-E('S.camps.sawmill.cash');
  E(`S.millShare=0; S.landing={bf:1000,val:200}`); const rev0=E('deliver(1000)');
- ok(E('S.bulk.logs')===100 && Math.abs(rev/rev0-.95)<1e-9,'10% of a delivery floats to the pond; the company pays half price for it');
+ ok(E('S.bulk.logs')===100 && Math.abs(rev/rev0-.95)<1e-9 && Math.abs(paid6-rev0*.05)<1e-9,'empty pond: the 10% cap of a delivery floats to the pond; the mill pays half the cove price for it from mill cash');
  const inp=$('millShare'); inp.value='50'; inp.dispatchEvent(new w.Event('input',{bubbles:true})); ok(E('S.millShare')===.5 && /50%/.test($('millShareV').textContent),'slider goes up to 50%');
  inp.value='0'; inp.dispatchEvent(new w.Event('input',{bubbles:true})); ok(E('S.millShare')===0,'and down to 0%'); E('S.millShare=.1'); void cashA;
  // ---------- 7. plank bundles and the bunkhouse
