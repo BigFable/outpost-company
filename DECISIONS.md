@@ -4,6 +4,8 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Camp money tuning: the mill pays 0.5× cove price for slider logs (was 0.8×); the Sawmill crate gives $300 mill cash at the start of every mill run (the board node that also gave +$300 gets a new effect); the dry-pond measure is unchanged | Balance check: later mill runs started nearly broke and mill profit per hour fell ~70%; log cost took half the mill's margin |
+| 2026-10-26 | Auto slider: Logging sends the mill what it can saw, up to a cap the player sets | The dry pond is a log-supply gap that no single constant fixes |
 | 2026-10-26 | Keep the 4-offer charter board. AFK lot fixes: trees 4–6× → 12–18×, land price ×0.8 → ×0.4, always on the board (chance 0.6 → 1); never ranked "best" or scored as a normal lot; the queue puts newly bought normal lots ahead of it; the sim gains an "idle-away" profile that buys it before leaving | Balance check of round 3: the AFK lot covered only 10–20 min and was a trap when picked by value |
 | 2026-10-25 | Camp money: separate cash per camp confirmed; money crosses only with goods — the mill pays Logging 0.8× cove price for slider logs from its own cash, Logging pays $40 per plank bundle, the Sawmill crate adds $300 mill cash; mill log orders (1.2×, free to miss) as a 5th charter-board card in slice 2 | Owner's pick from docs/design/lot-stash-and-camp-money.md (model 4) |
 | 2026-10-25 | Lot stash: a Trees tab listing all owned trees by species with Any / First / Skip per species; picking costs speed (felling and skidding at 0.5 + 0.5 × species share); species orders credit what is actually cut; fallbacks so crews never stall | Owner's request and calls |
