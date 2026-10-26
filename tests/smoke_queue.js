@@ -24,7 +24,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.tracts=[Object.assign(Core.makeTract('Home lot',[['pine',100]],30,1,'flat'),{seq:0})]; S.tractSeq=1; setSite(); newTree();
    S.forSale=[Core.makeTract('Pine flats, Lot 3',[['pine',90],['hemlock',10]],60,2,'flat','coast'), Core.makeTract('Spruce head, Lot 7',[['spruce',85],['pine',15]],60,2,'flat','headland'), Core.makeTract('Hemlock bog, Lot 9',[['hemlock',80],['spruce',20]],60,1,'flat','swamp')];
    S.forSale.forEach(t=>t.price=100);
-   S.contract={mill:'the Admiralty spar yard', sp:'spruce', vol:3000, done:0, dur:400, end:S.t+400, prem:.4, penalty:0};
+   S.contracts=[{mill:'the Admiralty spar yard', sp:'spruce', vol:3000, done:0, dur:400, end:S.t+400, prem:.4, penalty:0}];
    S.orders.open=[{id:'admiralty_spar', posted:S.run.n, due:S.run.n+1, given:{}}]; S.bank={}; S.stats.perfFell=20; S.felled=100; render(true);`);
  let cards=[...d.querySelectorAll('#sales .row.lot')];
  const bestOf=id=>cards.findIndex(c=>c.querySelector(`[data-best="${id}"]`));
@@ -60,7 +60,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.season=2; render(true);`);
 
  // ---------- 3. switching lots keeps each lot's progress
- E(`S.contract=null; S.orders.open=[]; S.tracts=[Object.assign(Core.makeTract('Alpha',[['pine',100]],40,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Beta',[['spruce',100]],30,6,'steep','headland'),{seq:1}), Object.assign(Core.makeTract('Gamma',[['hemlock',100]],20,2,'rolling','swamp'),{seq:2})];
+ E(`S.contracts=[]; S.orders.open=[]; S.tracts=[Object.assign(Core.makeTract('Alpha',[['pine',100]],40,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Beta',[['spruce',100]],30,6,'steep','headland'),{seq:1}), Object.assign(Core.makeTract('Gamma',[['hemlock',100]],20,2,'rolling','swamp'),{seq:2})];
    S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; render(true);`);
  let rows=()=>[...d.querySelectorAll('#tq .qrow')];
  ok(rows().length===3 && rows()[0].classList.contains('on') && /Crews here/.test(rows()[0].textContent),'queue lists the owned lots, crews on the first');
@@ -108,11 +108,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(E('tract().name')==='Beta' && vph[0]>=vph[1] && modeBtn('value').getAttribute('aria-pressed')==='true','by value an hour: waiting lots sorted, crews stay on Beta');
  modeBtn('bought').click();
  ok(E('S.tracts.map(t=>t.name).join()')==='Beta,Alpha,Gamma','as bought: waiting lots in purchase order');
- E(`S.contract={mill:'Landfall Pier Works', sp:'hemlock', vol:2000, done:0, dur:300, end:S.t+300, prem:.4, penalty:0}; render(true);`);
+ E(`S.contracts=[{mill:'Landfall Pier Works', sp:'hemlock', vol:2000, done:0, dur:300, end:S.t+300, prem:.4, penalty:0}]; render(true);`);
  modeBtn('deadline').click();
  ok(E('S.tracts[1].name')==='Gamma','by order deadline: the hemlock lot that serves the signed hemlock order moves up');
  ok(rows()[1].querySelector('[data-fitb="contract"]'),'queued lots carry order-fit badges');
- E(`S.contract=null`);
+ E(`S.contracts=[]`);
  // a cut-out lot hands the crews to the next in the queue
  E(`S.ui.qOrder='hand'; S.tracts[0].left=1; S.hp=1; damage(1);`);
  ok(E('tract().name')==='Gamma' && /Crews moved to Gamma/.test(E('S.log.find(e=>/^Finished /.test(e.text)).text')),'when the active lot is cut out, crews move to the next in the queue');
@@ -122,7 +122,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // ---------- 5. the charter board: four offers, the first always a regular order; order fit on each species offer
  let firstRegular=true, counts=new Set(), sp=0;
- for(let i=0;i<40;i++){ E(`S.contract=null; refreshOffers();`); counts.add(E('S.offers.length')); if(E('S.offers[0].sp')) firstRegular=false; sp+=E('S.offers.filter(o=>o.sp).length'); }
+ for(let i=0;i<40;i++){ E(`S.contracts=[]; refreshOffers();`); counts.add(E('S.offers.length')); if(E('S.offers[0].sp')) firstRegular=false; sp+=E('S.offers.filter(o=>o.sp).length'); }
  ok([...counts].join()==='4' && E('Core.OFFER_BOARD_SIZE')===4,'the charter board shows 4 orders');
  ok(firstRegular,'the first slot is always a regular (any wood) order');
  ok(sp>0,'the other slots can name a species ('+sp+' species offers in 40 boards)');
@@ -169,12 +169,12 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.forSale=[${mkLot('Late')}]; buyTract(0); render(true);`);
  ok(E('S.tracts.map(t=>t.afk?"AFK":t.name).join()')==='Home,AFK,Mid,Late','by hand, the player\'s order is kept: a new lot joins the end');
  // the AFK lot never takes a "Best for" badge, even when it is the only lot that serves an order
- E(`S.ui.qOrder='bought'; S.tracts=[]; S.hp=null; S.contract={mill:'the box factory', sp:'pine', vol:3000, done:0, dur:4000, end:S.t+4000, prem:.4, penalty:0};
+ E(`S.ui.qOrder='bought'; S.tracts=[]; S.hp=null; S.contracts=[{mill:'the box factory', sp:'pine', vol:3000, done:0, dur:4000, end:S.t+4000, prem:.4, penalty:0}];
    S.forSale=[Core.genAfkLot(Core.streamRng(S.rng,'land'),0,saleOpts())]; render(true);`);
  ok(d.querySelectorAll('#sales [data-best]').length===0,'the AFK lot never carries a Best for badge');
  const obA=d.querySelector('#contracts [data-obest="contract"]');
  ok(obA && /No lot has enough pine/.test(obA.textContent),'and is never named the best lot for an order: '+(obA&&obA.textContent));
- E('S.contract=null; S.tracts=[]; S.hp=null; render(true);');
+ E('S.contracts=[]; S.tracts=[]; S.hp=null; render(true);');
 
  // ---------- 7. old saves: tracts become the queue in their current order
  E(`S.ui.qOrder='hand'; save();`);

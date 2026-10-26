@@ -20,7 +20,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  const $=id=>d.getElementById(id);
  const click=el=>el.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
  // a camp with two mixed lots: crews on the pine-hemlock lot, a spruce-pine lot waiting
- E(`S.season=2; S.weather.cur=null; S.weather.off=true; S.cash=1e6; S.own={axeman:2, bucker:20, oxen:4, sled:6}; S.upg=[]; S.run.perks=[]; S.contract=null;
+ E(`S.season=2; S.weather.cur=null; S.weather.off=true; S.cash=1e6; S.own={axeman:2, bucker:20, oxen:4, sled:6}; S.upg=[]; S.run.perks=[]; S.contracts=[];
    S.tracts=[Object.assign(Core.makeTract('Home lot',[['pine',70],['hemlock',30]],100,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Spruce head, Lot 7',[['spruce',80],['pine',20]],50,2,'rolling','headland'),{seq:1})];
    S.tractSeq=2; S.ui.stashRule={}; normalize(); setSite(); newTree(); render(true);`);
 
@@ -46,7 +46,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  ok(pineLots.length===2 && /Home lot: \d+ trees \(70%\)/.test(pineLots[0].textContent) && /Crews here/.test(pineLots[0].textContent) && /Spruce head, Lot 7: 10 trees \(20%\) · hilly · 2 mi/.test(pineLots[1].textContent),'tap a species: its lots, with count, share, slope and miles');
  ok(cards.every(c=>[...c.querySelectorAll('.srule button')].map(b=>b.textContent).join()==='Any,First,Skip' && c.querySelector('.srule [aria-pressed="true"]').textContent==='Any'),'each species has Any / First / Skip, Any by default');
  // the spruce order it serves
- E(`S.contract={mill:'the Admiralty spar yard', sp:'spruce', vol:4000, done:0, dur:900, end:S.t+900, prem:.4, penalty:0}; render(true);`);
+ E(`S.contracts=[{mill:'the Admiralty spar yard', sp:'spruce', vol:4000, done:0, dur:900, end:S.t+900, prem:.4, penalty:0}]; render(true);`);
  cards=[...d.querySelectorAll('#stash .scard')];
  ok(/Serves the spruce order/.test(cards[2].textContent) && !/Serves the spruce order/.test(cards[1].textContent),'a card names the orders its trees serve');
 
@@ -57,7 +57,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
 
  // ---------- 4. First: the picking cost and the order credit
  const fullFell=E(`rate('fell')`), fullSkid=E(`rate('skid')`), fullHaul=E(`rate('haul')`);
- const credit0=E('orderShare(S.contract)');
+ const credit0=E('orderShare(S.contracts[0])');
  ok(near(credit0,.8),'under Any the spruce order gets the lot mix share of each delivery (80%)');
  click(d.querySelector('#stash [data-rsp="pine"][data-r="first"]'));
  ok(E('S.ui.stashRule.pine')==='first' && d.querySelector('#stash [data-rsp="pine"][data-r="first"]').getAttribute('aria-pressed')==='true','tap First: the rule is set');
@@ -66,11 +66,11 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  const w0=E('tract().wt'), w1=v.wt;
  ok(near(E(`rate('fell')`), fullFell*.6) && near(E(`rate('skid')`), fullSkid*w0/w1*.6) && near(E(`rate('haul')`), fullHaul*w0/w1),'felling and skidding ×0.6; hauling changes only with the weight of the pine');
  ok(/Picking pine on Spruce head, Lot 7: felling and skidding ×0\.6\./.test($('pickNote').textContent) && !$('pickNote').hidden,'the panel says what picking costs: '+$('pickNote').textContent);
- ok(E('orderShare(S.contract)')===0,'species order credit follows the trees cut: picking pine gives the spruce order nothing');
+ ok(E('orderShare(S.contracts[0])')===0,'species order credit follows the trees cut: picking pine gives the spruce order nothing');
  E(`S.ui.stashRule={}; setStashRule('spruce','first');`);
- ok(E('orderShare(S.contract)')===1 && near(E('cutOf(tract()).pf'), .9),'First on spruce (80%): the spruce order gets every delivery, at ×0.9');
- const done0=E('S.contract.done'); E(`S.landing={bf:1000, val:100}; deliver(1000);`);
- ok(near(E('S.contract.done')-done0, 1000),'a delivery counts in full toward the spruce order');
+ ok(E('orderShare(S.contracts[0])')===1 && near(E('cutOf(tract()).pf'), .9),'First on spruce (80%): the spruce order gets every delivery, at ×0.9');
+ const done0=E('S.contracts[0].done'); E(`S.landing={bf:1000, val:100}; deliver(1000);`);
+ ok(near(E('S.contracts[0].done')-done0, 1000),'a delivery counts in full toward the spruce order');
  // fell the spruce out: then crews cut the rest (Any)
  E(`S.landing={bf:0,val:0}; S.cut={bf:0,val:0}; S.stems={bf:0,val:0};`);
  E(`fellK(tract(), 30);`);
@@ -86,7 +86,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  ok(E('mixPick(tract())')==='pine','the bucking game draws from the trees being cut');
 
  // ---------- 5. Skip, and the never-stall fallbacks
- E(`S.ui.stashRule={}; rulesAny=true; rulesV++; S.contract=null;
+ E(`S.ui.stashRule={}; rulesAny=true; rulesV++; S.contracts=[];
    S.tracts=[Object.assign(Core.makeTract('Alpha, Lot 2',[['pine',50],['hemlock',50]],10,1,'flat'),{seq:5}), Object.assign(Core.makeTract('Beta, Lot 3',[['pine',100]],10,1,'flat'),{seq:6})];
    S.ui.qOrder='bought'; S.hp=null; setSite(); newTree(); setStashRule('hemlock','skip');`);
  ok(E('cutOf(tract())').species.join()==='pine' && near(E('cutOf(tract()).pf'),.75),'Skip hemlock: crews fell only the pine (×0.75)');

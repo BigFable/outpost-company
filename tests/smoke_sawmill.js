@@ -102,7 +102,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  void mc;
  // ---------- 6. slider and the log pond
  $('tabLog').click(); ok(!$('millSl').hidden && E('S.millShare')===.1 && $('millShare').value==='10','log slider on the logging board, default 10%');
- E(`S.landing={bf:1000,val:200}; S.contract=null; S.owed=0; S.bulk.logs=0`); const cashA=E('S.cash'); const rev=E('deliver(1000)');
+ E(`S.landing={bf:1000,val:200}; S.contracts=[]; S.owed=0; S.bulk.logs=0`); const cashA=E('S.cash'); const rev=E('deliver(1000)');
  E(`S.millShare=0; S.landing={bf:1000,val:200}`); const rev0=E('deliver(1000)');
  ok(E('S.bulk.logs')===100 && Math.abs(rev/rev0-.95)<1e-9,'10% of a delivery floats to the pond; the company pays half price for it');
  const inp=$('millShare'); inp.value='50'; inp.dispatchEvent(new w.Event('input',{bubbles:true})); ok(E('S.millShare')===.5 && /50%/.test($('millShareV').textContent),'slider goes up to 50%');

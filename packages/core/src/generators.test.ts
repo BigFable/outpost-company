@@ -212,7 +212,8 @@ describe('drafts', () => {
     expect(pool).toContain('sharp');
     expect(pool).not.toContain('widow');
     expect(pool).not.toContain('store');
-    expect(draftPool([], true).length).toBe(PERKS.length);
+    expect(draftPool([], true, 2).length).toBe(PERKS.length);
+    expect(draftPool([], true).length).toBe(PERKS.filter((p) => !p.cap).length);
   });
   it('draft quality raises rare and legendary weights', () => {
     expect(draftWeight('common', 1)).toBe(60);
