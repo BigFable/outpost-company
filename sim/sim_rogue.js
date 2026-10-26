@@ -197,7 +197,7 @@ function run(profile, seed, hours=4, opt={}){
           ...(EVENTS ? {wx:(()=>{ const a=wxRun, b=wx0(); return {bad:b.bad-a.bad, storms:b.storms-a.storms, cleared:b.cleared-a.cleared, guard:b.guard-a.guard, fires:b.fires-a.fires, burned:Math.round(b.burned-a.burned), maxStreak:b.maxStreak, stormN:S.run.stormN||0, pacePct:+(wxPace.tw/Math.max(1,wxPace.n)*100).toFixed(2)}; })()} : {}),
           ...(MILL ? {prime:i1.prime-i0.prime, orders:i1.orders, bonus:Math.round(Math.min(.25,S.orders.bonusPct)*100), salesPct:+(i1.sales/Math.max(1,S.run.earned)*100).toFixed(2), toMill:Math.round(i1.toMill), bunk:S.structures['logging.bunkhouse']||0} : {})});
         if(runsOut.length>=RUNS) break;
-        G.closeCamp(); wxRun=wx0(); wxPace.tw=0; wxPace.n=0; runItem0={prime:(S.found[SPAR]||{}).total||0, sales:0, orders:0, toMill:0}; if(!NOMETA) for(const id of META_ORDER){ const m=G.META.find(x=>x.id===id); if(S.meta.legacy<m.cost) break; G.buyMeta(id); }
+        G.closeCamp(); wxRun=wx0(); wxPace.tw=0; wxPace.n=0; runItem0={prime:(S.found[SPAR]||{}).total||0, sales:0, orders:0, toMill:0}; if(!NOMETA) for(const id of META_ORDER){ const m=G.META.find(x=>x.id===id); if(!m) continue; if(S.meta.legacy<m.cost) break; G.buyMeta(id); }
         G.startRun(opt.mods&&runsOut.length>=1?opt.mods:[]); S.run.t0=S.t; runStart=S.t; peakLpm=0; lHist.length=0; curDrafts=0; achCash=0; lastBuy=S.t; eraT.length=0;
         continue; } } if(!stats.upgT) stats.upgT=[]; while(S.upg.length>stats.upgT.length) stats.upgT.push(Math.round(S.t/60)); if(!stats.achT) stats.achT=[]; if(S.ach&&S.ach.length>stats.achT.length) stats.achT.push(Math.round(S.t/60));
     // bot decisions
