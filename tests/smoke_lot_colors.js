@@ -14,6 +14,9 @@ const mk=()=>new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,vir
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++;};
 (async()=>{
+ // the file declares UTF-8 within its first 1024 bytes (opened as file:// the ▲▼·×— marks must not turn into "Â")
+ const head=fs.readFileSync(__dirname+'/../prototype/timberline.html').subarray(0,1024).toString('latin1');
+ ok(/<meta\s+charset=["']?utf-8["']?\s*\/?>/i.test(head) && /^\s*<meta\s+charset/i.test(head),'prototype declares <meta charset="utf-8"> first, within 1024 bytes');
  const dom=mk(); await sleep(300); const w=dom.window, d=w.document, E=s=>w.__eval(s);
  E(`S.season=2; S.weather.cur=null; S.cash=1e6; S.own={axeman:2, bucker:20, oxen:4, sled:6}; S.upg=[]; S.run.perks=[]; S.era=0;
    S.tracts=[Object.assign(Core.makeTract('Home lot',[['pine',100]],30,1,'flat'),{seq:0})]; S.tractSeq=1; setSite(); newTree();
