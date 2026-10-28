@@ -4,9 +4,9 @@
 
 ## For the owner: what changes
 
-Today the warehouse is a list of text rows. After this change it is a **grid of item pictures**, like Melvor's bank. Each item has its own small picture: a long pale pole for a Prime spar, an amber drop for pitch, a brass marker on a post, a bronze deadeye for a ship's fitting, a smoky lens for fog-glass. A Prime item carries an orange **P** stamp, the grader's mark.
+Today the warehouse is a list of text rows. After this change it is a **grid of item pictures**, like Melvor's bank. Each item has its own small picture: a long pale pole for a Prime spar, an amber drop for pitch, a brass marker on a post, a bronze deadeye for a ship's fitting, a smoky lens for fog-glass. A Prime item may carry a small **P** on its picture, the grader's mark (decoration only; the diamonds show the tier).
 
-- **Rarity at a glance.** The frame around each picture shows its rarity: thin grey for common, green with one diamond for uncommon, violet with two diamonds for rare, orange with a square stamp for goods you make. The rarity is also written out, so colorblind players lose nothing.
+- **Tier at a glance** (superseded by `resource-names.md`, owner 2026-10-28). One diamond system: Common grey 0 diamonds, Good green 1, Fine blue 2, Prime yellow 3, Rare orange 4. The tier is also written out, so colorblind players lose nothing.
 - **Tap a picture** to see what it is, how many you have, what it sells for, which orders and buildings need it, and where it comes from. Sell one, sell the spares, or lock it so it is never sold.
 - **Tabs** split the warehouse: All, Prime, Finds, Lumber, Logs, Collection. The Collection tab shows every item in the game; ones you have not found yet are dark shapes with a question mark.
 - **The same pictures show up everywhere**: in the "new find" pop-ups, on order cards ("Admiralty needs 2 more" next to a spar picture) and on building costs.
@@ -80,22 +80,22 @@ Log grades (No. 1–3) and pulp are not stocked: pulp sells at the landing, and 
 | Glyphs (22) | `spar` (Prime spar), `log` (Prime maple, Prime oak; bark pattern by species), `disc` (heartwood), `pile` (bulk logs), `board` (figure: clear, knots, quarter, spalt, birdseye), `bundle` (plank bundle; no straps + knot count for lumber grades), `beam`, `burl`, `drop`, `marker`, `deadeye`, `lens`, `axehead`, `knotstone`, `barkstrip`, `spikes`, `fish`, `float`, `chart`, `pearl`, `ambergris`, `parcel` |
 | Tints | Species: pine, spruce, hemlock, maple, oak, redwood (each with base, light, dark and bark colors). Materials: amber, brass, bronze, fog, iron, stone, paper, silver, seaglass, pearl, wax, bark |
 | Bark patterns | pine plates, spruce scales, hemlock furrows, maple smooth, oak blocks, redwood fibers. Species never rely on color alone; the name is always on the card or in the label |
-| Badges | `prime`: orange **P** stamp (Prime timber, Prize fish). `q`: orange **Q** stamp (Quarter-sawn). `grade`: paper tag with CL, SE or CO (lumber grades) |
+| Badges | `prime`: small **P** on the icon (Prime timber, Prize fish), decoration only. The `q` and `grade` badges are cut: Prime boards and board tiers show diamonds |
 
 ### The tile around the icon
 
 | Element | Rule |
 | --- | --- |
 | Tile | 56 × 56 px, rounded 6 px, warm paper well (`--tile`, `--tile-hi`; darker in the dark theme) |
-| Rarity frame | Common: 1 px grey. Uncommon: 2 px green, 1 diamond pip on the top edge. Rare: 2 px violet, doubled, 2 pips. Made: 2 px orange, 1 square pip. New tokens `--r-common`, `--r-uncommon`, `--r-rare`, `--r-made`, light and dark |
+| Tier frame | Diamonds on the top edge; frame weight grows with tier. Common: 1 px grey, 0. Good: 2 px green, 1. Fine: 2 px blue, 2. Prime: 3 px yellow, 3. Rare: 3 px orange plus a thin outer ring, 4. Tokens `--r-common`, `--r-good`, `--r-fine`, `--r-prime`, `--r-rare`, light and dark (values in `resource-names.md` §1). Firewood and scrap: dashed grey, no diamonds |
 | Count | Bottom-right, mono numerals on a panel chip (1.2K style). A zero count shows muted |
-| New | Orange dot, top-right. Cleared per item when the player opens that item |
+| New | Dark ink dot, top-right (orange is reserved for Rare). Cleared per item when the player opens that item |
 | Needed | "!" ring on the left edge when an open order or an unbuilt structure needs the item |
 | Locked | Padlock chip, bottom-left |
 | Not found (collection) | The same icon drawn as a flat silhouette at 25% (a CSS filter, so it also works on drawn art later), with a "?" |
 | Sizes | 24 px (toasts, order cards, building costs), 48 px (grid), 96 px (detail pane) |
 
-**Accessibility.** Every tile is a button whose label names the item, its rarity, its count and its states ("Prime spar, Made, 14 held, needed for an order or building"). Rarity is shown by frame color, frame weight and pip count, and written in the detail pane. Needed, new and locked each have a shape, not only a color. Arrow keys move between tiles. Silhouettes are labelled "Not found yet".
+**Accessibility.** Every tile is a button whose label names the item, its rarity, its count and its states ("Prime log, Prime tier, 14 held, needed for an order or building"). Tier is shown by frame color, frame weight and diamond count, and written in the detail pane. Needed, new and locked each have a shape, not only a color. Arrow keys move between tiles. Silhouettes are labelled "Not found yet".
 
 **Replacing with drawn art.** Every item has one icon key, its item id. `ICON_ART[key]` (an SVG string or an image path) overrides the generated icon; nothing else changes. Artists can replace icons one at a time, and the frame, badges, states and silhouettes keep working.
 
@@ -177,6 +177,6 @@ Search, sort and filter chips; arrow-key grid movement; the Logs tab per species
 
 ## 6. Owner questions
 
-1. **Rare items in violet instead of red.** Today rare items are marked in the same red the game uses for losses and fines. **Recommendation: violet** (`--r-rare`), so red keeps meaning "bad".
+1. **Rare items in violet instead of red.** ~~Recommendation: violet.~~ **Superseded (owner, 2026-10-28):** Rare is orange with 4 diamonds, Prime is yellow with 3; red still means "bad". See `resource-names.md` §1.
 2. **What the collection shows for unfound items.** (a) A dark silhouette plus which game it turns up in, or (b) only "???". **Recommendation: (a).** It gives players a goal ("something rare hides in the skid game") without spoiling the item.
 3. **Tanbark stays cash.** Making it an item would add a sell step and touch the hemlock balance. **Recommendation: keep it cash** and give it an icon only in its pay toast and the ledger.
