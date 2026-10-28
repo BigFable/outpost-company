@@ -1,6 +1,6 @@
 {
   "description": "Golden balance baseline from the legacy prototype harness (tech plan M0). Means are over seeds.",
-  "recorded": "2026-10-25",
+  "recorded": "2026-10-28",
   "command": "python3 sim/build.py prototype/timberline.html sim/game_rogue.html && node sim/sim_rogue.js 8 gas idle,casual,minigame,idle-away 1,2,3",
   "hours": 8,
   "policy": "gas",
@@ -29,78 +29,78 @@
   "summary": {
     "idle": {
       "run1": {
-        "steam": 27.67,
-        "gas": 64.67,
-        "min": 65,
-        "L": 34,
+        "steam": 29.33,
+        "gas": 65,
+        "min": 65.33,
+        "L": 36.67,
         "drafts": 11.33,
         "unfinished": 0
       },
       "run2": {
-        "steam": 19.33,
-        "gas": 44.33,
-        "min": 44.67,
-        "L": 29.67,
+        "steam": 23.33,
+        "gas": 47.67,
+        "min": 48,
+        "L": 27,
         "drafts": 9.33,
         "unfinished": 0
       },
       "run3": {
-        "steam": 16.33,
-        "gas": 40.67,
-        "min": 41.67,
-        "L": 33.67,
-        "drafts": 9.33,
+        "steam": 9.33,
+        "gas": 33.67,
+        "min": 34.33,
+        "L": 30.33,
+        "drafts": 10.33,
         "unfinished": 0
       }
     },
     "casual": {
       "run1": {
-        "steam": 25.67,
-        "gas": 49,
-        "min": 49.67,
-        "L": 33.33,
+        "steam": 24,
+        "gas": 53.33,
+        "min": 53.33,
+        "L": 31,
         "drafts": 18.67,
         "unfinished": 0
       },
       "run2": {
-        "steam": 11.67,
-        "gas": 36.67,
-        "min": 37.33,
-        "L": 26.67,
-        "drafts": 14.33,
+        "steam": 15.67,
+        "gas": 36,
+        "min": 36.33,
+        "L": 28.33,
+        "drafts": 14.67,
         "unfinished": 0
       },
       "run3": {
-        "steam": 12,
-        "gas": 31.67,
-        "min": 32,
-        "L": 28.67,
-        "drafts": 12.33,
+        "steam": 13,
+        "gas": 38,
+        "min": 38.33,
+        "L": 27,
+        "drafts": 14.33,
         "unfinished": 0
       }
     },
     "minigame": {
       "run1": {
-        "steam": 16.67,
-        "gas": 32.67,
-        "min": 33.33,
-        "L": 28.33,
-        "drafts": 27.33,
+        "steam": 18,
+        "gas": 37.67,
+        "min": 38.33,
+        "L": 28.67,
+        "drafts": 28.33,
         "unfinished": 0
       },
       "run2": {
-        "steam": 8.67,
-        "gas": 31,
-        "min": 31,
-        "L": 30,
-        "drafts": 23,
+        "steam": 13.67,
+        "gas": 37.67,
+        "min": 38,
+        "L": 28.67,
+        "drafts": 25.33,
         "unfinished": 0
       },
       "run3": {
-        "steam": 10,
+        "steam": 9.67,
         "gas": 28,
-        "min": 29,
-        "L": 28.33,
+        "min": 28.67,
+        "L": 27.67,
         "drafts": 21.67,
         "unfinished": 0
       }
@@ -108,26 +108,26 @@
     "idle-away": {
       "run1": {
         "steam": 60,
-        "gas": 123.67,
-        "min": 124.33,
-        "L": 39,
-        "drafts": 11,
-        "unfinished": 0
-      },
-      "run2": {
-        "steam": 43,
-        "gas": 104,
-        "min": 104.67,
-        "L": 35,
+        "gas": 120,
+        "min": 121,
+        "L": 39.67,
         "drafts": 10.67,
         "unfinished": 0
       },
+      "run2": {
+        "steam": 28.67,
+        "gas": 84.67,
+        "min": 85.67,
+        "L": 31,
+        "drafts": 10,
+        "unfinished": 0
+      },
       "run3": {
-        "steam": 30,
-        "gas": 88.33,
-        "min": 88.67,
-        "L": 36.67,
-        "drafts": 9.33,
+        "steam": 33.33,
+        "gas": 106.67,
+        "min": 120.67,
+        "L": 35.67,
+        "drafts": 11,
         "unfinished": 0
       }
     }
@@ -138,57 +138,57 @@
         {
           "run": 1,
           "steam": 29,
-          "gas": 69,
-          "min": 69,
-          "L": 36,
+          "gas": 68,
+          "min": 68,
+          "L": 39,
           "drafts": 12,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 26,
-          "gas": 48,
-          "min": 48,
-          "L": 28,
+          "steam": 27,
+          "gas": 50,
+          "min": 50,
+          "L": 26,
           "drafts": 10,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 16,
-          "gas": 45,
-          "min": 46,
-          "L": 36,
-          "drafts": 10,
+          "steam": 12,
+          "gas": 41,
+          "min": 41,
+          "L": 32,
+          "drafts": 11,
           "unfinished": false
         }
       ],
       "2": [
         {
           "run": 1,
-          "steam": 24,
+          "steam": 29,
           "gas": 66,
           "min": 66,
-          "L": 35,
+          "L": 36,
           "drafts": 11,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 26,
-          "gas": 44,
-          "min": 45,
-          "L": 28,
+          "steam": 10,
+          "gas": 36,
+          "min": 37,
+          "L": 27,
           "drafts": 9,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 18,
-          "gas": 48,
-          "min": 49,
-          "L": 36,
-          "drafts": 10,
+          "steam": 11,
+          "gas": 32,
+          "min": 33,
+          "L": 28,
+          "drafts": 11,
           "unfinished": false
         }
       ],
@@ -196,28 +196,28 @@
         {
           "run": 1,
           "steam": 30,
-          "gas": 59,
-          "min": 60,
-          "L": 31,
+          "gas": 61,
+          "min": 62,
+          "L": 35,
           "drafts": 11,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 6,
-          "gas": 41,
-          "min": 41,
-          "L": 33,
+          "steam": 33,
+          "gas": 57,
+          "min": 57,
+          "L": 28,
           "drafts": 9,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 15,
-          "gas": 29,
-          "min": 30,
-          "L": 29,
-          "drafts": 8,
+          "steam": 5,
+          "gas": 28,
+          "min": 29,
+          "L": 31,
+          "drafts": 9,
           "unfinished": false
         }
       ]
@@ -226,87 +226,87 @@
       "1": [
         {
           "run": 1,
-          "steam": 29,
-          "gas": 58,
-          "min": 59,
-          "L": 36,
-          "drafts": 21,
+          "steam": 27,
+          "gas": 56,
+          "min": 56,
+          "L": 30,
+          "drafts": 18,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 16,
-          "gas": 40,
+          "steam": 23,
+          "gas": 41,
           "min": 41,
-          "L": 27,
-          "drafts": 14,
+          "L": 26,
+          "drafts": 16,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 7,
-          "gas": 27,
-          "min": 27,
-          "L": 29,
-          "drafts": 12,
+          "steam": 15,
+          "gas": 44,
+          "min": 45,
+          "L": 27,
+          "drafts": 16,
           "unfinished": false
         }
       ],
       "2": [
         {
           "run": 1,
-          "steam": 21,
-          "gas": 45,
-          "min": 45,
-          "L": 32,
-          "drafts": 18,
-          "unfinished": false
-        },
-        {
-          "run": 2,
-          "steam": 8,
-          "gas": 36,
-          "min": 37,
-          "L": 26,
-          "drafts": 14,
-          "unfinished": false
-        },
-        {
-          "run": 3,
-          "steam": 13,
-          "gas": 36,
-          "min": 37,
-          "L": 29,
-          "drafts": 13,
-          "unfinished": false
-        }
-      ],
-      "3": [
-        {
-          "run": 1,
-          "steam": 27,
+          "steam": 19,
           "gas": 44,
-          "min": 45,
-          "L": 32,
+          "min": 44,
+          "L": 28,
           "drafts": 17,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 11,
-          "gas": 34,
-          "min": 34,
-          "L": 27,
+          "steam": 9,
+          "gas": 31,
+          "min": 32,
+          "L": 33,
           "drafts": 15,
           "unfinished": false
         },
         {
           "run": 3,
           "steam": 16,
-          "gas": 32,
-          "min": 32,
-          "L": 28,
-          "drafts": 12,
+          "gas": 37,
+          "min": 37,
+          "L": 25,
+          "drafts": 14,
+          "unfinished": false
+        }
+      ],
+      "3": [
+        {
+          "run": 1,
+          "steam": 26,
+          "gas": 60,
+          "min": 60,
+          "L": 35,
+          "drafts": 21,
+          "unfinished": false
+        },
+        {
+          "run": 2,
+          "steam": 15,
+          "gas": 36,
+          "min": 36,
+          "L": 26,
+          "drafts": 13,
+          "unfinished": false
+        },
+        {
+          "run": 3,
+          "steam": 8,
+          "gas": 33,
+          "min": 33,
+          "L": 29,
+          "drafts": 13,
           "unfinished": false
         }
       ]
@@ -315,87 +315,87 @@
       "1": [
         {
           "run": 1,
-          "steam": 15,
-          "gas": 33,
-          "min": 34,
-          "L": 29,
+          "steam": 17,
+          "gas": 35,
+          "min": 36,
+          "L": 28,
           "drafts": 27,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 2,
-          "gas": 25,
-          "min": 25,
-          "L": 27,
-          "drafts": 21,
+          "steam": 13,
+          "gas": 42,
+          "min": 42,
+          "L": 33,
+          "drafts": 26,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 11,
-          "gas": 27,
-          "min": 28,
-          "L": 29,
-          "drafts": 20,
+          "steam": 8,
+          "gas": 25,
+          "min": 26,
+          "L": 27,
+          "drafts": 21,
           "unfinished": false
         }
       ],
       "2": [
         {
           "run": 1,
-          "steam": 18,
-          "gas": 33,
-          "min": 33,
-          "L": 29,
-          "drafts": 28,
+          "steam": 19,
+          "gas": 45,
+          "min": 46,
+          "L": 31,
+          "drafts": 32,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 12,
-          "gas": 33,
-          "min": 33,
-          "L": 29,
-          "drafts": 24,
+          "steam": 17,
+          "gas": 39,
+          "min": 39,
+          "L": 26,
+          "drafts": 26,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 11,
-          "gas": 33,
-          "min": 34,
+          "steam": 9,
+          "gas": 23,
+          "min": 24,
           "L": 28,
-          "drafts": 23,
+          "drafts": 20,
           "unfinished": false
         }
       ],
       "3": [
         {
           "run": 1,
-          "steam": 17,
-          "gas": 32,
+          "steam": 18,
+          "gas": 33,
           "min": 33,
           "L": 27,
-          "drafts": 27,
+          "drafts": 26,
           "unfinished": false
         },
         {
           "run": 2,
-          "steam": 12,
-          "gas": 35,
-          "min": 35,
-          "L": 34,
+          "steam": 11,
+          "gas": 32,
+          "min": 33,
+          "L": 27,
           "drafts": 24,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 8,
-          "gas": 24,
-          "min": 25,
+          "steam": 12,
+          "gas": 36,
+          "min": 36,
           "L": 28,
-          "drafts": 22,
+          "drafts": 24,
           "unfinished": false
         }
       ]
@@ -405,35 +405,6 @@
         {
           "run": 1,
           "steam": 60,
-          "gas": 131,
-          "min": 131,
-          "L": 37,
-          "drafts": 11,
-          "unfinished": false
-        },
-        {
-          "run": 2,
-          "steam": 60,
-          "gas": 120,
-          "min": 121,
-          "L": 35,
-          "drafts": 11,
-          "unfinished": false
-        },
-        {
-          "run": 3,
-          "steam": 16,
-          "gas": 66,
-          "min": 66,
-          "L": 34,
-          "drafts": 9,
-          "unfinished": false
-        }
-      ],
-      "2": [
-        {
-          "run": 1,
-          "steam": 60,
           "gas": 120,
           "min": 121,
           "L": 40,
@@ -445,17 +416,46 @@
           "steam": 60,
           "gas": 120,
           "min": 121,
-          "L": 40,
+          "L": 33,
           "drafts": 11,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 14,
-          "gas": 79,
-          "min": 79,
-          "L": 30,
-          "drafts": 9,
+          "steam": 60,
+          "gas": 80,
+          "min": 120,
+          "L": 35,
+          "drafts": 11,
+          "unfinished": false
+        }
+      ],
+      "2": [
+        {
+          "run": 1,
+          "steam": 60,
+          "gas": 120,
+          "min": 121,
+          "L": 39,
+          "drafts": 10,
+          "unfinished": false
+        },
+        {
+          "run": 2,
+          "steam": 9,
+          "gas": 61,
+          "min": 62,
+          "L": 31,
+          "drafts": 10,
+          "unfinished": false
+        },
+        {
+          "run": 3,
+          "steam": 20,
+          "gas": 120,
+          "min": 121,
+          "L": 36,
+          "drafts": 11,
           "unfinished": false
         }
       ],
@@ -471,20 +471,20 @@
         },
         {
           "run": 2,
-          "steam": 9,
-          "gas": 72,
-          "min": 72,
-          "L": 30,
-          "drafts": 10,
+          "steam": 17,
+          "gas": 73,
+          "min": 74,
+          "L": 29,
+          "drafts": 9,
           "unfinished": false
         },
         {
           "run": 3,
-          "steam": 60,
+          "steam": 20,
           "gas": 120,
           "min": 121,
-          "L": 46,
-          "drafts": 10,
+          "L": 36,
+          "drafts": 11,
           "unfinished": false
         }
       ]
