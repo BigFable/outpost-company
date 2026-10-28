@@ -87,7 +87,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(E('S.ui.logTab')==='crews' && !d.getElementById('lpCrews').hidden && E('S.ui.millTab')==='structs','camp tabs come back after a reload');
  const old=JSON.parse(st); delete old.ui.logTab; delete old.ui.millTab; old.ui.whTab='almanac'; old.ui.screen='almanac'; dom.window.close();
  dom=mk(JSON.stringify(old)); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
- ok(E('S.ui.logTab')==='work' && E('S.ui.millTab')==='mill' && E('S.ui.whTab')==='stock' && E('S.ui.screen')==='almanac' && !d.getElementById('scrAlm').hidden,'an old save without tab fields loads: Work and Mill tabs, the warehouse back on Stock');
+ ok(E('S.ui.logTab')==='work' && E('S.ui.millTab')==='mill' && E('S.ui.whTab')==='all' && E('S.ui.screen')==='almanac' && !d.getElementById('scrAlm').hidden,'an old save without tab fields loads: Work and Mill tabs, the warehouse back on All');
  const old2=JSON.parse(st); old2.ui.logTab='bogus'; old2.ui.millTab=7; dom.window.close();
  dom=mk(JSON.stringify(old2)); await sleep(300); w=dom.window; E=s=>w.__eval(s);
  ok(E('S.ui.logTab')==='work' && E('S.ui.millTab')==='mill','bad tab values fall back to the first tab');

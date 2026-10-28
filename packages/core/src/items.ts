@@ -14,6 +14,7 @@
 import { deepFreeze } from './freeze';
 import { TRACT_BASE, type PerkDef, type SpeciesId } from './content';
 import type { Rng } from './rng';
+import type { IconSpec } from './icons';
 
 export type SkillId = 'logging' | 'sawmill';
 /** Namespaced by skill: 'logging.prime_spar'. */
@@ -23,6 +24,18 @@ export type ItemRarity = 'made' | 'common' | 'uncommon' | 'rare';
 export type ItemCategory = 'prime' | 'find' | 'mill';
 export type ItemUse = 'order' | 'reroll' | 'sell' | 'collection' | 'structure' | `future:${string}`;
 export type GameId = 'fell' | 'buck' | 'skid' | 'haul';
+/**
+ * The one quality ladder for logs, boards and items (docs/design/resource-names.md §1), shown as a frame
+ * color plus 0-4 diamonds: Common grey 0, Good green 1, Fine blue 2, Prime yellow 3, Rare orange 4.
+ * Scrap (firewood) sits below the ladder: dashed outline, no diamonds. Display only; drop tables read `rarity`.
+ */
+export type Tier = 'scrap' | 'common' | 'good' | 'fine' | 'prime' | 'rare';
+export const TIERS: readonly Tier[] = deepFreeze(['scrap', 'common', 'good', 'fine', 'prime', 'rare'] as Tier[]);
+export const TIER_LABEL: Readonly<Record<Tier, string>> = deepFreeze({scrap:'Firewood', common:'Common', good:'Good', fine:'Fine', prime:'Prime', rare:'Rare'});
+export const TIER_DIAMONDS: Readonly<Record<Tier, number>> = deepFreeze({scrap:0, common:0, good:1, fine:2, prime:3, rare:4});
+/** Board grades and log grades on the ladder (ids unchanged: clear/select/common, 1/2/3/'P' where 'P' is pulp, now firewood). */
+export const BOARD_TIER: Readonly<Record<'clear' | 'select' | 'common', Tier>> = deepFreeze({clear:'fine', select:'good', common:'common'} as const);
+export const LOG_TIER: Readonly<Record<'1' | '2' | '3' | 'P', Tier>> = deepFreeze({'1':'fine', '2':'good', '3':'common', P:'scrap'} as const);
 
 export interface ItemDef {
   readonly id: ItemId; readonly name: string; readonly plural: string; readonly desc: string;
@@ -32,28 +45,41 @@ export interface ItemDef {
   readonly uses: readonly ItemUse[];
   /** Where it comes from, for the collection log. */
   readonly from: string;
+  /** Display tier on the quality ladder (frame and diamonds). */
+  readonly tier: Tier;
+  /** Placeholder icon (packages/core/src/icons.ts); its key is the item id. */
+  readonly icon: IconSpec;
 }
 export interface ItemStack { readonly item: ItemId; readonly qty: number }
 export interface CurrencyDef { readonly id: CurrencyId; readonly name: string; readonly scope: 'outpost' | 'skill' | 'company'; readonly skill?: SkillId }
 
 export const ITEMS: readonly ItemDef[] = deepFreeze([
   {id:'logging.prime_spar', name:'Prime spar', plural:'Prime spars', skill:'logging', category:'prime', rarity:'made', sell:40,
-    desc:'A straight, knot-free log stamped Prime. Good for ship masts.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50'},
+    desc:'A straight, knot-free log stamped Prime. Good for ship masts.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50', tier:'prime', icon:{glyph:'spar', tint:'spruce', badge:'prime'}},
   {id:'logging.burl', name:'Burl', plural:'Burls', skill:'logging', category:'find', rarity:'common', sell:30,
-    desc:'A swirly lump of wood. Buyers pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking'},
+    desc:'A swirly lump of wood. Buyers pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking', tier:'common', icon:{glyph:'burl', tint:'bark'}},
   {id:'logging.amber_pitch', name:'Amber pitch', plural:'Amber pitch', skill:'logging', category:'find', rarity:'common', sell:12,
-    desc:'Hard tree sap. Seals ship hulls and the mill pond dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pine has the most)'},
+    desc:'Hard tree sap. Seals ship hulls and the mill pond dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pine has the most)', tier:'common', icon:{glyph:'drop', tint:'amber'}},
   {id:'logging.survey_marker', name:'Survey marker', plural:'Survey markers', skill:'logging', category:'find', rarity:'uncommon', sell:18,
-    desc:'An old brass marker. Use one for a perk reroll (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding'},
+    desc:'An old brass marker. Use one for a perk reroll (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding', tier:'good', icon:{glyph:'marker', tint:'brass'}},
   {id:'logging.ships_fitting', name:'Ship’s fitting', plural:'Ship’s fittings', skill:'logging', category:'find', rarity:'uncommon', sell:22,
-    desc:'Bronze parts from a wreck. Used to build the circular saw.', uses:['order','structure','sell','future:raising'], from:'Hauling (washed up by the cove road)'},
+    desc:'Bronze parts from a wreck. Used to build the circular saw.', uses:['order','structure','sell','future:raising'], from:'Hauling (washed up by the cove road)', tier:'good', icon:{glyph:'deadeye', tint:'bronze'}},
   {id:'logging.fog_glass', name:'Fog-glass', plural:'Fog-glass', skill:'logging', category:'find', rarity:'rare', sell:90,
-    desc:'A smoky, sea-worn lens. Nobody knows who made it.', uses:['sell','collection','future:surveying'], from:'Top results in felling, skidding and hauling'},
+    desc:'A smoky, sea-worn lens. Nobody knows who made it.', uses:['sell','collection','future:surveying'], from:'Top results in felling, skidding and hauling', tier:'rare', icon:{glyph:'lens', tint:'fog'}},
   {id:'sawmill.quarter_sawn', name:'Quarter-sawn board', plural:'Quarter-sawn boards', skill:'sawmill', category:'mill', rarity:'made', sell:25,
-    desc:'A top board from a Prime log. The Admiralty wants it for decks.', uses:['sell','future:raising'], from:'A great Saw boards run on a Prime log'},
+    desc:'A top board from a Prime log. The Admiralty wants it for decks.', uses:['sell','future:raising'], from:'A great Saw boards run on a Prime log', tier:'prime', icon:{glyph:'board', tint:'oak', figure:'quarter', badge:'prime'}},
   {id:'sawmill.plank_bundle', name:'Plank bundle', plural:'Plank bundles', skill:'sawmill', category:'mill', rarity:'made', sell:10,
-    desc:'500 bd ft of Common lumber. Builds the bunkhouse.', uses:['structure','sell'], from:'Common lumber at the Sawmill'},
+    desc:'500 bd ft of Common lumber. Builds the bunkhouse.', uses:['structure','sell'], from:'Common lumber at the Sawmill', tier:'common', icon:{glyph:'bundle', tint:'pine'}},
 ]);
+/** Bulk stocks: counted in wood, shown in the Warehouse but not sold there. */
+export interface BulkDef { readonly id: string; readonly name: string; readonly tab: 'logs' | 'boards'; readonly scope: 'company' | 'camp'; readonly tier: Tier; readonly icon: IconSpec; readonly desc: string }
+export const BULK: readonly BulkDef[] = deepFreeze([
+  {id:'company.logs', name:'Log pond', tab:'logs', scope:'company', tier:'common', icon:{glyph:'pile', tint:'pine'}, desc:'Logs waiting for the Sawmill. Logging fills it; the mill saws it.'},
+  {id:'sawmill.lumber.clear', name:'Clear lumber', tab:'boards', scope:'camp', tier:'fine', icon:{glyph:'bundle', tint:'pine', straps:false, knots:0}, desc:'No knots. Sells at 3× the log price.'},
+  {id:'sawmill.lumber.select', name:'Select lumber', tab:'boards', scope:'camp', tier:'good', icon:{glyph:'bundle', tint:'pine', straps:false, knots:1}, desc:'A few small knots. Sells at 2×.'},
+  {id:'sawmill.lumber.common', name:'Common lumber', tab:'boards', scope:'camp', tier:'common', icon:{glyph:'bundle', tint:'pine', straps:false, knots:4}, desc:'Knotty. Sells at 1×, or makes plank bundles.'},
+] as BulkDef[]);
+
 const ITEM_BY_ID: ReadonlyMap<ItemId, ItemDef> = new Map(ITEMS.map((i) => [i.id, i]));
 export function itemDef(id: ItemId): ItemDef | undefined { return ITEM_BY_ID.get(id); }
 

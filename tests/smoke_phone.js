@@ -33,7 +33,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(E('S.cash')<100 && /Press again/.test($('svMsg').textContent) && $('svLoad').textContent==='Replace company','first press asks to confirm');
  $('svLoad').click();
  ok(E('S.cash')>=4321 && /Save loaded/.test($('svMsg').textContent),'second press loads the save');
- $('whClose').click();
+ E(`go('logging')`);
  // touch bucking
  E(`S.stems.bf = 5000; S.stems.val = 5000; S.ui.buckIntro = true; openMG('buck'); cancelAnimationFrame(MG.raf); B.cuts = []`);
  const cv=$('mgCanvas'), L=E('B.L');
