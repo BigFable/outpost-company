@@ -12,7 +12,8 @@ s=s.replace(old,"""window.__G = {get S(){return S}, get W(){return typeof W!=="u
  ...(typeof millShortAt!=='undefined' ? {get millShortAt(){return millShortAt}} : {}),
  ...(typeof evNow!=='undefined' ? {evNow, effSeason, haulRulesNow, seasonF, setWxMute: v => { wxMute = v; }} : {}),
  ...(typeof setStashRule!=='undefined' ? {setStashRule, cutOf} : {}),
- ...(typeof ordCap!=='undefined' ? {ordCap, ordFull} : {})};""")
+ ...(typeof ordCap!=='undefined' ? {ordCap, ordFull} : {}),
+ ...(typeof wageBill!=='undefined' ? {WAGE, wageBill} : {})};""")
 s=s.replace("function render(force){","function render(force){ if (window.__SIM) return;",1)
 s=s.replace("function renderLedger(){","function renderLedger(){ if (window.__SIM) return;",1)
 open(sys.argv[2],'w').write(s)

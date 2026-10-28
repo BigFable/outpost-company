@@ -13,6 +13,8 @@ function run(profile, seed, hours=4, opt={}){
   const G=dom.window.__G; const S=G.S; const Core=dom.window.Core;
   // builds before several active orders (2026-10-26) keep one S.contract: read it as a list of 0 or 1
   const CS=()=>S.contracts||(S.contract?[S.contract]:[]), ordFull=()=>G.ordFull?G.ordFull():!!S.contract, ordCap=()=>G.ordCap?G.ordCap():1;
+  // rising wages (2026-10-28): WAGE_STEP / WAGE_CAP override the game's step and cap share for tuning sweeps
+  if(G.WAGE){ if(process.env.WAGE_STEP!=null) G.WAGE.step=+process.env.WAGE_STEP; if(process.env.WAGE_CAP!=null) G.WAGE.cap=+process.env.WAGE_CAP; }
   G.normalize(); G.refreshSales(); G.refreshOffers(); S.hireOffer=G.genHire(); G.setSite(); G.newTree();
   // playtest 2: finds and the Sawmill draw from their own seeded streams, so the logging draws above stay byte-exact
   if(S.rng){ S.rng.drops=(seed*7919+1)>>>0; S.rng.saw=(seed*104729+3)>>>0; S.rng.events=(seed*15485863+5)>>>0; S.rng.land=(seed*32452843+7)>>>0; }
@@ -171,6 +173,8 @@ function run(profile, seed, hours=4, opt={}){
     if(!G.tract()) stats.noTimber+=dt;
     if(S.short) stats.short+=dt;
     if((S.ema-S.upEma)<0) stats.neg+=dt;
+    // rising wages: seconds the wage cap trims the bill, and wages as a share of gross income (time-weighted while income > 0)
+    if(G.wageBill && Math.round(S.t*2)%2===0){ const w=G.wageBill(); if(w.capped) XT.capOn=(XT.capOn||0)+1; if(S.payEma>0){ XT.wsT=(XT.wsT||0)+1; XT.wsSum=(XT.wsSum||0)+Math.min(2,w.wages/(S.payEma*60)); } }
     if(G.tract()){ const neck=STG.reduce((a,b)=>cap(b)<cap(a)?b:a); const k=S.era+':'+neck; stats.neck[k]=(stats.neck[k]||0)+dt; }
     // several active orders (2026-10-26): an order that left the list was filled (before its deadline) or missed
     for(const c of lastContract) if(!CS().includes(c)){ if(c.done>=c.vol-1e-6){ stats.contractsWon++; XT.cFill++; } else { stats.contractsLost++; XT.cMiss++; } }
@@ -252,7 +256,8 @@ function run(profile, seed, hours=4, opt={}){
   const endT=runsOut.length? (runsOut.reduce((a,r)=>a+r.min,0)*60):S.t; let gap=0,gapAt=0,prev=0; for(const t of XT.ev.concat([Math.min(S.t,endT)])){ if(t>endT) break; if(t-prev>gap){gap=t-prev;gapAt=prev;} prev=t; }
   const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), millShortMin:+((XT.short||0)/60).toFixed(1), millShortMaxMin:+((XT.shortMax||0)/60).toFixed(1), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire,
     stash:STASH?'first':'any', spFill:XT.spFill, spMiss:XT.spMiss, pickLowMin:Math.round(XT.pickLow/60), cFill:XT.cFill, cMiss:XT.cMiss, capMax:XT.capMax, activeMax:XT.activeMax,
-    zeroIncMaxMin:+((XT.ziMax||0)/60).toFixed(1), zeroIncAtMin:Math.round((XT.ziAt||0)/60), zeroIncStallMin:+((XT.zsMax||0)/60).toFixed(1), zeroIncStallAtMin:Math.round((XT.zsAt||0)/60), adv:S.stats.advances||0};
+    zeroIncMaxMin:+((XT.ziMax||0)/60).toFixed(1), zeroIncAtMin:Math.round((XT.ziAt||0)/60), zeroIncStallMin:+((XT.zsMax||0)/60).toFixed(1), zeroIncStallAtMin:Math.round((XT.zsAt||0)/60), adv:S.stats.advances||0,
+    ...(G.wageBill ? {capOnMin:+((XT.capOn||0)/60).toFixed(1), wageSharePct:+((XT.wsSum||0)/Math.max(1,XT.wsT||0)*100).toFixed(1)} : {})};
   return {slots:SLOTT, ...(AWAYP ? {AX:Object.fromEntries(Object.entries(AX).map(([k,v])=>[k,Math.round(v*10)/10]))} : {}), xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
 }
 module.exports={run};

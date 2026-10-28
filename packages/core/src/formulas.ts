@@ -61,17 +61,64 @@ export function crewCount(own: Owned): number {
   return EQUIPMENT.reduce((a, e) => a + (own[e.id] || 0), 0);
 }
 
+// ---------- rising wages and the wage cap (owner decision 2026-10-28)
+
 /**
- * Upkeep per minute before multipliers. Crews with nothing to do (utilisation
- * below 1) are paid `idleShare` of their wage: 0.25 normally, 0 with Company store.
+ * Rising wages: each extra crew of the same type is paid `WAGE_STEP` of the
+ * base wage more than the one before. The nth crew earns up × (1 + k·(n−1)).
  */
-export function crewUpkeep(own: Owned, util: Readonly<Partial<Record<Stage, number>>>, idleShare: number): number {
-  return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0) * (idleShare + (1 - idleShare) * (util[e.stage] ?? 1)), 0);
+export const WAGE_STEP = 0.1;
+/**
+ * The wage cap: rising wages stop at this share of income a minute (measured on
+ * a slow average). Base wages (every crew at its type's first-crew wage) are
+ * always paid, so the cap only ever trims the rise and a camp with no income
+ * pays exactly what it did before rising wages.
+ */
+export const WAGE_CAP_SHARE = 0.6;
+/** Seconds of the slow income average the wage cap reads (so the cap does not flicker with each sale). */
+export const WAGE_CAP_AVG_SEC = 120;
+
+/** Wage per minute of the `n`th crew of one type (n = 1 for the first), before multipliers. */
+export function crewWage(up: number, n: number, k = WAGE_STEP): number {
+  return n < 1 ? 0 : up * (1 + k * (n - 1));
 }
 
-/** Upkeep per minute if every crew worked flat out, before multipliers. */
-export function crewUpkeepFull(own: Owned): number {
-  return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0), 0);
+/** Wages per minute of `count` crews of one type, before multipliers: up × (count + k·count·(count−1)/2). */
+export function crewWagesFor(up: number, count: number, k = WAGE_STEP): number {
+  const c = Math.max(0, count);
+  return up * (c + (k * c * (c - 1)) / 2);
+}
+
+/** Extra wages per minute from hiring `add` more of a type that has `owned` already, before multipliers. */
+export function crewWageAdded(up: number, owned: number, add = 1, k = WAGE_STEP): number {
+  return crewWagesFor(up, owned + add, k) - crewWagesFor(up, owned, k);
+}
+
+/**
+ * Upkeep per minute before multipliers, with rising wages per type (`k`; pass 0
+ * for base wages). Crews with nothing to do (utilisation below 1) are paid
+ * `idleShare` of their wage: 0.25 normally, 0 with Company store.
+ */
+export function crewUpkeep(own: Owned, util: Readonly<Partial<Record<Stage, number>>>, idleShare: number, k = WAGE_STEP): number {
+  return EQUIPMENT.reduce((a, e) => a + crewWagesFor(e.up, own[e.id] || 0, k) * (idleShare + (1 - idleShare) * (util[e.stage] ?? 1)), 0);
+}
+
+/** Upkeep per minute if every crew worked flat out, before multipliers (rising wages per type; `k` = 0 for base wages). */
+export function crewUpkeepFull(own: Owned, k = WAGE_STEP): number {
+  return EQUIPMENT.reduce((a, e) => a + crewWagesFor(e.up, own[e.id] || 0, k), 0);
+}
+
+/**
+ * The wage bill after the cap. `rising` and `base` are the bills with and
+ * without rising wages (same multipliers); `incomePerMin` is the slow income
+ * average. The rise stops at `share` of income, and the base bill is always
+ * paid: max(base, min(rising, share × income)). At zero income this is the base
+ * bill, so the payroll guard, wages owed and the company advance work as before.
+ */
+export function wageCap(rising: number, base: number, incomePerMin: number, share = WAGE_CAP_SHARE): { wages: number; capped: boolean } {
+  const lim = Math.max(0, share * Math.max(0, incomePerMin));
+  const wages = Math.max(base, Math.min(rising, lim));
+  return { wages, capped: wages < rising - 1e-9 };
 }
 
 // ---------- multipliers from improvements and perks

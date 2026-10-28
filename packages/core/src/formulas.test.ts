@@ -3,7 +3,7 @@ import { must } from './test-rng';
 import { GOLDEN } from './__fixtures__/prototype-golden';
 import { EQUIPMENT, SPECIES } from './content';
 import {
-  applyMults, BOOST_BANK, BOOST_STAGES, boostFactor, boostLength, canCloseCamp, clauseMult, crewCount, crewRate, crewUpkeep, crewUpkeepFull,
+  applyMults, BOOST_BANK, BOOST_STAGES, boostFactor, boostLength, canCloseCamp, clauseMult, crewCount, crewRate, crewUpkeep, crewUpkeepFull, crewWage, crewWageAdded, crewWagesFor, WAGE_STEP, wageCap,
   distanceFactor, equipmentCost, equipmentCostTotal, equipmentMaxAffordable, ERA_SHARES, eraCost, grantBoost, handAmount, improvementMult, legacyBase, legacyGain, marketPrice,
   maxSkidLogs, missedPenalty, mobilization, perkCount, perkMult, seasonFactor, skidTurnLoad, skidTurnSizes, skidTurnSpeed, slopeFactor, stageRate, treeValue,
 } from './formulas';
@@ -52,6 +52,40 @@ describe('crews', () => {
     expect(crewUpkeep(own, {}, 0.25)).toBe(6); // missing util = fully busy
     expect(crewUpkeep(own, { fell: 0, buck: 0 }, 0.25)).toBe(1.5);
     expect(crewUpkeep(own, { fell: 0, buck: 0.5 }, 0)).toBe(1.5); // Company store: idle crews unpaid
+  });
+});
+
+describe('rising wages and the wage cap', () => {
+  it('pays each extra crew of a type more than the last', () => {
+    expect(crewWage(10, 1, 0.1)).toBe(10);
+    expect(crewWage(10, 2, 0.1)).toBeCloseTo(11, 12);
+    expect(crewWage(10, 5, 0.1)).toBeCloseTo(14, 12);
+    expect(crewWage(10, 0, 0.1)).toBe(0);
+    // sum of 1..n equals the closed form
+    let s = 0;
+    for (let n = 1; n <= 7; n++) s += crewWage(3, n, 0.15);
+    expect(crewWagesFor(3, 7, 0.15)).toBeCloseTo(s, 9);
+    expect(crewWagesFor(3, 0, 0.15)).toBe(0);
+    expect(crewWageAdded(10, 4, 1, 0.1)).toBeCloseTo(crewWage(10, 5, 0.1), 12);
+    expect(crewWageAdded(10, 0, 3, 0.1)).toBeCloseTo(10 + 11 + 12, 12);
+  });
+  it('rises per type, not across types, and k = 0 is the old flat wage', () => {
+    const own = { axeman: 3, bucker: 1, crosscut: 1 }; // up 3, 3, 10
+    expect(crewUpkeepFull(own, 0)).toBe(3 * 3 + 3 + 10);
+    expect(crewUpkeepFull(own, 0.1)).toBeCloseTo(3 * (3 + 0.3) + 3 + 10, 12);
+    expect(crewUpkeep(own, {}, 0.25, 0.1)).toBeCloseTo(crewUpkeepFull(own, 0.1), 12);
+    // idle crews still get the idle share of their rising wage
+    expect(crewUpkeep(own, { fell: 0, buck: 0 }, 0.25, 0.1)).toBeCloseTo(0.25 * crewUpkeepFull(own, 0.1), 12);
+    expect(crewUpkeepFull(own)).toBeCloseTo(crewUpkeepFull(own, WAGE_STEP), 12);
+  });
+  it('caps the rise at a share of income but always pays base wages', () => {
+    expect(wageCap(100, 60, 1000, 0.6)).toEqual({ wages: 100, capped: false }); // under the cap
+    expect(wageCap(100, 60, 150, 0.6)).toEqual({ wages: 90, capped: true }); // rise trimmed to 60% of income
+    expect(wageCap(100, 60, 50, 0.6)).toEqual({ wages: 60, capped: true }); // base wages are the floor
+    expect(wageCap(100, 60, 0, 0.6)).toEqual({ wages: 60, capped: true }); // no income: base wages, as before
+    expect(wageCap(60, 60, 0, 0.6)).toEqual({ wages: 60, capped: false }); // no rise to cap
+    expect(wageCap(0, 0, 0)).toEqual({ wages: 0, capped: false });
+    expect(wageCap(100, 60, -20, 0.6).wages).toBe(60);
   });
 });
 
