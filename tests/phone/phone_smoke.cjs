@@ -90,11 +90,25 @@ async function run(devName) {
   ok(await noSideScroll(), `${devName}: no sideways scroll with everything open`);
   const st = await smallTargets(); ok(st.length === 0, `${devName}: page tap targets are 44 px or more` + (st.length ? ': ' + st.slice(0, 12).join(' ') : ''));
   const sx = await smallText(); ok(sx.length === 0, `${devName}: page text is 12 px or more` + (sx.length ? ': ' + sx.slice(0, 12).join(' ') : ''));
-  const panels = await page.evaluate(() => [...document.querySelectorAll('#logView .panel')].map((p, i) => { p.dataset.shot = 'p' + i; return (p.querySelector('.eyebrow') || {}).textContent || 'panel' + i; }));
-  for (let i = 0; i < panels.length; i++) await shot('log-' + i + '-' + panels[i].replace(/\W+/g, '_').toLowerCase(), `[data-shot=p${i}]`);
+  // the camp tabs (UI rework slice 2): each one by touch, with the layout, tap-target and text-size checks
+  const tabCheck = async (camp, ids) => {
+    for (const id of ids) {
+      await tapEl('#' + id); await sleep(150);
+      const t = await page.evaluate((id) => { const b = document.getElementById(id), p = document.getElementById(b.getAttribute('aria-controls')); return { sel: b.getAttribute('aria-selected') === 'true', shown: !p.hidden, h: Math.round(b.getBoundingClientRect().height) }; }, id);
+      ok(t.sel && t.shown && t.h >= 44, `${devName}: ${camp} tab ${id} opens with a tap ${JSON.stringify(t)}`);
+      ok(await noSideScroll(), `${devName}: ${id} has no sideways scroll`);
+      const a = await smallTargets(); ok(a.length === 0, `${devName}: ${id} tap targets are 44 px or more` + (a.length ? ': ' + a.slice(0, 12).join(' ') : ''));
+      const x = await smallText(); ok(x.length === 0, `${devName}: ${id} text is 12 px or more` + (x.length ? ': ' + x.slice(0, 12).join(' ') : ''));
+      await E('window.scrollTo(0, 0)'); await shot('tab-' + id);
+    }
+  };
+  await tabCheck('Logging', ['ltLots', 'ltCrews', 'ltCamp', 'ltLog', 'ltWork']);
+  await shot('stage-cards', '#chain');
+  ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#chain .stc')].map((x) => x.getBoundingClientRect()); return c.length === 4 && c.every((r) => r.right <= innerWidth + 1 && r.left >= -1); }), `${devName}: four stage cards on screen`);
   await shot('top-bar', '.top');
   // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
   await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
+  await tapEl('#ltLots'); await sleep(150);
   await tapEl('#qTabs [data-v=trees]'); await sleep(150);
   ok(await page.evaluate(() => !document.getElementById('qTrees').hidden && document.querySelectorAll('#stash .scard').length >= 2), `${devName}: the Trees tab opens with a tap`);
   await tapEl('#stash .scard[data-sp=spruce] summary'); await sleep(100);
@@ -112,9 +126,9 @@ async function run(devName) {
   ok(await page.evaluate(() => !document.getElementById('millView').hidden), `${devName}: Sawmill screen opens with a tap`);
   ok(await noSideScroll(), `${devName}: Sawmill tab has no sideways scroll`);
   const st2 = await smallTargets(); ok(st2.length === 0, `${devName}: Sawmill tap targets are 44 px or more` + (st2.length ? ': ' + st2.slice(0, 12).join(' ') : ''));
-  const mp = await page.evaluate(() => [...document.querySelectorAll('#millView .panel')].map((p, i) => { p.dataset.shot = 'm' + i; return (p.querySelector('.eyebrow') || {}).textContent || 'panel' + i; }));
-  for (let i = 0; i < mp.length; i++) await shot('mill-' + i + '-' + mp[i].replace(/\W+/g, '_').toLowerCase(), `[data-shot=m${i}]`);
+  await tabCheck('Sawmill', ['mtStructs', 'mtSawyers', 'mtRun', 'mtMill']);
   await nav('#tabLog');
+  await tapEl('#ltWork'); await sleep(100);
 
   // ---------- 2. sheets: header and action bar stay on screen, no sideways scroll
   const sheetCheck = async (id, name) => {
@@ -131,7 +145,7 @@ async function run(devName) {
   ok(await noSideScroll(), `${devName}: Warehouse screen has no sideways scroll`);
   const stw = await smallTargets(); ok(stw.length === 0, `${devName}: Warehouse tap targets are 44 px or more` + (stw.length ? ': ' + stw.slice(0, 12).join(' ') : ''));
   await shot('screen-warehouse');
-  for (const t of ['log', 'almanac', 'ledger']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
+  for (const t of ['log', 'ledger']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
   // save backup: copy, then load it back (validation, confirm step)
   await page.locator('#svCopy').scrollIntoViewIfNeeded(); await tapEl('#svCopy'); await sleep(200);
   const saveTxt = await page.evaluate(() => document.getElementById('svOut').value);
@@ -181,9 +195,22 @@ async function run(devName) {
     ok(await page.evaluate(() => !document.getElementById('app').classList.contains('drawer')), `${devName}: tapping outside closes the drawer`);
     ok(await page.evaluate(() => { const b = document.getElementById('bottomTabs').getBoundingClientRect(), t = document.getElementById('topbar').getBoundingClientRect(); return Math.abs(b.bottom - innerHeight) < 2 && b.height >= 56 && t.top >= -1 && t.height <= 60; }), `${devName}: bottom tabs at the bottom, one-line top bar`);
   }
+  // phones: a second tap on the Camp tab opens the camp picker; Fishing shows greyed
+  if (phoneTabs) {
+    await tapEl('#btCamp'); await sleep(200);
+    const cp = await page.evaluate(() => { const el = document.getElementById('campPick'), r = el.getBoundingClientRect(), bs = [...el.querySelectorAll('button')].map((b) => b.getBoundingClientRect().height);
+      return { open: !el.hidden, on: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight, n: bs.length, tall: bs.every((h) => h >= 44), fog: /In the fog/.test(el.textContent) }; });
+    ok(cp.open && cp.on && cp.n === 2 && cp.tall && cp.fog, `${devName}: a second Camp tap opens the camp picker on screen, rows 44 px or more, Fishing in the fog ${JSON.stringify(cp)}`);
+    await shot('camp-picker');
+    await tapEl('#cpList [data-pick=sawmill]'); await sleep(200);
+    ok((await E('S.ui.screen')) === 'sawmill' && await page.evaluate(() => document.getElementById('campPick').hidden), `${devName}: picking Sawmill switches camps`);
+    await tapEl('#btCamp'); await sleep(150); await tapEl('#cpList [data-pick=logging]'); await sleep(200);
+    ok((await E('S.ui.screen')) === 'logging', `${devName}: and back to Logging`);
+  }
   await tapEl('#bellBtn'); await sleep(150);
   ok(await page.evaluate(() => { const t = document.getElementById('bellTray'), r = t.getBoundingClientRect(); return !t.hidden && r.right <= innerWidth + 1 && r.left >= -1; }), `${devName}: the bell opens its list on screen`);
   await shot('bell');
+  ok(await page.evaluate(() => [...document.querySelectorAll('#bellList button')].every((b) => b.getBoundingClientRect().height >= 44)), `${devName}: bell buttons are 44 px or more`);
   await tapEl('#bellBtn'); await sleep(100);
 
   // ---------- 3. mini-games, touch only
@@ -293,7 +320,7 @@ async function run(devName) {
   await tapEl('#mgClose'); await sleep(150);
 
   // saw for grade: tap a log on the deck, then tap the on-canvas SAW and TURN buttons by the sawyer's mark
-  await nav('#tabMill');
+  await nav('#tabMill'); await tapEl('#mtMill'); await sleep(100);
   await tapEl('#mSawBtn'); await sleep(250);
   ok((await E('MG.kind')) === 'saw' && (await E('W.phase')) === 'pick', `${devName}: Saw for grade opens on the log deck`);
   await mgCheck('saw'); await shot('mg-saw-deck');
