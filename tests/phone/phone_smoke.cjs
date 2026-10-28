@@ -50,6 +50,10 @@ async function run(devName) {
   const tapEl = async (sel) => {
     await page.evaluate((s) => { const el = document.querySelector(s); if (el) el.scrollIntoView({ block: 'nearest' }); }, sel); await sleep(30);
     const b = await page.locator(sel).first().boundingBox(); if (!b) throw new Error('no box for ' + sel); await tapXY(b.x + b.width / 2, b.y + b.height / 2); };
+  // the UI frame (slice 1): sidebar rows (#tabLog, #tabMill, ...) are in the More drawer on a phone, on screen otherwise
+  const nav = async (sel) => {
+    if (await page.evaluate(() => getComputedStyle(document.getElementById('bottomTabs')).display !== 'none')) { await tapEl('#btMore'); await sleep(300); }
+    await tapEl(sel); await sleep(250); };
   // viewport screenshots only: Playwright's element screenshot turns the touch-pointer emulation off
   const shot = async (name, el) => { if (!SHOTS) return; const f = path.join(SHOTS, `${tag}--${name}.png`);
     if (el) { await page.evaluate((s) => { const e = document.querySelector(s); if (e) e.scrollIntoView({ block: 'start' }); }, el); await sleep(30); }
@@ -88,8 +92,7 @@ async function run(devName) {
   const sx = await smallText(); ok(sx.length === 0, `${devName}: page text is 12 px or more` + (sx.length ? ': ' + sx.slice(0, 12).join(' ') : ''));
   const panels = await page.evaluate(() => [...document.querySelectorAll('#logView .panel')].map((p, i) => { p.dataset.shot = 'p' + i; return (p.querySelector('.eyebrow') || {}).textContent || 'panel' + i; }));
   for (let i = 0; i < panels.length; i++) await shot('log-' + i + '-' + panels[i].replace(/\W+/g, '_').toLowerCase(), `[data-shot=p${i}]`);
-  await shot('ledger-strip', '.top');
-  ok(await page.evaluate(() => { const r = document.getElementById('reset').getBoundingClientRect(); return r.height >= 44; }), `${devName}: Start a new company is 44 px tall`);
+  await shot('top-bar', '.top');
   // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
   await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
   await tapEl('#qTabs [data-v=trees]'); await sleep(150);
@@ -105,13 +108,13 @@ async function run(devName) {
   await shot('queue-trees', '#queuePanel');
   await E(`setStashRule('spruce', 'any')`); await tapEl('#qTabs [data-v=lots]'); await sleep(100);
   // Sawmill tab
-  await tapEl('#tabMill'); await sleep(200);
-  ok(await page.evaluate(() => !document.getElementById('millView').hidden), `${devName}: Sawmill tab opens with a tap`);
+  await nav('#tabMill');
+  ok(await page.evaluate(() => !document.getElementById('millView').hidden), `${devName}: Sawmill screen opens with a tap`);
   ok(await noSideScroll(), `${devName}: Sawmill tab has no sideways scroll`);
   const st2 = await smallTargets(); ok(st2.length === 0, `${devName}: Sawmill tap targets are 44 px or more` + (st2.length ? ': ' + st2.slice(0, 12).join(' ') : ''));
   const mp = await page.evaluate(() => [...document.querySelectorAll('#millView .panel')].map((p, i) => { p.dataset.shot = 'm' + i; return (p.querySelector('.eyebrow') || {}).textContent || 'panel' + i; }));
   for (let i = 0; i < mp.length; i++) await shot('mill-' + i + '-' + mp[i].replace(/\W+/g, '_').toLowerCase(), `[data-shot=m${i}]`);
-  await tapEl('#tabLog'); await sleep(150);
+  await nav('#tabLog');
 
   // ---------- 2. sheets: header and action bar stay on screen, no sideways scroll
   const sheetCheck = async (id, name) => {
@@ -121,7 +124,13 @@ async function run(devName) {
     ok(r.fit && r.head && r.bar && r.side, `${devName}: ${name} sheet fits, header and buttons on screen ${JSON.stringify(r)}`);
     await shot('sheet-' + name);
   };
-  await E(`openWh('stock')`); await sleep(150); await sheetCheck('wh', 'warehouse');
+  // the warehouse is a screen now (UI rework slice 1), reached from the bottom tabs or the sidebar
+  if (await page.evaluate(() => getComputedStyle(document.getElementById('bottomTabs')).display !== 'none')) await tapEl('#btWh'); else await tapEl('#lsWh');
+  await sleep(200);
+  ok(await page.evaluate(() => !document.getElementById('wh').hidden && document.getElementById('logView').hidden), `${devName}: the Warehouse screen opens with a tap`);
+  ok(await noSideScroll(), `${devName}: Warehouse screen has no sideways scroll`);
+  const stw = await smallTargets(); ok(stw.length === 0, `${devName}: Warehouse tap targets are 44 px or more` + (stw.length ? ': ' + stw.slice(0, 12).join(' ') : ''));
+  await shot('screen-warehouse');
   for (const t of ['log', 'almanac', 'ledger']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
   // save backup: copy, then load it back (validation, confirm step)
   await page.locator('#svCopy').scrollIntoViewIfNeeded(); await tapEl('#svCopy'); await sleep(200);
@@ -146,12 +155,36 @@ async function run(devName) {
   await E(`openNewRun()`); await sleep(150); await sheetCheck('newrun', 'new-run'); await E(`$('newrun').hidden = true`); await sleep(100);
   await E(`openStory()`); await sleep(150); await sheetCheck('story', 'story'); await E(`$('story').hidden = true`);
   // toasts wait while a sheet is open
-  await E(`openWh('stock'); toast({name:'Test toast', line:'x'})`); await sleep(50);
+  await E(`queueDraft(1); openDraft(); toast({name:'Test toast', line:'x'})`); await sleep(50);
   ok((await page.evaluate(() => document.getElementById('toasts').childElementCount)) === 0, `${devName}: no toast over an open sheet`);
-  await tapEl('#whClose'); await sleep(100);
+  await tapEl('#dClose'); await sleep(100);
   ok((await page.evaluate(() => document.getElementById('toasts').childElementCount)) >= 1, `${devName}: the toast shows once the sheet closes`);
   await shot('toast');
   await E(`$('toasts').innerHTML = ''`);
+
+  // ---------- 2b. every screen of the frame, by touch: bottom tabs on a phone, the sidebar otherwise
+  const phoneTabs = await page.evaluate(() => getComputedStyle(document.getElementById('bottomTabs')).display !== 'none');
+  for (const [sc, sel, tab] of [['orders', '#lsOrd', '#btOrders'], ['shop', '#navShop', '#btShop'], ['board', '#navBoard', null], ['almanac', '#navAlm', null], ['settings', '#navSet', null], ['logging', '#tabLog', '#btCamp']]) {
+    if (phoneTabs && tab) { await tapEl(tab); await sleep(200); } else await nav(sel);
+    ok((await E('S.ui.screen')) === sc && await page.evaluate(() => !document.getElementById('app').classList.contains('drawer')), `${devName}: ${sc} screen opens with a tap (drawer closed)`);
+    ok(await noSideScroll(), `${devName}: ${sc} screen has no sideways scroll`);
+    const t = await smallTargets(); ok(t.length === 0, `${devName}: ${sc} tap targets are 44 px or more` + (t.length ? ': ' + t.slice(0, 12).join(' ') : ''));
+    const x = await smallText(); ok(x.length === 0, `${devName}: ${sc} text is 12 px or more` + (x.length ? ': ' + x.slice(0, 12).join(' ') : ''));
+    await shot('screen-' + sc);
+    if (sc === 'settings') ok(await page.evaluate(() => { const r = document.getElementById('reset').getBoundingClientRect(); return r.height >= 44; }), `${devName}: Start a new company is 44 px tall`);
+  }
+  if (phoneTabs) {
+    await tapEl('#btMore'); await sleep(300);
+    ok(await page.evaluate(() => { const r = document.getElementById('side').getBoundingClientRect(); return document.getElementById('app').classList.contains('drawer') && r.left >= -1 && r.right <= innerWidth; }), `${devName}: More opens the sidebar as a drawer`);
+    await shot('drawer');
+    await tapXY(await page.evaluate(() => innerWidth - 20), 300); await sleep(300);
+    ok(await page.evaluate(() => !document.getElementById('app').classList.contains('drawer')), `${devName}: tapping outside closes the drawer`);
+    ok(await page.evaluate(() => { const b = document.getElementById('bottomTabs').getBoundingClientRect(), t = document.getElementById('topbar').getBoundingClientRect(); return Math.abs(b.bottom - innerHeight) < 2 && b.height >= 56 && t.top >= -1 && t.height <= 60; }), `${devName}: bottom tabs at the bottom, one-line top bar`);
+  }
+  await tapEl('#bellBtn'); await sleep(150);
+  ok(await page.evaluate(() => { const t = document.getElementById('bellTray'), r = t.getBoundingClientRect(); return !t.hidden && r.right <= innerWidth + 1 && r.left >= -1; }), `${devName}: the bell opens its list on screen`);
+  await shot('bell');
+  await tapEl('#bellBtn'); await sleep(100);
 
   // ---------- 3. mini-games, touch only
   const mgCheck = async (name) => {
@@ -260,7 +293,7 @@ async function run(devName) {
   await tapEl('#mgClose'); await sleep(150);
 
   // saw for grade: tap a log on the deck, then tap the on-canvas SAW and TURN buttons by the sawyer's mark
-  await tapEl('#tabMill'); await sleep(150);
+  await nav('#tabMill');
   await tapEl('#mSawBtn'); await sleep(250);
   ok((await E('MG.kind')) === 'saw' && (await E('W.phase')) === 'pick', `${devName}: Saw for grade opens on the log deck`);
   await mgCheck('saw'); await shot('mg-saw-deck');

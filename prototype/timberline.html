@@ -11,6 +11,7 @@
   --bg:#E3E8DF; --panel:#F3F5F0; --ink:#1B241E; --muted:#5A685E; --line:#C3CCC1;
   --accent:#E0560B; --accent-ink:#FFFFFF; --bark:#6B4A2F; --needle:#2E5C39; --needle2:#41794C; --sky:#D5DED3;
   --good:#2F7A45; --warn:#B4520A; --bad:#B3261E; --pile:#B98A5E;
+  --side:#DCE2D7; --rule:#CBD3C8; --panel2:#EAEEE6; --sidew:236px; --toph:58px; --both:0px;
   --f-display:"Zilla Slab", "Rockwell", Georgia, serif;
   --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-num:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -18,43 +19,26 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
   --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
-  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; color-scheme:dark}}
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; --side:#141A16; --rule:#232C25; --panel2:#1E2620; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
   --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
-  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; color-scheme:dark}
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; --side:#141A16; --rule:#232C25; --panel2:#1E2620; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
-.app{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0}
 h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
 
-/* header */
-.top{display:flex;flex-direction:column;gap:12px}
-.brand{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
-.brand h1{font-size:2.1rem;font-weight:700;line-height:1}
-.brand p{margin:0;color:var(--muted);font-size:.88rem}
-.brand h1 small{display:block;font-family:var(--f-body);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
-.fogline{height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--sky) 50%,var(--line) 82%,transparent);opacity:.9}
-.tally{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden}
-.tally>div{padding:10px 14px;border-left:1px solid var(--line);min-width:0}
-.tally>div:first-child{border-left:0}
-.tally small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
-.tally b{display:block;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:1.2rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tally .cash b{color:var(--accent)}
-.tally .sub{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .banner.info{border-color:var(--accent);color:var(--ink)}
 .banner.info b{color:var(--accent)}
 .chipl.rec{color:var(--accent);margin-left:6px}
 .pos{color:var(--good)} .neg{color:var(--bad)}
 .spot{display:flex;align-items:center;gap:8px}
 .spot canvas{width:72px;height:24px;flex:none}
-@media (max-width:680px){.tally{grid-template-columns:repeat(2,minmax(0,1fr))}.tally>div:nth-child(3){border-left:0}.tally>div:nth-child(n+3){border-top:1px solid var(--line)}}
-/* season dispatch: the weather card under the tally (both camps); never a modal */
+/* season dispatch: the weather card at the top of the main area (every screen); never a modal */
 .dispatch{border:1px solid var(--line);border-left:4px solid var(--muted);background:var(--panel);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:.88rem;min-width:0;animation:dslide .35s ease-out}
 .dispatch.t-bad{border-left-color:var(--bad)} .dispatch.t-good{border-left-color:var(--good)} .dispatch.t-neutral{border-left-color:var(--warn)}
 .dispatch .dh{display:flex;justify-content:space-between;gap:4px 10px;align-items:baseline;flex-wrap:wrap}
@@ -67,11 +51,10 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .dispatch .bar{margin-top:4px;height:4px}
 @keyframes dslide{from{transform:translateY(-6px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.dispatch{animation:none}}
-.tally .sub.next{color:var(--accent)}
 .banner{border:1px solid var(--bad);color:var(--bad);background:var(--panel);border-radius:6px;padding:8px 12px;font-size:.88rem;font-weight:600}
 
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.grid{grid-template-columns:minmax(0,1fr)}}
 .col{display:flex;flex-direction:column;gap:18px;min-width:0}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
 .panel h2{font-size:1.15rem;font-weight:700}
@@ -325,16 +308,7 @@ details.notei[open] summary{justify-content:flex-start}
 .hticket b{color:var(--ink);font-family:var(--f-num)}
 .hticket .tot b{color:var(--good)}
 /* ledger strip, camp tabs, warehouse, special orders, Sawmill (playtest 2) */
-.lstrip{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
-.lcell{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;flex:1 1 140px;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 10px;text-align:left}
-.lcell:hover{border-color:var(--ink)}
-.lcell small{font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
-.lcell b{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.lcell.cash b{color:var(--accent)}
 .newb{color:var(--accent);margin-left:6px;font-size:.62rem}
-.camptabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
-.camptabs button{border:1px solid var(--line);border-bottom:0;background:transparent;border-radius:6px 6px 0 0;padding:8px 14px;font-weight:600;font-size:.88rem;color:var(--muted);margin-bottom:-1px}
-.camptabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);border-bottom:1px solid var(--panel)}
 .millsl{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .millsl label{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:.88rem}
 .millsl input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0 2px}
@@ -370,8 +344,8 @@ details.notei[open] summary{justify-content:flex-start}
 .mbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 /* phones: touch, narrow and short screens (phone audit). Tokens and both themes as above. */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-button,summary,.stage,.mgc,.chipl,.camptabs,.tabs,.buyn,.qmode{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-button,summary,input,.lcell{touch-action:manipulation}
+button,summary,.stage,.mgc,.chipl,.nav,.bottom,.tabs,.buyn,.qmode{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button,summary,input{touch-action:manipulation}
 .mgwrap{display:flex;flex-direction:column;gap:10px;min-width:0}
 #mgGuideBtn.new{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .saveio textarea{width:100%;min-height:88px;font-family:var(--f-num);font-size:12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;resize:vertical}
@@ -383,11 +357,11 @@ button,summary,input,.lcell{touch-action:manipulation}
   summary,#mgGuideBtn{min-width:44px}
   button{min-width:44px}
   .linkbtn{padding:12px 4px}
-  .buyn button,.tabs button,.camptabs button{padding-block:0}
+  .buyn button,.tabs button{padding-block:0}
   input[type=range]{min-height:44px}
 }
 @media (max-width:520px),(pointer:coarse){
-  .eyebrow,.chipl,.tally small,.lcell small,.dispatch small,.toast small,.yard small,.newb,.brand h1 small,.pcard small{font-size:12px}
+  .eyebrow,.chipl,.dispatch small,.toast small,.yard small,.newb,.pcard small{font-size:12px}
 }
 @media (max-width:520px){
   .cards{grid-template-columns:minmax(0,1fr)}
@@ -422,142 +396,336 @@ button,summary,input,.lcell{touch-action:manipulation}
   #mg .mgbar{grid-column:2;grid-row:3;margin:0 -12px -12px 0;padding:0 12px 12px 0;border-top:0}
   #mg #mgPeek[hidden]+.mgbar{grid-row:2 / 4}
 }
+/* ---------- the frame (UI rework slice 1, docs/design/ui-rework.md): a ledger sidebar, a one-line top bar and one screen at a time.
+   Phones (700 px and under) get five bottom tabs and the sidebar as a More drawer. Every panel inside a screen is unchanged. */
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.app{display:grid;grid-template-columns:var(--sidew) minmax(0,1fr);grid-template-rows:auto 1fr;min-height:100vh;min-height:100dvh}
+.side{grid-column:1;grid-row:1 / span 2;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;
+  background:var(--side);background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px);border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
+.brand{padding:16px 16px 12px;background:var(--side);border-bottom:2px solid var(--ink)}
+.brand h1{font-size:1.35rem;line-height:1.1;font-weight:700}
+.brand h1 small{display:block;font-family:var(--f-body);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:4px}
+.brand p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.navh{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:14px 16px 4px;margin:0;background:var(--side)}
+.nav{display:flex;flex-direction:column}
+.nav>button,.nav>.locked{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:2px 8px;align-items:center;width:100%;min-height:44px;text-align:left;
+  padding:8px 14px 8px 13px;border:0;border-left:3px solid transparent;background:var(--side);color:var(--ink);font:inherit}
+.nav>button:hover{background:var(--panel2)}
+.nav>button[aria-current="page"]{border-left-color:var(--accent);background:var(--panel)}
+.nav .nm{font-weight:600;min-width:0}
+.nav .sub{grid-column:2 / -1;font-size:12px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav .pb{grid-column:2 / -1;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.nav .pb i{display:block;height:100%;width:0;background:var(--needle2)}
+.nav .pb.ready i{background:var(--accent)}
+.nav>.locked{color:var(--muted);opacity:.6;cursor:default}
+.nav>.locked .nm{font-style:italic;font-weight:500}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--side);justify-self:end}
+.ncnt{font-family:var(--f-num);font-size:12px;line-height:1.5;padding:0 6px;border-radius:9px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;justify-self:end}
+.ncnt.hot{border-color:var(--accent);color:var(--accent)}
+.sidefoot{margin:auto 0 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--muted);background:var(--side)}
+.top{grid-column:2;grid-row:1;position:sticky;top:0;z-index:30;display:flex;align-items:stretch;height:var(--toph);background:var(--panel);border-bottom:1px solid var(--line);padding-right:env(safe-area-inset-right,0px)}
+.tcell{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:6px 14px;border:0;border-right:1px solid var(--line);background:transparent;text-align:left;font:inherit;color:inherit;border-radius:0}
+button.tcell:hover{background:var(--bg)}
+.tcell small{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;line-height:1.2}
+.tcell b{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600;font-size:1.05rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcell.cashc b{color:var(--accent)}
+.tcell .minor{font-family:var(--f-num);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcell.season{flex:1 1 auto;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px}
+.season .sn{display:flex;flex-direction:column;flex:none}
+.season .wx{min-width:0;display:flex;flex-direction:column;border-left:4px solid var(--line);padding-left:10px;font-size:.82rem;line-height:1.3}
+.season .wx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.season .wx .next{color:var(--accent)}
+.season.t-bad .wx{border-left-color:var(--bad)} .season.t-good .wx{border-left-color:var(--good)} .season.t-neutral .wx{border-left-color:var(--warn)}
+.bell{position:relative;display:flex;align-items:center;justify-content:center;flex:none;min-width:58px;margin-left:auto;border:0;background:transparent;border-radius:0}
+.bell svg.i{width:24px;height:24px}
+.bell .ncnt{position:absolute;top:7px;right:6px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.bell[aria-expanded="true"]{background:var(--bg)}
+.tray{position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(var(--toph) + 6px);width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - var(--toph) - 20px);overflow:auto;z-index:45;
+  background:var(--panel);border:1px solid var(--ink);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px 0}
+.tray h3{font-size:.95rem;padding:8px 14px}
+.tray .ti{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line)}
+.tray .ti b{font-weight:600} .tray .ti small{display:block;color:var(--muted);font-size:12px}
+.tray .ti button{border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;padding:6px 10px;font-weight:600;font-size:.82rem;min-height:36px;white-space:nowrap}
+.tray .ti button:hover{background:var(--accent);color:var(--accent-ink)}
+.tray .empty{padding:2px 14px 10px;margin:0}
+.main{grid-column:2;grid-row:2;min-width:0;display:flex;flex-direction:column;gap:14px;padding:18px max(22px,env(safe-area-inset-right,0px)) 40px 22px}
+.screen{display:flex;flex-direction:column;gap:14px;min-width:0;max-width:1240px}
+.screen:focus{outline:none}
+.whsheet{display:flex;flex-direction:column;gap:10px}
+.whsheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.whsheet header h2{font-size:1.15rem}
+.whsheet header p{margin:2px 0 0;font-size:.84rem;color:var(--muted)}
+.runbar .rbnet .sub{font-size:12px;color:var(--muted)}
+html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(--both) + 8px)}
+.bottom,.drawerbg{display:none}
+.app.drawer~.toasts{display:none}
+/* mini-games open inside the main area on a computer: the sidebar dims, cash and the bell stay in view */
+@media (min-width:701px) and (min-height:521px){
+  #mg.modal{left:var(--sidew);top:var(--toph);z-index:25;background:var(--bg);align-items:flex-start;padding:14px 18px}
+  #mg .sheet{width:min(1100px,100%);max-height:100%}
+  #mg .mgc{width:min(100%,max(420px,calc((100vh - var(--toph) - 260px)*1.6)));margin:0 auto}
+  .app.mgopen .side{filter:grayscale(.6);opacity:.55}
+}
+@media (min-width:701px) and (max-width:1060px){
+  :root{--sidew:200px}
+  .tcell{padding:6px 10px}
+  .tcell.mkt{display:none}
+}
+@media (max-width:700px){
+  :root{--toph:52px;--both:60px}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:0;top:0;bottom:0;height:auto;width:min(300px,86vw);z-index:48;transform:translateX(-102%);visibility:hidden;transition:transform .2s,visibility 0s .2s}
+  .app.drawer .side{transform:none;visibility:visible;transition:transform .2s;box-shadow:0 0 40px rgba(0,0,0,.35)}
+  .drawerbg:not([hidden]){display:block;position:fixed;inset:0;z-index:47;background:rgba(0,0,0,.35)}
+  .top,.main{grid-column:1}
+  .top{padding-left:env(safe-area-inset-left,0px)}
+  .only-desk{display:none!important}
+  .tcell{padding:4px 10px}
+  .tcell.cashc{flex:none;max-width:44%}
+  .season .sn small{display:none}
+  .tcell.season{gap:8px;overflow:hidden}
+  .season .wx{padding-left:8px}
+  .season .wx .next{display:none}
+  .main{padding:12px max(12px,env(safe-area-inset-right,0px)) calc(var(--both) + 24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));gap:12px}
+  .screen{gap:12px}
+  .bottom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--panel);border-top:1px solid var(--line);
+    padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .bottom button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;min-width:0;padding:4px 2px;border:0;background:transparent;border-radius:0;font-size:12px;font-weight:600;color:var(--muted)}
+  .bottom button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bottom button[aria-current="page"],.bottom button[aria-expanded="true"]{color:var(--accent)}
+  .bottom button[aria-current="page"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+  .bottom .dot{position:absolute;top:8px;right:calc(50% - 18px);box-shadow:0 0 0 2px var(--panel)}
+  .toasts{bottom:calc(var(--both) + 12px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){.side{transition:none!important}}
 </style>
 
-<div class="app">
-  <header class="top">
-    <div class="brand">
-      <h1><small>Logging · Fogbound Coast · 1890</small>Outpost Company</h1>
-      <p>Land at the cove, cut timber and load the ship before winter.</p>
-    </div>
-    <div class="fogline" aria-hidden="true"></div>
-    <div class="lstrip" id="lstrip" aria-label="Ledger">
-      <button class="lcell cash" id="lsCash" type="button"><small id="lsCashL">Cash · Logging</small><b id="lsCashV">$0</b></button>
-      <button class="lcell" id="lsShares" type="button"><small id="lsSharesL">Shares · Logging</small><b id="lsSharesV">0</b></button>
-      <button class="lcell" id="lsWh" type="button"><small>Warehouse</small><b><span id="lsWhV">0 items</span><span class="chipl newb" id="lsWhNew" hidden></span></b></button>
-      <button class="lcell" id="lsOrd" type="button"><small>Special order</small><b id="lsOrdV">None</b></button>
-    </div>
-    <nav class="camptabs" id="campTabs" role="tablist" aria-label="Camps" hidden>
-      <button type="button" role="tab" id="tabLog" aria-selected="true" aria-controls="logView">Logging</button>
-      <button type="button" role="tab" id="tabMill" aria-selected="false" aria-controls="millView">Sawmill<span class="chipl newb" id="millNew" hidden>New</span></button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-axe" viewBox="0 0 24 24"><path d="M5 21 15 8"/><path d="M13 5c2-2 5-2 7 0l-4 6c-1-2-2-3-3-3z"/></symbol>
+  <symbol id="i-saw" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 24 24"><path d="M3 12c3-5 10-6 14 0-4 6-11 5-14 0z"/><path d="M17 12l4-3v6z"/></symbol>
+  <symbol id="i-crate" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="1"/><path d="M3 10h18M3 16h18M8 6v14M16 6v14"/></symbol>
+  <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1 11H5z"/><path d="M8 9a4 4 0 0 1 8 0"/><path d="M3 9l2-5h14l2 5"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M7 3h11v15a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2h11v2a3 3 0 0 0 3 3"/><path d="M7 3a2 2 0 0 0-2 2v11M10 8h5M10 12h5"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+</svg>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Company">
+    <div class="brand"><h1><small>Logging · Fogbound Coast · 1890</small>Outpost Company</h1><p>Land at the cove, cut timber and load the ship before winter.</p></div>
+    <p class="navh" id="navhCamps">Camps</p>
+    <nav class="nav" aria-labelledby="navhCamps">
+      <button type="button" id="tabLog" data-go="logging"><svg class="i" aria-hidden="true"><use href="#i-axe"/></svg><span class="nm">Logging</span><span class="dot" id="navLogDot" hidden></span><span class="sub"><span id="navLogSub">Outpost 1</span></span><span class="pb"><i></i></span></button>
+      <button type="button" id="tabMill" data-go="sawmill" hidden><svg class="i" aria-hidden="true"><use href="#i-saw"/></svg><span class="nm">Sawmill</span><span class="ncnt hot" id="millNew" hidden>New</span><span class="dot" id="navMillDot" hidden></span><span class="sub"><span id="navMillSub">Mill run 1</span></span><span class="pb"><i></i></span></button>
+      <div class="locked" id="navFog" aria-label="Fishing: in the fog, opens later"><svg class="i" aria-hidden="true"><use href="#i-fish"/></svg><span class="nm">Fishing</span><span></span><span class="sub">In the fog · opens later</span></div>
     </nav>
-    <div class="tally" id="logTally">
-      <div class="cash"><small>Cash</small><b id="tCash">$0</b><div class="sub" id="tCashSub"></div></div>
-      <div><small>Net a minute</small><b id="tNet">$0</b><div class="sub" id="tNetSub"></div></div>
-      <div><small>Season</small><b id="tSeason">Fall 1890</b><div class="sub" id="tSeasonSub"></div><div class="sub next" id="tSeasonNext" hidden></div></div>
-      <div><small>Log price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas></div><div class="sub" id="tMktSub"></div></div>
-    </div>
-    <div class="dispatch" id="dispatch" hidden role="status" aria-live="polite"></div>
-    <div class="runbar" id="runbar">
-      <span class="runno" id="rbRun">Outpost 1</span>
-      <span class="rbmods" id="rbMods"></span>
-      <span><b id="rbPerks">0</b> perks</span>
-      <span>Close now: <b id="rbLegacy">0</b> shares</span>
-      <span>Saved <b id="rbBank">0</b></span>
-      <button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button>
-    </div>
-    <div class="banner" id="short" hidden>Wages owed: <span id="owed"></span>. Crews work at half speed until sales pay it off. Haul by hand or sell gear to catch up.</div>
-    <div class="banner info" id="stall" hidden></div>
-    <div class="banner info" id="advOwed" hidden>Company advance owed: <span id="advAmt"></span>. Half of each log sale repays it.</div>
-    <div class="banner info" id="stuck" hidden><b>No timber and no cash.</b> Take a hire job under Orders: the buyer gives the timber and pays an advance.</div>
+    <p class="navh" id="navhCo">Company</p>
+    <nav class="nav" aria-labelledby="navhCo">
+      <button type="button" id="lsWh" data-go="warehouse"><svg class="i" aria-hidden="true"><use href="#i-crate"/></svg><span class="nm">Warehouse</span><span class="ncnt hot" id="lsWhNew" hidden></span><span class="sub"><span id="lsWhV">0 items</span></span></button>
+      <button type="button" id="navShop" data-go="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="dot" id="navShopDot" hidden></span><span class="sub"><span id="navShopSub">Coming soon</span></span></button>
+      <button type="button" id="lsOrd" data-go="orders"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
+      <button type="button" id="navBoard" data-go="board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
+      <button type="button" id="navAlm" data-go="almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
+      <button type="button" id="navSet" data-go="settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Save backup, new company</span></button>
+    </nav>
+    <p class="sidefoot">Saves on this device. <span id="saved"></span></p>
+  </aside>
+  <div class="drawerbg" id="drawerBg" hidden></div>
+
+  <header class="top" id="topbar" aria-label="Money and season">
+    <button class="tcell cashc" id="lsCash" type="button"><small id="lsCashL">Cash · Logging</small><b id="lsCashV">$0</b><span class="minor only-desk" id="lsCashO"></span></button>
+    <button class="tcell only-desk" id="lsShares" type="button"><small id="lsSharesL">Shares · Logging</small><b id="lsSharesV">0</b></button>
+    <div class="tcell season"><div class="sn"><small>Season</small><b id="tSeason">Fall 1890</b></div><div class="wx"><span id="tSeasonSub"></span><span class="next" id="tSeasonNext" hidden></span></div></div>
+    <div class="tcell only-desk mkt"><small>Log price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas><span class="minor" id="tMktSub"></span></div></div>
+    <button class="bell" id="bellBtn" type="button" aria-label="Needs you now" aria-expanded="false" aria-controls="bellTray"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="ncnt" id="bellN" hidden></span></button>
   </header>
+  <div class="tray" id="bellTray" hidden role="dialog" aria-labelledby="bellH"><h3 id="bellH">Needs you now</h3><div id="bellList"></div></div>
 
-  <div class="grid" id="logView" role="tabpanel" aria-labelledby="tabLog">
-    <div class="col">
-      <section class="panel">
-        <p class="eyebrow">Current lot · Fogbound Coast</p>
-        <h2 id="tName">Cove woodlot</h2>
-        <p class="meta" id="tMeta"></p>
-        <div class="standgrid">
-          <button class="stage" id="stage" aria-label="Chop the tree">
-            <svg viewBox="0 0 300 300" aria-hidden="true">
-              <rect x="0" y="282" width="300" height="18" fill="var(--line)"/>
-              <rect x="136" y="262" width="28" height="20" fill="var(--bark)" opacity=".55"/>
-              <g id="tree">
-                <g id="conifer">
-                  <polygon points="150,22 104,120 196,120" fill="var(--needle2)"/>
-                  <polygon points="150,62 90,170 210,170" fill="var(--needle)"/>
-                  <polygon points="150,110 78,220 222,220" fill="var(--needle2)"/>
-                </g>
-                <g id="decid" hidden>
-                  <circle cx="150" cy="92" r="62" fill="var(--needle)"/>
-                  <circle cx="104" cy="132" r="44" fill="var(--needle2)"/>
-                  <circle cx="196" cy="132" r="44" fill="var(--needle2)"/>
-                  <circle cx="150" cy="150" r="46" fill="var(--needle)"/>
-                </g>
-                <rect x="136" y="196" width="28" height="86" fill="var(--bark)"/>
-                <polygon id="notch" points="136,250 136,262 136,274" fill="var(--sky)"/>
-              </g>
-              <g fill="var(--panel)" pointer-events="none"><ellipse cx="60" cy="236" rx="110" ry="14" opacity=".35"/><ellipse cx="250" cy="250" rx="120" ry="12" opacity=".3"/></g>
-            </svg>
-          </button>
-          <div class="facts">
-            <div><span>This tree</span><b id="fTree">Pine</b></div>
-            <div><span>Chops left</span><b id="fHp">0</b></div>
-            <div><span>Trees left</span><b id="fLeft">0</b></div>
-            <div><span>Done in</span><b id="fEta">—</b></div>
-            <div class="bar" style="border:0;padding:0"><i id="tBar"></i></div>
-            <button class="act" id="road" type="button" hidden></button>
-          </div>
+  <main class="main" id="main">
+    <div class="dispatch" id="dispatch" hidden role="status" aria-live="polite"></div>
+    <section class="screen" id="scrLog" data-screen="logging" aria-label="Logging">
+      <div class="runbar" id="runbar">
+        <span class="runno" id="rbRun">Outpost 1</span>
+        <span class="rbmods" id="rbMods"></span>
+        <span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span>
+        <span><b id="rbPerks">0</b> perks</span>
+        <span>Close now: <b id="rbLegacy">0</b> shares</span>
+        <span>Saved <b id="rbBank">0</b></span>
+        <button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button>
+      </div>
+      <div class="banner" id="short" hidden>Wages owed: <span id="owed"></span>. Crews work at half speed until sales pay it off. Haul by hand or sell gear to catch up.</div>
+      <div class="banner info" id="stall" hidden></div>
+      <div class="banner info" id="advOwed" hidden>Company advance owed: <span id="advAmt"></span>. Half of each log sale repays it.</div>
+      <div class="banner info" id="stuck" hidden><b>No timber and no cash.</b> Take a hire job under Orders: the buyer gives the timber and pays an advance.</div>
+      <div class="grid" id="logView">
+        <div class="col">
+          <section class="panel">
+            <p class="eyebrow">Current lot · Fogbound Coast</p>
+            <h2 id="tName">Cove woodlot</h2>
+            <p class="meta" id="tMeta"></p>
+            <div class="standgrid">
+              <button class="stage" id="stage" aria-label="Chop the tree">
+                <svg viewBox="0 0 300 300" aria-hidden="true">
+                  <rect x="0" y="282" width="300" height="18" fill="var(--line)"/>
+                  <rect x="136" y="262" width="28" height="20" fill="var(--bark)" opacity=".55"/>
+                  <g id="tree">
+                    <g id="conifer">
+                      <polygon points="150,22 104,120 196,120" fill="var(--needle2)"/>
+                      <polygon points="150,62 90,170 210,170" fill="var(--needle)"/>
+                      <polygon points="150,110 78,220 222,220" fill="var(--needle2)"/>
+                    </g>
+                    <g id="decid" hidden>
+                      <circle cx="150" cy="92" r="62" fill="var(--needle)"/>
+                      <circle cx="104" cy="132" r="44" fill="var(--needle2)"/>
+                      <circle cx="196" cy="132" r="44" fill="var(--needle2)"/>
+                      <circle cx="150" cy="150" r="46" fill="var(--needle)"/>
+                    </g>
+                    <rect x="136" y="196" width="28" height="86" fill="var(--bark)"/>
+                    <polygon id="notch" points="136,250 136,262 136,274" fill="var(--sky)"/>
+                  </g>
+                  <g fill="var(--panel)" pointer-events="none"><ellipse cx="60" cy="236" rx="110" ry="14" opacity=".35"/><ellipse cx="250" cy="250" rx="120" ry="12" opacity=".3"/></g>
+                </svg>
+              </button>
+              <div class="facts">
+                <div><span>This tree</span><b id="fTree">Pine</b></div>
+                <div><span>Chops left</span><b id="fHp">0</b></div>
+                <div><span>Trees left</span><b id="fLeft">0</b></div>
+                <div><span>Done in</span><b id="fEta">—</b></div>
+                <div class="bar" style="border:0;padding:0"><i id="tBar"></i></div>
+                <button class="act" id="road" type="button" hidden></button>
+              </div>
+            </div>
+            <p class="queue" id="queue"></p>
+          </section>
+
+          <section class="panel" id="queuePanel">
+            <p class="eyebrow">Cutting queue</p>
+            <h2>Your lots</h2>
+            <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="false">Lots</button><button type="button" data-v="trees" aria-pressed="true">Trees</button></div>
+            <p class="meta pick" id="pickNote" hidden></p>
+            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
+            <div id="qLots" hidden>
+              <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
+              <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
+              <ol class="tq" id="tq"></ol>
+            </div>
+            <div id="qTrees">
+              <p class="meta" id="stashMeta">Every tree on your lots. Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one tree slows felling and skidding.</p>
+              <div class="stash" id="stash"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <p class="eyebrow">Work chain</p>
+            <h2>Stump to mill</h2>
+            <p class="meta">Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove. The slowest stage sets your pace.</p>
+            <div class="chain" id="chain"></div>
+            <div class="millsl" id="millSl" hidden><label for="millShare"><span>Logs to the mill</span><b class="num" id="millShareV">up to 10%</b></label>
+              <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millFlow millSlMeta"><p class="meta" id="millFlow"></p><p class="meta" id="millSlMeta"></p><p class="meta" id="millLedger"></p></div>
+          </section>
+
+          <section class="panel" id="runPanel">
+            <p class="eyebrow">This outpost</p>
+            <h2 id="runTitle">Outpost 1</h2>
+            <p class="meta" id="runMeta"></p>
+            <div class="facts" id="runStats"></div>
+            <div class="group" style="margin-top:12px"><h3>Perks<small id="perkCount"></small></h3><div id="perks"></div></div>
+            <div class="group"><h3>Close camp</h3><p class="meta">Load the ship and start a new outpost. You earn Charter Shares to spend on lasting help.<br>You lose: cash, crews, lots, orders and perks.<br>You keep: achievements, reputation and improvements.</p><div class="closebox" id="closeBox"></div></div>
+          </section>
+
+          <section class="panel ledger">
+            <p class="eyebrow">Camp log</p>
+            <ol id="ledger"></ol>
+          </section>
         </div>
-        <p class="queue" id="queue"></p>
-      </section>
 
-      <section class="panel" id="queuePanel">
-        <p class="eyebrow">Cutting queue</p>
-        <h2>Your lots</h2>
-        <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="false">Lots</button><button type="button" data-v="trees" aria-pressed="true">Trees</button></div>
-        <p class="meta pick" id="pickNote" hidden></p>
-        <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
-        <div id="qLots" hidden>
-          <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
-          <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
-          <ol class="tq" id="tq"></ol>
+        <div class="col">
+          <section class="panel" id="yard">
+            <p class="eyebrow">Hiring</p>
+            <h2>Crews and machines</h2>
+            <div class="buyn" id="buyN" role="group" aria-label="How many to buy"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
+            <div id="eq"></div>
+          </section>
+          <section class="panel">
+            <p class="eyebrow">Land office</p>
+            <h2>Lots for sale</h2>
+            <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
+            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
+            <div id="sales"></div>
+          </section>
+          <section class="panel">
+            <p class="eyebrow">Company</p>
+            <h2 id="coName">Cove Landing</h2>
+            <div class="era" id="eras"></div>
+            <div id="eraNext"></div>
+            <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
+            <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
+            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
+          </section>
         </div>
-        <div id="qTrees">
-          <p class="meta" id="stashMeta">Every tree on your lots. Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one tree slows felling and skidding.</p>
-          <div class="stash" id="stash"></div>
+      </div>
+    </section>
+    <section class="screen" id="scrMill" data-screen="sawmill" aria-label="Sawmill" hidden>
+      <div class="grid" id="millView">
+        <div class="col">
+          <section class="panel">
+            <p class="eyebrow">Sawmill · Whistle Pond</p>
+            <h2 id="mName">Saw pit</h2>
+            <p class="meta" id="mMeta"></p>
+            <div class="facts" id="mFacts"></div>
+            <p class="meta" id="mLedger"></p>
+            <div class="mbtns"><button class="act game" type="button" id="mSawBtn">Saw boards</button><button class="act" type="button" id="mCove" aria-pressed="true">Buy logs: on</button><button class="act" type="button" id="mBundle" aria-pressed="true">Bundle: on</button></div>
+            <p class="spec" id="mSawWhy"></p>
+            <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Clear sells at 3×, Select 2× and Common 1× the log price. Common makes plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
+          </section>
+          <section class="panel">
+            <p class="eyebrow">This mill run</p>
+            <h2 id="mRunTitle">Mill run 1</h2>
+            <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 bd ft. Closing the mill resets only the mill.</p>
+            <button class="draftbtn" id="mDraftBtn" type="button" hidden>Pick perk (1)</button>
+            <div class="facts" id="mRunStats" style="margin-top:8px"></div>
+            <div class="group" style="margin-top:12px"><h3>Perks<small id="mPerkCount"></small></h3><div id="mPerks"></div></div>
+            <div class="group"><h3>Close camp</h3><div class="closebox" id="mClose"></div></div>
+          </section>
+        </div>
+        <div class="col">
+          <section class="panel">
+            <p class="eyebrow">Structures</p>
+            <h2>Built to stay</h2>
+            <p class="meta">Built from Prime spars, finds and mill cash. They stay built when any camp closes.</p>
+            <div id="mStructs"></div>
+          </section>
+          <section class="panel">
+            <p class="eyebrow">Crew</p>
+            <h2>Sawyers</h2>
+            <div id="mCrew"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+    <section class="screen" id="wh" data-screen="warehouse" aria-labelledby="whTitle" hidden>
+      <div class="panel whsheet">
+        <header><div><h2 id="whTitle">Warehouse</h2><p>Shared by every camp. It never fills and it stays when you close camp. Sales pay Logging.</p></div><button class="closeb" id="whClose" type="button">Back</button></header>
+        <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection</button><button type="button" data-t="almanac" aria-pressed="false">Almanac</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
+        <div id="whBody"></div>
+        <div id="whGrid" hidden></div>
+      </div>
+    </section>
+    <section class="screen" id="scrShop" data-screen="shop" aria-label="Shop" hidden>
+      <section class="panel">
+        <p class="eyebrow">Shop</p>
+        <h2>Coming soon</h2>
+        <p class="meta">A perk shop with new stock each season opens here in a later update. Until then, pick your perks here.</p>
+        <div id="shopBody">
+          <div class="row"><div class="info"><b>Logging perks</b><p id="shopLogP">No perk to pick.</p></div><div class="btns"><button class="buy" type="button" id="shopLog" disabled>Pick perk</button></div></div>
+          <div class="row" id="shopMillRow" hidden><div class="info"><b>Sawmill perks</b><p id="shopMillP">No perk to pick.</p></div><div class="btns"><button class="buy" type="button" id="shopMill" disabled>Pick perk</button></div></div>
         </div>
       </section>
-
-      <section class="panel">
-        <p class="eyebrow">Work chain</p>
-        <h2>Stump to mill</h2>
-        <p class="meta">Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove. The slowest stage sets your pace.</p>
-        <div class="chain" id="chain"></div>
-        <div class="millsl" id="millSl" hidden><label for="millShare"><span>Logs to the mill</span><b class="num" id="millShareV">up to 10%</b></label>
-          <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millFlow millSlMeta"><p class="meta" id="millFlow"></p><p class="meta" id="millSlMeta"></p><p class="meta" id="millLedger"></p></div>
-      </section>
-
-      <section class="panel" id="runPanel">
-        <p class="eyebrow">This outpost</p>
-        <h2 id="runTitle">Outpost 1</h2>
-        <p class="meta" id="runMeta"></p>
-        <div class="facts" id="runStats"></div>
-        <div class="group" style="margin-top:12px"><h3>Perks<small id="perkCount"></small></h3><div id="perks"></div></div>
-        <div class="group"><h3>Close camp</h3><p class="meta">Load the ship and start a new outpost. You earn Charter Shares to spend on lasting help.<br>You lose: cash, crews, lots, orders and perks.<br>You keep: achievements, reputation and improvements.</p><div class="closebox" id="closeBox"></div></div>
-      </section>
-
-      <section class="panel ledger">
-        <p class="eyebrow">Camp log</p>
-        <ol id="ledger"></ol>
-      </section>
-    </div>
-
-    <div class="col">
-      <section class="panel" id="yard">
-        <p class="eyebrow">Hiring</p>
-        <h2>Crews and machines</h2>
-        <div class="buyn" id="buyN" role="group" aria-label="How many to buy"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
-        <div id="eq"></div>
-      </section>
-      <section class="panel">
-        <p class="eyebrow">Land office</p>
-        <h2>Lots for sale</h2>
-        <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
-        <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
-        <div id="sales"></div>
-      </section>
+    </section>
+    <section class="screen" id="scrOrders" data-screen="orders" aria-label="Charter board" hidden>
       <section class="panel">
         <p class="eyebrow">Charter orders</p>
         <h2>Orders and hire jobs</h2>
@@ -571,71 +739,48 @@ button,summary,input,.lcell{touch-action:manipulation}
           <p class="meta">A bonus on everything you haul until it is filled. Miss the deadline and you pay a fine.</p>
           <div id="contracts"></div></div>
       </section>
-      <section class="panel">
-        <p class="eyebrow">Company</p>
-        <h2 id="coName">Cove Landing</h2>
-        <div class="era" id="eras"></div>
-        <div id="eraNext"></div>
-        <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
-        <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
-        <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
-      </section>
-      <section class="panel" id="legacyPanel">
-        <p class="eyebrow">Charter Shares</p>
-        <h2>The board</h2>
-        <p class="meta" id="legMeta"></p>
-        <div id="metaList"></div>
-        <div class="group"><h3>Past outposts</h3><div class="past" id="pastRuns"></div></div>
-      </section>
-      <div class="foot">
-        <span>Saves on this device. <span id="saved"></span></span>
-        <span class="rbtns" style="flex-direction:row;flex-wrap:wrap;gap:6px 14px"><button class="linkbtn" id="saveBtn" type="button">Save backup</button><button class="linkbtn" id="reset" type="button">New company</button></span>
+    </section>
+    <section class="screen" id="scrBoard" data-screen="board" aria-label="Company board" hidden>
+      <div class="grid">
+        <div class="col">
+          <section class="panel" id="legacyPanel">
+            <p class="eyebrow">Charter Shares</p>
+            <h2>The board</h2>
+            <p class="meta" id="legMeta"></p>
+            <div id="metaList"></div>
+            <div class="group"><h3>Past outposts</h3><div class="past" id="pastRuns"></div></div>
+          </section>
+        </div>
+        <div class="col">
+          <section class="panel" id="millBoard">
+            <p class="eyebrow">Shares · Sawmill</p>
+            <h2>The mill’s board</h2>
+            <p class="meta" id="mLegMeta"></p>
+            <div id="mMetaList"></div>
+            <div class="group"><h3>Past mill runs</h3><div class="past" id="mPast"></div></div>
+          </section>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="grid" id="millView" role="tabpanel" aria-labelledby="tabMill" hidden>
-    <div class="col">
+    </section>
+    <section class="screen" id="scrSet" data-screen="settings" aria-label="Settings" hidden>
       <section class="panel">
-        <p class="eyebrow">Sawmill · Whistle Pond</p>
-        <h2 id="mName">Saw pit</h2>
-        <p class="meta" id="mMeta"></p>
-        <div class="facts" id="mFacts"></div>
-        <p class="meta" id="mLedger"></p>
-        <div class="mbtns"><button class="act game" type="button" id="mSawBtn">Saw boards</button><button class="act" type="button" id="mCove" aria-pressed="true">Buy logs: on</button><button class="act" type="button" id="mBundle" aria-pressed="true">Bundle: on</button></div>
-        <p class="spec" id="mSawWhy"></p>
-        <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Clear sells at 3×, Select 2× and Common 1× the log price. Common makes plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
+        <p class="eyebrow">Settings</p>
+        <h2>Your company</h2>
+        <p class="meta">The game saves on this device every few seconds. Save backup copies it as text you can keep or load on another device.</p>
+        <div class="foot">
+          <span class="rbtns" style="flex-direction:row;flex-wrap:wrap;gap:6px 14px"><button class="linkbtn" id="saveBtn" type="button">Save backup</button><button class="linkbtn" id="reset" type="button">New company</button></span>
+        </div>
       </section>
-      <section class="panel">
-        <p class="eyebrow">This mill run</p>
-        <h2 id="mRunTitle">Mill run 1</h2>
-        <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 bd ft. Closing the mill resets only the mill.</p>
-        <button class="draftbtn" id="mDraftBtn" type="button" hidden>Pick perk (1)</button>
-        <div class="facts" id="mRunStats" style="margin-top:8px"></div>
-        <div class="group" style="margin-top:12px"><h3>Perks<small id="mPerkCount"></small></h3><div id="mPerks"></div></div>
-        <div class="group"><h3>Close camp</h3><div class="closebox" id="mClose"></div></div>
-      </section>
-    </div>
-    <div class="col">
-      <section class="panel">
-        <p class="eyebrow">Structures</p>
-        <h2>Built to stay</h2>
-        <p class="meta">Built from Prime spars, finds and mill cash. They stay built when any camp closes.</p>
-        <div id="mStructs"></div>
-      </section>
-      <section class="panel">
-        <p class="eyebrow">Crew</p>
-        <h2>Sawyers</h2>
-        <div id="mCrew"></div>
-      </section>
-      <section class="panel">
-        <p class="eyebrow">Shares · Sawmill</p>
-        <h2>The mill’s board</h2>
-        <p class="meta" id="mLegMeta"></p>
-        <div id="mMetaList"></div>
-        <div class="group"><h3>Past mill runs</h3><div class="past" id="mPast"></div></div>
-      </section>
-    </div>
-  </div>
+    </section>
+  </main>
+
+  <nav class="bottom" id="bottomTabs" aria-label="Screens">
+    <button type="button" id="btCamp" data-bt="camp"><svg class="i" aria-hidden="true"><use href="#i-axe"/></svg><span id="btCampL">Camp</span><span class="dot" id="btCampDot" hidden></span></button>
+    <button type="button" id="btOrders" data-bt="orders"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span>Orders</span><span class="dot" id="btOrdDot" hidden></span></button>
+    <button type="button" id="btWh" data-bt="warehouse"><svg class="i" aria-hidden="true"><use href="#i-crate"/></svg><span>Warehouse</span><span class="dot" id="btWhDot" hidden></span></button>
+    <button type="button" id="btShop" data-bt="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span>Shop</span><span class="dot" id="btShopDot" hidden></span></button>
+    <button type="button" id="btMore" data-bt="more" aria-expanded="false" aria-controls="side"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg><span>More</span><span class="dot" id="btMoreDot" hidden></span></button>
+  </nav>
 </div>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -654,13 +799,6 @@ button,summary,input,.lcell{touch-action:manipulation}
   </div>
 </div>
 
-<div class="modal" id="wh" hidden role="dialog" aria-modal="true" aria-labelledby="whTitle">
-  <div class="sheet">
-    <header><div><h2 id="whTitle">Warehouse</h2><p>Shared by every camp. It never fills and it stays when you close camp. Sales pay Logging.</p></div><button class="closeb" id="whClose" type="button">Close</button></header>
-    <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection</button><button type="button" data-t="almanac" aria-pressed="false">Almanac</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
-    <div id="whBody"></div>
-  </div>
-</div>
 <div class="modal" id="story" hidden role="dialog" aria-modal="true" aria-labelledby="stTitle">
   <div class="sheet storybox">
     <header><div><h2 id="stTitle">A crate on the beach</h2></div></header>
@@ -6480,7 +6618,7 @@ function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
 // stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees';
 // Trees by default, owner request 2026-10-26; a switch lasts for the session: every load opens on Trees again)
-function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -7442,25 +7580,15 @@ function drawSpark(){
 // ---------- render
 function render(force){
   if (force) Object.keys(sig).forEach(k => delete sig[k]);
-  renderStrip(); renderTabs(); renderDispatch();
-  if (S.ui.camp === 'sawmill' && S.camps.sawmill){ renderMill(); return; }
+  renderStrip(); renderFrame(); renderDispatch(); renderTop();
+  const scr = S.ui.screen;
+  if (S.camps.sawmill && (scr === 'sawmill' || scr === 'board')) renderMill();
+  if (scr === 'sawmill' && S.camps.sawmill) return;
   const t = tract();
-  // tally
-  $('tCash').textContent = money(S.cash);
-  $('tCashSub').textContent = `${fmt(S.felled)} trees felled`;
+  // camp header: net a minute
   const net = (S.ema - S.upEma)*60;
   $('tNet').textContent = money(net); $('tNet').className = net >= 0 ? 'pos' : 'neg';
   $('tNetSub').textContent = `${money(S.ema*60)} in · ${money(upkeep())} wages` + (fullUpkeep() - upkeep() > 1 ? ` (idle crews ¼ pay)` : '');
-  $('tSeason').textContent = `${season()} ${S.year}`;
-  const sn = season(), ev = evNow();
-  const sub = ev && ev.tone !== 'none' ? `${ev.name}: ${evShort(ev)}, ${clockLeft(evLeft(ev))} left`
-    : sn === 'Spring' ? 'Mud: skid and haul slower' : sn === 'Winter' ? 'Frozen: skid and haul faster' : 'Normal work';
-  if ($('tSeasonSub').textContent !== sub) $('tSeasonSub').textContent = sub;
-  const nx = meta('almanac') && S.weather.next ? Core.eventDef(S.weather.next) : null, nEl = $('tSeasonNext');
-  nEl.hidden = !nx; if (nx){ const t = `Next: ${nx.name}`; if (nEl.textContent !== t) nEl.textContent = t; nEl.title = `${nextSeason()}: ${nx.fx}`; }
-  const mk = market(); $('tMkt').textContent = '×' + mk.toFixed(2);
-  const prev = S.ph.length > 1 ? S.ph[S.ph.length-2] : mk;
-  $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
   $('short').hidden = !S.short; if (S.short) $('owed').textContent = money(S.owed);
   $('stuck').hidden = !(atRisk() && !tract());
   { const sw = stallSoon(), el = $('stall'); el.hidden = !sw;
@@ -7536,7 +7664,23 @@ function render(force){
     b.setAttribute('aria-label', p.none ? `Buy ${e.name}: need ${money(p.total)}` : `Buy ${p.count} ${e.name} for ${money(p.total)}`);
     r.querySelector('.sellb').hidden = !own(e.id);
   });
-  renderSales(); renderQueue(); renderContracts(); renderCompany(); renderGoals(); renderRun(); drawSpark();
+  renderSales(); renderQueue(); renderContracts(); renderCompany(); renderGoals(); renderRun();
+}
+// the top bar's season tile and log price (every screen)
+function renderTop(){
+  $('tSeason').textContent = `${season()} ${S.year}`;
+  const sn = season(), ev = evNow();
+  const sub = ev && ev.tone !== 'none' ? `${ev.name}: ${evShort(ev)}, ${clockLeft(evLeft(ev))} left`
+    : sn === 'Spring' ? 'Mud: skid and haul slower' : sn === 'Winter' ? 'Frozen: skid and haul faster' : 'Normal work';
+  if ($('tSeasonSub').textContent !== sub) $('tSeasonSub').textContent = sub;
+  const tile = $('tSeason').closest('.season'), tone = 'tcell season' + (ev && ev.tone !== 'none' ? ' t-' + ev.tone : '');
+  if (tile && tile.className !== tone) tile.className = tone;
+  const nx = meta('almanac') && S.weather.next ? Core.eventDef(S.weather.next) : null, nEl = $('tSeasonNext');
+  nEl.hidden = !nx; if (nx){ const t = `Next: ${nx.name}`; if (nEl.textContent !== t) nEl.textContent = t; nEl.title = `${nextSeason()}: ${nx.fx}`; }
+  const mk = market(); $('tMkt').textContent = '×' + mk.toFixed(2);
+  const prev = S.ph.length > 1 ? S.ph[S.ph.length-2] : mk;
+  $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
+  drawSpark();
 }
 
 // ---------- the season dispatch: a card under the tally at every season change. It folds away after 8 s, never opens a modal,
@@ -7755,7 +7899,7 @@ function openMG(kind){
   if (kind === 'saw') $('mgGear').textContent = sawGearLine(); else gearLine(kind);
   if (!guided){ $('mgGuideBtn').setAttribute('aria-label', 'Help'); $('mgGuideBtn').title = 'Help'; }
   $('mgGuideBtn').classList.toggle('new', phone && guided && !(kind === 'saw' ? S.ui.sawIntro : S.ui.buckIntro));
-  mgEl.hidden = false; readColors(); sizeCanvas();
+  mgEl.hidden = false; renderFrame(); readColors(); sizeCanvas();
   ({fell:fellInit, buck:buckInit, skid:skidInit, haul:haulInit, saw:() => sawInit(0)})[kind]();
   cancelAnimationFrame(MG.raf); MG.lt = 0; MG.raf = requestAnimationFrame(frame);
   $('mgClose').focus();
@@ -8822,6 +8966,7 @@ function normalize(){
     if (!S.story.crateCash){ m.cash += Core.CAMP_MONEY.crateCash; S.story.crateCash = true; }
     sawRefund(m); } // a log picked for Saw for grade but never sawn (the page closed mid-game) goes back
   if (!['logging','sawmill'].includes(S.ui.camp) || (S.ui.camp === 'sawmill' && !S.camps.sawmill)) S.ui.camp = 'logging';
+  if (!SCREENS.includes(S.ui.screen) || (S.ui.screen === 'sawmill' && !S.camps.sawmill)) S.ui.screen = S.ui.camp;
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
 }
@@ -8919,7 +9064,7 @@ function bindRogue(){
   $('nrClose').onclick = () => { nrEl.hidden = true; render(true); maybeStory(); };
   nrEl.addEventListener('click', e => { if (e.target === nrEl){ nrEl.hidden = true; render(true); maybeStory(); } });
   window.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!dEl.hidden) closeDraft(); else if (!nrEl.hidden){ nrEl.hidden = true; render(true); maybeStory(); }
-    else if (!$('wh').hidden) closeWh(); else if (!$('story').hidden) closeStory(false); });
+    else if (!$('story').hidden) closeStory(false); else if (!$('bellTray').hidden){ toggleBell(false); $('bellBtn').focus(); } else if (app.classList.contains('drawer')){ toggleDrawer(false); $('btMore').focus(); } });
   bindCompany();
 }
 
@@ -9392,21 +9537,110 @@ function renderStrip(){
   const mill = S.ui.camp === 'sawmill' && !!S.camps.sawmill;
   $('lsCashL').textContent = mill ? 'Cash · Sawmill' : 'Cash · Logging';
   $('lsCashV').textContent = money(mill ? S.camps.sawmill.cash : S.cash);
+  $('lsCashO').textContent = S.camps.sawmill ? (mill ? `Logging ${money(S.cash)}` : `Mill ${money(S.camps.sawmill.cash)}`) : `${fmt(S.felled)} trees felled`;
   $('lsSharesL').textContent = mill ? 'Shares · Sawmill' : 'Shares · Logging';
   $('lsSharesV').textContent = fmt(mill ? S.shares.sawmill.legacy : S.meta.legacy);
   const n = bankTotal(); $('lsWhV').textContent = `${fmt(n)} ${n === 1 ? 'item' : 'items'}`;
   const nb = $('lsWhNew'); nb.hidden = !(S.newCount > 0); if (S.newCount > 0) nb.textContent = `${fmt(S.newCount)} new`;
   const o = closestOrder(); $('lsOrdV').textContent = o ? `${o.d.short} ${o.got}/${o.need}` : 'None';
 }
-function setCamp(c){ if (c === 'sawmill' && !S.camps.sawmill) return; S.ui.camp = c; if (c === 'sawmill') S.ui.millSeen = true; closeArmed = false; millArmed = false; render(true); }
-function renderTabs(){
-  const open = !!S.camps.sawmill, mill = open && S.ui.camp === 'sawmill';
-  $('campTabs').hidden = !open; $('tabLog').setAttribute('aria-selected', String(!mill)); $('tabMill').setAttribute('aria-selected', String(mill));
-  $('tabLog').tabIndex = mill ? -1 : 0; $('tabMill').tabIndex = mill ? 0 : -1;
-  $('millNew').hidden = !open || !!S.ui.millSeen;
-  $('logView').hidden = mill; $('millView').hidden = !mill; $('logTally').hidden = mill; $('runbar').hidden = mill;
-  if (mill){ $('short').hidden = true; $('stuck').hidden = true; }
+// ---------- the frame (UI rework slice 1): one screen at a time, picked from the sidebar, the bottom tabs or the bell
+const SCREENS = ['logging', 'sawmill', 'warehouse', 'shop', 'orders', 'board', 'almanac', 'settings'];
+const CAMP_SCREENS = ['logging', 'sawmill'];
+const screenOk = sc => SCREENS.includes(sc) && !(sc === 'sawmill' && !S.camps.sawmill);
+// go to a screen; `then` (optional) runs after it renders, e.g. to scroll to and focus a panel
+function go(sc, then){
+  if (!screenOk(sc)) sc = 'logging';
+  if (CAMP_SCREENS.includes(sc)){ S.ui.camp = sc; if (sc === 'sawmill') S.ui.millSeen = true; closeArmed = false; millArmed = false; }
+  if (sc === 'warehouse' || sc === 'almanac'){ S.newCount = 0; if (sc === 'almanac') S.ui.whTab = 'almanac'; else if (S.ui.whTab === 'almanac') S.ui.whTab = 'stock'; }
+  const moved = S.ui.screen !== sc; S.ui.screen = sc;
+  toggleDrawer(false); toggleBell(false);
+  if (sc === 'warehouse' || sc === 'almanac') renderWh();
+  render(true);
+  if (moved) try { (document.scrollingElement || document.documentElement).scrollTop = 0; } catch(e){}
+  if (then) then();
+}
+function setCamp(c){ if (c === 'sawmill' && !S.camps.sawmill) return; go(c); }
+// scroll a panel into view and focus its first control (bell and sidebar shortcuts)
+function reveal(id){ const el = $(id); if (!el) return; try { el.scrollIntoView({block:'start'}); } catch(e){}
+  const f = el.querySelector('button:not(:disabled), summary, input'); if (f) try { f.focus({preventScroll:true}); } catch(e){ f.focus(); } }
+const app = $('app');
+function toggleDrawer(on){
+  if (!app) return; on = on == null ? !app.classList.contains('drawer') : !!on;
+  app.classList.toggle('drawer', on); $('drawerBg').hidden = !on; $('btMore').setAttribute('aria-expanded', String(on));
+  if (on){ const f = $('side').querySelector('[aria-current="page"]') || $('side').querySelector('button'); if (f) f.focus(); }
+}
+function toggleBell(on){
+  const b = $('bellBtn'), tr = $('bellTray'); if (!b) return; on = on == null ? tr.hidden : !!on;
+  tr.hidden = !on; b.setAttribute('aria-expanded', String(on));
+  if (on){ renderBell(); const f = tr.querySelector('button'); if (f) f.focus(); }
+}
+// the bell: only things the player can act on now, each with one button that goes to the right place
+function bellItems(){
+  const out = [], m = S.camps.sawmill;
+  if (S.run.dq.length) out.push({k:'perkL', camp:'logging', t:'Perk ready', s:`Logging · ${S.run.dq.length} to pick`, b:'Pick', fn:() => openDraft('logging')});
+  if (m && m.dq.length) out.push({k:'perkM', camp:'sawmill', t:'Perk ready', s:`Sawmill · ${m.dq.length} to pick`, b:'Pick', fn:() => openDraft('sawmill')});
+  if (S.short) out.push({k:'owed', camp:'logging', t:'Wages owed', s:`Logging · ${money(S.owed)}, crews at half speed`, b:'Go to camp', fn:() => go('logging')});
+  if (stallSoon()) out.push({k:'stall', camp:'logging', t:'Logs are stuck', s:'Logging · no crew and no cash', b:'Go to camp', fn:() => go('logging')});
+  if (!tract()) out.push({k:'nolot', camp:'logging', t:'No timber', s:'Buy a lot or take a hire job', b:'Lots', fn:() => go('logging', () => reveal('sales'))});
+  else if (S.tracts.length <= 1 && !hireActive() && S.forSale.length && cheapestSale() <= S.cash) out.push({k:'next', camp:'logging', t:'No lot after this one', s:'Logging · you can buy one now', b:'Lots', fn:() => go('logging', () => reveal('sales'))});
+  const hand = S.orders.open.map(o => SODEF(o.id) && Core.orderRemaining(SODEF(o.id), o.given).some(x => bankN(x.item) > 0 && !S.locks.includes(x.item)) ? SODEF(o.id) : null).find(Boolean);
+  if (hand) out.push({k:'hand', camp:'orders', t:'Special order', s:`${hand.short}: you can hand in`, b:'Open', fn:() => go('orders', () => reveal('spGroup'))});
+  if (!S.run.setup && canClose()) out.push({k:'close', camp:'logging', t:'Close camp ready', s:`Logging · +${fmt(legacyNow())} shares`, b:'Close camp', fn:() => go('logging', () => reveal('closeBox'))});
+  if (m && m.dry && S.bulk.logs < 1 && !m.buyCove) out.push({k:'pond', camp:'sawmill', t:'Mill pond empty', s:'Sawmill · buying logs is off', b:'Turn on', fn:() => { m.buyCove = true; toggleBell(false); render(); }});
+  if (m && canCloseMill()) out.push({k:'mclose', camp:'sawmill', t:'Mill can close', s:`Sawmill · +${fmt(millLegacyNow())} shares`, b:'Close mill', fn:() => go('sawmill', () => reveal('mClose'))});
+  return out;
+}
+let bellNow = [];
+function renderBell(){
+  const items = bellNow, n = items.length;
+  list('bellList', items.map(i => i.k).join('|'), n ? items.map((i, j) => `<div class="ti"><div><b>${i.t}</b><small></small></div><button type="button" data-bi="${j}">${i.b}</button></div>`).join('')
+    : '<p class="empty">Nothing needs you right now.</p>',
+    box => box.querySelectorAll('[data-bi]').forEach(b => b.onclick = () => { const it = bellNow[+b.dataset.bi]; toggleBell(false); if (it) it.fn(); }));
+  $('bellList').querySelectorAll('.ti small').forEach((el, j) => { const t = items[j] ? items[j].s : ''; if (el.textContent !== t) el.textContent = t; });
+}
+const showN = (id, n, txt) => { const el = $(id); if (!el) return; el.hidden = !n; const t = txt != null ? txt : String(n); if (n && el.textContent !== t) el.textContent = t; };
+function renderFrame(){
+  const open = !!S.camps.sawmill;
+  if (!screenOk(S.ui.screen)) S.ui.screen = 'logging';
+  const sc = S.ui.screen, mill = sc === 'sawmill';
+  document.querySelectorAll('.screen[data-screen]').forEach(el => { const on = el.dataset.screen === sc || (el.id === 'wh' && sc === 'almanac'); if (el.hidden === on) el.hidden = !on; });
+  $('logView').hidden = sc !== 'logging'; $('millView').hidden = !mill;
+  document.querySelectorAll('.nav [data-go]').forEach(b => { const cur = b.dataset.go === sc; if (cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   const sm = document.querySelector('.brand h1 small'), st = mill ? 'Sawmill · Whistle Pond · 1890' : 'Logging · Fogbound Coast · 1890'; if (sm && sm.textContent !== st) sm.textContent = st;
+  // camps: outpost number and the close-camp bar
+  const r = S.run, ok = canClose();
+  const lsub = `Outpost ${r.n} · ${ERAS[S.era].name}`; if ($('navLogSub').textContent !== lsub) $('navLogSub').textContent = lsub;
+  const lp = $('tabLog').querySelector('.pb'); lp.classList.toggle('ready', ok); lp.firstChild.style.width = (ok ? 100 : Math.min(100, r.deliv/CLOSE_VOL*100)).toFixed(1) + '%';
+  $('tabMill').hidden = !open; $('millNew').hidden = !open || !!S.ui.millSeen;
+  $('millBoard').hidden = !open;
+  if (open){ const m = S.camps.sawmill, mok = canCloseMill();
+    const msub = `Mill run ${m.n} · ${S.structures['sawmill.headrig'] ? 'Saw mill' : S.structures['sawmill.pond'] ? 'Water mill' : 'Saw pit'}`; if ($('navMillSub').textContent !== msub) $('navMillSub').textContent = msub;
+    const mp = $('tabMill').querySelector('.pb'); mp.classList.toggle('ready', mok); mp.firstChild.style.width = (mok ? 100 : Math.min(100, m.sawn/Core.MILL_CLOSE_BF*100)).toFixed(1) + '%'; }
+  // the bell and the dots
+  bellNow = bellItems(); const by = c => bellNow.some(i => i.camp === c);
+  showN('bellN', bellNow.length); $('bellBtn').setAttribute('aria-label', bellNow.length ? `Needs you now: ${bellNow.length}` : 'Needs you now: nothing');
+  if (!$('bellTray').hidden) renderBell();
+  $('navLogDot').hidden = !by('logging'); $('navMillDot').hidden = !open || !by('sawmill');
+  const picks = r.dq.length + (open ? S.camps.sawmill.dq.length : 0);
+  $('navShopDot').hidden = !picks; const ss = picks ? `${picks} ${picks === 1 ? 'perk' : 'perks'} to pick` : 'Coming soon'; if ($('navShopSub').textContent !== ss) $('navShopSub').textContent = ss;
+  const nOrd = S.orders.open.length + S.contracts.length + (hireActive() ? 1 : 0), hot = by('orders');
+  showN('navOrdN', nOrd); $('navOrdN').classList.toggle('hot', hot);
+  const shares = S.meta.legacy + (open ? S.shares.sawmill.legacy : 0), canBuy = META.some(x => !meta(x.id) && !(x.req && !meta(x.req)) && S.meta.legacy >= x.cost);
+  showN('navBoardN', 1, fmt(shares)); $('navBoardN').classList.toggle('hot', canBuy);
+  showN('navAlmN', 1, `${Object.keys(S.weather.seen).length}/${Core.SEASON_EVENTS.length}`);
+  // shop (placeholder until the perk shop): today's perk picks
+  $('shopLog').disabled = !r.dq.length; $('shopLogP').textContent = r.dq.length ? `${r.dq.length} to pick. Perks last until you close camp.` : 'No perk to pick. Play mini-games to earn one.';
+  $('shopMillRow').hidden = !open;
+  if (open){ const q = S.camps.sawmill.dq.length; $('shopMill').disabled = !q; $('shopMillP').textContent = q ? `${q} to pick. Perks last until the mill closes.` : 'No perk to pick. Play Saw boards to earn one.'; }
+  // phone bottom tabs
+  const campOn = CAMP_SCREENS.includes(sc), cl = S.ui.camp === 'sawmill' && open ? 'Sawmill' : 'Logging';
+  if ($('btCampL').textContent !== cl) $('btCampL').textContent = cl;
+  const icon = $('btCamp').querySelector('use'), ih = cl === 'Sawmill' ? '#i-saw' : '#i-axe'; if (icon && icon.getAttribute('href') !== ih) icon.setAttribute('href', ih);
+  [['btCamp', campOn], ['btOrders', sc === 'orders'], ['btWh', sc === 'warehouse'], ['btShop', sc === 'shop']].forEach(([id, on]) => { const b = $(id); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $('btCampDot').hidden = !(by('logging') || by('sawmill')); $('btOrdDot').hidden = !hot; $('btWhDot').hidden = !(S.newCount > 0); $('btShopDot').hidden = !picks;
+  $('btMoreDot').hidden = !canBuy;
+  if (app){ const mo = !mgEl.hidden; app.classList.toggle('mgopen', mo); if ($('side').inert !== mo) $('side').inert = mo; }
 }
 function renderSlider(){
   const el = $('millSl'), open = !!S.camps.sawmill; el.hidden = !open; if (!open) return;
@@ -9445,10 +9679,10 @@ function renderBunk(){
     <div class="btns"><button class="buy" type="button" id="bunkBuy" ${canBuild(id) ? '' : 'disabled'}>Build</button></div></div>` : `<p class="empty">The bunkhouse is done: wages and hiring ×${bunkF().toFixed(2)}.</p>`,
     box => { const b = box.querySelector('#bunkBuy'); if (b) b.onclick = () => buildStructure(id); });
 }
-// the warehouse sheet: stock (sell, sell surplus, lock, order tags), collection log, ledger
+// the warehouse screen: stock (sell, sell surplus, lock, order tags), collection log, almanac, ledger
 const whEl = $('wh');
-function openWh(tab){ if (tab) S.ui.whTab = tab; lastFocus = document.activeElement; whEl.hidden = false; S.newCount = 0; renderWh(); render(); const f = whEl.querySelector('#whTabs button[aria-pressed="true"]'); if (f) f.focus(); }
-function closeWh(){ whEl.hidden = true; render(true); if (lastFocus && lastFocus.focus && !lastFocus.hidden) lastFocus.focus(); }
+function openWh(tab){ if (tab) S.ui.whTab = tab; go(S.ui.whTab === 'almanac' ? 'almanac' : 'warehouse'); const f = whEl.querySelector('#whTabs button[aria-pressed="true"]'); if (f) f.focus(); }
+function closeWh(){ go(S.ui.camp); }
 function itemRow(d){
   const n = bankN(d.id), tags = [], locked = S.locks.includes(d.id);
   S.orders.open.forEach(o => { const od = SODEF(o.id), r = od ? Core.orderRemaining(od, o.given).find(x => x.item === d.id) : null; if (r) tags.push(`${od.short} needs ${r.qty} more`); });
@@ -9618,18 +9852,23 @@ function renderMill(){
     : '<p class="empty">No mill runs closed yet.</p>');
 }
 function bindCompany(){
-  $('lsCash').onclick = () => openWh('ledger'); $('lsShares').onclick = () => openWh('ledger'); $('lsWh').onclick = () => openWh('stock');
-  $('lsOrd').onclick = () => { setCamp('logging'); const g = $('spGroup'); try { g.scrollIntoView({block:'center', behavior:'smooth'}); } catch(e){} const f = g.querySelector('button'); if (f) f.focus(); };
-  $('tabLog').onclick = () => setCamp('logging'); $('tabMill').onclick = () => setCamp('sawmill');
-  $('campTabs').addEventListener('keydown', e => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const c = S.ui.camp === 'sawmill' ? 'logging' : 'sawmill'; setCamp(c); $(c === 'sawmill' ? 'tabMill' : 'tabLog').focus(); });
+  $('lsCash').onclick = () => openWh('ledger'); $('lsShares').onclick = () => go('board');
+  document.querySelectorAll('.nav [data-go]').forEach(b => b.onclick = () => { go(b.dataset.go); if (!app.classList.contains('drawer')) b.focus(); });
+  $('lsWh').onclick = () => openWh(S.ui.whTab === 'almanac' ? 'stock' : S.ui.whTab);
+  $('btCamp').onclick = () => go(CAMP_SCREENS.includes(S.ui.screen) && S.camps.sawmill ? (S.ui.camp === 'sawmill' ? 'logging' : 'sawmill') : S.ui.camp);
+  $('btOrders').onclick = () => go('orders'); $('btWh').onclick = () => openWh(S.ui.whTab === 'almanac' ? 'stock' : S.ui.whTab); $('btShop').onclick = () => go('shop');
+  $('btMore').onclick = () => toggleDrawer(); $('drawerBg').onclick = () => toggleDrawer(false);
+  $('bellBtn').onclick = () => toggleBell();
+  $('shopLog').onclick = () => openDraft('logging'); $('shopMill').onclick = () => openDraft('sawmill');
+  document.addEventListener('click', e => { const tr = $('bellTray'); if (!tr.hidden && !tr.contains(e.target) && !$('bellBtn').contains(e.target)) toggleBell(false); });
   $('millShare').addEventListener('input', e => { S.millShare = Math.max(0, Math.min(Core.MILL_SHARE_MAX, (+e.target.value || 0)/100)); renderSlider(); });
   $('mSawBtn').onclick = () => openMG('saw');
   $('mCove').onclick = () => { const m = S.camps.sawmill; if (m){ m.buyCove = !m.buyCove; render(); } };
   $('mBundle').onclick = () => { const m = S.camps.sawmill; if (m){ m.bundle = !m.bundle; render(); } };
   $('mDraftBtn').onclick = () => openDraft('sawmill');
   $('whClose').onclick = closeWh;
-  $('whTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.whTab = b.dataset.t; renderWh(); b.focus(); });
-  whEl.addEventListener('click', e => { if (e.target === whEl) closeWh(); });
+  $('whTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.whTab = b.dataset.t; const sc = b.dataset.t === 'almanac' ? 'almanac' : 'warehouse';
+    if (S.ui.screen !== sc){ S.ui.screen = sc; render(true); } renderWh(); b.focus(); });
   $('stGo').onclick = () => closeStory(true); $('stLater').onclick = () => closeStory(false);
 }
 

@@ -26,7 +26,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const SEED=+process.env.SAW_SEED||1234567;
  E(`S.rng.drops=${SEED}; S.rng.saw=${SEED*7+13}`);
  // ---------- 1. warehouse
- ok(E('bankTotal()')===0 && $('lsWhV').textContent==='0 items' && $('lsOrdV').textContent==='None' && $('campTabs').hidden,'new company: empty warehouse in the ledger strip, no camp tabs yet');
+ ok(E('bankTotal()')===0 && $('lsWhV').textContent==='0 items' && $('lsOrdV').textContent==='None' && $('tabMill').hidden,'new company: empty warehouse in the sidebar, no Sawmill row yet');
  ok(E('Core.ITEMS.length')===8 && E(`Core.ITEMS.every(i=>i.id.includes('.'))`),'item definitions are data in core, namespaced by skill');
  E(`addItem('logging.burl', 3); addItem('logging.fog_glass', 1); render(true)`);
  ok($('lsWhV').textContent==='4 items' && !$('lsWhNew').hidden && /4 new/.test($('lsWhNew').textContent),'ledger strip counts items with a new badge: '+$('lsWhNew').textContent);
@@ -83,7 +83,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  function Core_c(E){ return E('Core.FOUNDING_CRATE.cash + Core.CAMP_MONEY.crateCash'); }
  ok(E('S.story.card')===true && E('S.bank.logging_burl===undefined') && E(`bankN('logging.burl')`)===2,'warehouse contents survive close camp; story card waits');
  E(`$('newrun').hidden=true; maybeStory()`); ok(!$('story').hidden && /Saw them here/.test($('stBody').textContent),'one-time story card');
- $('stGo').click(); ok($('story').hidden && E('S.ui.camp')==='sawmill' && !$('millView').hidden && $('logView').hidden && !$('campTabs').hidden,'Open the Sawmill switches to the Sawmill tab');
+ $('stGo').click(); ok($('story').hidden && E('S.ui.camp')==='sawmill' && !$('millView').hidden && $('logView').hidden && !$('tabMill').hidden && $('tabMill').getAttribute('aria-current')==='page','Open the Sawmill switches to the Sawmill screen');
  E('S.run.n===2 && (S.run.setup=false)');
  ok(E(`S.orders.open.some(o=>o.id==='admiralty_spar')`)===false,'missed order stays away until outpost 3');
  // ---------- 5. separate cash, structures, cove buying
@@ -179,7 +179,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  dom.window.close();
  const vet=JSON.parse(JSON.stringify(old)); vet.runs=[{n:1,min:30,deliv:3e5,earned:1e4,legacy:4,era:0,mods:[],perks:3,eraT:[]}]; vet.run.n=2; vet.run.init=true;
  dom=mk({'timberline-v2':JSON.stringify(vet)}); await sleep(300); w=dom.window; E2=s=>w.__eval(s);
- ok(E2('!!S.camps.sawmill') && E2('bankN(SPAR)')===6 && E2('S.bulk.logs')>19000 && !w.document.getElementById('campTabs').hidden && !w.document.getElementById('story').hidden,'an old save past its first close camp receives the Sawmill, the crate and the story card');
+ ok(E2('!!S.camps.sawmill') && E2('bankN(SPAR)')===6 && E2('S.bulk.logs')>19000 && !w.document.getElementById('tabMill').hidden && !w.document.getElementById('story').hidden,'an old save past its first close camp receives the Sawmill, the crate and the story card');
  dom.window.close();
 
  await sleep(100);

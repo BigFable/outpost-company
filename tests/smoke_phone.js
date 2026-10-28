@@ -17,9 +17,9 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const dom=mk(); await sleep(300); const w=dom.window, d=w.document, E=s=>w.__eval(s), $=id=>d.getElementById(id);
  ok(/width=device-width/.test((d.querySelector('meta[name=viewport]')||{}).content||''),'viewport meta for phones');
  // toasts
- E(`openWh('stock'); toast({name:'Queued', line:'x'})`); await sleep(0);
+ E(`queueDraft(1); openDraft('logging'); toast({name:'Queued', line:'x'})`); await sleep(0);
  ok($('toasts').childElementCount===0,'no toast while a sheet is open');
- $('whClose').click(); await sleep(0);
+ $('dClose').click(); await sleep(0);
  ok(/Queued/.test($('toasts').textContent),'the toast shows once the sheet closes');
  // save backup
  E(`S.cash = 4321`); E(`openWh('ledger')`);

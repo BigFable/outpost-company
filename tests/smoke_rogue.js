@@ -71,7 +71,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(!d.getElementById('newrun').hidden,'new-run modifier modal opens');
  ok(d.getElementById('rbRun').textContent==='Outpost 2','run counter = Outpost 2');
  ok(/^14$/.test(d.getElementById("rbBank").textContent),'legacy banked: '+d.getElementById('rbBank').textContent);
- ok(d.getElementById('tCash').textContent==='$0','cash reset');
+ ok(d.getElementById('lsCashV').textContent==='$0','cash reset (top bar)');
  ok(/Cove woodlot/.test(d.getElementById('tName').textContent),'fresh cove woodlot');
  // pick modifiers
  const mods=[...d.querySelectorAll('#nrMods .modb')]; ok(mods.length===3,'3 modifiers');
