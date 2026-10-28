@@ -180,6 +180,12 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .qbtns button:disabled{opacity:.35;cursor:not-allowed}
 .qbtns button.now{border-color:var(--accent);color:var(--accent)}
 .chipl.afkchip{color:var(--muted);margin-left:4px}
+/* lot slots: a slot's name on its listing, and compact rows for locked slots */
+.chipl.slotchip,.chipl.lockchip{color:var(--muted);margin-left:4px}
+.chipl.rare{color:var(--warn);margin-left:4px}
+.row.locked{min-height:44px;padding-top:6px;padding-bottom:6px;color:var(--muted)}
+.row.locked b{font-weight:600;color:var(--muted)}
+.row.locked p{margin:2px 0 0;font-size:.8rem}
 .chipl.best,.chipl.ofb{white-space:normal;max-width:100%}
 .row.lot .info,.qrow .info{overflow-wrap:anywhere}
 /* the lot stash: the Trees tab of the cutting queue */
@@ -3143,6 +3149,106 @@ var Core = (function(exports) {
 		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
 		return t;
 	}
+	/**
+	* The four slots, one listing each. Slot 1 is today's listing (genTract, with the
+	* push-tract price guarantee); slots 2 and 3 list genRichTract lots; slot 4 the AFK lot.
+	* Unlocks count lifetime lots cut out, so they stay open through close camp.
+	*/
+	var LOT_SLOTS = deepFreeze([
+		{
+			name: "Company lot",
+			species: 2,
+			need: 0
+		},
+		{
+			name: "Surveyed lot",
+			species: 3,
+			need: 2
+		},
+		{
+			name: "Cruiser's pick",
+			species: 4,
+			need: 3,
+			rare: true
+		},
+		{
+			name: "AFK lot",
+			species: 3,
+			need: 4,
+			afk: true
+		}
+	]);
+	/** Main species share on a rich lot, and the rare tree's share (percent). */
+	var RICH_MAIN_SHARE = deepFreeze([40, 60]);
+	var RARE_SHARE = deepFreeze([10, 20]);
+	/** Smallest share of any other species on a rich lot (percent). */
+	var RICH_MIN_SHARE = 5;
+	/** How many slots are open after `lotsCutOut` lifetime lots (slot 1 always). */
+	function slotsOpen(lotsCutOut) {
+		const n = Math.max(0, Number(lotsCutOut) || 0);
+		let k = 0;
+		while (k < LOT_SLOTS.length && n >= LOT_SLOTS[k].need) k++;
+		return Math.max(1, k);
+	}
+	/** Lots still to cut out before slot `k` (0-based) opens; 0 when open. */
+	function lotsToOpen(k, lotsCutOut) {
+		const s = LOT_SLOTS[k];
+		return s ? Math.max(0, s.need - Math.max(0, Number(lotsCutOut) || 0)) : 0;
+	}
+	/** The rare tree for slot 3 in an era: the next era's new species; in the last era its newest species (cloudwood). */
+	function rareSpecies(era) {
+		const e = Math.max(0, Math.min(ERA_SPECIES.length - 1, era));
+		const pool = ERA_SPECIES[e] ?? [], next = ERA_SPECIES[e + 1];
+		return (next ? next.filter((x) => !pool.includes(x)) : [])[0] ?? pool[pool.length - 1] ?? null;
+	}
+	/**
+	* Species a charter order may name: the era's pool, plus slot 3's rare tree
+	* once slot 3 is open (charter orders only ask for trees you can get now).
+	*/
+	function orderSpeciesPool(era, open) {
+		const out = (ERA_SPECIES[Math.max(0, Math.min(ERA_SPECIES.length - 1, era))] ?? []).slice();
+		const r = rareSpecies(era);
+		if (open >= 3 && r && !out.includes(r)) out.push(r);
+		return out;
+	}
+	/**
+	* A slot 2 or slot 3 lot: `n` species from the current era (no older-tier roll),
+	* main species 40–60%, the others split the rest (each at least 5%); with `rare`,
+	* one of the n is the era's rare tree at 10–20%. Era 0 lots take the main
+	* species' Cove ground (pine coast, spruce point, hemlock swamp); later eras are
+	* mixed stands. Same size and price formula as genTract.
+	* Draws, in order: one per picked era species (n, or n − 1 with rare), main
+	* share, rare share (with rare), one weight per other era species, trees,
+	* miles, slope, place, lot.
+	*/
+	function genRichTract(rng, era, n, rare, o) {
+		const e = Math.max(0, Math.min(ERA_SPECIES.length - 1, era));
+		const r = rare ? rareSpecies(e) : null;
+		const base = (ERA_SPECIES[e] ?? []).filter((x) => x !== r);
+		const pick = [];
+		while (pick.length < (r ? n - 1 : n) && base.length) pick.push(base.splice(Math.floor(rng() * base.length), 1)[0]);
+		const mainW = Math.round(rngRange(rng, RICH_MAIN_SHARE[0], RICH_MAIN_SHARE[1]));
+		const rareW = r ? Math.round(rngRange(rng, RARE_SHARE[0], RARE_SHARE[1])) : 0;
+		const rest = 100 - mainW - rareW, others = pick.slice(1);
+		const ws = others.map(() => .5 + rng()), tot = ws.reduce((a, b) => a + b, 0);
+		const mix = [[pick[0] ?? "pine", mainW]];
+		others.forEach((x, i) => mix.push([x, Math.max(5, Math.round(rest * ws[i] / tot))]));
+		if (r) mix.push([r, rareW]);
+		const ground = e === 0 ? {
+			pine: "coast",
+			spruce: "headland",
+			hemlock: "swamp"
+		}[pick[0] ?? "pine"] ?? "coast" : "mixed";
+		const g = GROUNDS[ground];
+		const trees = Math.round((TRACT_BASE[e] ?? 0) * rngRange(rng, .6, 1.5));
+		const miles = Math.round(rngRange(rng, 1, 12) * 2) / 2;
+		const slope = rngPick(rng, g.slopes);
+		const t = makeTract(lotName(rng), mix, trees, miles, slope, ground);
+		t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * (g.landMult ?? 1));
+		const sz = (o.thinSurvey ? .8 : 1) * (o.cruiser ? 1.25 : 1);
+		if (sz !== 1) t.trees = t.left = Math.max(5, Math.round(t.trees * sz));
+		return t;
+	}
 	/** Charter orders shown on the board at once (owner request 2026-10-25; was 2). */
 	var OFFER_BOARD_SIZE = 4;
 	/** Cutting-rights price: 42% of gross value, cheaper with distance (floor 55%) and slope. */
@@ -5971,6 +6077,7 @@ var Core = (function(exports) {
 	exports.ITEMS = ITEMS;
 	exports.LOG_CRATE_BF = LOG_CRATE_BF;
 	exports.LOT_AVG_SAMPLES = LOT_AVG_SAMPLES;
+	exports.LOT_SLOTS = LOT_SLOTS;
 	exports.LOT_STATS = LOT_STATS;
 	exports.LOT_STAT_BAND = LOT_STAT_BAND;
 	exports.LOT_STAT_BANDS = LOT_STAT_BANDS;
@@ -6001,7 +6108,10 @@ var Core = (function(exports) {
 	exports.QUEUE_MODES = QUEUE_MODES;
 	exports.QUEUE_MODE_LABEL = QUEUE_MODE_LABEL;
 	exports.QUEUE_STAGES = QUEUE_STAGES;
+	exports.RARE_SHARE = RARE_SHARE;
 	exports.RARITY = RARITY;
+	exports.RICH_MAIN_SHARE = RICH_MAIN_SHARE;
+	exports.RICH_MIN_SHARE = RICH_MIN_SHARE;
 	exports.SAWYER_BF_MIN = SAWYER_BF_MIN;
 	exports.SAWYER_COST = SAWYER_COST;
 	exports.SAWYER_COST_GROWTH = SAWYER_COST_GROWTH;
@@ -6102,6 +6212,7 @@ var Core = (function(exports) {
 	exports.genHire = genHire;
 	exports.genListings = genListings;
 	exports.genOffer = genOffer;
+	exports.genRichTract = genRichTract;
 	exports.genSawLog = genSawLog;
 	exports.genTract = genTract;
 	exports.grantBoost = grantBoost;
@@ -6135,6 +6246,7 @@ var Core = (function(exports) {
 	exports.lotStatChips = lotStatChips;
 	exports.lotThroughput = lotThroughput;
 	exports.lotValueRate = lotValueRate;
+	exports.lotsToOpen = lotsToOpen;
 	exports.lumberPrice = lumberPrice;
 	exports.mainSpecies = mainSpecies;
 	exports.makeTract = makeTract;
@@ -6161,6 +6273,7 @@ var Core = (function(exports) {
 	exports.orderCapacity = orderCapacity;
 	exports.orderFit = orderFit;
 	exports.orderRemaining = orderRemaining;
+	exports.orderSpeciesPool = orderSpeciesPool;
 	exports.payrollGuard = payrollGuard;
 	exports.perkCount = perkCount;
 	exports.perkMult = perkMult;
@@ -6174,6 +6287,7 @@ var Core = (function(exports) {
 	exports.pushTractCap = pushTractCap;
 	exports.quarterSawn = quarterSawn;
 	exports.queueOrder = queueOrder;
+	exports.rareSpecies = rareSpecies;
 	exports.requirementProgress = requirementProgress;
 	exports.rngPick = rngPick;
 	exports.rngRange = rngRange;
@@ -6201,6 +6315,7 @@ var Core = (function(exports) {
 	exports.skidTurnSizes = skidTurnSizes;
 	exports.skidTurnSpeed = skidTurnSpeed;
 	exports.slopeFactor = slopeFactor;
+	exports.slotsOpen = slotsOpen;
 	exports.speciesId = speciesId;
 	exports.speciesSeasonTrait = speciesSeasonTrait;
 	exports.speciesSeasonValue = speciesSeasonValue;
@@ -6267,8 +6382,8 @@ const makeTract = Core.makeTract;
 const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
-  site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
+  site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], afkHeld:false, saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
   millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather()});
@@ -6482,9 +6597,40 @@ const saleOpts = () => ({stumpMult: pmult('stump'), thinSurvey: !!hasMod('beetle
 const genTract = () => Core.genTract(Math.random, S.era, saleOpts());
 // after a push inland the board always lists a tract at or under half that push's price (Steam Camp cash trap)
 const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
-// the AFK lot (Core.AFK_LOT): at most one on the board, from its own stream ('land') so the other listings draw as before
-function refreshSales(){ S.forSale = Core.genListings(Math.random, S.era, saleOpts(), 3, saleCap()); S.saleT = 180;
-  const lr = Core.streamRng(S.rng, 'land'); if (lr() < Core.AFK_LOT.chance) S.forSale.push(Core.genAfkLot(lr, S.era, saleOpts())); }
+// ---------- lot slots (owner 2026-10-28, docs/design/lot-slots.md): one listing per open slot (Core.LOT_SLOTS).
+// Slot 1 is the plain lot with the push-tract price guarantee; slots 2 and 3 open at 2 and 3 lifetime lots cut out
+// (Core.genRichTract: 3 species, then 4 with a rare tree); slot 4, the AFK lot (own 'land' stream), at 4.
+// Slots never close: they count S.stats.tracts, which survives close camp.
+const openSlots = () => Core.slotsOpen(S.stats.tracts);
+function genSlot(k){
+  let t;
+  if (k === 0) t = genTract();
+  else if (Core.LOT_SLOTS[k].afk) t = Core.genAfkLot(Core.streamRng(S.rng, 'land'), S.era, saleOpts());
+  else t = Core.genRichTract(Math.random, S.era, Core.LOT_SLOTS[k].species, !!Core.LOT_SLOTS[k].rare, saleOpts());
+  t.slot = k; return t;
+}
+// the push-tract guarantee lives on slot 1: when no normal listing is at or under the cap, slot 1's lot is shrunk to fit
+function capSlot1(){
+  const cap = saleCap(), i = S.forSale.findIndex(x => x.slot === 0);
+  if (cap === undefined || i < 0 || S.forSale.some(x => !x.afk && x.price <= cap)) return;
+  S.forSale[i] = Object.assign(Core.fitTractPrice(S.forSale[i], cap), {slot:0});
+}
+function refreshSales(){
+  const n = openSlots(); S.forSale = []; S.afkHeld = false;
+  for (let k = 0; k < n; k++) S.forSale.push(genSlot(k));
+  S.saleT = 180; capSlot1();
+}
+// a slot that just opened gets its listing now, with a note and a toast (old saves open theirs quietly in normalize)
+function syncSlots(){
+  const n = openSlots(), was = Math.max(1, Math.min(n, S.stats.slots || 1));
+  for (let k = was; k < n; k++){
+    const s = Core.LOT_SLOTS[k];
+    if (!S.forSale.some(x => x.slot === k)) S.forSale.push(genSlot(k));
+    note(`New land office slot: ${s.name}.`);
+    toast({label:'New slot', name:s.name, line: s.afk ? 'A big, cheap lot for time away.' : s.rare ? `${s.species} kinds of tree, one rare.` : `${s.species} kinds of tree.`});
+  }
+  S.stats.slots = n; S.forSale.sort((a, b) => a.slot - b.slot);
+}
 // cutting rights: a Supply ship cheapens them; burnt-over ground after a slash fire takes 20% off the next lot
 const tractCost = t => { const m = evMult('tractPrice') * (S.weather.burnt ? Core.BURNT_DISCOUNT : 1); return m === 1 ? t.price : Math.round(t.price*m); };
 function buyTract(i){
@@ -6493,9 +6639,10 @@ function buyTract(i){
   t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++; standOf(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
-  if (t.afk) S.forSale.splice(i, 1); // the AFK lot is not relisted until the next board
-  else { S.forSale[i] = genTract();
-    const cap = saleCap(); if (cap !== undefined && !S.forSale.some(x => !x.afk && x.price <= cap)) S.forSale[i] = Core.fitTractPrice(S.forSale[i], cap); }
+  // the slot relists its own kind of lot; the AFK lot is not relisted until the next board
+  if (t.afk){ S.forSale.splice(i, 1); S.afkHeld = true; }
+  else { S.forSale[i] = genSlot(t.slot || 0); capSlot1(); }
+  delete t.slot;
   note(`Bought ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
 }
@@ -6509,7 +6656,9 @@ function buildRoad(){
 // species orders name a species in the current tract or on the land office board, sized by its share of the current tract
 function offerSpecies(){
   const t = tract(), species = [];
-  [t, ...S.forSale.filter(x => !x.afk)].forEach(x => { if (x && x.mix) x.mix.forEach(([id]) => { if (SP[id] && !species.includes(id)) species.push(id); }); });
+  // only trees you can get now: the era's pool, and slot 3's rare tree once that slot is open
+  const can = Core.orderSpeciesPool(S.era, openSlots());
+  [t, ...S.forSale.filter(x => !x.afk)].forEach(x => { if (x && x.mix) x.mix.forEach(([id]) => { if (SP[id] && can.includes(id) && !species.includes(id)) species.push(id); }); });
   const share = {}; if (t) species.forEach(id => { share[id] = Core.mixShare(t.mix, id); });
   return {species, share};
 }
@@ -6570,6 +6719,7 @@ function fellK(t, k){
 function finishTract(){
   const t = S.tracts.shift();
   S.stats.tracts++; if (t.hire) S.stats.hires++;
+  syncSlots();
   applyQueue(true);
   note((t.hire ? `Finished the ${t.hire.mill} job on ${t.name}.` : `Finished ${t.name}.`) + (tract() ? ` Crews moved to ${tract().name}.` : ''));
   setSite(); resumeTree();
@@ -6946,13 +7096,23 @@ const bestChips = (i, best, orders) => Object.keys(best).filter(id => best[id] =
 const listingChips = t => statChips(Object.assign({}, t, {price: tractCost(t)}));
 function listingCard(t, i, fits, note, best, orders){
   const g = Core.GROUNDS[Core.groundId(t.ground)], main = Core.mainSpecies(t.mix);
-  return `<div class="row lot${t.afk ? ' afk' : ''}"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${bestChips(i, best, orders)}
+  const sl = Core.LOT_SLOTS[t.slot], rare = sl && sl.rare ? Core.rareSpecies(S.era) : null;
+  return `<div class="row lot${t.afk ? ' afk' : ''}" data-slot="${t.slot ?? ''}"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}` +
+    `${sl && t.slot > 0 && !t.afk ? `<span class="chipl slotchip">${sl.name}</span>` : ''}${rare && SP[rare] ? `<span class="chipl rare">Rare: ${SP[rare].name.split(' ').pop()}</span>` : ''}${bestChips(i, best, orders)}
     <p>${fmt(t.trees)} trees · ${bf(t.trees*t.bf)} · ${mixText(t)}</p>${speciesBar(t)}
     ${statRow(listingChips(t), note, 'l'+t.name)}
     <p>Best for: ${t.afk ? 'time away from the game' : main ? Core.BEST_FOR[main] : 'mixed use'}${g.twist ? ' · ' + g.twist : ''}</p>
     ${fitHtml(fits)}${pitchHint(t)}</div>
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
+// a slot with no listing: locked (goal and progress), or the AFK lot already bought this board
+function slotRow(k){
+  const s = Core.LOT_SLOTS[k], left = Core.lotsToOpen(k, S.stats.tracts);
+  if (left > 0) return `<div class="row locked" data-slot="${k}" data-locked="1"><div class="info"><b>${s.name}</b><span class="chipl lockchip">Locked</span>
+    <p>Opens at ${s.need} lots cut out · ${left} more lot${left === 1 ? '' : 's'}</p></div></div>`;
+  return `<div class="row locked" data-slot="${k}"><div class="info"><b>${s.name}</b><span class="chipl lockchip">Bought</span><p>Back with the next new lots.</p></div></div>`;
+}
+const slotRows = () => Core.LOT_SLOTS.map((s, k) => k).filter(k => !S.forSale.some(x => x.slot === k)).map(slotRow).join('');
 const aheadOfNew = t => t.afk || qMode() === 'hand' ? S.tracts : S.tracts.filter((x, j) => j === 0 || !x.afk);
 // the same lots as the queue helpers read them (the lot stash: picked lots by their standing trees, the crews' lot by what they cut)
 const aheadView = t => aheadOfNew(t).map(x => lotView(x, x === S.tracts[0]));
@@ -6961,8 +7121,9 @@ function renderSales(){
   // a bought lot joins the end of the queue, so every lot under contract is ahead of it (in an auto mode a normal lot
   // goes ahead of a waiting AFK lot); the AFK lot never takes a "Best for" badge
   const fits = S.forSale.map(t => lotFits(t, aheadView(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur && lotView(cur, true)));
-  const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)+listingChips(t)).join('|') + JSON.stringify(best);
-  list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join(''),
+  const locked = slotRows();
+  const key = S.forSale.map((t, i) => t.slot+t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)+listingChips(t)).join('|') + JSON.stringify(best) + locked;
+  list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join('') + locked,
     box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < tractCost(t); });
   $('saleMeta').textContent = `Far and steep lots are cheaper but slower. New lots in ${mins(Math.max(0,S.saleT))}.` +
@@ -8460,7 +8621,12 @@ function buyMeta(id){
   return true;
 }
 function normalize(){
+  const hadSlots = !!(S.stats && typeof S.stats.slots === 'number');
   S.stats = Object.assign(fresh().stats, S.stats || {});
+  S.stats.tracts = Math.max(0, Math.floor(+S.stats.tracts || 0));
+  // lot slots (2026-10-28): an old save opens the slots its lifetime lots cut out have earned, without the unlock notes
+  if (!hadSlots) S.stats.slots = Core.slotsOpen(S.stats.tracts);
+  S.afkHeld = !!S.afkHeld;
   S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
   S.ui = Object.assign(freshUi(), S.ui && typeof S.ui === 'object' ? S.ui : {}); if (!BUY_NS.includes(S.ui.buyN)) S.ui.buyN = 1;
   if (!Array.isArray(S.runs)) S.runs = [];
@@ -8505,6 +8671,15 @@ function normalize(){
   S.ui.qView = 'trees';
   rulesAny = Core.rulesAllAny(S.ui.stashRule); rulesV++;
   S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
+  // lot slots: a board from before slots keeps its listings in the open slots (normal lots fill slots 1-3 in order, the AFK
+  // lot slot 4); a listing with no open slot left, or in a slot that is not open, is dropped. Boot fills any empty open slot.
+  { const n = Core.slotsOpen(S.stats.tracts), used = new Set(), out = [];
+    S.forSale.forEach(t => {
+      let k = Number.isInteger(t.slot) ? t.slot : -1;
+      if (k < 0){ if (t.afk) k = 3; else for (k = 0; k < 3 && used.has(k); k++); }
+      if (k >= n || used.has(k) || !!Core.LOT_SLOTS[k].afk !== !!t.afk) return;
+      t.slot = k; used.add(k); out.push(t); });
+    S.forSale = out.sort((a, b) => a.slot - b.slot); }
   // the cutting queue (2026-10-25): an old save's tracts become the queue in their current order; each gets a purchase number
   S.tracts.forEach((t, i) => { if (!(typeof t.seq === 'number' && isFinite(t.seq))) t.seq = i; if (t.cur != null && !(t.cur > 0)) { delete t.cur; delete t.curSp; } });
   S.tractSeq = Math.max(typeof S.tractSeq === 'number' && isFinite(S.tractSeq) ? S.tractSeq : 0, ...S.tracts.map(t => t.seq + 1), 1);
@@ -9410,6 +9585,9 @@ $('saveBtn').onclick = () => { openWh('ledger'); const b = $('svCopy'); if (b) b
 
 function boot(){
   if (!S.forSale.length) refreshSales();
+  else { for (let k = 0; k < openSlots(); k++) if (!S.forSale.some(x => x.slot === k) && !(Core.LOT_SLOTS[k].afk && S.afkHeld)) S.forSale.push(genSlot(k));
+    S.forSale.sort((a, b) => a.slot - b.slot); }
+  S.stats.slots = Math.max(S.stats.slots || 1, openSlots());
   if (!S.offers.length && !ordFull()) refreshOffers();
   if (!S.hireOffer && !hireActive()) S.hireOffer = genHire();
   if (!S.log.length) note('Landed on the Fogbound Coast with an axe and no crew. Forty trees stand by the cove. Chop, buck, skid and haul by hand to earn your first dollars.');

@@ -192,6 +192,109 @@ export function genAfkLot(rng: Rng, era: number, o: TractListingOpts): Tract {
   return t;
 }
 
+// ---------- land office lot slots (owner-approved 2026-10-28, docs/design/lot-slots.md section 5)
+
+/** One land-office slot: how many species its lot carries and how many lifetime lots cut out open it. */
+export interface LotSlot {
+  readonly name: string;
+  /** Species on the slot's lot (the AFK lot's mix is fixed). */
+  readonly species: number;
+  /** Lifetime lots cut out (`stats.tracts`) that open the slot. */
+  readonly need: number;
+  /** The lot carries one rare tree (the next era's new species) at RARE_SHARE. */
+  readonly rare?: boolean;
+  /** The slot lists the AFK lot. */
+  readonly afk?: boolean;
+}
+
+/**
+ * The four slots, one listing each. Slot 1 is today's listing (genTract, with the
+ * push-tract price guarantee); slots 2 and 3 list genRichTract lots; slot 4 the AFK lot.
+ * Unlocks count lifetime lots cut out, so they stay open through close camp.
+ */
+export const LOT_SLOTS: readonly LotSlot[] = deepFreeze([
+  { name: 'Company lot', species: 2, need: 0 },
+  { name: 'Surveyed lot', species: 3, need: 2 },
+  { name: "Cruiser's pick", species: 4, need: 3, rare: true },
+  { name: 'AFK lot', species: 3, need: 4, afk: true },
+]);
+
+/** Main species share on a rich lot, and the rare tree's share (percent). */
+export const RICH_MAIN_SHARE: readonly [number, number] = deepFreeze([40, 60]);
+export const RARE_SHARE: readonly [number, number] = deepFreeze([10, 20]);
+/** Smallest share of any other species on a rich lot (percent). */
+export const RICH_MIN_SHARE = 5;
+
+/** How many slots are open after `lotsCutOut` lifetime lots (slot 1 always). */
+export function slotsOpen(lotsCutOut: number): number {
+  const n = Math.max(0, Number(lotsCutOut) || 0);
+  let k = 0;
+  while (k < LOT_SLOTS.length && n >= (LOT_SLOTS[k] as LotSlot).need) k++;
+  return Math.max(1, k);
+}
+
+/** Lots still to cut out before slot `k` (0-based) opens; 0 when open. */
+export function lotsToOpen(k: number, lotsCutOut: number): number {
+  const s = LOT_SLOTS[k];
+  return s ? Math.max(0, s.need - Math.max(0, Number(lotsCutOut) || 0)) : 0;
+}
+
+/** The rare tree for slot 3 in an era: the next era's new species; in the last era its newest species (cloudwood). */
+export function rareSpecies(era: number): SpeciesId | null {
+  const e = Math.max(0, Math.min(ERA_SPECIES.length - 1, era));
+  const pool = ERA_SPECIES[e] ?? [], next = ERA_SPECIES[e + 1];
+  const nx = next ? next.filter((x) => !pool.includes(x)) : [];
+  return nx[0] ?? pool[pool.length - 1] ?? null;
+}
+
+/**
+ * Species a charter order may name: the era's pool, plus slot 3's rare tree
+ * once slot 3 is open (charter orders only ask for trees you can get now).
+ */
+export function orderSpeciesPool(era: number, open: number): SpeciesId[] {
+  const e = Math.max(0, Math.min(ERA_SPECIES.length - 1, era));
+  const out = (ERA_SPECIES[e] ?? []).slice();
+  const r = rareSpecies(era);
+  if (open >= 3 && r && !out.includes(r)) out.push(r);
+  return out;
+}
+
+/**
+ * A slot 2 or slot 3 lot: `n` species from the current era (no older-tier roll),
+ * main species 40–60%, the others split the rest (each at least 5%); with `rare`,
+ * one of the n is the era's rare tree at 10–20%. Era 0 lots take the main
+ * species' Cove ground (pine coast, spruce point, hemlock swamp); later eras are
+ * mixed stands. Same size and price formula as genTract.
+ * Draws, in order: one per picked era species (n, or n − 1 with rare), main
+ * share, rare share (with rare), one weight per other era species, trees,
+ * miles, slope, place, lot.
+ */
+export function genRichTract(rng: Rng, era: number, n: number, rare: boolean, o: TractListingOpts): Tract {
+  const e = Math.max(0, Math.min(ERA_SPECIES.length - 1, era));
+  const r = rare ? rareSpecies(e) : null;
+  const base = (ERA_SPECIES[e] ?? []).filter((x) => x !== r);
+  const pick: SpeciesId[] = [];
+  while (pick.length < (r ? n - 1 : n) && base.length) pick.push(base.splice(Math.floor(rng() * base.length), 1)[0] as SpeciesId);
+  const mainW = Math.round(rngRange(rng, RICH_MAIN_SHARE[0], RICH_MAIN_SHARE[1]));
+  const rareW = r ? Math.round(rngRange(rng, RARE_SHARE[0], RARE_SHARE[1])) : 0;
+  const rest = 100 - mainW - rareW, others = pick.slice(1);
+  const ws = others.map(() => 0.5 + rng()), tot = ws.reduce((a, b) => a + b, 0);
+  const mix: MixEntry[] = [[pick[0] ?? 'pine', mainW]];
+  others.forEach((x, i) => mix.push([x, Math.max(RICH_MIN_SHARE, Math.round(rest * (ws[i] as number) / tot))]));
+  if (r) mix.push([r, rareW]);
+  const cove: Partial<Record<SpeciesId, GroundId>> = { pine: 'coast', spruce: 'headland', hemlock: 'swamp' };
+  const ground: GroundId = e === 0 ? (cove[pick[0] ?? 'pine'] ?? 'coast') : 'mixed';
+  const g = GROUNDS[ground];
+  const trees = Math.round((TRACT_BASE[e] ?? 0) * rngRange(rng, 0.6, 1.5));
+  const miles = Math.round(rngRange(rng, 1, 12) * 2) / 2;
+  const slope = rngPick<SlopeId>(rng, g.slopes);
+  const t = makeTract(lotName(rng), mix, trees, miles, slope, ground);
+  t.price = tractPrice(t.trees * t.val, miles, slope, o.stumpMult * (g.landMult ?? 1));
+  const sz = (o.thinSurvey ? 0.8 : 1) * (o.cruiser ? 1.25 : 1);
+  if (sz !== 1) { t.trees = t.left = Math.max(5, Math.round(t.trees * sz)); }
+  return t;
+}
+
 /** Charter orders shown on the board at once (owner request 2026-10-25; was 2). */
 export const OFFER_BOARD_SIZE = 4;
 

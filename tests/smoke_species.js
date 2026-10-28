@@ -126,6 +126,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const walnutTract={name:'Old grove, Lot 9', mix:[['walnut',6],['oak',4]], trees:900, left:800, miles:3, slope:'flat', hp:30.8, bf:288, val:200, road:false};
  old.tracts=[walnutTract]; old.forSale=[{...walnutTract, price:5000}, {name:'Old cove, Lot 2', mix:[['pine',6],['hemlock',4]], trees:40, left:40, miles:1, slope:'flat', hp:20.8, bf:208, val:36, road:false, price:600}];
  old.hireOffer={...walnutTract, hire:{mill:'Fogline Box & Crate', rate:.45}}; old.vis='walnut'; old.bulk={logs:12345}; old.contract=null; old.offers=[{mill:'the Cove timber merchant', vol:2000, dur:300, prem:.2, penalty:10}]; old.offerT=999; old.saleT=999;
+ old.stats={...old.stats, tracts:Math.max(2, (old.stats&&old.stats.tracts)||0)}; // lot slots: two lots cut out keep both old listings (slots 1 and 2)
  old.last=Date.now(); dom.window.close();
  dom=mk({'timberline-v2':JSON.stringify(old)}); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
  ok(E(`S.tracts[0].mix[0][0]`)==='cloudwood' && E(`S.forSale[0].mix[0][0]`)==='cloudwood' && E(`S.hireOffer.mix[0][0]`)==='cloudwood' && E('S.vis')==='cloudwood','walnut becomes cloudwood in the tract, listings, hire offer and the tree on view');
