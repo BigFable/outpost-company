@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { must } from './test-rng';
 import { streamRng } from './rng';
 import {
-  boardGradeName, boardValue, bundlesStillNeeded, bunkhouseMult, canCloseMill, cantSquared, coveLogPrice, freeSawyers, genSawLog, GRADE_MIX,
+  boardGradeName, boardValue, bundleCost, CAMP_MONEY, FOUNDING_CRATE, LOG_CRATE_BF, MILL_FLOW_BUFFER_S, MILL_META, millFlowBf, millStartCash, levelBundles, millLogSale, structureDef, bundlesStillNeeded, bunkhouseMult, canCloseMill, cantSquared, coveLogPrice, freeSawyers, genSawLog, GRADE_MIX,
   knotShows, lumberPrice, maxSawyers, millLegacyGain, millPower, millRate, newSawCut, nextBoard, quarterSawn, sawAdvice, sawBest, sawBoard,
   MILL_SHARE_DEFAULT, MILL_SHARE_MAX, sawBestPlan, sawCellBf, sawDraftPool, sawPar, sawQuality, sawSpeedBonus, sawValue, sawyerCost, SAW_PERKS, structureNext, STRUCTURES, turnLog, type SawLog,
 } from './sawmill';
@@ -13,6 +13,57 @@ describe('log slider', () => {
   it('defaults to 10%, up to 50%', () => {
     expect(MILL_SHARE_DEFAULT).toBe(0.1);
     expect(MILL_SHARE_MAX).toBe(0.5);
+  });
+});
+
+describe('camp money', () => {
+  it('values: 0.5x cove price, $40 a bundle, $300 crate cash', () => {
+    expect(CAMP_MONEY).toEqual({ logPriceMult: 0.5, bundlePrice: 40, crateCash: 300 });
+  });
+  it('the mill pays half the cove price for every slider log it can afford', () => {
+    expect(millLogSale(1000, 200, 500)).toEqual({ bf: 1000, cost: 100 });
+    expect(millLogSale(1000, 200, 100)).toEqual({ bf: 1000, cost: 100 });
+  });
+  it('short of cash: takes only what it can pay for, never goes below $0', () => {
+    expect(millLogSale(1000, 200, 50)).toEqual({ bf: 500, cost: 50 });
+    expect(millLogSale(1000, 200, 0)).toEqual({ bf: 0, cost: 0 });
+    expect(millLogSale(1000, 200, -5)).toEqual({ bf: 0, cost: 0 });
+    expect(millLogSale(0, 200, 500)).toEqual({ bf: 0, cost: 0 });
+  });
+  it('every mill run starts with the crate cash on top of the founding cash', () => {
+    expect(millStartCash()).toBe(FOUNDING_CRATE.cash + 300);
+    expect(millStartCash()).toBe(360);
+  });
+  it('the mill board node saw.advance is the Log crate: 3,000 bd ft of logs a mill run, no cash', () => {
+    const n = MILL_META.find((x) => x.id === 'saw.advance');
+    expect(n?.name).toBe('Log crate');
+    expect(n?.desc).toBe('Start each mill run with 3,000 bd ft of logs.');
+    expect(LOG_CRATE_BF).toBe(3000);
+  });
+  it('bundles: $40 each; a bunkhouse level counts its bundles', () => {
+    expect(bundleCost(4)).toBe(160);
+    expect(bundleCost(-1)).toBe(0);
+    const bh = structureDef('logging.bunkhouse');
+    expect(bh?.levels.map(levelBundles)).toEqual([4, 8, 16]);
+    expect(levelBundles(must(structureDef('sawmill.pond')?.levels[0]))).toBe(0);
+  });
+});
+
+describe('auto slider', () => {
+  it('sends what the mill can saw: rate x buffer minus pond stock', () => {
+    expect(MILL_FLOW_BUFFER_S).toBe(900);
+    // 10 bd ft/s x 900 s = 9,000 target; pond 8,000 -> needs 1,000; the 10% cap of 20,000 is 2,000
+    expect(millFlowBf(20000, 0.1, 10, 8000)).toBe(1000);
+    expect(millFlowBf(20000, 0.1, 10, 0)).toBe(2000);
+  });
+  it('never more than the cap, never with a full pond, no saws or a 0% cap', () => {
+    expect(millFlowBf(1000, 0.1, 100, 0)).toBe(100);
+    expect(millFlowBf(1000, 0.1, 10, 9000)).toBe(0);
+    expect(millFlowBf(1000, 0.1, 10, 12000)).toBe(0);
+    expect(millFlowBf(1000, 0.1, 0, 0)).toBe(0);
+    expect(millFlowBf(1000, 0, 10, 0)).toBe(0);
+    expect(millFlowBf(0, 0.1, 10, 0)).toBe(0);
+    expect(millFlowBf(1000, 0.9, 1e6, 0)).toBe(500);
   });
 });
 

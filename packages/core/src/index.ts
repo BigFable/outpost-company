@@ -9,6 +9,7 @@
 export * from './content';
 export * from './achievements';
 export * from './formulas';
+export * from './charter';
 export * from './generators';
 export * from './haul';
 export * from './items';

@@ -28,9 +28,13 @@ export interface ImprovementDef { readonly id: string; readonly era: number; rea
 /** An improvement unlocks when the sum of these run stats reaches the target. */
 export interface StatRequirement { readonly text: string; readonly stats: readonly string[]; readonly target: number }
 export interface SlopeDef { readonly label: string; readonly skid: number; readonly disc: number }
-export interface PerkDef { readonly id: string; readonly r: Rarity; readonly name: string; readonly desc: string; readonly m?: Readonly<Partial<Record<MultKey, number>>>; readonly set?: number }
+export interface PerkDef { readonly id: string; readonly r: Rarity; readonly name: string; readonly desc: string; readonly m?: Readonly<Partial<Record<MultKey, number>>>; readonly set?: number;
+  /** Offered only when the run allows at least this many active charter orders. */
+  readonly cap?: number }
 export interface RarityDef { readonly w: number; readonly label: string }
-export interface MetaNodeDef { readonly id: string; readonly cost: number; readonly name: string; readonly desc: string }
+export interface MetaNodeDef { readonly id: string; readonly cost: number; readonly name: string; readonly desc: string;
+  /** A board node that must be owned first (the next tier of a branch). */
+  readonly req?: string }
 export interface RunModDef { readonly id: string; readonly name: string; readonly desc: string; readonly x: number }
 
 // Species overhaul slice 1: the Cove trio made distinct (spruce and hemlock restatted, weights added).
@@ -233,6 +237,10 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'illwind',  r:'legendary', name:'Ill wind',        desc:'Bad weather speeds crews up as much as it would slow them (×0.85 becomes ×1.15). Mini-game hazards and upsides stay.'},
   {id:'stormseason', r:'curse', name:'Storm season',     desc:'Bad weather comes twice as often, even twice in a row. Each bad season you ride out adds +2% shares (up to +30%, on top of special orders).'},
   {id:'absentee', r:'curse',  name:'Absent board',       desc:'Mini-games give no speed boosts, but every crew works ×1.2.', m:{all:1.2}},
+  // more charter orders at once (2026-10-26): see charter.ts for the delivery split
+  {id:'clerk',    r:'rare',   name:'Extra clerk',        desc:'+1 active order this outpost.', cap:2},
+  {id:'rush',     r:'rare',   name:'Rush clerk',         desc:'Orders for the same trees fill from the same logs. Each log pays one bonus.', cap:2},
+  {id:'overbook', r:'curse',  name:'Overbooked',         desc:'+2 active orders, but missed tree orders cost a fine too.'},
 ]);
 export const RARITY: Readonly<Record<Rarity, RarityDef>> = deepFreeze({common:{w:60, label:'Common'}, rare:{w:26, label:'Rare'}, legendary:{w:5, label:'Legendary'}, curse:{w:9, label:'Curse'}});
 
@@ -251,6 +259,8 @@ export const META: readonly MetaNodeDef[] = deepFreeze([
   {id:'four',    cost:20, name:'Wider choice',      desc:'Perk picks show 4 cards instead of 3.'},
   {id:'almanac', cost:8,  name:'Weather almanac',   desc:'See next season’s weather a season early.'},
   {id:'signals', cost:12, name:'Storm signals',     desc:'A mast on Foghorn Point: bad weather comes 30% less often (calm seasons instead).'},
+  {id:'clerks',  cost:10, name:'Second clerk',      desc:'+1 active order.'},
+  {id:'office',  cost:18, name:'Charter office',    desc:'+1 more active order.', req:'clerks'},
 ]);
 
 /** Charter clauses: optional hard modifiers that multiply Charter Shares. */

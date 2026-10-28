@@ -279,9 +279,12 @@ export function pickFromMix(rng: Rng, mix: readonly (readonly [SpeciesId, number
 
 // ---------- perk drafts
 
-/** Perks that can be offered: set-2 perks need Old Reach hands; non-commons appear once per run. */
-export function draftPool(drafted: readonly string[], lore: boolean): PerkDef[] {
-  return PERKS.filter((p) => (!p.set || lore) && (p.r === 'common' || !drafted.includes(p.id)));
+/**
+ * Perks that can be offered: set-2 perks need Old Reach hands; non-commons appear once per run;
+ * a perk with `cap` needs at least that many active charter orders (`orderCap`, default 1).
+ */
+export function draftPool(drafted: readonly string[], lore: boolean, orderCap = 1): PerkDef[] {
+  return PERKS.filter((p) => (!p.set || lore) && (p.r === 'common' || !drafted.includes(p.id)) && (!p.cap || orderCap >= p.cap));
 }
 
 /** Draft weight of a rarity at draft quality q (0..1): better runs favour rare and legendary perks. */
