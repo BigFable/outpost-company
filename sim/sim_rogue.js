@@ -90,6 +90,8 @@ function run(profile, seed, hours=4, opt={}){
   const OPEN_CLICKS=2, OPEN_SEC=300;
   const clickRate = profile==='clicker' ? (()=>2) : (t=>t-runStart<OPEN_SEC?OPEN_CLICKS:0);
   const mg = profile==='minigame';
+  // NOSAWGAME=1 (diagnostic, balance round 4): the bots never play Saw for grade, so every mini-game slot goes to Logging
+  const NOSAW=!!process.env.NOSAWGAME;
   let mgClock=0;
   for(let t=0;t<T;t+=dt){
     const c0=CS().slice();
@@ -115,7 +117,7 @@ function run(profile, seed, hours=4, opt={}){
       const pick = S.landing.bf>50?'haul':S.cut.bf>50?'skid':S.stems.bf>50?'buck':'fell';
       const rest = profile==='casual' ? 110 : 0;
       // with the Sawmill open, every third mini-game is Saw for grade (one player, two camps)
-      if(MILL && S.camps.sawmill && (++slot % 3)===0 && !G.sawBlock()){ mgClock=sawGame(mg)+3+rest; }
+      if(!NOSAW && MILL && S.camps.sawmill && (++slot % 3)===0 && !G.sawBlock()){ mgClock=sawGame(mg)+3+rest; }
       else if(pick==='fell' && G.tract()){ const t=G.tract(); const k=Math.min(t.left,Math.max(1,Math.round(G.rate('fell')/t.hp*20)));
         const pPerf = (has('gunstick') ? .5 : .3) - (gr('fell','wind',1)>1 ? .08 : 0), pGood = (has('wedges') ? .85 : .65);
         const q=rnd(); let m = q<pPerf?1.25:q<pGood?1.1:q<.93?.8:.6; if(m===.6 && P('widow') && rnd()<.5) m=1.25;

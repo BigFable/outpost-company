@@ -78,11 +78,14 @@ describe('content: order perks and board nodes', () => {
     expect(b?.req).toBe('clerks');
     expect((b?.cost ?? 0) > (a?.cost ?? 0)).toBe(true);
   });
-  it('Rush clerk is offered only with room for two orders', () => {
+  it('Rush clerk and Extra clerk are offered only with room for two orders', () => {
     expect(PERKS.find((p) => p.id === 'rush')?.cap).toBe(2);
     expect(draftPool([], false).some((p) => p.id === 'rush')).toBe(false);
     expect(draftPool([], false, 2).some((p) => p.id === 'rush')).toBe(true);
-    expect(draftPool([], false).some((p) => p.id === 'clerk')).toBe(true);
-    expect(draftPool(['clerk'], false).some((p) => p.id === 'clerk')).toBe(false);
+    // balance round 4: Extra clerk waits for the Second clerk board node (or Overbooked), so a first outpost keeps one order
+    expect(PERKS.find((p) => p.id === 'clerk')?.cap).toBe(2);
+    expect(draftPool([], false).some((p) => p.id === 'clerk')).toBe(false);
+    expect(draftPool([], false, 2).some((p) => p.id === 'clerk')).toBe(true);
+    expect(draftPool(['clerk'], false, 2).some((p) => p.id === 'clerk')).toBe(false);
   });
 });

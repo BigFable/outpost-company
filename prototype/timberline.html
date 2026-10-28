@@ -1884,7 +1884,8 @@ var Core = (function(exports) {
 			id: "clerk",
 			r: "rare",
 			name: "Extra clerk",
-			desc: "+1 active order this outpost."
+			desc: "+1 active order this outpost.",
+			cap: 2
 		},
 		{
 			id: "rush",
@@ -4115,15 +4116,15 @@ var Core = (function(exports) {
 	/** The log slider is a cap: the most of each Logging delivery the auto flow may send to the log pond. Default and bounds. */
 	var MILL_SHARE_DEFAULT = .1;
 	var MILL_SHARE_MAX = .5;
-	/** Auto flow: Logging keeps the log pond topped up to this many seconds of the mill's current sawing. */
-	var MILL_FLOW_BUFFER_S = 300;
+	/** Auto flow: Logging keeps the log pond topped up to this many seconds of the mill's current sawing (15 min since balance round 4: 5 min left idle ponds dry after every close camp). */
+	var MILL_FLOW_BUFFER_S = 900;
 	/**
 	* Auto slider: board feet of a delivery of `amt` that Logging sends to the mill. It sends what the mill can saw
 	* (sawing rate `rate` bd ft/s × the buffer, minus the `pond` stock), never more than the `cap` share of the delivery.
 	*/
 	function millFlowBf(amt, cap, rate, pond) {
 		if (!(amt > 0) || !(cap > 0) || !(rate > 0)) return 0;
-		const need = rate * 300 - Math.max(0, pond);
+		const need = rate * 900 - Math.max(0, pond);
 		return need > 0 ? Math.min(amt * Math.min(cap, MILL_SHARE_MAX), need) : 0;
 	}
 	/**

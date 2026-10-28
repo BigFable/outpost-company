@@ -22,7 +22,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    S.tracts=[Object.assign(Core.makeTract('Home lot',[['pine',100]],30,1,'flat'),{seq:0})]; S.tractSeq=1; setSite(); newTree();
    S.forSale=[Core.makeTract('Spruce head, Lot 7',[['spruce',90],['pine',10]],60,2,'flat','headland'), Core.makeTract('Hemlock bog, Lot 9',[['hemlock',90],['spruce',10]],60,12,'steep','swamp')];
    S.forSale[0].price=300; S.forSale[1].price=2000;
-   S.contract={mill:'the Admiralty spar yard', sp:'spruce', vol:3000, done:0, dur:400, end:S.t+400, prem:.4, penalty:0}; S.orders.open=[]; S.bank={}; render(true);`);
+   S.contracts=[{mill:'the Admiralty spar yard', sp:'spruce', vol:3000, done:0, dur:400, end:S.t+400, prem:.4, penalty:0}]; S.orders.open=[]; S.bank={}; render(true);`);
  const cards=[...d.querySelectorAll('#sales .row.lot')];
  const chips=c=>[...c.querySelectorAll('.stat')].map(s=>s.dataset.stat);
  const v=(c,id)=>c.querySelector(`.stat[data-stat="${id}"]`);

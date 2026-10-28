@@ -126,8 +126,8 @@ export const FOUNDING_CRATE = deepFreeze({
 /** The log slider is a cap: the most of each Logging delivery the auto flow may send to the log pond. Default and bounds. */
 export const MILL_SHARE_DEFAULT = 0.1;
 export const MILL_SHARE_MAX = 0.5;
-/** Auto flow: Logging keeps the log pond topped up to this many seconds of the mill's current sawing. */
-export const MILL_FLOW_BUFFER_S = 300;
+/** Auto flow: Logging keeps the log pond topped up to this many seconds of the mill's current sawing (15 min since balance round 4: 5 min left idle ponds dry after every close camp). */
+export const MILL_FLOW_BUFFER_S = 900;
 /**
  * Auto slider: board feet of a delivery of `amt` that Logging sends to the mill. It sends what the mill can saw
  * (sawing rate `rate` bd ft/s × the buffer, minus the `pond` stock), never more than the `cap` share of the delivery.

@@ -80,7 +80,8 @@ const near=(a,b)=>Math.abs(a-b)<1e-6;
 
  // ---------- 7. perks join the draft: Rush clerk only with room for two orders
  E(`S.meta.nodes=[]; S.run.perks=[];`);
- ok(!E(`perkPool().some(p=>p.id==='rush')`) && E(`perkPool().some(p=>p.id==='clerk')`) && E(`perkPool().some(p=>p.id==='overbook')`),'capacity 1: Extra clerk and Overbooked can show up, Rush clerk cannot');
+ ok(!E(`perkPool().some(p=>p.id==='rush')`) && !E(`perkPool().some(p=>p.id==='clerk')`) && E(`perkPool().some(p=>p.id==='overbook')`),'capacity 1: Overbooked can show up, Extra clerk and Rush clerk cannot');
+ E(`S.meta.nodes=['clerks']`); ok(E(`perkPool().some(p=>p.id==='clerk')`),'with Second clerk (2 active orders) Extra clerk can show up'); E(`S.meta.nodes=[]`);
  E(`S.run.perks=['clerk']`); ok(E(`perkPool().some(p=>p.id==='rush')`),'with 2 active orders Rush clerk can show up');
 
  // ---------- 8. old save: the single contract becomes the list

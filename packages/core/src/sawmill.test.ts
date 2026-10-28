@@ -51,15 +51,15 @@ describe('camp money', () => {
 
 describe('auto slider', () => {
   it('sends what the mill can saw: rate x buffer minus pond stock', () => {
-    expect(MILL_FLOW_BUFFER_S).toBe(300);
-    // 10 bd ft/s x 300 s = 3,000 target; pond 2,000 -> needs 1,000; the 10% cap of 20,000 is 2,000
-    expect(millFlowBf(20000, 0.1, 10, 2000)).toBe(1000);
+    expect(MILL_FLOW_BUFFER_S).toBe(900);
+    // 10 bd ft/s x 900 s = 9,000 target; pond 8,000 -> needs 1,000; the 10% cap of 20,000 is 2,000
+    expect(millFlowBf(20000, 0.1, 10, 8000)).toBe(1000);
     expect(millFlowBf(20000, 0.1, 10, 0)).toBe(2000);
   });
   it('never more than the cap, never with a full pond, no saws or a 0% cap', () => {
     expect(millFlowBf(1000, 0.1, 100, 0)).toBe(100);
-    expect(millFlowBf(1000, 0.1, 10, 3000)).toBe(0);
     expect(millFlowBf(1000, 0.1, 10, 9000)).toBe(0);
+    expect(millFlowBf(1000, 0.1, 10, 12000)).toBe(0);
     expect(millFlowBf(1000, 0.1, 0, 0)).toBe(0);
     expect(millFlowBf(1000, 0, 10, 0)).toBe(0);
     expect(millFlowBf(0, 0.1, 10, 0)).toBe(0);

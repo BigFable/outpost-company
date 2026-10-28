@@ -238,7 +238,7 @@ export const PERKS: readonly PerkDef[] = deepFreeze([
   {id:'stormseason', r:'curse', name:'Storm season',     desc:'Bad weather comes twice as often, even twice in a row. Each bad season you ride out adds +2% shares (up to +30%, on top of special orders).'},
   {id:'absentee', r:'curse',  name:'Absent board',       desc:'Mini-games give no speed boosts, but every crew works ×1.2.', m:{all:1.2}},
   // more charter orders at once (2026-10-26): see charter.ts for the delivery split
-  {id:'clerk',    r:'rare',   name:'Extra clerk',        desc:'+1 active order this outpost.'},
+  {id:'clerk',    r:'rare',   name:'Extra clerk',        desc:'+1 active order this outpost.', cap:2},
   {id:'rush',     r:'rare',   name:'Rush clerk',         desc:'Orders for the same trees fill from the same logs. Each log pays one bonus.', cap:2},
   {id:'overbook', r:'curse',  name:'Overbooked',         desc:'+2 active orders, but missed tree orders cost a fine too.'},
 ]);
