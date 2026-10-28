@@ -150,7 +150,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(r.ta > r.tg*2.5,'and it lasts much longer under the same crews ('+Math.round(r.ta)+' s vs '+Math.round(r.tg)+' s)');
  // buy it and leave the camp alone for ten minutes: crews are still cutting
  E(`S.tracts=[]; S.hp=null; S.cash=1e6; const i=S.forSale.findIndex(t=>t.afk); buyTract(i);`);
- ok(E('S.forSale.filter(t=>t.afk).length')===0 && E('S.forSale.length')===3,'buying the AFK lot takes it off the board until the next listing');
+ ok(E('S.forSale.filter(t=>t.afk).length')===1 && E('S.forSale.length')===4,'buying the AFK lot lists another at once (always for sale, 2026-10-28)');
  const left0=E('tract().left'); for(let i=0;i<600;i++) E('tick(1)');
  ok(E('tract() && tract().afk') && E('tract().left')<left0 && E('tract().left')>0,'after ten idle minutes crews are still on the AFK lot: '+E('tract().left')+' of '+left0+' trees left');
  // queue order: a normal lot bought after the AFK lot is cut first in every auto mode; a lot moved by hand stays put

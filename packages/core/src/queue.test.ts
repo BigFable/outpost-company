@@ -5,7 +5,7 @@ import { AFK_LOT, AFK_MIX, genAfkLot, makeTract, OFFER_BOARD_SIZE, tractPrice } 
 import { idlePrimeChance } from './items';
 import {
   bestFor, campNote, cutOutSeconds, lotRates, lotThroughput, lotValueRate, moveEntry, orderFit, primeEstimate, primePerTree,
-  queueOrder, seasonLines, TRACT_SWITCH_COST, type FitOrder, type QueueCaps,
+  aboutTime, queueOrder, seasonLines, stockedSeconds, TRACT_SWITCH_COST, type FitOrder, type QueueCaps, type QueueLot,
 } from './queue';
 
 const caps: QueueCaps = { fell: 14, buck: 1000, skid: 100, haul: 1000 };
@@ -205,4 +205,39 @@ describe('the AFK lot (Cutover slash country)', () => {
     expect(campNote(c, a, { season: 'Fall' }).short).toMatch(/^Best for time away: poor wood, but lots of it\. It lasts about/);
   });
   it('the charter board shows four orders', () => { expect(OFFER_BOARD_SIZE).toBe(4); });
+});
+
+describe('idle cutting stocked', () => {
+  const caps = { fell: 4, buck: 50, skid: 50, haul: 50 };
+  const lot = (o: Partial<QueueLot> = {}): QueueLot => ({ name: 'A', mix: [['pine', 1]], trees: 100, hp: 20, bf: 200, val: 30, miles: 1, slope: 'flat', ...o });
+  it('is the time to cut out every lot, each at its own slowest stage', () => {
+    const a = lot(), b = lot({ name: 'B', trees: 50, left: 30, miles: 6, slope: 'steep' });
+    // felling: 4 chops/s ÷ 20 hp × 200 bd ft = 40 bd ft/s; on A the slowest stage is felling
+    expect(cutOutSeconds(caps, a)).toBeCloseTo(100 * 200 / 40, 6);
+    expect(stockedSeconds(caps, [a, b])).toBeCloseTo(cutOutSeconds(caps, a) + cutOutSeconds(caps, b), 6);
+    // B's slowest stage is skidding on steep ground (50 × 0.55 = 27.5 bd ft/s), so its 30 trees take longer per tree than A's
+    expect(lotThroughput(caps, b)).toBeCloseTo(27.5, 6);
+    expect(stockedSeconds(caps, [b])).toBeCloseTo(30 * 200 / 27.5, 6);
+  });
+  it('is 0 with no trees and Infinity with no crews', () => {
+    expect(stockedSeconds(caps, [])).toBe(0);
+    expect(stockedSeconds(caps, [lot({ left: 0 })])).toBe(0);
+    expect(stockedSeconds({ ...caps, haul: 0 }, [lot()])).toBe(Infinity);
+  });
+  it('buying one more lot adds its own cut-out time', () => {
+    const a = lot(), extra = lot({ name: 'AFK', trees: 900, hp: 15, bf: 140, afk: true });
+    expect(stockedSeconds(caps, [a, extra]) - stockedSeconds(caps, [a])).toBeCloseTo(cutOutSeconds(caps, extra), 6);
+  });
+  it('reads as a rough time in plain words', () => {
+    expect(aboutTime(Infinity)).toBe('—');
+    expect(aboutTime(Number.NaN)).toBe('—');
+    expect(aboutTime(0)).toBe('none');
+    expect(aboutTime(20)).toBe('under 1m');
+    expect(aboutTime(7 * 60 + 20)).toBe('about 7m');
+    expect(aboutTime(23 * 60)).toBe('about 25m');
+    expect(aboutTime(59 * 60)).toBe('about 1h');
+    expect(aboutTime(80 * 60)).toBe('about 1h 20m');
+    expect(aboutTime(3 * 3600 + 9 * 60)).toBe('about 3h 10m');
+    expect(aboutTime(2 * 3600 + 2 * 60)).toBe('about 2h');
+  });
 });
