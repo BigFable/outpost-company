@@ -166,26 +166,27 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
  * the company reaches without mini-games. The mini-game route stays faster;
  * most improvements whose only effect is inside a mini-game have no crews'
  * route; the haul-game ones all do (playtest 1).
- * `achievements` is a derived stat: the number of achievements earned.
+ * `achievements` is a derived stat: the number of achievements earned. Targets rescaled for the
+ * achievements rework (2026-10-28: 23 first-outpost achievements of 61), so each unlocks about when it did before.
  */
 export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
   swamper: {text:'Fill 6 orders', stats:['contracts'], target:6},
   hay: {text:'Work through 3 winters', stats:['winters'], target:3},
   wedges: {text:'Finish 20 lots', stats:['tracts'], target:20},
   cook: {text:'Fill 30 orders', stats:['contracts'], target:30},
-  grade: {text:'Earn 36 achievements', stats:['achievements'], target:36},
+  grade: {text:'Earn 24 achievements', stats:['achievements'], target:24},
   bunks: {text:'Finish 60 lots', stats:['tracts'], target:60},
   corduroy: {text:'Work through 15 winters', stats:['winters'], target:15},
   icerd: {text:'Work through 22 winters', stats:['winters'], target:22},
   hillhitch: {text:'Work through 6 winters', stats:['winters'], target:6},
   roughlock: {text:'Fill 12 orders', stats:['contracts'], target:12},
-  lookout: {text:'Earn 24 achievements', stats:['achievements'], target:24},
+  lookout: {text:'Earn 16 achievements', stats:['achievements'], target:16},
   binders: {text:'Finish 40 lots', stats:['tracts'], target:40},
   smith: {text:'Deliver 8 million bd ft in all', stats:['deliv'], target:8e6},
   scribner: {text:'Fill 60 orders', stats:['contracts'], target:60},
   skyline: {text:'Finish 120 lots', stats:['tracts'], target:120},
   airbrakes: {text:'Deliver 75 million bd ft in all', stats:['deliv'], target:7.5e7},
-  radios: {text:'Earn 46 achievements', stats:['achievements'], target:46},
+  radios: {text:'Earn 42 achievements', stats:['achievements'], target:42},
   shop: {text:'Fill 100 orders', stats:['contracts'], target:100},
   optimize: {text:'Deliver 500 million bd ft in all', stats:['deliv'], target:5e8},
   gps: {text:'Finish 400 lots', stats:['tracts'], target:400},

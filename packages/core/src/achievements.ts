@@ -2,18 +2,56 @@
  * Achievements and improvement unlock requirements as data (tech plan 2.1 principle 3).
  * Conditions read named metrics through a callback, so the caller decides where
  * the numbers come from (the prototype reads its save state; M3 reads GameState).
+ *
+ * Achievements rework (2026-10-28, docs/design/achievements-rework.md): three tiers
+ * that follow the game's real milestones. "First outpost" can all be earned before
+ * the first close camp; every "Across outposts" and "Long haul" achievement needs at
+ * least one close camp, either through an explicit `closes` condition or a metric
+ * that only moves once camp has closed (AFTER_CLOSE_METRICS). Tests hold both rules.
  */
 import { deepFreeze } from './freeze';
 import { IMPROVEMENT_ALT_REQS, IMPROVEMENT_REQS, type StatRequirement } from './content';
+import { ITEMS } from './items';
 
-/** Numbers an achievement condition can test. `crewedStages` = stages with a working crew (0-4). */
+/** Numbers an achievement condition can test. All are company lifetime numbers unless noted. */
 export type AchMetric =
-  | 'deliv' | 'earned' | 'felled' | 'tracts' | 'hires' | 'contracts' | 'crew' | 'winters'
-  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul' | 'era' | 'crewedStages'
-  /** Bad weather events weathered in full; Almanac cards seen (seasonal events). */
-  | 'storms' | 'almanac';
+  | 'deliv' | 'earned' | 'felled' | 'tracts' | 'hires' | 'contracts' | 'winters'
+  /** Current outpost: crews and machines owned, the era, stages with a working crew (0-4). */
+  | 'crew' | 'era' | 'crewedStages'
+  | 'perfFell' | 'perfBuck' | 'cleanSkid' | 'cleanHaul'
+  /** Mini-games played, per game. */
+  | 'run_fell' | 'run_buck' | 'run_skid' | 'run_haul'
+  /** Bad weather seasons ridden out in full; Almanac cards seen. */
+  | 'storms' | 'almanac'
+  /** Outposts closed (close camp); Charter Shares earned in all (Logging). */
+  | 'closes' | 'shares'
+  /** Land office slots open (1-4); AFK lots bought. */
+  | 'slots' | 'afkLots'
+  /** Prime logs made (not counting the founding crate); special orders filled; most charter orders running at once. */
+  | 'prime' | 'spOrders' | 'maxOrders'
+  /** Kinds of tree felled (0-6). */
+  | 'species'
+  /** Perks picked (Logging and Sawmill); curse perks picked. */
+  | 'perks' | 'curses'
+  /** Mill runs closed; top results in Saw boards; bunkhouse level; wood sent to the mill. */
+  | 'millRuns' | 'sawTop' | 'bunk' | 'toMill'
+  /** Fastest Steam Camp (minutes after landing) on any outpost after the first; undefined until one. */
+  | 'steamLater'
+  /** Outposts closed faster than the first one; outposts that reached Diesel Road. */
+  | 'beatFirst' | 'dieselRuns'
+  /** Fog lenses found; kinds of warehouse item found (of ITEMS). */
+  | 'fogLens' | 'items';
 
-export interface AchCondition { readonly metric: AchMetric; readonly op: '>=' | '>'; readonly value: number }
+export interface AchCondition { readonly metric: AchMetric; readonly op: '>=' | '>' | '<='; readonly value: number }
+
+/** first: the first outpost; across: needs closing camp; long: collections and the long haul (also needs closing camp). */
+export type AchTier = 'first' | 'across' | 'long';
+export interface AchTierDef { readonly id: AchTier; readonly name: string; readonly desc: string }
+export const ACH_TIERS: readonly AchTierDef[] = deepFreeze([
+  { id: 'first', name: 'First outpost', desc: 'Goals for your first landing.' },
+  { id: 'across', name: 'Across outposts', desc: 'Close camp and land again to earn these.' },
+  { id: 'long', name: 'Long haul', desc: 'Collections and big numbers over many outposts.' },
+]);
 
 export interface AchievementDef {
   readonly id: string;
@@ -21,11 +59,12 @@ export interface AchievementDef {
   readonly desc: string;
   readonly cash: number;
   readonly rep: number;
+  readonly tier: AchTier;
   /** All must hold. */
   readonly when: readonly AchCondition[];
   /**
    * Ladder achievements show a progress bar and pay repeat bounties; their
-   * single condition's metric is the bounty metric.
+   * first condition's metric is the bounty metric.
    */
   readonly ladder: boolean;
 }
@@ -33,77 +72,114 @@ export interface AchievementDef {
 /** Reads a metric's current value. May return undefined for a stat an old save lacks. */
 export type MetricReader = (metric: AchMetric) => number | undefined;
 
-const ladder = (id: string, name: string, desc: string, metric: AchMetric, target: number, cash: number, rep: number): AchievementDef =>
-  ({ id, name, desc, cash, rep, when: [{ metric, op: '>=', value: target }], ladder: true });
-const once = (id: string, name: string, desc: string, when: AchCondition[], cash: number, rep = 0): AchievementDef =>
-  ({ id, name, desc, cash, rep, when, ladder: false });
+/** Metrics that stay at 0 (or undefined) until the company first closes camp. */
+export const AFTER_CLOSE_METRICS: readonly AchMetric[] = deepFreeze<AchMetric[]>([
+  'closes', 'shares', 'millRuns', 'sawTop', 'bunk', 'toMill', 'steamLater', 'beatFirst',
+]);
+
 const atLeast = (metric: AchMetric, value: number): AchCondition => ({ metric, op: '>=', value });
+const closes = (n: number): AchCondition => atLeast('closes', n);
+const ladder = (tier: AchTier, id: string, name: string, desc: string, metric: AchMetric, target: number, cash: number, rep: number, extra: AchCondition[] = []): AchievementDef =>
+  ({ id, name, desc, cash, rep, tier, when: [atLeast(metric, target), ...extra], ladder: true });
+const once = (tier: AchTier, id: string, name: string, desc: string, when: AchCondition[], cash: number, rep = 0): AchievementDef =>
+  ({ id, name, desc, cash, rep, tier, when, ladder: false });
+
+/** Kinds of item in the warehouse collection. */
+const ITEM_KINDS = ITEMS.length;
 
 export const ACHIEVEMENTS: readonly AchievementDef[] = deepFreeze([
-  once('first_tree', 'Timber!', 'Fell your first tree.', [atLeast('felled', 1)], 10),
-  once('first_sale', 'First load', 'Deliver logs to the cove.', [{ metric: 'deliv', op: '>', value: 0 }], 15),
-  once('first_crew', 'On the payroll', 'Hire your first crew.', [atLeast('crew', 1)], 25),
-  once('full_chain', 'Stump to mill', 'Have a crew working every stage.', [atLeast('crewedStages', 4)], 100, 1),
-  ladder('d10k', '10 MBF', 'Deliver 10,000 bd ft.', 'deliv', 1e4, 150, 1),
-  ladder('d50k', '50 MBF', 'Deliver 50,000 bd ft.', 'deliv', 5e4, 500, 1),
-  ladder('d250k', 'Quarter million', 'Deliver 250,000 bd ft.', 'deliv', 2.5e5, 1800, 2),
-  ladder('d1m', 'A million board feet', 'Deliver 1,000,000 bd ft.', 'deliv', 1e6, 6000, 2),
-  ladder('d2m', 'Second shift', 'Deliver 2 million bd ft.', 'deliv', 2e6, 10000, 1),
-  ladder('d3m', 'Three million', 'Deliver 3 million bd ft.', 'deliv', 3e6, 20000, 1),
-  ladder('d10m', 'Ten million', 'Deliver 10 million bd ft.', 'deliv', 1e7, 70000, 3),
-  ladder('d30m', 'Thirty million', 'Deliver 30 million bd ft.', 'deliv', 3e7, 250000, 2),
-  ladder('d100m', 'A hundred million', 'Deliver 100 million bd ft.', 'deliv', 1e8, 900000, 3),
-  ladder('d300m', 'Three hundred million', 'Deliver 300 million bd ft.', 'deliv', 3e8, 3e6, 2),
-  ladder('d1b', 'A billion board feet', 'Deliver 1 billion bd ft.', 'deliv', 1e9, 12e6, 5),
-  ladder('e10k', 'Ten thousand dollars', 'Earn $10K in sales.', 'earned', 1e4, 300, 0),
-  ladder('e100k', 'Six figures', 'Earn $100K in sales.', 'earned', 1e5, 3000, 1),
-  ladder('e1m', 'Millionaire charter', 'Earn $1M in sales.', 'earned', 1e6, 30000, 1),
-  ladder('e5m', 'Five million in sales', 'Earn $5M in sales.', 'earned', 5e6, 120000, 1),
-  ladder('e25m', 'Toast of the board', 'Earn $25M in sales.', 'earned', 2.5e7, 600000, 2),
-  ladder('e100m', 'Founders of Landfall', 'Earn $100M in sales.', 'earned', 1e8, 2e6, 2),
-  ladder('t100', 'Hundred trees', 'Fell 100 trees.', 'felled', 100, 200, 0),
-  ladder('t1k', 'Thousand trees', 'Fell 1,000 trees.', 'felled', 1000, 2500, 1),
-  ladder('t3k', 'Three thousand trees', 'Fell 3,000 trees.', 'felled', 3000, 10000, 1),
-  ladder('t10k', 'Ten thousand trees', 'Fell 10,000 trees.', 'felled', 1e4, 40000, 2),
-  ladder('t30k', 'Thirty thousand trees', 'Fell 30,000 trees.', 'felled', 3e4, 200000, 1),
-  ladder('t100k', 'A hundred thousand', 'Fell 100,000 trees.', 'felled', 1e5, 700000, 3),
-  ladder('tr3', 'Cut out', 'Finish 3 lots.', 'tracts', 3, 300, 0),
-  ladder('tr10', 'Ten lots', 'Finish 10 lots.', 'tracts', 10, 2500, 1),
-  ladder('tr30', 'Thirty lots', 'Finish 30 lots.', 'tracts', 30, 30000, 2),
-  ladder('tr60', 'Sixty lots', 'Finish 60 lots.', 'tracts', 60, 150000, 2),
-  ladder('hire1', 'Hired hands', 'Finish a hire job.', 'hires', 1, 150, 0),
-  ladder('c1', 'Under contract', 'Fill an order.', 'contracts', 1, 250, 0),
-  ladder('c5', 'Reliable supplier', 'Fill 5 orders.', 'contracts', 5, 1500, 1),
-  ladder('c10', 'Steady supplier', 'Fill 10 orders.', 'contracts', 10, 8000, 1),
-  ladder('c20', 'Preferred supplier', 'Fill 16 orders.', 'contracts', 16, 25000, 2),
-  ladder('crew10', 'Ten-crew outfit', 'Own 10 crews or machines.', 'crew', 10, 400, 0),
-  ladder('crew30', 'Big outfit', 'Own 30 crews or machines.', 'crew', 30, 4000, 1),
-  ladder('crew75', 'Industrial outfit', 'Own 75 crews or machines.', 'crew', 75, 80000, 2),
-  ladder('crew50', 'Fifty-crew outfit', 'Own 50 crews or machines.', 'crew', 50, 20000, 1),
-  ladder('crew120', 'Company of the Reach', 'Own 120 crews or machines.', 'crew', 120, 500000, 2),
-  ladder('w1', 'Wintered over', 'Work through a winter.', 'winters', 1, 250, 0),
-  ladder('w5', 'Five winters', 'Work through five winters.', 'winters', 5, 3500, 1),
-  ladder('w10', 'Ten winters', 'Work through ten winters.', 'winters', 10, 30000, 1),
-  ladder('pf1', 'Right on target', 'Land a perfect fall.', 'perfFell', 1, 60, 0),
-  ladder('pf10', 'Faller of note', 'Land 10 perfect falls.', 'perfFell', 10, 900, 1),
-  ladder('pb1', 'Full value', 'Cut a trunk for full value.', 'perfBuck', 1, 60, 0),
-  ladder('pb10', 'Grader’s favorite', 'Cut 10 trunks for full value.', 'perfBuck', 10, 900, 1),
-  ladder('cs1', 'Clean skid', 'Beat the skid target time with no stump hits.', 'cleanSkid', 1, 60, 0),
-  ladder('cs10', 'Teamster', 'Make 10 clean skids.', 'cleanSkid', 10, 900, 1),
-  ladder('ch1', 'Clean haul', 'Beat the haul target with a full load, nothing lost.', 'cleanHaul', 1, 60, 0),
-  ladder('ch10', 'Road boss', 'Make 10 clean hauls.', 'cleanHaul', 10, 900, 1),
-  once('allround', 'All-around logger', 'Get a clean run in every mini-game.', [atLeast('perfFell', 1), atLeast('perfBuck', 1), atLeast('cleanSkid', 1), atLeast('cleanHaul', 1)], 1500, 2),
-  ladder('wx10', 'Ten storms', 'Ride out 10 bad-weather seasons to the end.', 'storms', 10, 900, 1),
-  once('wxall', 'Every season’s card', 'See every weather card.', [atLeast('almanac', 16)], 1500, 2),
-  once('era1', 'Full steam', 'Reach Steam Camp.', [atLeast('era', 1)], 0, 2),
-  once('era2', 'Diesel Road', 'Reach Diesel Road.', [atLeast('era', 2)], 0, 2),
-  once('era3', 'Into the Interior', 'Reach Into the Interior.', [atLeast('era', 3)], 0, 3),
+  // ---------- First outpost (23): what a normal first landing reaches. Cash merged from the old early ladders keeps run 1's pace.
+  once('first', 'first_tree', 'Timber!', 'Fell your first tree.', [atLeast('felled', 1)], 10),
+  once('first', 'first_sale', 'First load', 'Deliver logs to the cove.', [{ metric: 'deliv', op: '>', value: 0 }], 15),
+  once('first', 'first_crew', 'On the payroll', 'Hire your first crew.', [atLeast('crew', 1)], 25),
+  ladder('first', 'w1', 'Wintered over', 'Work through a winter.', 'winters', 1, 250, 0),
+  once('first', 'full_chain', 'Every stage crewed', 'Have a crew working all four stages.', [atLeast('crewedStages', 4)], 100, 1),
+  ladder('first', 'c5', 'Reliable supplier', 'Fill 5 charter orders.', 'contracts', 5, 1750, 1),
+  ladder('first', 'crew30', 'Big outfit', 'Own 30 crews or machines.', 'crew', 30, 4400, 1),
+  ladder('first', 'd50k', 'Fifty thousand wood', 'Deliver 50,000 wood.', 'deliv', 5e4, 950, 1),
+  once('first', 'prime1', 'Stamped Prime', 'Make your first Prime log.', [atLeast('prime', 1)], 100),
+  once('first', 'slot4', 'Full land office', 'Open all four land office slots.', [atLeast('slots', 4)], 1050, 1),
+  ladder('first', 'tr10', 'Ten lots', 'Finish 10 lots.', 'tracts', 10, 2800, 1),
+  once('first', 'era1', 'Full steam', 'Reach Steam Camp.', [atLeast('era', 1)], 0, 2),
+  ladder('first', 't1k', 'Thousand trees', 'Fell 1,000 trees.', 'felled', 1000, 12700, 1),
+  ladder('first', 'crew75', 'Industrial outfit', 'Own 75 crews or machines.', 'crew', 75, 100000, 2),
+  ladder('first', 'crew120', 'Company of the Reach', 'Own 120 crews or machines.', 'crew', 120, 500000, 2),
+  ladder('first', 'd1m', 'A million wood', 'Deliver 1,000,000 wood.', 'deliv', 1e6, 7800, 2),
+  ladder('first', 'd3m', 'Three million wood', 'Deliver 3 million wood.', 'deliv', 3e6, 33500, 1),
+  ladder('first', 'e1m', 'Millionaire charter', 'Earn $1M in sales.', 'earned', 1e6, 33000, 1),
+  ladder('first', 'tr30', 'Thirty lots', 'Finish 30 lots.', 'tracts', 30, 63000, 2),
+  ladder('first', 't10k', 'Ten thousand trees', 'Fell 10,000 trees.', 'felled', 1e4, 40000, 1),
+  once('first', 'sp1', 'Special delivery', 'Fill a special order from the charter board.', [atLeast('spOrders', 1)], 1000, 1),
+  once('first', 'allround', 'All-around logger', 'Get a clean run in every mini-game.', [atLeast('perfFell', 1), atLeast('perfBuck', 1), atLeast('cleanSkid', 1), atLeast('cleanHaul', 1)], 1500, 2),
+  once('first', 'era2', 'Diesel Road', 'Reach Diesel Road.', [atLeast('era', 2)], 0, 2),
+
+  // ---------- Across outposts (25): close camp, open the Sawmill, land faster.
+  once('across', 'close1', 'Loaded the ship', 'Close camp for the first time.', [closes(1)], 500, 1),
+  once('across', 'close3', 'Third charter', 'Close camp 3 times.', [closes(3)], 2000, 2),
+  once('across', 'beatfirst', 'Old hands', 'Close an outpost faster than your first.', [atLeast('beatFirst', 1)], 1500, 2),
+  once('across', 'quicksteam', 'Quick steam', 'On a later outpost, reach Steam Camp within 15 minutes.', [{ metric: 'steamLater', op: '<=', value: 15 }], 2000, 1),
+  once('across', 'diesel3', 'Diesel veteran', 'Reach Diesel Road in 3 outposts.', [atLeast('dieselRuns', 3), closes(2)], 10000, 2),
+  once('across', 'shares50', 'Board favorite', 'Earn 50 Charter Shares in all.', [atLeast('shares', 50)], 1000, 1),
+  once('across', 'mill1', 'Saw it here', 'Close your first mill run.', [atLeast('millRuns', 1)], 1000, 1),
+  once('across', 'tomill', 'Logs for the mill', 'Send 100,000 wood to the Sawmill.', [atLeast('toMill', 1e5)], 1000, 1),
+  once('across', 'bunk3', 'Full bunkhouse', 'Build the bunkhouse to level 3.', [atLeast('bunk', 3)], 3000, 2),
+  once('across', 'sawtop', 'Top sawyer', 'Get top sawing in Saw boards.', [atLeast('sawTop', 1)], 500, 1),
+  once('across', 'sp3', 'Charter regular', 'Fill 3 special orders.', [atLeast('spOrders', 3), closes(1)], 2000, 2),
+  once('across', 'orders3', 'Busy clerks', 'Run 3 charter orders at once.', [atLeast('maxOrders', 3), closes(1)], 1000, 1),
+  once('across', 'afk3', 'Away on business', 'Buy 3 AFK lots.', [atLeast('afkLots', 3), closes(1)], 1000, 1),
+  once('across', 'perks40', 'Seasoned charter', 'Pick 40 perks.', [atLeast('perks', 40), closes(1)], 2000, 1),
+  once('across', 'curse3', 'Cursed but rich', 'Take 3 curse perks.', [atLeast('curses', 3), closes(1)], 1500, 1),
+  ladder('across', 't30k', 'Thirty thousand trees', 'Fell 30,000 trees.', 'felled', 3e4, 200000, 1, [closes(1)]),
+  ladder('across', 'd10m', 'Ten million wood', 'Deliver 10 million wood.', 'deliv', 1e7, 70000, 3, [closes(1)]),
+  ladder('across', 'e5m', 'Five million in sales', 'Earn $5M in sales.', 'earned', 5e6, 120000, 1, [closes(1)]),
+  ladder('across', 'tr60', 'Sixty lots', 'Finish 60 lots.', 'tracts', 60, 150000, 2, [closes(1)]),
+  ladder('across', 'w10', 'Ten winters', 'Work through ten winters.', 'winters', 10, 30000, 1, [closes(1)]),
+  ladder('across', 'wx10', 'Ten storms', 'Ride out 10 bad-weather seasons to the end.', 'storms', 10, 900, 1, [closes(1)]),
+  ladder('across', 'pf25', 'Faller of note', 'Land 25 perfect falls.', 'perfFell', 25, 2000, 1, [closes(1)]),
+  ladder('across', 'pb25', 'Grader’s favorite', 'Cut 25 trunks for full value.', 'perfBuck', 25, 2000, 1, [closes(1)]),
+  ladder('across', 'cs25', 'Teamster', 'Make 25 clean skids.', 'cleanSkid', 25, 2000, 1, [closes(1)]),
+  ladder('across', 'ch25', 'Road boss', 'Make 25 clean hauls.', 'cleanHaul', 25, 2000, 1, [closes(1)]),
+
+  // ---------- Long haul (13): collections and the road to Landfall City.
+  once('long', 'close5', 'Five outposts', 'Close camp 5 times.', [closes(5)], 5000, 2),
+  once('long', 'close10', 'Ten outposts', 'Close camp 10 times.', [closes(10)], 20000, 3),
+  once('long', 'era3', 'Into the Interior', 'Reach Into the Interior.', [atLeast('era', 3), closes(1)], 0, 3),
+  once('long', 'shares200', 'Charter partner', 'Earn 200 Charter Shares in all.', [atLeast('shares', 200)], 10000, 2),
+  once('long', 'mill5', 'Mill master', 'Close 5 mill runs.', [atLeast('millRuns', 5)], 5000, 2),
+  once('long', 'alltrees', 'Every tree on the coast', 'Fell all six kinds of tree, redwood too.', [atLeast('species', 6), closes(1)], 5000, 2),
+  once('long', 'wxall', 'Every season’s card', 'See every weather card in the Almanac.', [atLeast('almanac', 16), closes(1)], 1500, 2),
+  once('long', 'fog3', 'Fog collector', 'Find 3 fog lenses.', [atLeast('fogLens', 3), closes(1)], 3000, 1),
+  once('long', 'items', 'Full warehouse', 'Find every kind of item in the warehouse.', [atLeast('items', ITEM_KINDS), closes(1)], 5000, 2),
+  once('long', 'sp10', 'Charter house', 'Fill 10 special orders.', [atLeast('spOrders', 10), closes(1)], 5000, 2),
+  ladder('long', 'c100', 'Company supplier', 'Fill 100 charter orders.', 'contracts', 100, 150000, 2, [closes(1)]),
+  ladder('long', 'd100m', 'A hundred million', 'Deliver 100 million wood.', 'deliv', 1e8, 900000, 3, [closes(3)]),
+  ladder('long', 'e100m', 'Founders of Landfall', 'Earn $100M in sales.', 'earned', 1e8, 2e6, 2, [closes(3)]),
 ]);
+
+const ACH_BY_ID: ReadonlyMap<string, AchievementDef> = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+export function achievementDef(id: string): AchievementDef | undefined { return ACH_BY_ID.get(id); }
+
+/**
+ * Old saves: earned ids from before the rework that now live on under another id.
+ * Every other id that is no longer in ACHIEVEMENTS is dropped (its cash and reputation stay paid).
+ */
+export const ACH_RENAMED: Readonly<Record<string, string>> = deepFreeze({ c20: 'c5', crew50: 'crew30', w5: 'w1' });
+
+/** An old save's earned list: kept ids stay in order, renamed ones map, unknown ones drop, no repeats. */
+export function migrateAchievements(ids: readonly unknown[]): string[] {
+  const out: string[] = [];
+  for (const raw of Array.isArray(ids) ? ids : []) {
+    if (typeof raw !== 'string') continue;
+    const id = ACH_BY_ID.has(raw) ? raw : ACH_RENAMED[raw];
+    if (id && ACH_BY_ID.has(id) && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
 
 function holds(c: AchCondition, read: MetricReader): boolean {
   const v = read(c.metric);
-  if (v === undefined) return false;
-  return c.op === '>' ? v > c.value : v >= c.value;
+  if (v === undefined || v === null || Number.isNaN(v)) return false;
+  return c.op === '>' ? v > c.value : c.op === '<=' ? v <= c.value : v >= c.value;
 }
 
 /** True when every condition holds. */
@@ -118,6 +194,29 @@ export function achievementProgress(def: AchievementDef, read: MetricReader): [n
   return [read(c.metric), c.value];
 }
 
+/**
+ * [current, target] for the achievements list: the first condition that counts
+ * up to a target above 1 (not the close-camp gate). Null when there is nothing to count.
+ */
+export function achievementBar(def: AchievementDef, read: MetricReader): [number, number] | null {
+  const c = def.when.find((x) => x.metric !== 'closes' && x.op === '>=' && x.value > 1);
+  if (!c) return null;
+  return [Math.max(0, read(c.metric) ?? 0), c.value];
+}
+
+/**
+ * Close camps this achievement needs before it can be earned: its `closes`
+ * condition, or 1 when it reads a metric that only moves after a close camp; 0 for first-outpost ones.
+ */
+export function closesNeeded(def: AchievementDef): number {
+  let n = 0;
+  for (const c of def.when) {
+    if (c.metric === 'closes') n = Math.max(n, c.value);
+    else if (AFTER_CLOSE_METRICS.includes(c.metric)) n = Math.max(n, 1);
+  }
+  return n;
+}
+
 /** The metric a repeat bounty measures for this achievement (ladders only). */
 export function bountyMetric(def: AchievementDef): AchMetric | null {
   return def.ladder && def.when[0] ? def.when[0].metric : null;
@@ -127,6 +226,12 @@ export function bountyMetric(def: AchievementDef): AchMetric | null {
 export const BOUNTY_RATE = 0.25;
 /** Repeat bounties pay an outpost at most this share of the cost of its next push inland. */
 export const BOUNTY_CAP = 0.2;
+/**
+ * New achievements and repeat bounties met this outpost ("goals") queue a perk
+ * pick every this many. 3 since the rework (was 5): the first outpost has 23
+ * achievements, not 58, so a first landing still earns about as many perk picks.
+ */
+export const GOALS_PER_DRAFT = 3;
 
 /**
  * Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's

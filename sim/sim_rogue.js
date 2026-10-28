@@ -203,7 +203,7 @@ function run(profile, seed, hours=4, opt={}){
       if(stop || S.t-runStart>=CAP){
         if(MILL) G.sellSurplus(); // sell surplus at close camp
         const L2=MILL ? G.legacyNow() : L, i0=runItem0||{prime:0,sales:0,orders:0,toMill:0}, i1=itemSnap();
-        runsOut.push({n:S.run.n, min:Math.round(rm), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:L2, achCash, perks:S.run.perks.map(id=>id).join(','), drafts:curDrafts, cf:S.run.cFilled||0, mods:S.run.mods.join(','), deliv:Math.round(S.run.deliv),
+        runsOut.push({n:S.run.n, min:Math.round(rm), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:L2, achCash, achN:S.ach.length-(S.run.achMark||0), perks:S.run.perks.map(id=>id).join(','), drafts:curDrafts, cf:S.run.cFilled||0, mods:S.run.mods.join(','), deliv:Math.round(S.run.deliv),
           ...(EVENTS ? {wx:(()=>{ const a=wxRun, b=wx0(); return {bad:b.bad-a.bad, storms:b.storms-a.storms, cleared:b.cleared-a.cleared, guard:b.guard-a.guard, fires:b.fires-a.fires, burned:Math.round(b.burned-a.burned), maxStreak:b.maxStreak, stormN:S.run.stormN||0, pacePct:+(wxPace.tw/Math.max(1,wxPace.n)*100).toFixed(2)}; })()} : {}),
           ...(MILL ? {prime:i1.prime-i0.prime, orders:i1.orders, bonus:Math.round(Math.min(.25,S.orders.bonusPct)*100), salesPct:+(i1.sales/Math.max(1,S.run.earned)*100).toFixed(2), toMill:Math.round(i1.toMill), bunk:S.structures['logging.bunkhouse']||0} : {})});
         if(runsOut.length>=RUNS) break;
@@ -245,7 +245,7 @@ function run(profile, seed, hours=4, opt={}){
     const tractRes = S.tracts.length<2 && !stalled ? G.cheapestSale() : 0;
     if(opts[0] && S.cash>=opts[0].c+reserve()+(isFinite(tractRes)?tractRes*0.5:0)){ S.cash-=opts[0].c; S.own[opts[0].e.id]=(S.own[opts[0].e.id]||0)+1; bought('eq:'+opts[0].e.id); }
   }
-  if(runsOut.length<RUNS) runsOut.push({n:S.run.n, min:Math.round((S.t-runStart)/60), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:G.legacyNow(), unfinished:true, perks:S.run.perks.join(','), deliv:Math.round(S.run.deliv)});
+  if(runsOut.length<RUNS) runsOut.push({n:S.run.n, min:Math.round((S.t-runStart)/60), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:G.legacyNow(), achN:S.ach.length-(S.run.achMark||0), unfinished:true, perks:S.run.perks.join(','), deliv:Math.round(S.run.deliv)});
   const items = MILL ? (()=>{ const by={made:0,common:0,uncommon:0,rare:0}; Object.entries(S.found).forEach(([id,f])=>{ const d=Core.itemDef(id); if(d && f.first!=='Founding crate') by[d.rarity]+=f.total; });
     return {primeTotal:(S.found[SPAR]||{}).total||0, findsPerHour:{common:+(by.common/hours).toFixed(1), uncommon:+(by.uncommon/hours).toFixed(1), rare:+(by.rare/hours).toFixed(2)}, ordersFilled:S.orders.filled, openOrders:S.orders.open.map(o=>o.id+":"+JSON.stringify(o.given)), pitchFound:(S.found["logging.amber_pitch"]||{}).total||0, stockEnd:Object.values(S.bank).reduce((a,n)=>a+n,0)}; })() : null;
   const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games, logPaid:Math.round(S.camps.sawmill.logPaid||0), bundleIn:Math.round(S.camps.sawmill.bundleIn||0), earned:Math.round(S.camps.sawmill.earned)}, shares:S.shares.sawmill.total} : null;
@@ -260,6 +260,6 @@ if(require.main===module){
   const hours=+process.argv[2]||8, policy=process.argv[3]||'gas', profs=(process.argv[4]||'idle,casual,minigame').split(','), seeds=(process.argv[5]||'1,2,3').split(',').map(Number);
   const mods=process.env.MODS?process.env.MODS.split(','):null;
   for(const p of profs) for(const seed of seeds){ const r=run(p,seed,hours,{policy,mods});
-    console.log(JSON.stringify({p, seed, slots:r.slots, ...(r.AX ? {AX:r.AX} : {}), runs:r.runsOut.map(x=>({n:x.n,min:x.min,steam:x.steam,gas:x.gas,L:x.legacy,ach$:x.achCash,deliv:x.deliv,drafts:x.drafts,cf:x.cf,perks:x.perks,unf:x.unfinished,wx:x.wx,
+    console.log(JSON.stringify({p, seed, slots:r.slots, ...(r.AX ? {AX:r.AX} : {}), runs:r.runsOut.map(x=>({n:x.n,min:x.min,steam:x.steam,gas:x.gas,L:x.legacy,ach$:x.achCash,achN:x.achN,deliv:x.deliv,drafts:x.drafts,cf:x.cf,perks:x.perks,unf:x.unfinished,wx:x.wx,
       ...(x.prime!=null ? {prime:x.prime, orders:x.orders, bonus:x.bonus, salesPct:x.salesPct, toMill:x.toMill, bunk:x.bunk} : {})})), meta:r.meta.nodes.join(','), bank:r.meta.legacy, xt:r.xt, items:r.items, mill:r.mill})); }
 }
