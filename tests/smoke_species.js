@@ -33,8 +33,9 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const c0=cards[0].textContent, c1=cards[1].textContent;
  ok(/Spruce point/.test(c0) && /Hemlock swamp/.test(c1) && /Coast bottoms/.test(cards[2].textContent),'each card names its ground');
  ok(cards.every(c=>c.querySelectorAll('.spbar i').length===2),'each card has a species bar');
- ok(/a tree/.test(c0) && /chops a tree/.test(c0),'value and chops per tree shown');
- ok(/Light: skid and haul ×1\.19/.test(c0) && /Heavy: skid and haul ×0\.96/.test(c1) && /Average weight/.test(cards[2].textContent),'weight tags: light spruce, heavy hemlock, average coast');
+ ok(cards.every(c=>c.querySelector('.stat[data-stat="value"]') && c.querySelector('.stat[data-stat="chops"]')),'value and chops per tree shown (stat chips)');
+ const wv=c=>c.querySelector('.stat[data-stat="weight"]').dataset.v;
+ ok(wv(cards[0])==='good' && wv(cards[1])==='bad' && wv(cards[2])!=='good','weight chips against the Cove average (0.95): light spruce green, heavy hemlock red, pine-hemlock coast not green: '+cards.map(wv).join());
  ok(/Best for: Prime spars/.test(c0) && /Best for: bark money/.test(c1) && /Best for: boards and amber pitch/.test(cards[2].textContent),'best-for line by main species');
  ok(/Windy: felling-game wind ×1\.2/.test(c0) && /land ×0\.9/.test(c1),'ground twists shown');
  ok(cards.every(c=>c.querySelector('.fit').dataset.fit==='none'),'no crews: camp fit asks you to hire');

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Outpost Company</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -203,6 +204,26 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .srule button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 @media (max-width:460px){.qrow{grid-template-columns:44px minmax(0,1fr)}.qbtns{grid-column:1 / -1;justify-content:flex-start;max-width:none}}
 .wt-light{color:var(--good)} .wt-heavy{color:var(--warn)}
+/* lot stat chips: green ▲ better than the era's average lot, red ▼ worse, plain about average */
+.statrow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px 6px;margin:4px 0 2px}
+.statrow .stats{flex:1 1 220px;min-width:0;min-height:44px;display:flex;flex-wrap:wrap;align-content:center;gap:4px;padding:3px 0;margin:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.stat{display:inline-flex;align-items:baseline;gap:4px;padding:2px 7px;border:1px solid var(--line);border-radius:4px;font-family:var(--f-num);font-size:12px;line-height:1.35;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.stat .sk{font-family:var(--f-body);color:var(--muted)}
+.stat.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 60%,transparent);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.stat.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 60%,transparent);background:color-mix(in srgb,var(--bad) 9%,transparent)}
+.stat .avg{display:none;color:var(--muted)}
+html.stat-avg .stat .avg{display:inline}
+.statrow .stats:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+details.notei{flex:none;margin:0}
+details.notei[open]{flex-basis:100%}
+details.notei summary{list-style:none;min-width:44px;min-height:44px;justify-content:center}
+details.notei summary::-webkit-details-marker{display:none}
+details.notei .ib{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-family:var(--f-display);font-style:italic;font-size:13px;font-weight:700}
+details.notei[open] .ib{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+details.notei[open] summary{justify-content:flex-start}
+.meta.statkey .good{color:var(--good)} .meta.statkey .bad{color:var(--bad)}
+/* phones: the buy button drops under the listing so the chips get the full width */
+@media (max-width:520px){.row.lot{flex-wrap:wrap}.row.lot .info{flex:1 1 100%}.row.lot .btns{margin-left:auto}}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
 .contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
@@ -479,6 +500,7 @@ button,summary,input,.lcell{touch-action:manipulation}
         <h2>Your lots</h2>
         <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="false">Lots</button><button type="button" data-v="trees" aria-pressed="true">Trees</button></div>
         <p class="meta pick" id="pickNote" hidden></p>
+        <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
         <div id="qLots" hidden>
           <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
           <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
@@ -525,6 +547,7 @@ button,summary,input,.lcell{touch-action:manipulation}
         <p class="eyebrow">Land office</p>
         <h2>Lots for sale</h2>
         <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
+        <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
         <div id="sales"></div>
       </section>
       <section class="panel">
@@ -4907,6 +4930,139 @@ var Core = (function(exports) {
 		return out;
 	}
 	//#endregion
+	//#region packages/core/src/lotstats.ts
+	/**
+	* Lot stat chips (owner request 2026-10-26): each lot's key numbers, compared
+	* with the average lot the land office lists in the player's era. Read-only:
+	* no game draws, no game numbers change.
+	*
+	* The era averages are a fixed-seed sample of `genTract` on its own private
+	* stream, so they follow the generator's parameters (tuning a range moves the
+	* average) and never touch the game's rng. Neutral listing options: no land
+	* agent, no survey clauses.
+	*/
+	/** Display order, the same on every listing, queue row and tree card. */
+	var LOT_STATS = deepFreeze([
+		"chops",
+		"value",
+		"weight",
+		"haul",
+		"slope",
+		"price",
+		"prime"
+	]);
+	/** +1 when a higher number is better, -1 when lower is better. Slope compares the skid factor (flat 1, hilly 0.8, steep 0.55). */
+	var LOT_STAT_DIR = deepFreeze({
+		chops: -1,
+		value: 1,
+		weight: -1,
+		haul: -1,
+		slope: 1,
+		price: -1,
+		prime: 1
+	});
+	/** Within this share of the average a stat counts as about average (neutral). */
+	var LOT_STAT_BAND = .1;
+	/** Per-stat bands where ±10% is too wide: weights only run 0.8-1.1, so ±5%. */
+	var LOT_STAT_BANDS = deepFreeze({ weight: .05 });
+	/** Listings sampled per era for the averages. */
+	var LOT_AVG_SAMPLES = 4e3;
+	var LOT_AVG_SEED = 1369948382;
+	var cache = /* @__PURE__ */ new Map();
+	/** The average land-office listing for an era (cached; the same every call). */
+	function eraLotAverages(era) {
+		const e = Math.max(0, Math.floor(era) || 0);
+		const hit = cache.get(e);
+		if (hit) return hit;
+		const rng = streamRng({}, "lotavg", LOT_AVG_SEED);
+		const o = {
+			stumpMult: 1,
+			thinSurvey: false,
+			cruiser: false
+		};
+		let chops = 0, value = 0, weight = 0, haul = 0, slope = 0, price = 0;
+		const share = {};
+		const n = LOT_AVG_SAMPLES;
+		for (let i = 0; i < n; i++) {
+			const t = genTract(rng, e, o);
+			chops += t.hp;
+			value += t.val;
+			weight += t.wt;
+			haul += t.miles;
+			slope += SLOPES[t.slope].skid;
+			price += (t.price ?? 0) / Math.max(1, t.trees);
+			for (const sp of Object.keys(SPECIES)) {
+				const s = mixShare(t.mix, sp);
+				if (s > 0) share[sp] = (share[sp] ?? 0) + s;
+			}
+		}
+		for (const k in share) share[k] = share[k] / n;
+		const out = deepFreeze({
+			chops: chops / n,
+			value: value / n,
+			weight: weight / n,
+			haul: haul / n,
+			slope: slope / n,
+			price: price / n,
+			share
+		});
+		cache.set(e, out);
+		return out;
+	}
+	var PRIME_ITEMS = [...new Set(PRIME_RULES.map((r) => r.item))];
+	/** Expected Prime of any kind per tree felled on a lot (idle trickle plus the felling-game pace). */
+	function primeChance(l, era, perfRate = 0) {
+		return PRIME_ITEMS.reduce((a, item) => a + primePerTree(l, item, era, perfRate), 0);
+	}
+	/** The era averages for every chip stat; Prime at the player's felling-game pace. */
+	function lotStatAverages(era, perfRate = 0) {
+		const a = eraLotAverages(era);
+		const mix = Object.entries(a.share);
+		return {
+			chops: a.chops,
+			value: a.value,
+			weight: a.weight,
+			haul: a.haul,
+			slope: a.slope,
+			price: a.price,
+			prime: primeChance({ mix }, era, perfRate)
+		};
+	}
+	/** Better or worse than the average: neutral within `band` (a share of the average; ±10%, weight ±5%). */
+	function statVerdict(id, value, avg, band = LOT_STAT_BANDS[id] ?? .1) {
+		if (!isFinite(value) || !isFinite(avg)) return "even";
+		const d = avg > 0 ? value / avg - 1 : value > 0 ? Infinity : 0;
+		if (Math.abs(d) <= band + 1e-9) return "even";
+		return d > 0 === LOT_STAT_DIR[id] > 0 ? "good" : "bad";
+	}
+	/**
+	* The chips for a lot, in LOT_STATS order. Stats the lot does not carry (no
+	* price on an owned lot, no haul on a species card) are left out.
+	*/
+	function lotStatChips(l, era, perfRate = 0, only) {
+		const avg = lotStatAverages(era, perfRate);
+		const v = {};
+		if (l.hp !== void 0) v.chops = l.hp;
+		if (l.val !== void 0) v.value = l.val;
+		if (l.wt !== void 0) v.weight = l.wt > 0 ? l.wt : 1;
+		if (l.miles !== void 0) v.haul = l.miles;
+		if (l.slope !== void 0) v.slope = SLOPES[l.slope].skid;
+		if (l.price !== void 0 && l.trees) v.price = l.price / l.trees;
+		v.prime = primeChance(l, era, perfRate);
+		const out = [];
+		for (const id of LOT_STATS) {
+			const x = v[id];
+			if (x === void 0 || only && !only.includes(id)) continue;
+			out.push({
+				id,
+				value: x,
+				avg: avg[id],
+				verdict: statVerdict(id, x, avg[id])
+			});
+		}
+		return out;
+	}
+	//#endregion
 	//#region packages/core/src/stash.ts
 	/**
 	* The lot stash (docs/design/lot-stash-and-camp-money.md, part A, slice 1):
@@ -5813,6 +5969,11 @@ var Core = (function(exports) {
 	exports.IMPROVEMENT_REQS = IMPROVEMENT_REQS;
 	exports.ITEMS = ITEMS;
 	exports.LOG_CRATE_BF = LOG_CRATE_BF;
+	exports.LOT_AVG_SAMPLES = LOT_AVG_SAMPLES;
+	exports.LOT_STATS = LOT_STATS;
+	exports.LOT_STAT_BAND = LOT_STAT_BAND;
+	exports.LOT_STAT_BANDS = LOT_STAT_BANDS;
+	exports.LOT_STAT_DIR = LOT_STAT_DIR;
 	exports.LUMBER_MULT = LUMBER_MULT;
 	exports.META = META;
 	exports.MILLS = MILLS;
@@ -5921,6 +6082,7 @@ var Core = (function(exports) {
 	exports.equipmentCostTotal = equipmentCostTotal;
 	exports.equipmentMaxAffordable = equipmentMaxAffordable;
 	exports.eraCost = eraCost;
+	exports.eraLotAverages = eraLotAverages;
 	exports.eventDef = eventDef;
 	exports.eventFindWeights = eventFindWeights;
 	exports.eventGameRules = eventGameRules;
@@ -5968,6 +6130,8 @@ var Core = (function(exports) {
 	exports.legacyGain = legacyGain;
 	exports.levelBundles = levelBundles;
 	exports.lotRates = lotRates;
+	exports.lotStatAverages = lotStatAverages;
+	exports.lotStatChips = lotStatChips;
 	exports.lotThroughput = lotThroughput;
 	exports.lotValueRate = lotValueRate;
 	exports.lumberPrice = lumberPrice;
@@ -6001,6 +6165,7 @@ var Core = (function(exports) {
 	exports.perkMult = perkMult;
 	exports.pickFactor = pickFactor;
 	exports.pickFromMix = pickFromMix;
+	exports.primeChance = primeChance;
 	exports.primeEstimate = primeEstimate;
 	exports.primeFromBuck = primeFromBuck;
 	exports.primeFromFall = primeFromFall;
@@ -6048,6 +6213,7 @@ var Core = (function(exports) {
 	exports.standingSpecies = standingSpecies;
 	exports.stashRule = stashRule;
 	exports.stashTotals = stashTotals;
+	exports.statVerdict = statVerdict;
 	exports.stormSeasonMult = stormSeasonMult;
 	exports.streamRng = streamRng;
 	exports.structureDef = structureDef;
@@ -6744,19 +6910,46 @@ function noteFor(t, current){
 // "details" folds stay open across re-renders
 const openD = new Set();
 const fitHtml = lines => lines.map(f => `<p class="ofit${f.amount > 0 ? '' : ' late'}" data-order="${f.orderId}">${f.text}</p>`).join('');
-const noteHtml = (n, id, label) => label
-  ? `<details class="fitmore" data-d="${id}"${openD.has(id) ? ' open' : ''}><summary>${label}</summary><p class="fit fit-${n.key}" data-fit="${n.key}">${n.short}</p><ul>${n.details.map(x => `<li>${x}</li>`).join('')}</ul></details>`
-  : `<p class="fit fit-${n.key}" data-fit="${n.key}">${n.short}</p><details class="fitmore" data-d="${id}"${openD.has(id) ? ' open' : ''}><summary>Details</summary><ul>${n.details.map(x => `<li>${x}</li>`).join('')}</ul></details>`;
 const bindDetails = box => box.querySelectorAll('details[data-d]').forEach(el => el.addEventListener('toggle', () => { if (el.open) openD.add(el.dataset.d); else openD.delete(el.dataset.d); }));
+// ---------- lot stat chips (Core: packages/core/src/lotstats.ts): each number against the average lot for the era.
+// Green ▲ better, red ▼ worse, plain within ±10%. Tap a row of chips to show the averages (all rows; not saved).
+const STAT_KEY = {chops:'Chops', value:'Value', weight:'Weight', haul:'Haul', slope:'Slope', price:'Price', prime:'Prime'};
+const STAT_TIP = {chops:'Chops a tree', value:'Value a tree', weight:'Weight (skid and haul)', haul:'Haul', slope:'Ground', price:'Price a tree', prime:'Prime a tree'};
+const pctTxt = p => p <= 0 ? 'none' : p < .0005 ? '<0.1%' : p < .1 ? (Math.round(p*1000)/10)+'%' : Math.min(100, Math.round(p*100))+'%';
+const slopeOf = f => f >= .95 ? 'flat' : f >= .7 ? 'hilly' : 'steep';
+function statTxt(id, x, avg){
+  if (id === 'chops') return fmt(x);
+  if (id === 'value' || id === 'price') return money(x);
+  if (id === 'weight') return fx2(x);
+  if (id === 'haul') return fmt(x) + ' mi';
+  if (id === 'slope') return avg ? `skid ×${fx2(x)}` : slopeOf(x);
+  return pctTxt(x);
+}
+let statAvg = false;
+function statChips(l, only){
+  return Core.lotStatChips(l, S.era, perfRate(), only).map(c => {
+    const v = statTxt(c.id, c.value), a = statTxt(c.id, c.avg, true), g = c.verdict;
+    const word = g === 'good' ? 'better than' : g === 'bad' ? 'worse than' : 'about';
+    return `<span class="stat ${g}" data-stat="${c.id}" data-v="${g}" title="${STAT_TIP[c.id]}: ${v}, ${word} average (avg ${a})"><span class="sk">${STAT_KEY[c.id]}</span> ${v}` +
+      (g === 'even' ? '' : ` <span class="mk" aria-label="${g === 'good' ? 'better' : 'worse'}">${g === 'good' ? '▲' : '▼'}</span>`) + ` <span class="avg">avg ${a}</span></span>`;
+  }).join('');
+}
+// the camp note behind a small "i" (owner 2026-10-26: the wordy hints left the listings; easy to bring back)
+const noteI = (n, id) => `<details class="fitmore notei" data-d="${id}"${openD.has(id) ? ' open' : ''}><summary aria-label="Camp note" title="Camp note"><span class="ib" aria-hidden="true">i</span></summary><p class="fit fit-${n.key}" data-fit="${n.key}">${n.short}</p><ul>${n.details.map(x => `<li>${x}</li>`).join('')}</ul></details>`;
+const statRow = (chips, note, id) => `<div class="statrow"><button type="button" class="stats" aria-pressed="${statAvg}" title="Tap to show the averages">${chips}</button>${note ? noteI(note, id) : ''}</div>`;
+document.addEventListener('click', e => { const b = e.target && e.target.closest ? e.target.closest('button.stats') : null; if (!b) return;
+  statAvg = !statAvg; document.documentElement.classList.toggle('stat-avg', statAvg);
+  document.querySelectorAll('button.stats').forEach(x => x.setAttribute('aria-pressed', String(statAvg))); });
 const bestChips = (i, best, orders) => Object.keys(best).filter(id => best[id] === i).map(id => { const o = orders.find(x => x.id === id); return o ? `<span class="chipl best" data-best="${id}">Best for ${o.short}</span>` : ''; }).join('');
+// a listing's chips: price a tree is the price on its buy button (weather and fire discounts included)
+const listingChips = t => statChips(Object.assign({}, t, {price: tractCost(t)}));
 function listingCard(t, i, fits, note, best, orders){
-  const g = Core.GROUNDS[Core.groundId(t.ground)], wt = Core.weightTag(t.wt || 1), main = Core.mainSpecies(t.mix);
+  const g = Core.GROUNDS[Core.groundId(t.ground)], main = Core.mainSpecies(t.mix);
   return `<div class="row lot${t.afk ? ' afk' : ''}"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${bestChips(i, best, orders)}
-    <p>${fmt(t.trees)} trees · ${mixText(t)}</p>${speciesBar(t)}
-    <span class="spec">${money(t.val)} a tree · ${fmt(t.hp)} chops a tree · <span class="wt-${wt.key}">${wt.text}</span></span>
-    <span class="spec">${bf(t.trees*t.bf)} · ${t.miles} mi haul · ${SLOPES[t.slope].label}${g.twist ? ' · ' + g.twist : ''}</span>
-    <p>Best for: ${t.afk ? 'time away from the game' : main ? Core.BEST_FOR[main] : 'mixed use'}</p>
-    ${fitHtml(fits)}${pitchHint(t)}${noteHtml(note, 'l'+t.name)}</div>
+    <p>${fmt(t.trees)} trees · ${bf(t.trees*t.bf)} · ${mixText(t)}</p>${speciesBar(t)}
+    ${statRow(listingChips(t), note, 'l'+t.name)}
+    <p>Best for: ${t.afk ? 'time away from the game' : main ? Core.BEST_FOR[main] : 'mixed use'}${g.twist ? ' · ' + g.twist : ''}</p>
+    ${fitHtml(fits)}${pitchHint(t)}</div>
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
 const aheadOfNew = t => t.afk || qMode() === 'hand' ? S.tracts : S.tracts.filter((x, j) => j === 0 || !x.afk);
@@ -6767,7 +6960,7 @@ function renderSales(){
   // a bought lot joins the end of the queue, so every lot under contract is ahead of it (in an auto mode a normal lot
   // goes ahead of a waiting AFK lot); the AFK lot never takes a "Best for" badge
   const fits = S.forSale.map(t => lotFits(t, aheadView(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur && lotView(cur, true)));
-  const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)).join('|') + JSON.stringify(best);
+  const key = S.forSale.map((t, i) => t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)+listingChips(t)).join('|') + JSON.stringify(best);
   list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join(''),
     box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < tractCost(t); });
@@ -6778,6 +6971,8 @@ function renderSales(){
 // or use the arrow buttons to reorder; Cut next puts a lot second, Cut now moves the crews to it (free, progress kept);
 // the order buttons sort the waiting lots.
 let qDrag = null;
+// queue rows and tree cards: the chips a bought lot or a species carries (no asking price)
+const Q_STATS = ['chops', 'value', 'weight', 'haul', 'slope', 'prime'], S_STATS = ['chops', 'value', 'weight', 'prime'];
 function fitChip(f, orders){
   const o = orders.find(x => x.id === f.orderId), sh = o ? o.short.replace(/^the /, '') : '';
   const n = f.amount >= 10 ? Math.round(f.amount) : Math.round(f.amount*10)/10;
@@ -6817,13 +7012,13 @@ function renderQueue(){
   mb.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === qMode())));
   const orders = fitOrders(), caps = bareCaps(), sky = has('skyline'), n = S.tracts.length;
   const qv = queueViews();
-  const rows = S.tracts.map((t, i) => ({t, i, lv: qv[i], fits: lotFits(qv[i], qv.slice(0, i), orders), note: noteFor(qv[i], i ? qv[0] : null)}));
-  const key = qMode() + '|' + rows.map(r => `${r.t.seq}:${r.t.name}:${r.fits.map(f => fitChip(f, orders) + f.text).join('/')}:${r.note.short}${r.note.details.join('/')}`).join('|');
-  if (!qDrag) list('tq', key, n ? rows.map(({t, i, lv, fits, note}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
+  const rows = S.tracts.map((t, i) => ({t, i, lv: qv[i], fits: lotFits(qv[i], qv.slice(0, i), orders), note: noteFor(qv[i], i ? qv[0] : null), chips: statChips(qv[i], Q_STATS)}));
+  const key = qMode() + '|' + rows.map(r => `${r.t.seq}:${r.t.name}:${r.fits.map(f => fitChip(f, orders) + f.text).join('/')}:${r.note.short}${r.note.details.join('/')}${r.chips}`).join('|');
+  if (!qDrag) list('tq', key, n ? rows.map(({t, i, fits, note, chips}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
     <button type="button" class="qgrip" aria-label="Drag ${t.name} to reorder" title="Drag to reorder">⠿</button>
     <div class="info"><b>${i + 1}. ${t.name}</b>${i === 0 ? '<span class="chipl crew">Crews here</span>' : ''}${t.hire ? `<span class="chipl ground">Hire job: ${t.hire.mill}</span>` : ''}${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${fits.filter(f => f.amount > 0).map(f => fitChip(f, orders)).join('')}
-      <p>${mixText(lotView(t))} · ${t.miles} mi haul · ${SLOPES[t.slope].label}</p>${speciesBar(lotView(t))}
-      <span class="spec" data-qs="${i}"></span>${fitHtml(fits)}${noteHtml(note, 'q'+t.seq, 'Camp note')}</div>
+      <p>${mixText(lotView(t))}</p>${speciesBar(lotView(t))}
+      ${statRow(chips, note, 'q'+t.seq)}<span class="spec" data-qs="${i}"></span>${fitHtml(fits)}</div>
     <div class="qbtns"><button type="button" data-qu="${i}" aria-label="Move ${t.name} up" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-qd="${i}" aria-label="Move ${t.name} down" title="Move down" ${i === n - 1 ? 'disabled' : ''}>▼</button>${i > 1 ? `<button type="button" data-qnext="${i}">Cut next</button>` : ''}${i > 0 ? `<button type="button" class="now" data-qnow="${i}">Cut now</button>` : ''}</div></li>`).join('')
     : '<li class="empty">No lots. Buy one at the land office or take a hire job.</li>',
     box => {
@@ -6847,10 +7042,6 @@ function renderQueue(){
 const PRIME_ITEMS = [...new Set(Core.PRIME_RULES.map(r => r.item))];
 // the open orders a species serves: its tree order, and Prime needs it can make
 const stashOrders = (sp, orders) => orders.filter(o => o.kind === 'species' ? o.sp === sp : Core.PRIME_RULES.some(r => r.species === sp && r.item === o.item)).map(o => o.short);
-function primeOdds(sp){
-  const p = PRIME_ITEMS.reduce((a, item) => a + Core.primePerTree({mix:[[sp, 1]]}, item, S.era, perfRate()), 0);
-  return p > 0 ? `Prime: 1 in ${Math.max(1, Math.round(1/p))} trees` : 'No Prime';
-}
 // one line on what the rules do on the lot crews are on now (empty with every rule on Any)
 function pickNoteText(){
   const t = tract(); if (!t || rulesAny) return '';
@@ -6865,11 +7056,11 @@ function pickNoteText(){
 const wtWord = k => k === 'light' ? 'Light' : k === 'heavy' ? 'Heavy' : 'Average';
 function renderStash(){
   const rows = Core.stashTotals(S.tracts.map(t => Object.assign({}, t, {stand: standOf(t)}))), orders = fitOrders(), sn = effSeason(), R = S.ui.stashRule;
-  const key = rows.map(r => `${r.sp}:${Core.stashRule(R, r.sp)}:${r.lots.map(l => S.tracts[l.i].seq).join(',')}:${stashOrders(r.sp, orders).join('/')}`).join('|') + '|' + (tract() ? tract().seq : '');
+  const key = rows.map(r => `${r.sp}:${Core.stashRule(R, r.sp)}:${r.lots.map(l => S.tracts[l.i].seq).join(',')}:${stashOrders(r.sp, orders).join('/')}`).join('|') + '|' + (tract() ? tract().seq : '') + '|' + S.era + ':' + Math.round(perfRate()*1000);
   list('stash', key, rows.length ? rows.map(r => {
     const sp = r.sp, d = SP[sp], rule = Core.stashRule(R, sp), w = Core.weightTag(d.wt), od = stashOrders(sp, orders);
     return `<div class="scard" data-sp="${sp}"><details data-d="s:${sp}"${openD.has('s:' + sp) ? ' open' : ''}><summary><b>${d.name}</b><span class="chipl wt-${w.key}">${wtWord(w.key)}</span><span class="num" data-sn="${sp}"></span></summary>
-      <span class="spec">${fmt(d.hp)} chops a tree · ${w.text} · ${primeOdds(sp)}</span>
+      ${statRow(statChips({mix:[[sp, 1]], hp:d.hp, val:Core.treeValue(d), wt:d.wt}, S_STATS))}
       <ul class="slots">${r.lots.map(l => `<li><span data-sl="${sp}:${l.i}"></span>${l.i === 0 ? '<span class="chipl crew">Crews here</span>' : `<button type="button" data-cut="${l.i}">Cut here</button>`}</li>`).join('')}</ul></details>
       <p>${od.length ? 'Serves ' + od.join(', ') + '.' : 'No open order wants it.'}</p><p class="skipv" data-sk="${sp}"${rule === 'skip' ? '' : ' hidden'}></p>
       <div class="srule" role="group" aria-label="${d.name}: which trees crews cut">${Core.STASH_RULES.map(x => `<button type="button" data-rsp="${sp}" data-r="${x}" aria-pressed="${x === rule}">${Core.STASH_RULE_LABEL[x]}</button>`).join('')}</div></div>`;

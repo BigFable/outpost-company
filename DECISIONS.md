@@ -4,6 +4,8 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-28 | Land office lot slots, as proposed in docs/design/lot-slots.md: slot 1 (always open, one 2-species lot), slot 2 (3 species) at 2 lots cut out, slot 3 (4 species incl. one rare at 10–20%) at 3 lots cut out, slot 4 (the AFK lot) at 4 lots cut out; unlocks count lifetime lots and stay through close camp; one listing per slot; charter orders only ask for trees the player can get now | Owner approved the balance proposal |
+| 2026-10-26 | Lot listings show color-coded stat chips (green better / red worse than the era average, with ▲/▼); camp notes move behind an "i"; the cutting queue opens on the Trees tab | Owner: less wordy, readable at a glance |
 | 2026-10-26 | Camp money tuning: the mill pays 0.5× cove price for slider logs (was 0.8×); the Sawmill crate gives $300 mill cash at the start of every mill run (the board node that also gave +$300 gets a new effect); the dry-pond measure is unchanged | Balance check: later mill runs started nearly broke and mill profit per hour fell ~70%; log cost took half the mill's margin |
 | 2026-10-26 | Auto slider: Logging sends the mill what it can saw, up to a cap the player sets | The dry pond is a log-supply gap that no single constant fixes |
 | 2026-10-26 | Keep the 4-offer charter board. AFK lot fixes: trees 4–6× → 12–18×, land price ×0.8 → ×0.4, always on the board (chance 0.6 → 1); never ranked "best" or scored as a normal lot; the queue puts newly bought normal lots ahead of it; the sim gains an "idle-away" profile that buys it before leaving | Balance check of round 3: the AFK lot covered only 10–20 min and was a trap when picked by value |
