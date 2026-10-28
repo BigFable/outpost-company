@@ -4,6 +4,7 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-28 | Resource renames approved as proposed in docs/design/resource-names.md; unit "bd ft" → "wood"; perk tiers unchanged for now; Burl and Survey marker get new names (owner to pick). Tier ladder is one consistent diamond system: Common grey 0, Good green 1, Fine blue 2, Prime yellow 3, Rare orange 4 (supersedes "rare = violet") | Owner: diamond system must be consistent |
 | 2026-10-28 | Perk shop replaces the draft, as designed in docs/design/perk-shop.md (per-camp rotating shop, 5 slots incl. one rare/legendary and one curse, 10-min rotation plus new era, hold one slot, mini-game picks restock a slot), with changes: curses cost 1 (not free); plain names "Shop" and "perk points" (not Quartermaster/picks). Builds into the Shop screen in UI rework slice 3 | Owner approved with changes |
 | 2026-10-28 | Build "follow your lead" (docs/design/late-run-active-play.md) after the UI rework, to fix active play fading after the first outpost | Owner approved |
 | 2026-10-28 | Round 4 tuning: auto-flow buffer 5 → 15 min; Extra clerk only offered with room for two orders | Balance pass: brings idle and casual run-2 speed-up back to ~26% and cuts dry-pond time |
