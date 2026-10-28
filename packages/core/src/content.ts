@@ -174,7 +174,7 @@ export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = d
   hay: {text:'Work through 3 winters', stats:['winters'], target:3},
   wedges: {text:'Finish 20 lots', stats:['tracts'], target:20},
   cook: {text:'Fill 30 orders', stats:['contracts'], target:30},
-  grade: {text:'Earn 24 achievements', stats:['achievements'], target:24},
+  grade: {text:'Earn 28 achievements', stats:['achievements'], target:28},
   bunks: {text:'Finish 60 lots', stats:['tracts'], target:60},
   corduroy: {text:'Work through 15 winters', stats:['winters'], target:15},
   icerd: {text:'Work through 22 winters', stats:['winters'], target:22},

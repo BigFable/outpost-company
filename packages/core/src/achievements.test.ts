@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { must } from './test-rng';
 import {
   ACH_RENAMED, ACH_TIERS, ACHIEVEMENTS, AFTER_CLOSE_METRICS, achievementBar, achievementDef, achievementMet, closesNeeded,
-  GOALS_PER_DRAFT, migrateAchievements, type AchMetric,
+  GOALS_PER_DRAFT, migrateAchievements, achievementPayCap, splitReward, type AchMetric,
 } from './achievements';
 import { IMPROVEMENT_ALT_REQS } from './content';
 
@@ -62,6 +62,15 @@ describe('achievement tiers (rework 2026-10-28)', () => {
     expect(achievementBar(byId('close3'), (m) => m === 'closes' ? 1 : 0)).toBeNull();
     expect(achievementBar(byId('era1'), () => 0)).toBeNull();
     expect(achievementBar(byId('d50k'), () => undefined)).toEqual([0, 5e4]);
+  });
+  it('a reward pays at most half the next push inland now; the rest waits for the next era', () => {
+    expect(achievementPayCap(15000, 0)).toBe(7500);
+    expect(achievementPayCap(Infinity, 10000000)).toBe(5000000);
+    expect(splitReward(200000, 7500)).toEqual([7500, 192500]);
+    expect(splitReward(4400, 7500)).toEqual([4400, 0]);
+    expect(splitReward(-5, 7500)).toEqual([0, 0]);
+    // the first outpost's big crew rewards land after Steam Camp, under the cap
+    expect(byId('crew120').cash).toBeLessThanOrEqual(achievementPayCap(1000000, 15000));
   });
   it('perk picks from goals come every few goals', () => {
     expect(GOALS_PER_DRAFT).toBe(3);

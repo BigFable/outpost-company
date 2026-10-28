@@ -234,6 +234,22 @@ export const BOUNTY_CAP = 0.2;
 export const GOALS_PER_DRAFT = 3;
 
 /**
+ * One achievement pays at most this share of the next push inland now (of the current era's cost at the
+ * last era); the board holds the rest and pays it when the outpost reaches its next era. Since the rework,
+ * achievements already met in an earlier outpost unlock the moment camp closes, so without this a new
+ * landing at the cove could collect $200,000 and skip straight past Steam Camp.
+ */
+export const ACH_PAY_CAP = 0.5;
+export function achievementPayCap(nextEraCost: number, currentEraCost: number): number {
+  return Math.round(ACH_PAY_CAP * (Number.isFinite(nextEraCost) ? nextEraCost : currentEraCost));
+}
+/** [paid now, held for the next era] for `cash` owed under `cap`. */
+export function splitReward(cash: number, cap: number): [number, number] {
+  const c = Math.max(0, cash), now = Math.min(c, Math.max(0, cap));
+  return [now, c - now];
+}
+
+/**
  * Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's
  * cost, or of the current era's cost once the last era is reached.
  */

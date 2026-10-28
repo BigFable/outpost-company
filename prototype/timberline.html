@@ -233,6 +233,12 @@ details.notei[open] summary{justify-content:flex-start}
 .goal .line{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .goal p{margin:1px 0 6px;font-size:.8rem;color:var(--muted)}
 .goal p.req{color:var(--ink);font-weight:500;margin-top:-2px}
+/* achievements screen (rework 2026-10-28): grouped by tier; done ones ticked, ones that need closing camp say so */
+.goal .chipl.ownd{color:var(--good);border-color:var(--good)}
+.goal .chipl.lockchip{color:var(--muted);white-space:normal}
+.goal.locked b{color:var(--muted)}
+.goal .gl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.achtier>p.meta{margin:0 0 4px}
 #eraBar{background:var(--good)}
 .toasts{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;max-width:calc(100vw - 32px)}
 .toast{background:var(--panel);border:1px solid var(--accent);border-left-width:5px;border-radius:6px;padding:10px 14px;min-width:220px;max-width:340px;box-shadow:0 6px 20px rgba(0,0,0,.18);animation:tin .35s cubic-bezier(.2,.9,.3,1.3)}
@@ -655,7 +661,7 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
       <button type="button" id="navShop" data-go="shop" title="Shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="dot" id="navShopDot" hidden></span><span class="sub"><span id="navShopSub">Coming soon</span></span></button>
       <button type="button" id="lsOrd" data-go="orders" title="Charter board"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
       <button type="button" id="navBoard" data-go="board" title="Company board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
-      <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
+      <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Achievements and weather</span></button>
       <button type="button" id="navSet" data-go="settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Save backup, new company</span></button>
     </nav>
     <p class="sidefoot">Saves on this device. <span id="saved"></span></p>
@@ -788,7 +794,7 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
             <div id="eraNext"></div>
             <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
             <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
-            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
+            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div><div class="cbtns"><button class="act" type="button" id="achAll">All achievements</button></div></div>
           </section>
         </div>
         <div class="tpane" id="lpLog" data-pane="logging:log" role="tabpanel" aria-labelledby="ltLog" hidden>
@@ -874,6 +880,12 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
       </div>
     </section>
     <section class="screen" id="scrAlm" data-screen="almanac" aria-labelledby="almTitle" hidden>
+      <section class="panel" id="achPanel">
+        <p class="eyebrow">Achievements</p>
+        <h2 id="achTitle">Company goals</h2>
+        <p class="meta" id="achMeta"></p>
+        <div id="achBody"></div>
+      </section>
       <section class="panel">
         <p class="eyebrow">Almanac</p>
         <h2 id="almTitle">Weather cards</h2>
@@ -1823,9 +1835,9 @@ var Core = (function(exports) {
 			target: 30
 		},
 		grade: {
-			text: "Earn 24 achievements",
+			text: "Earn 28 achievements",
 			stats: ["achievements"],
-			target: 24
+			target: 28
 		},
 		bunks: {
 			text: "Finish 60 lots",
@@ -3023,6 +3035,21 @@ var Core = (function(exports) {
 	* achievements, not 58, so a first landing still earns about as many perk picks.
 	*/
 	var GOALS_PER_DRAFT = 3;
+	/**
+	* One achievement pays at most this share of the next push inland now (of the current era's cost at the
+	* last era); the board holds the rest and pays it when the outpost reaches its next era. Since the rework,
+	* achievements already met in an earlier outpost unlock the moment camp closes, so without this a new
+	* landing at the cove could collect $200,000 and skip straight past Steam Camp.
+	*/
+	var ACH_PAY_CAP = .5;
+	function achievementPayCap(nextEraCost, currentEraCost) {
+		return Math.round(ACH_PAY_CAP * (Number.isFinite(nextEraCost) ? nextEraCost : currentEraCost));
+	}
+	/** [paid now, held for the next era] for `cash` owed under `cap`. */
+	function splitReward(cash, cap) {
+		const c = Math.max(0, cash), now = Math.min(c, Math.max(0, cap));
+		return [now, c - now];
+	}
 	/**
 	* Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's
 	* cost, or of the current era's cost once the last era is reached.
@@ -6482,6 +6509,7 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.ACH_PAY_CAP = ACH_PAY_CAP;
 	exports.ACH_RENAMED = ACH_RENAMED;
 	exports.ACH_TIERS = ACH_TIERS;
 	exports.ADVANCE_REPAY_SHARE = ADVANCE_REPAY_SHARE;
@@ -6627,6 +6655,7 @@ var Core = (function(exports) {
 	exports.achievementBar = achievementBar;
 	exports.achievementDef = achievementDef;
 	exports.achievementMet = achievementMet;
+	exports.achievementPayCap = achievementPayCap;
 	exports.achievementProgress = achievementProgress;
 	exports.advanceRepay = advanceRepay;
 	exports.applyMults = applyMults;
@@ -6804,6 +6833,7 @@ var Core = (function(exports) {
 	exports.speciesSeasonValue = speciesSeasonValue;
 	exports.splitDelivery = splitDelivery;
 	exports.splitOrder = splitOrder;
+	exports.splitReward = splitReward;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
 	exports.stallRescue = stallRescue;
@@ -6867,13 +6897,17 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], afkHeld:false, saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0,
+    // achievements rework (2026-10-28): lifetime counters that survive close camp. sp = kinds of tree felled; steamLater and firstMin stay unset until known
+    afkLots:0, prime:0, maxOrders:0, sp:{}, perks:0, curses:0, sawTop:0, toMill:0, beatFirst:0, dieselRuns:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
   millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather(),
   // the company advance (2026-10-28): crews advanced to unblock a zero-income stall, still owed (forgiven at close camp).
   // S.lastSale (the time of the last sale) is set by normalize() and close camp, so an old save's stall clock starts at its own time
-  adv:0});
+  adv:0,
+  // achievements rework (2026-10-28): reward cash over Core.ACH_PAY_CAP of the next push inland, held by the board until the next era (company-wide)
+  achHeld:0});
 // seasonal events (Core: packages/core/src/weather.ts): company-wide, one roll per season change on the events stream, rolled one season ahead.
 // changes -1 = not yet known (an old save): normalize() sets it from the winters already worked, so a veteran company gets no gentle start.
 function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes:-1, burnt:false, off:false, stats:{bad:0, guard:0, fires:0, burned:0, maxStreak:0}}; }
@@ -7127,7 +7161,7 @@ function buyTract(i){
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
   // the slot relists its own kind of lot; the AFK lot is not relisted until the next board
-  if (t.afk){ S.forSale.splice(i, 1); S.afkHeld = true; }
+  if (t.afk){ S.forSale.splice(i, 1); S.afkHeld = true; S.stats.afkLots++; }
   else { S.forSale[i] = genSlot(t.slot || 0); capSlot1(); }
   delete t.slot;
   note(`Bought ${t.name}: ${fmt(t.trees)} trees.`);
@@ -7196,7 +7230,7 @@ const ordFull = () => S.contracts.length >= ordCap();
 function accept(i){
   if (ordFull()) return;
   const o = S.offers[i]; if (!o) return;
-  S.contracts.push({...o, done:0, end:S.t + o.dur});
+  S.contracts.push({...o, done:0, end:S.t + o.dur}); S.stats.maxOrders = Math.max(S.stats.maxOrders || 0, S.contracts.length);
   S.offers.splice(i,1); applyQueue();
   note(`Signed with ${o.mill}: ${bf(o.vol)} in ${mins(o.dur)}, +${Math.round(o.prem*100)}%.`);
   render(true);
@@ -7204,9 +7238,12 @@ function accept(i){
 
 // ---------- simulation
 // species seasonal traits (hemlock tanbark in Spring and Summer, maple in Winter) come in through Core.seasonValueFactor
+// kinds of tree felled, for the achievements (a stand {species: trees} or a list of species)
+function markSp(x){ const sp = S.stats.sp; if (!x || Object.keys(sp).length >= 6) return;
+  for (const id of Array.isArray(x) ? x : Object.keys(x).filter(k => x[k] > 0)) if (!sp[id] && SP[id]) sp[id] = 1; }
 function fellK(t, k){
   if (!t.picked && (rulesAny || ignoresRules(t))){
-    t.left -= k; S.felled += k;
+    t.left -= k; S.felled += k; markSp(standOf(t));
     S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, effSeason()); // an Early freeze counts as Winter for species traits too (maple)
     const st = standOf(t); t.stand = Core.fellFromStand(st, Object.keys(st), k); // every species in proportion
     return;
@@ -7214,7 +7251,7 @@ function fellK(t, k){
   // the lot stash: fell what the rules pick, a set at a time (First trees, then the rest), at those trees' own figures
   for (let guard = 0; k > 0 && guard < 20; guard++){
     const v = cutOf(t), n = v.picking ? Math.min(k, Math.max(1, Math.floor(v.count + 1e-9))) : k;
-    t.left -= n; S.felled += n; k -= n;
+    t.left -= n; S.felled += n; k -= n; markSp(v.species);
     S.stems.bf += n*v.bf; S.stems.val += n*v.val*Core.seasonValueFactor(v.mix, effSeason());
     t.stand = Core.fellFromStand(standOf(t), v.species, n); if (v.picking) t.picked = true;
   }
@@ -7263,7 +7300,7 @@ function deliver(amt){
   let base = full, sent = 0;
   if (sh > 0){ const m = S.camps.sawmill, sale = Core.millLogSale(want, full*sh, m.cash); sent = sale.bf;
     if (sale.bf < want - 1e-9) millShortAt = S.t;
-    if (sale.bf > 0){ S.bulk.logs += sale.bf; S.run.toMill = (S.run.toMill || 0) + sale.bf;
+    if (sale.bf > 0){ S.bulk.logs += sale.bf; S.run.toMill = (S.run.toMill || 0) + sale.bf; S.stats.toMill += sale.bf;
       m.cash = Math.max(0, m.cash - sale.cost); m.logPaid = (m.logPaid || 0) + sale.cost; S.run.millPaid = (S.run.millPaid || 0) + sale.cost;
       base = full*(1 - sale.bf/amt) + sale.cost; } }
   if (S.camps.sawmill) flowNote(amt, sent);
@@ -7320,7 +7357,7 @@ function tick(dt){
   for (const k in cap){ const u = full[k] > 0 ? used[k]/full[k] : 1; S.util[k] = (S.util[k] ?? 1) + (u - (S.util[k] ?? 1))*Math.min(1, dt/3); }
   idleFinds(dt, full);
   // run milestones
-  if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
+  if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0; eraStats(S.run.era);
     queueDraft(.65, `Reached ${ERAS[S.run.era].name}`); } }
   // contracts
   for (const c of S.contracts.filter(c => S.t >= c.end)){
@@ -8012,24 +8049,43 @@ function renderDispatch(){
 }
 
 // ---------- achievements (definitions are data in packages/core)
+// lifetime era counters: outposts that reached Diesel Road, and the fastest Steam Camp on an outpost after the first (minutes)
+function eraStats(e){
+  if (S.achHeld > 0){ const [now, rest] = Core.splitReward(S.achHeld, achCap()); S.achHeld = rest; S.cash += now;
+    if (now > 0){ note(`The board paid the achievement rewards it held: +${money(now)}.`); toast({label:'Achievement rewards', name:`+${money(now)}`, line:`Held by the board until ${ERAS[e].name}.${rest > 0 ? ` ${money(rest)} more at the next era.` : ''}`}); } }
+  if (e === 2) S.stats.dieselRuns++;
+  if (e === 1 && S.run.n > 1){ const mn = (S.run.eraT[1] || 0)/60; if (!(S.stats.steamLater <= mn)) S.stats.steamLater = mn; }
+}
 const crewCount = () => Core.crewCount(S.own);
-const achMetric = m => m === 'deliv' ? S.stats.deliv : m === 'earned' ? S.earned : m === 'felled' ? S.felled : m === 'crew' ? crewCount() : m === 'era' ? S.era
-  : m === 'crewedStages' ? ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length : m === 'almanac' ? Object.keys(S.weather.seen).length : S.stats[m];
+// metrics read from the save (Core.AchMetric); anything not named here is a lifetime counter in S.stats
+const ACH_READ = {
+  deliv: () => S.stats.deliv, earned: () => S.earned, felled: () => S.felled, crew: () => crewCount(), era: () => S.era,
+  crewedStages: () => ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length, almanac: () => Object.keys(S.weather.seen).length,
+  closes: () => Math.max(0, (S.run.n || 1) - 1), shares: () => S.meta.total || 0, species: () => Object.keys(S.stats.sp || {}).length,
+  millRuns: () => S.camps.sawmill ? Math.max(0, (S.camps.sawmill.n || 1) - 1) : 0, bunk: () => S.structures['logging.bunkhouse'] || 0,
+  spOrders: () => Object.values(S.orders.filled).reduce((a, n) => a + (+n || 0), 0), fogLens: () => (S.found['logging.fog_glass'] || {}).total || 0,
+  items: () => Core.ITEMS.filter(i => S.found[i.id]).length,
+};
+const achMetric = m => ACH_READ[m] ? ACH_READ[m]() : S.stats[m];
 const ACH = Core.ACHIEVEMENTS;
+// one achievement pays at most half the next push inland now; the board holds the rest until the next era (Core.ACH_PAY_CAP)
+const achCap = () => Core.achievementPayCap(eraCost(S.era+1), eraCost(S.era));
 const achProg = a => Core.achievementProgress(a, achMetric);
 function checkAch(quiet){
   if (checkUnlocks(quiet)) render(true);
-  const got = [];
+  const got = []; let paidNow = 0, heldNow = 0;
   for (const a of ACH){
     if (S.ach.includes(a.id) || !Core.achievementMet(a, achMetric)) continue;
-    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.cash += a.cash; S.rep += a.rep; got.push(a);
-    note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(a.cash)}` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
+    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.rep += a.rep; got.push(a);
+    const [now, held] = Core.splitReward(a.cash, achCap() - paidNow); paidNow += now; S.cash += now; S.achHeld += held; heldNow += held;
+    note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(now)}` : '') + (held > 0 ? ` (${money(held)} held until the next era)` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
   }
   const bn = checkBounties();
   if (!got.length){ if (bn) render(true); return; }
   S.run.goals = (S.run.goals||0) + got.length; goalDrafts();
-  if (quiet || got.length > 3){ toast({name: `${got.length} achievements`, line: `+${money(got.reduce((x,a) => x + a.cash, 0))} · reputation +${got.reduce((x,a) => x + (a.rep||0), 0)}`}); }
-  else got.forEach(a => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
+  const heldTxt = heldNow > 0 ? `${money(heldNow)} held until the next era` : '';
+  if (quiet || got.length > 3){ toast({name: `${got.length} achievements`, line: [`+${money(paidNow)}`, heldTxt, `reputation +${got.reduce((x,a) => x + (a.rep||0), 0)}`].filter(Boolean).join(' · ')}); }
+  else got.forEach((a, i) => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', i === got.length - 1 ? heldTxt : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
   render(true);
 }
 // toasts wait while a sheet (mini-game, draft, warehouse, ...) is open so they never cover it; at most 2 show on a phone
@@ -8064,7 +8120,7 @@ function armToast(){
   setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); armToast(); }, 400); }, 4500);
 }
 function renderGoals(){
-  const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
+  const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder && Core.closesNeeded(a) <= achMetric('closes')).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
     .sort((x,y) => y.r - x.r).slice(0,3);
   list('goals', open.map(o => o.a.id).join(), open.map(o => `<div class="goal"><div class="line"><b>${o.a.name}</b><span class="spec">${o.a.cash ? money(o.a.cash) : ''}${o.a.rep ? ` · rep +${o.a.rep}` : ''}</span></div>
     <p>${o.a.desc}</p><div class="bar"><i data-g="${o.a.id}"></i></div></div>`).join(''));
@@ -9086,7 +9142,8 @@ function runDone(kind, q, again, sp){
   if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
   if (!again){ gameFind(kind, q, sp); clearRoad(kind, q); }
 }
-function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met'); } }
+const GOALS_N = Core.GOALS_PER_DRAFT; // a perk pick every few goals (new achievements and repeat bounties)
+function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= GOALS_N){ r.goalMark = (r.goalMark||0) + GOALS_N; queueDraft(.35, `${['','One','Two','Three','Four','Five'][GOALS_N] || GOALS_N} goals met`); } }
 function contractFilled(){
   S.run.cFilled++; if (perk('snowball')) S.run.snow++;
   if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five orders filled');
@@ -9102,7 +9159,7 @@ function currentOffer(camp = 'logging'){ const r = dRun(camp); if (!r || !r.dq.l
 function pickPerk(id, camp = 'logging'){
   const r = dRun(camp), off = currentOffer(camp); if (!off || !off.includes(id)) return false;
   r.perks.push(id); r.dq.shift(); r.drafts = r.dq.length; r.offer = null;
-  const p = PMAP[id]; note(`${camp === 'sawmill' ? 'Mill perk' : 'Perk'} (${RARITY[p.r].label.toLowerCase()}): ${p.name}.`);
+  const p = PMAP[id]; S.stats.perks++; if (p.r === 'curse') S.stats.curses++; note(`${camp === 'sawmill' ? 'Mill perk' : 'Perk'} (${RARITY[p.r].label.toLowerCase()}): ${p.name}.`);
   toast({label:`${RARITY[p.r].label} perk`, name:p.name, line:p.desc});
   return true;
 }
@@ -9116,6 +9173,7 @@ function markerReroll(){ if (!canMarker()) return false; S.bank[MARKER]--; S.run
 function closeCamp(){
   if (!canClose()) return 0;
   const gain = legacyNow(), r = S.run, bonus = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct), storm = stormMult() - 1;
+  { const mn = runMin(); if (r.n === 1 || !(S.stats.firstMin > 0)) S.stats.firstMin = S.stats.firstMin > 0 ? S.stats.firstMin : mn; else if (mn < S.stats.firstMin) S.stats.beatFirst++; }
   S.meta.legacy += gain; S.meta.total += gain;
   S.runs.unshift({n:r.n, min:Math.round(runMin()), deliv:r.deliv, earned:r.earned, legacy:gain, era:S.era, mods:[...r.mods], perks:r.perks.length, eraT:r.eraT.map(x => x == null ? null : Math.round(x/60)), bonus});
   S.runs.length = Math.min(S.runs.length, 12);
@@ -9123,7 +9181,7 @@ function closeCamp(){
   // the warehouse, special orders, structures and the Sawmill belong to the company, not this outpost (pillar 4)
   const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, year:S.year, season:S.season, st:S.st,
     bank:S.bank, found:S.found, locks:S.locks, newCount:S.newCount, orders:S.orders, structures:S.structures, camps:S.camps, shares:S.shares, story:S.story, millShare:S.millShare, bulk:S.bulk, rng:S.rng, mruns:S.mruns,
-    weather:S.weather}; // the weather is the coast's, not the outpost's: closing camp never touches it
+    weather:S.weather, achHeld:S.achHeld}; // the weather is the coast's, not the outpost's: closing camp never touches it
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
   const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
   S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
@@ -9150,8 +9208,13 @@ function buyMeta(id){
   return true;
 }
 function normalize(){
-  const hadSlots = !!(S.stats && typeof S.stats.slots === 'number');
+  const hadSlots = !!(S.stats && typeof S.stats.slots === 'number'), hadAch2 = !!(S.stats && typeof S.stats.prime === 'number');
   S.stats = Object.assign(fresh().stats, S.stats || {});
+  if (!S.stats.sp || typeof S.stats.sp !== 'object' || Array.isArray(S.stats.sp)) S.stats.sp = {};
+  ['afkLots','prime','maxOrders','perks','curses','sawTop','toMill','beatFirst','dieselRuns'].forEach(k => { const v = S.stats[k]; S.stats[k] = typeof v === 'number' && isFinite(v) ? Math.max(0, v) : 0; });
+  ['steamLater','firstMin'].forEach(k => { if (!(typeof S.stats[k] === 'number' && isFinite(S.stats[k]) && S.stats[k] >= 0)) delete S.stats[k]; });
+  // achievements rework (2026-10-28): earned ids that survive stay, a few map to their new id, removed ones drop (their cash and reputation stay)
+  S.ach = Core.migrateAchievements(S.ach);
   S.stats.tracts = Math.max(0, Math.floor(+S.stats.tracts || 0));
   // lot slots (2026-10-28): an old save opens the slots its lifetime lots cut out have earned, without the unlock notes
   if (!hadSlots) S.stats.slots = Core.slotsOpen(S.stats.tracts);
@@ -9170,7 +9233,7 @@ function normalize(){
   if (!r.init){ // an existing company becomes run 1, already under way
     r.init = true; r.t0 = 0; snapBase(); r.bounty = S.ach.slice(); r.deliv = S.stats.deliv || 0; r.earned = S.earned || 0; r.era = S.era; r.achMark = S.ach.length;
   }
-  r.drafts = r.dq.length;
+  r.drafts = r.dq.length; r.bounty = Core.migrateAchievements(r.bounty);
   // playtest 2: company-wide state (older saves have none of it; nested objects merge with their defaults)
   const obj = v => v && typeof v === 'object' && !Array.isArray(v);
   ['bank','found','structures','camps','bulk','dropT'].forEach(k => { if (!obj(S[k])) S[k] = {}; });
@@ -9227,7 +9290,7 @@ function normalize(){
   // seasonal events (2026-10-25): older saves have no weather; the first roll comes at the next season change
   S.weather = Object.assign(freshWeather(), obj(S.weather) ? S.weather : {});
   // the company advance (2026-10-28): an old save owes nothing and its stall clock starts now
-  S.adv = Math.max(0, num(S.adv)); S.lastSale = typeof S.lastSale === 'number' && isFinite(S.lastSale) && S.lastSale <= S.t ? S.lastSale : num(S.t);
+  S.adv = Math.max(0, num(S.adv)); S.achHeld = Math.max(0, num(S.achHeld)); S.lastSale = typeof S.lastSale === 'number' && isFinite(S.lastSale) && S.lastSale <= S.t ? S.lastSale : num(S.t);
   S.stats.advances = Math.max(0, num(S.stats.advances));
   if (!obj(S.weather.seen)) S.weather.seen = {};
   S.weather.stats = Object.assign(freshWeather().stats, obj(S.weather.stats) ? S.weather.stats : {});
@@ -9249,8 +9312,24 @@ function normalize(){
   if (!CAMP_TABS.logging.includes(S.ui.logTab)) S.ui.logTab = 'work';
   if (!CAMP_TABS.sawmill.includes(S.ui.millTab)) S.ui.millTab = 'mill';
   if (!['stock', 'log', 'ledger'].includes(S.ui.whTab)) S.ui.whTab = 'stock';
+  if (!hadAch2) seedAchStats();
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
+}
+// achievements rework (2026-10-28): a save from before it gets its new lifetime counters from what it still remembers
+// (the past-outposts list keeps 12, the warehouse's finds, the current outpost); counts it cannot know start at 0
+function seedAchStats(){
+  const st = S.stats, past = S.runs, cur = S.run, crateP = Core.FOUNDING_CRATE.items.filter(i => IDEF(i.item) && IDEF(i.item).category === 'prime').reduce((a, i) => a + i.qty, 0);
+  Core.ITEMS.filter(d => d.category === 'prime').forEach(d => { const f = S.found[d.id]; if (f) st.prime += Math.max(0, (+f.total || 0) - (S.story.sawmillOpened ? crateP : 0)); });
+  st.dieselRuns = past.filter(x => x.era >= 2).length + (cur.era >= 2 ? 1 : 0);
+  const first = past.find(x => x.n === 1); if (first && first.min > 0) st.firstMin = first.min;
+  if (st.firstMin > 0) st.beatFirst = past.filter(x => x.n > 1 && x.min > 0 && x.min < st.firstMin).length;
+  const steam = past.filter(x => x.n > 1 && Array.isArray(x.eraT) && x.eraT[1] != null).map(x => +x.eraT[1]).filter(x => x >= 0);
+  if (steam.length) st.steamLater = Math.min(...steam);
+  st.perks = past.reduce((a, x) => a + (+x.perks || 0), 0) + cur.perks.length; st.curses = cur.perks.filter(id => PMAP[id] && PMAP[id].r === 'curse').length;
+  st.maxOrders = S.contracts.length; st.toMill = +cur.toMill || 0; st.afkLots = S.afkHeld ? 1 : 0;
+  if (S.felled > 0) ['pine', 'hemlock'].forEach(id => st.sp[id] = 1); // every company starts on the Cove woodlot
+  (S.tracts || []).forEach(t => { if (t.trees > t.left) (t.mix || []).forEach(m => { if (SP[m[0]]) st.sp[m[0]] = 1; }); });
 }
 
 // --- UI
@@ -9377,7 +9456,7 @@ const SODEF = id => Core.SPECIAL_ORDERS.find(d => d.id === id);
 function addItem(id, qty, quiet){
   if (!(qty > 0)) return;
   S.bank[id] = bankN(id) + qty; S.newCount = (S.newCount || 0) + qty;
-  const d = IDEF(id), f = S.found[id];
+  const d = IDEF(id), f = S.found[id]; if (d.category === 'prime') S.stats.prime += qty;
   if (!f){ S.found[id] = {first:`${season()} ${S.year}`, total:qty}; note(`New find: ${d.name}.`); toast({label:'New find', name:d.name, line:d.desc}); }
   else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime timber' : d.category === 'mill' ? 'Mill goods' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc}); }
   postOrders(); autoFill();
@@ -9722,7 +9801,7 @@ function sawFinish(timeUp){
   const qs = Math.min(Core.quarterSawn(L.prime, q, score), nClear);
   if (qs){ bfG.clear = Math.max(0, bfG.clear - qs*clearW*W.cellBf); addItem('sawmill.quarter_sawn', qs); }
   const b0 = bankN(BUNDLE), rev = sawLumber(bfG, L.giant ? Core.BIG_STICK_CLEAR : 1), nb = bankN(BUNDLE) - b0;
-  S.ui.sawRuns = (S.ui.sawRuns || 0) + 1; m.best = Math.max(m.best || 0, score);
+  S.ui.sawRuns = (S.ui.sawRuns || 0) + 1; m.best = Math.max(m.best || 0, score); if (q >= .97) S.stats.sawTop++;
   millRunDone(q);
   const chainOk = q >= .97 && mperk('chaincarriage') && W.chain < 3;
   const tier = q >= .97 ? 'Top sawing' : q >= .55 ? 'Good sawing' : 'Under target, but every board sells';
@@ -9942,7 +10021,7 @@ function renderFrame(){
   const sc = S.ui.screen, mill = sc === 'sawmill';
   document.querySelectorAll('.screen[data-screen]').forEach(el => { const on = el.dataset.screen === sc; if (el.hidden === on) el.hidden = !on; });
   $('logView').hidden = sc !== 'logging'; $('millView').hidden = !mill;
-  if (sc === 'almanac') renderAlm();
+  if (sc === 'almanac'){ renderAch(); renderAlm(); }
   document.querySelectorAll('.nav [data-go]').forEach(b => { const cur = b.dataset.go === sc; if (cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   const sm = document.querySelector('.brand h1 small'), st = mill ? 'Sawmill · Whistle Pond · 1890' : 'Logging · Fogbound Coast · 1890'; if (sm && sm.textContent !== st) sm.textContent = st;
   // camps: outpost number and the close-camp bar
@@ -10021,6 +10100,20 @@ function renderBunk(){
 const whEl = $('wh');
 function openWh(tab){ if (tab === 'almanac'){ go('almanac'); return; } if (tab) S.ui.whTab = tab; go('warehouse'); const f = whEl.querySelector('#whTabs button[aria-pressed="true"]'); if (f) f.focus(); }
 function closeWh(){ go(S.ui.camp); }
+// the achievements list (rework 2026-10-28), on the Almanac screen: grouped by tier; locked ones say how many close camps they need
+function renderAch(){
+  const closed = achMetric('closes'), done = new Set(S.ach), pct = a => { const b = Core.achievementBar(a, achMetric); return b ? Math.floor(Math.min(1, b[0]/b[1])*20) : 0; };
+  const key = S.ach.join() + '|' + closed + '|' + ACH.map(a => done.has(a.id) ? '' : pct(a)).join('');
+  const reward = a => [a.cash ? money(a.cash) : '', a.rep ? `rep +${a.rep}` : ''].filter(Boolean).join(' · ');
+  const row = a => {
+    const got = done.has(a.id), need = Core.closesNeeded(a) - closed, bar = got ? null : Core.achievementBar(a, achMetric);
+    const lock = !got && need > 0 ? (closed === 0 ? 'Close camp to unlock' : `Close camp ${need} more ${need === 1 ? 'time' : 'times'}`) : '';
+    return `<div class="goal${got ? ' done' : ''}${lock ? ' locked' : ''}" data-ach="${a.id}"><div class="line"><span class="gl"><b>${a.name}</b>${got ? '<span class="chipl ownd">Done</span>' : ''}${lock ? `<span class="chipl lockchip">${lock}</span>` : ''}</span><span class="spec">${reward(a)}</span></div>
+      <p>${a.desc}${bar && !lock ? ` ${fmt(Math.floor(bar[0]))} of ${fmt(bar[1])}.` : ''}</p>${bar && !lock ? `<div class="bar"><i style="width:${(Math.min(1, bar[0]/bar[1])*100).toFixed(1)}%"></i></div>` : ''}</div>`; };
+  list('achBody', key, Core.ACH_TIERS.map(t => { const xs = ACH.filter(a => a.tier === t.id), n = xs.filter(a => done.has(a.id)).length;
+    return `<div class="group achtier" data-tier="${t.id}"><h3>${t.name}<small>${n} of ${xs.length}</small></h3><p class="meta">${t.desc}</p>${xs.map(row).join('')}</div>`; }).join(''));
+  const m = `${S.ach.length} of ${ACH.length} earned · reputation ${S.rep} (+${S.rep}% on sales). A reward pays up to ${money(achCap())} now; the board holds the rest until your next era${S.achHeld > 0 ? ` (holding ${money(S.achHeld)})` : ''}.`; if ($('achMeta').textContent !== m) $('achMeta').textContent = m;
+}
 // the Almanac screen (slice 2: its own screen, no longer a warehouse tab): every season's weather cards, seen and unseen
 function renderAlm(){
   const W = S.weather, seen = Core.SEASON_EVENTS.filter(e => W.seen[e.id]).length, tone = {none:'Calm', good:'Good', neutral:'Mixed', bad:'Bad'};
@@ -10202,7 +10295,7 @@ function renderMill(){
 function bindCompany(){
   $('lsCash').onclick = () => openWh('ledger'); $('lsShares').onclick = () => go('board');
   document.querySelectorAll('.nav [data-go]').forEach(b => b.onclick = () => { go(b.dataset.go); if (!app.classList.contains('drawer')) b.focus(); });
-  $('lsWh').onclick = () => openWh(S.ui.whTab);
+  $('lsWh').onclick = () => openWh(S.ui.whTab); $('achAll').onclick = () => go('almanac', () => reveal('achPanel'));
   // Camp tab: first tap goes to your camp; a second tap (already on a camp) opens the camp picker
   $('btCamp').setAttribute('aria-haspopup', 'dialog'); $('btCamp').setAttribute('aria-expanded', 'false'); $('btCamp').setAttribute('aria-controls', 'campPick');
   $('btCamp').onclick = () => { if (CAMP_SCREENS.includes(S.ui.screen)) toggleCampPick(); else go(S.ui.camp); };

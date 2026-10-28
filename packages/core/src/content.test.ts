@@ -112,7 +112,7 @@ describe("improvements' crews' route", () => {
   it('progress reports whichever route is closer to done', () => {
     expect(improvementProgress('swamper', { run_skid: 1 })).toEqual([1, 3]);
     expect(improvementProgress('swamper', { run_skid: 1, contracts: 5 })).toEqual([5, 6]);
-    expect(improvementProgress('grade', { buck85: 0, achievements: 20 })).toEqual([20, 24]);
+    expect(improvementProgress('grade', { buck85: 0, achievements: 20 })).toEqual([20, 28]);
     expect(improvementProgress('gunstick', { contracts: 99 })).toEqual([0, 3]);
   });
   it('text names both routes', () => {

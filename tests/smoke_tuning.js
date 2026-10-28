@@ -23,12 +23,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.era=0;`);
 
  // 2. Repeat bounties pay 25% and stop at 20% of the next push inland ($3,000 at the cove)
- E(`S.ach.push('d10k','d50k'); S.run.bounty=[]; S.run.base={deliv:0,earned:0,felled:0}; S.run.bountyPaid=0; S.stats.deliv=6e4; S.cash=0;`);
- ok(E('checkBounties()')===2 && E('S.cash')===Math.round(150*.25)+Math.round(500*.25),'bounties pay 25% of the original reward: '+E('S.cash'));
- E(`S.ach.push('d250k','d1m','d3m'); S.stats.deliv=4e6; S.cash=0;`);
+ // (achievements rework 2026-10-28: the delivery ladders are now d50k $950, d1m $7,800, d3m $33,500, d10m $70,000)
+ E(`S.ach.push('d50k'); S.run.bounty=[]; S.run.base={deliv:0,earned:0,felled:0}; S.run.bountyPaid=0; S.stats.deliv=6e4; S.cash=0;`);
+ ok(E('checkBounties()')===1 && E('S.cash')===Math.round(950*.25),'bounties pay 25% of the original reward: '+E('S.cash'));
+ E(`S.ach.push('d1m','d3m','d10m'); S.stats.deliv=1.1e7; S.cash=0;`);
  const paid=E('checkBounties()'), cash=E('S.cash');
  ok(paid===3,'three more bounties met: '+paid);
- ok(E('S.run.bountyPaid')===3000 && cash===3000-163,'bounty cash stops at $3,000 an outpost at the cove: '+cash);
+ ok(E('S.run.bountyPaid')===3000 && cash===3000-238,'bounty cash stops at $3,000 an outpost at the cove: '+cash);
  ok(E('checkBounties()')===0 && E('S.cash')===cash,'each bounty pays once per outpost');
 
  // 3. Crews' route: Swamping crew unlocks from 6 filled charter orders with no mini-game runs
