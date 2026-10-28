@@ -165,7 +165,7 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .chipl.afkchip{color:var(--muted);margin-left:4px}
 /* idle cutting stocked (2026-10-28): Your lots and the AFK listing */
 .meta.stocked b{font-family:var(--f-num);font-weight:600;color:var(--ink)}
-.row.lot p.afkt{color:var(--ink);font-family:var(--f-num);font-size:.78rem}
+.row.lot p.afkt{color:var(--ink);font-size:.8rem}
 /* lot slots: a slot's name on its listing, and compact rows for locked slots */
 .chipl.slotchip,.chipl.lockchip{color:var(--muted);margin-left:4px}
 .chipl.rare{color:var(--warn);margin-left:4px}
@@ -225,8 +225,9 @@ details.notei .ib{display:inline-grid;place-items:center;width:22px;height:22px;
 details.notei[open] .ib{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 details.notei[open] summary{justify-content:flex-start}
 .meta.statkey .good{color:var(--good)} .meta.statkey .bad{color:var(--bad)}
-/* phones: the buy button drops under the listing so the chips get the full width */
-@media (max-width:520px){.row.lot{flex-wrap:wrap}.row.lot .info{flex:1 1 100%}.row.lot .btns{margin-left:auto}}
+/* phones: the listing cards stack (the buy button under the chips, right-aligned). No flex-wrap here: in the cards'
+   column layout a wrap pushed the buy button into a second column off the right edge (fixed 2026-10-28) */
+@media (max-width:520px){.row.lot .btns{margin-left:auto}}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
 .contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
