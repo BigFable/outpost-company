@@ -22,7 +22,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(/Fishing/.test($('navFog').textContent) && /In the fog/.test($('navFog').textContent) && !$('navFog').matches('button'),'Fishing shows greyed "in the fog" and is not a button');
  ok(!!$('tabLog').querySelector('.pb i'),'Logging row has a close-camp bar');
  for (const [id,sc] of [['lsWh','warehouse'],['navShop','shop'],['lsOrd','orders'],['navBoard','board'],['navAlm','almanac'],['navSet','settings'],['tabLog','logging']]){
-   $(id).click(); ok(E('S.ui.screen')===sc && (sc==='almanac' ? JSON.stringify(shown())==='["warehouse"]' && E('S.ui.whTab')==='almanac' : JSON.stringify(shown())===`["${sc}"]`) && $(id).getAttribute('aria-current')==='page',`sidebar ${id} opens the ${sc} screen`);
+   $(id).click(); ok(E('S.ui.screen')===sc && JSON.stringify(shown())===`["${sc}"]` && $(id).getAttribute('aria-current')==='page',`sidebar ${id} opens the ${sc} screen`);
  }
  ok(!!$('scrOrders').querySelector('#spGroup') && !!$('scrBoard').querySelector('#legacyPanel') && !!$('scrSet').querySelector('#reset') && !!$('scrShop').querySelector('#shopBody') && !!$('whGrid'),'panels moved whole: orders on the Charter board, the board on the Company board, New company in Settings, shop and grid containers exist');
  ok(!!$('logView').querySelector('#chain') && !!$('logView').querySelector('#sales') && !!$('logView').querySelector('#eq'),'the Logging screen keeps the work chain, land office and crews');
@@ -57,7 +57,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  $('btWh').click(); ok(E('S.ui.screen')==='warehouse' && $('btWh').getAttribute('aria-current')==='page','bottom tab Warehouse');
  $('btShop').click(); ok(E('S.ui.screen')==='shop','bottom tab Shop');
  $('btCamp').click(); ok(E('S.ui.screen')==='logging' && $('btCampL').textContent==='Logging','bottom tab Camp goes back to the last camp');
- $('btCamp').click(); ok(E('S.ui.screen')==='sawmill' && $('btCampL').textContent==='Sawmill','tapping Camp again switches camps');
+ $('btCamp').click(); ok(E('S.ui.screen')==='logging' && !$('campPick').hidden && $('btCamp').getAttribute('aria-expanded')==='true','tapping Camp again opens the camp picker (slice 2)');
+ [...$('cpList').querySelectorAll('[data-pick]')].find(b=>b.dataset.pick==='sawmill').click(); ok(E('S.ui.screen')==='sawmill' && $('btCampL').textContent==='Sawmill' && $('campPick').hidden,'picking Sawmill switches camps');
  $('btMore').click(); ok($('app').classList.contains('drawer') && !$('drawerBg').hidden && $('btMore').getAttribute('aria-expanded')==='true','More opens the sidebar drawer');
  $('navAlm').click(); ok(!$('app').classList.contains('drawer') && E('S.ui.screen')==='almanac','picking a row closes the drawer');
  $('btMore').click(); $('drawerBg').click(); ok(!$('app').classList.contains('drawer'),'tapping the shade closes the drawer');

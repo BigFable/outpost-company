@@ -131,11 +131,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    for(let i=0;i<3000;i++){ W.streak=0; if(Core.eventDef(rollWeather(SEASONS[i%4])).tone==='bad') bad++; } Object.assign(W, keep); r.push(bad); } return r; })()`);
  ok(sig[1]<sig[0]*0.8 && sig[1]>sig[0]*0.6,`Storm signals: bad weather about 30% rarer (${sig[1]} vs ${sig[0]} of 3000)`);
 
- // 7. the Almanac page in the warehouse
- E(`openWh('almanac')`); const ab=d.getElementById('whBody').textContent;
+ // 7. the Almanac screen (its own screen since UI rework slice 2; it used to be a warehouse tab)
+ E(`go('almanac')`); const ab=d.getElementById('almBody').textContent;
  ok(/cards seen/.test(ab) && /Ice bridge/.test(ab) && /\?\?\?/.test(ab) && /Next season: Blizzard/.test(ab),'Almanac page lists seen cards, hides unseen ones, and shows the almanac’s next card');
- ok(E(`[...$('whTabs').querySelectorAll('button')].some(b=>b.dataset.t==='almanac')`),'Almanac tab in the warehouse');
- E('closeWh()');
+ ok(!d.getElementById('scrAlm').hidden && d.getElementById('wh').hidden && !E(`[...$('whTabs').querySelectorAll('button')].some(b=>b.dataset.t==='almanac')`),'the Almanac is its own screen, not a warehouse tab');
+ E(`go('logging')`);
 
  // 8. weather survives close camp (company-wide); a Supply ship cheapens crews and land
  setEv('supply_ship'); const eq=E(`EQ.find(e=>e.id==='axeman')`); ok(E(`eqCost(EQ.find(e=>e.id==='axeman'))`)===Math.ceil(eq.cost*0.85*Math.pow(1.15,E('own("axeman")'))),'Supply ship: crews 15% cheaper');

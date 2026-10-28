@@ -458,7 +458,7 @@ button.tcell:hover{background:var(--bg)}
 .runbar .rbnet .sub{font-size:12px;color:var(--muted)}
 html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(--both) + 8px)}
 .bottom,.drawerbg{display:none}
-.app.drawer~.toasts{display:none}
+.app.drawer .toasts{display:none}
 /* mini-games open inside the main area on a computer: the sidebar dims, cash and the bell stay in view */
 @media (min-width:701px) and (min-height:521px){
   #mg.modal{left:var(--sidew);top:var(--toph);z-index:25;background:var(--bg);align-items:flex-start;padding:14px 18px}
@@ -466,10 +466,22 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   #mg .mgc{width:min(100%,max(420px,calc((100vh - var(--toph) - 260px)*1.6)));margin:0 auto}
   .app.mgopen .side{filter:grayscale(.6);opacity:.55}
 }
+/* mid width (tablets, small laptops): the sidebar is an icon rail; the menu button shows it with names over the page */
 @media (min-width:701px) and (max-width:1060px){
-  :root{--sidew:200px}
+  :root{--sidew:72px}
   .tcell{padding:6px 10px}
   .tcell.mkt{display:none}
+  .app:not(.drawer) .side .sub,.app:not(.drawer) .side .pb,.app:not(.drawer) .navh,.app:not(.drawer) .brand h1,.app:not(.drawer) .brand p,.app:not(.drawer) .sidefoot,.app:not(.drawer) .side .ncnt{display:none}
+  .app:not(.drawer) .side .nm{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .app:not(.drawer) .brand{padding:7px 0;display:flex;justify-content:center}
+  .app:not(.drawer) .nav+.navh+.nav{border-top:2px solid var(--ink)}
+  .app:not(.drawer) .nav>button,.app:not(.drawer) .nav>.locked{grid-template-columns:1fr;justify-items:center;padding:12px 0;position:relative;min-height:52px}
+  .app:not(.drawer) .nav .dot{position:absolute;top:9px;right:15px}
+  .railbtn{display:flex}
+  .app.drawer .side{position:fixed;left:0;top:0;bottom:0;height:auto;width:260px;z-index:48;box-shadow:0 0 40px rgba(0,0,0,.35)}
+  .app.drawer .brand{position:relative;padding-right:60px}
+  .app.drawer .railbtn{position:absolute;top:8px;right:8px}
+  .drawerbg:not([hidden]){display:block;position:fixed;inset:0;z-index:47;background:rgba(0,0,0,.35)}
 }
 @media (max-width:700px){
   :root{--toph:52px;--both:60px}
@@ -498,6 +510,118 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   .toasts{bottom:calc(var(--both) + 12px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:reduce){.side{transition:none!important}}
+/* ---------- UI rework slice 2: camp header, camp tabs, stage cards, land office cards, camp picker, toasts in the top bar */
+.railbtn{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:0}
+.railbtn:hover{border-color:var(--ink)}
+@media (min-width:701px) and (max-width:1060px){.railbtn{display:flex}}
+/* wide screens: the current lot beside the stage cards */
+@media (min-width:1280px){
+  #lpWork{grid-template-columns:minmax(300px,360px) minmax(0,1fr);align-items:start}
+  #lpWork .standgrid{grid-template-columns:minmax(0,120px) minmax(0,1fr)}
+}
+.tinfo{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:stretch}
+/* camp header: where you are, the close-camp bar, perks and the two big buttons */
+.chead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 18px;align-items:center;padding:14px 16px}
+.chead .eyebrow{margin:0 0 2px}
+.chead .runno{font-family:inherit;font-weight:inherit;font-size:inherit;color:inherit}
+.chead h2{font-size:1.4rem;line-height:1.15;overflow-wrap:anywhere}
+.chstats{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.85rem;color:var(--muted);margin-top:4px}
+.chstats b{font-family:var(--f-num);font-weight:600;color:var(--ink)}
+.chstats .rbnet b.pos{color:var(--good)} .chstats .rbnet b.neg{color:var(--bad)}
+.chstats .sub{font-size:12px}
+.chbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.chbtns .draftbtn{margin-left:0}
+.hbtn{border:1px solid var(--ink);background:transparent;border-radius:4px;padding:6px 12px;font-weight:600;font-size:.84rem;min-height:36px;white-space:nowrap}
+.hbtn:disabled{opacity:.4;cursor:not-allowed}
+.hbtn:not(:disabled):hover{background:var(--ink);color:var(--panel)}
+.chbar{grid-column:1 / -1;min-width:0}
+.chbar .bar i{background:var(--needle2)}
+.chbar .bar.ready i{background:var(--accent)}
+.chgoal{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.chchips{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.chchips:empty,.chchips>span:empty{display:none}
+.chperks{display:contents}
+.chperks .chipl{cursor:help;text-transform:none;letter-spacing:0;font-size:12px;color:var(--rc,var(--muted));background:var(--panel2)}
+.chchips .rbmods .chipl{color:var(--bad)}
+/* in-screen tabs: a ruled strip under the header; a scrolling row on phones */
+.ctabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.ctabs::-webkit-scrollbar{display:none}
+.ctabs button{position:relative;flex:none;padding:10px 16px;min-height:44px;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;background:transparent;border-radius:0;font-weight:600;font-size:.9rem;color:var(--muted);white-space:nowrap}
+.ctabs button:hover{color:var(--ink)}
+.ctabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.ctabs .dot{position:absolute;top:9px;right:5px}
+.tpanes{display:flex;flex-direction:column;gap:14px;min-width:0}
+.tpane{display:flex;flex-direction:column;gap:14px;min-width:0}
+#lpWork{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+/* stage cards: Fell, Buck, Skid, Haul side by side (two by two on narrow screens) */
+.chain.cards4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.stc{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--bg)}
+.stc.neck{border-color:var(--warn);box-shadow:inset 0 3px 0 var(--warn)}
+.stc h3{display:flex;align-items:center;gap:8px;font-size:1.05rem;flex-wrap:wrap}
+.stc h3 .neckchip{margin-left:auto;color:var(--warn);display:none}
+.stc.neck h3 .neckchip{display:inline-block}
+.stc .rate{font-family:var(--f-num);font-size:.84rem;color:var(--ink);min-height:2.6em;overflow-wrap:anywhere}
+.stc .chips{display:flex;flex-wrap:wrap;gap:4px}
+.stc .chips .chipl{text-transform:none;letter-spacing:0;font-size:12px}
+.stc .chips .chipl.wx.good{color:var(--good)} .stc .chips .chipl.wx.bad{color:var(--bad)}
+.stc .chips .pace{color:var(--good)}
+.stc .cap{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.stc .cap i{display:block;height:100%;background:var(--needle2);width:0}
+.stc.neck .cap i{background:var(--warn)}
+.stc .spile .bar{height:5px}
+.stc .spile .bar i{background:var(--pile)}
+.barlbl{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:3px}
+.barlbl b{font-family:var(--f-num);color:var(--ink);font-weight:600;white-space:nowrap}
+.stc .rbtns{margin-top:auto;flex-direction:column;gap:6px}
+.stc .act{min-width:0;width:100%}
+.stc .act.game{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.stc .act.game:disabled{background:transparent;color:var(--muted);border-color:var(--line)}
+/* land office: one card per slot */
+#sales{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:6px}
+#sales>.row{flex-direction:column;align-items:stretch;border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--bg);min-width:0}
+#sales>.row+.row{border-top:1px solid var(--line)}
+#sales>.row .btns{margin-top:auto;justify-content:flex-end}
+#sales>.row.locked{border-style:dashed;background:transparent;justify-content:center}
+/* camp picker: a second tap on the Camp tab (phones) */
+.cpick{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(var(--both) + 8px + env(safe-area-inset-bottom,0px));z-index:46;width:min(300px,calc(100vw - 16px));
+  background:var(--panel);border:1px solid var(--ink);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px 0}
+.cpick h3{font-size:.95rem;padding:6px 14px}
+.cpick button,.cpick .locked{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0 10px;align-items:center;width:100%;min-height:56px;padding:6px 14px;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;text-align:left;font:inherit;color:var(--ink)}
+.cpick button[aria-current="page"]{background:var(--panel2);box-shadow:inset 3px 0 var(--accent)}
+.cpick b{font-weight:600}
+.cpick small{grid-column:2;font-size:12px;color:var(--muted)}
+.cpick .locked{color:var(--muted);opacity:.6}
+.cpick .locked b{font-style:italic;font-weight:500}
+@media (max-width:1060px){.chain.cards4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* computers: toasts show one at a time inside the top bar, over the season and price, so they never cover a control */
+@media (min-width:701px){
+  .toasts{position:absolute;inset:0;z-index:5;display:block;max-width:none;pointer-events:none}
+  .toasts .toast{position:absolute;inset:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;align-content:center;column-gap:10px;
+    min-width:0;max-width:none;margin:0;border:0;border-left:5px solid var(--accent);border-radius:0;box-shadow:none;padding:4px 14px;background:var(--panel);animation:tdrop .3s ease-out}
+  .toasts .toast:not(:first-child){visibility:hidden}
+  .toasts .toast small{grid-column:1 / -1}
+  .toasts .toast b{font-size:1rem;white-space:nowrap}
+  .toasts .toast span{align-self:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toasts .toast.out{transform:translateY(-6px)}
+}
+@keyframes tdrop{from{opacity:0;transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.toasts .toast{animation:none}}
+@media (max-width:700px){
+  .chead{grid-template-columns:minmax(0,1fr);padding:10px 12px;gap:6px}
+  .chead h2{font-size:1.1rem}
+  .chstats{font-size:.82rem;gap:2px 12px;margin-top:2px}
+  .chstats .sub{display:none}
+  .chbtns{justify-content:stretch}
+  .chbtns button{flex:1 1 0;min-height:44px}
+  .chchips .chperks{display:none}
+  .ctabs{margin:0 -12px;padding:0 6px}
+  .ctabs button{padding:10px 14px}
+  .tpanes,.tpane,#lpWork{gap:12px}
+  .stc{padding:10px}
+  .stc .act{min-height:44px}
+  .tray .ti button{min-height:44px}
+}
+@media (max-width:520px){#sales{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -511,25 +635,27 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><rect x="3" y="9" width="16" height="7" rx="3.5"/><ellipse cx="19" cy="12.5" rx="2" ry="3.5"/><circle cx="19" cy="12.5" r="1"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 15h18"/><path d="M5 15V9h14v6"/><circle cx="7.5" cy="18" r="2"/><circle cx="16.5" cy="18" r="2"/><path d="M8 9V6M16 9V6"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
 </svg>
 <div class="app" id="app">
   <aside class="side" id="side" aria-label="Company">
-    <div class="brand"><h1><small>Logging · Fogbound Coast · 1890</small>Outpost Company</h1><p>Land at the cove, cut timber and load the ship before winter.</p></div>
+    <div class="brand"><h1><small>Logging · Fogbound Coast · 1890</small>Outpost Company</h1><p>Land at the cove, cut timber and load the ship before winter.</p><button class="railbtn" id="railBtn" type="button" aria-label="Show names" title="Show names" aria-expanded="false" aria-controls="side"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button></div>
     <p class="navh" id="navhCamps">Camps</p>
     <nav class="nav" aria-labelledby="navhCamps">
-      <button type="button" id="tabLog" data-go="logging"><svg class="i" aria-hidden="true"><use href="#i-axe"/></svg><span class="nm">Logging</span><span class="dot" id="navLogDot" hidden></span><span class="sub"><span id="navLogSub">Outpost 1</span></span><span class="pb"><i></i></span></button>
-      <button type="button" id="tabMill" data-go="sawmill" hidden><svg class="i" aria-hidden="true"><use href="#i-saw"/></svg><span class="nm">Sawmill</span><span class="ncnt hot" id="millNew" hidden>New</span><span class="dot" id="navMillDot" hidden></span><span class="sub"><span id="navMillSub">Mill run 1</span></span><span class="pb"><i></i></span></button>
-      <div class="locked" id="navFog" aria-label="Fishing: in the fog, opens later"><svg class="i" aria-hidden="true"><use href="#i-fish"/></svg><span class="nm">Fishing</span><span></span><span class="sub">In the fog · opens later</span></div>
+      <button type="button" id="tabLog" data-go="logging" title="Logging"><svg class="i" aria-hidden="true"><use href="#i-axe"/></svg><span class="nm">Logging</span><span class="dot" id="navLogDot" hidden></span><span class="sub"><span id="navLogSub">Outpost 1</span></span><span class="pb"><i></i></span></button>
+      <button type="button" id="tabMill" data-go="sawmill" title="Sawmill" hidden><svg class="i" aria-hidden="true"><use href="#i-saw"/></svg><span class="nm">Sawmill</span><span class="ncnt hot" id="millNew" hidden>New</span><span class="dot" id="navMillDot" hidden></span><span class="sub"><span id="navMillSub">Mill run 1</span></span><span class="pb"><i></i></span></button>
+      <div class="locked" id="navFog" aria-label="Fishing: in the fog, opens later" title="Fishing: in the fog"><svg class="i" aria-hidden="true"><use href="#i-fish"/></svg><span class="nm">Fishing</span><span></span><span class="sub">In the fog · opens later</span></div>
     </nav>
     <p class="navh" id="navhCo">Company</p>
     <nav class="nav" aria-labelledby="navhCo">
-      <button type="button" id="lsWh" data-go="warehouse"><svg class="i" aria-hidden="true"><use href="#i-crate"/></svg><span class="nm">Warehouse</span><span class="ncnt hot" id="lsWhNew" hidden></span><span class="sub"><span id="lsWhV">0 items</span></span></button>
-      <button type="button" id="navShop" data-go="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="dot" id="navShopDot" hidden></span><span class="sub"><span id="navShopSub">Coming soon</span></span></button>
-      <button type="button" id="lsOrd" data-go="orders"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
-      <button type="button" id="navBoard" data-go="board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
-      <button type="button" id="navAlm" data-go="almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
-      <button type="button" id="navSet" data-go="settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Save backup, new company</span></button>
+      <button type="button" id="lsWh" data-go="warehouse" title="Warehouse"><svg class="i" aria-hidden="true"><use href="#i-crate"/></svg><span class="nm">Warehouse</span><span class="ncnt hot" id="lsWhNew" hidden></span><span class="sub"><span id="lsWhV">0 items</span></span></button>
+      <button type="button" id="navShop" data-go="shop" title="Shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="dot" id="navShopDot" hidden></span><span class="sub"><span id="navShopSub">Coming soon</span></span></button>
+      <button type="button" id="lsOrd" data-go="orders" title="Charter board"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
+      <button type="button" id="navBoard" data-go="board" title="Company board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
+      <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
+      <button type="button" id="navSet" data-go="settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Save backup, new company</span></button>
     </nav>
     <p class="sidefoot">Saves on this device. <span id="saved"></span></p>
   </aside>
@@ -538,8 +664,11 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   <header class="top" id="topbar" aria-label="Money and season">
     <button class="tcell cashc" id="lsCash" type="button"><small id="lsCashL">Cash · Logging</small><b id="lsCashV">$0</b><span class="minor only-desk" id="lsCashO"></span></button>
     <button class="tcell only-desk" id="lsShares" type="button"><small id="lsSharesL">Shares · Logging</small><b id="lsSharesV">0</b></button>
+    <div class="tinfo">
     <div class="tcell season"><div class="sn"><small>Season</small><b id="tSeason">Fall 1890</b></div><div class="wx"><span id="tSeasonSub"></span><span class="next" id="tSeasonNext" hidden></span></div></div>
     <div class="tcell only-desk mkt"><small>Log price</small><div class="spot"><b id="tMkt">×1.00</b><canvas id="spark" width="144" height="48" aria-hidden="true"></canvas><span class="minor" id="tMktSub"></span></div></div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    </div>
     <button class="bell" id="bellBtn" type="button" aria-label="Needs you now" aria-expanded="false" aria-controls="bellTray"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="ncnt" id="bellN" hidden></span></button>
   </header>
   <div class="tray" id="bellTray" hidden role="dialog" aria-labelledby="bellH"><h3 id="bellH">Needs you now</h3><div id="bellList"></div></div>
@@ -547,21 +676,29 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   <main class="main" id="main">
     <div class="dispatch" id="dispatch" hidden role="status" aria-live="polite"></div>
     <section class="screen" id="scrLog" data-screen="logging" aria-label="Logging">
-      <div class="runbar" id="runbar">
-        <span class="runno" id="rbRun">Outpost 1</span>
-        <span class="rbmods" id="rbMods"></span>
-        <span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span>
-        <span><b id="rbPerks">0</b> perks</span>
-        <span>Close now: <b id="rbLegacy">0</b> shares</span>
-        <span>Saved <b id="rbBank">0</b></span>
-        <button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button>
+      <div class="panel chead" id="runbar">
+        <div class="chmain">
+          <p class="eyebrow">Logging · <span class="runno" id="rbRun">Outpost 1</span> · <span id="rbEra">Cove Landing</span></p>
+          <h2 id="chLot">Cove woodlot</h2>
+          <div class="chstats"><span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span><span><b id="rbPerks">0</b> perks</span><span class="only-desk">Close now: <b id="rbLegacy">0</b> shares</span><span class="only-desk">Saved <b id="rbBank">0</b></span></div>
+        </div>
+        <div class="chbtns"><button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button><button class="hbtn" id="chClose" type="button">Close camp</button></div>
+        <div class="chbar"><div class="bar"><i id="chBar"></i></div><p class="chgoal" id="chGoal"></p></div>
+        <div class="chchips"><span class="rbmods" id="rbMods"></span><span class="chperks" id="chPerks"></span></div>
       </div>
       <div class="banner" id="short" hidden>Wages owed: <span id="owed"></span>. Crews work at half speed until sales pay it off. Haul by hand or sell gear to catch up.</div>
       <div class="banner info" id="stall" hidden></div>
       <div class="banner info" id="advOwed" hidden>Company advance owed: <span id="advAmt"></span>. Half of each log sale repays it.</div>
       <div class="banner info" id="stuck" hidden><b>No timber and no cash.</b> Take a hire job under Orders: the buyer gives the timber and pays an advance.</div>
-      <div class="grid" id="logView">
-        <div class="col">
+      <div class="ctabs" id="logTabs" role="tablist" aria-label="Logging">
+        <button type="button" role="tab" id="ltWork" data-camp="logging" data-t="work" aria-controls="lpWork">Work<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="ltLots" data-camp="logging" data-t="lots" aria-controls="lpLots">Lots<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="ltCrews" data-camp="logging" data-t="crews" aria-controls="lpCrews">Crews<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="ltCamp" data-camp="logging" data-t="camp" aria-controls="lpCamp">Camp<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="ltLog" data-camp="logging" data-t="log" aria-controls="lpLog">Log<span class="dot" hidden></span></button>
+      </div>
+      <div class="tpanes" id="logView">
+        <div class="tpane" id="lpWork" data-pane="logging:work" role="tabpanel" aria-labelledby="ltWork">
           <section class="panel">
             <p class="eyebrow">Current lot · Fogbound Coast</p>
             <h2 id="tName">Cove woodlot</h2>
@@ -600,7 +737,23 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
             </div>
             <p class="queue" id="queue"></p>
           </section>
-
+          <section class="panel">
+            <p class="eyebrow">Work chain</p>
+            <h2>Stump to mill</h2>
+            <p class="meta">Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove. The slowest stage sets your pace.</p>
+            <div class="chain" id="chain"></div>
+            <div class="millsl" id="millSl" hidden><label for="millShare"><span>Logs to the mill</span><b class="num" id="millShareV">up to 10%</b></label>
+              <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millFlow millSlMeta"><p class="meta" id="millFlow"></p><p class="meta" id="millSlMeta"></p><p class="meta" id="millLedger"></p></div>
+          </section>
+        </div>
+        <div class="tpane" id="lpLots" data-pane="logging:lots" role="tabpanel" aria-labelledby="ltLots" hidden>
+          <section class="panel">
+            <p class="eyebrow">Land office</p>
+            <h2>Lots for sale</h2>
+            <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
+            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
+            <div id="sales"></div>
+          </section>
           <section class="panel" id="queuePanel">
             <p class="eyebrow">Cutting queue</p>
             <h2>Your lots</h2>
@@ -617,16 +770,27 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
               <div class="stash" id="stash"></div>
             </div>
           </section>
-
-          <section class="panel">
-            <p class="eyebrow">Work chain</p>
-            <h2>Stump to mill</h2>
-            <p class="meta">Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove. The slowest stage sets your pace.</p>
-            <div class="chain" id="chain"></div>
-            <div class="millsl" id="millSl" hidden><label for="millShare"><span>Logs to the mill</span><b class="num" id="millShareV">up to 10%</b></label>
-              <input type="range" id="millShare" min="0" max="50" step="5" value="10" aria-describedby="millFlow millSlMeta"><p class="meta" id="millFlow"></p><p class="meta" id="millSlMeta"></p><p class="meta" id="millLedger"></p></div>
+        </div>
+        <div class="tpane" id="lpCrews" data-pane="logging:crews" role="tabpanel" aria-labelledby="ltCrews" hidden>
+          <section class="panel" id="yard">
+            <p class="eyebrow">Hiring</p>
+            <h2>Crews and machines</h2>
+            <div class="buyn" id="buyN" role="group" aria-label="How many to buy"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
+            <div id="eq"></div>
           </section>
-
+        </div>
+        <div class="tpane" id="lpCamp" data-pane="logging:camp" role="tabpanel" aria-labelledby="ltCamp" hidden>
+          <section class="panel">
+            <p class="eyebrow">Company</p>
+            <h2 id="coName">Cove Landing</h2>
+            <div class="era" id="eras"></div>
+            <div id="eraNext"></div>
+            <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
+            <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
+            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
+          </section>
+        </div>
+        <div class="tpane" id="lpLog" data-pane="logging:log" role="tabpanel" aria-labelledby="ltLog" hidden>
           <section class="panel" id="runPanel">
             <p class="eyebrow">This outpost</p>
             <h2 id="runTitle">Outpost 1</h2>
@@ -641,38 +805,29 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
             <ol id="ledger"></ol>
           </section>
         </div>
-
-        <div class="col">
-          <section class="panel" id="yard">
-            <p class="eyebrow">Hiring</p>
-            <h2>Crews and machines</h2>
-            <div class="buyn" id="buyN" role="group" aria-label="How many to buy"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
-            <div id="eq"></div>
-          </section>
-          <section class="panel">
-            <p class="eyebrow">Land office</p>
-            <h2>Lots for sale</h2>
-            <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
-            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
-            <div id="sales"></div>
-          </section>
-          <section class="panel">
-            <p class="eyebrow">Company</p>
-            <h2 id="coName">Cove Landing</h2>
-            <div class="era" id="eras"></div>
-            <div id="eraNext"></div>
-            <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
-            <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
-            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
-          </section>
-        </div>
       </div>
     </section>
     <section class="screen" id="scrMill" data-screen="sawmill" aria-label="Sawmill" hidden>
-      <div class="grid" id="millView">
-        <div class="col">
+      <div class="panel chead" id="mHead">
+        <div class="chmain">
+          <p class="eyebrow">Sawmill · <span id="mhRun">Mill run 1</span> · Whistle Pond</p>
+          <h2 id="mhName">Saw pit</h2>
+          <div class="chstats"><span>Sawing <b id="mhRate">0</b>/min</span><span>Income <b id="mhInc">$0</b>/min</span><span><b id="mhPerks">0</b> perks</span></div>
+        </div>
+        <div class="chbtns"><button class="draftbtn" id="mDraftBtn" type="button" hidden>Pick perk (1)</button><button class="hbtn" id="mhClose" type="button">Close mill</button></div>
+        <div class="chbar"><div class="bar"><i id="mhBar"></i></div><p class="chgoal" id="mhGoal"></p></div>
+        <div class="chchips"><span class="chperks" id="mhPerkChips"></span></div>
+      </div>
+      <div class="ctabs" id="millTabs" role="tablist" aria-label="Sawmill">
+        <button type="button" role="tab" id="mtMill" data-camp="sawmill" data-t="mill" aria-controls="mpMill">Mill<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="mtStructs" data-camp="sawmill" data-t="structs" aria-controls="mpStructs">Structures<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="mtSawyers" data-camp="sawmill" data-t="sawyers" aria-controls="mpSawyers">Sawyers<span class="dot" hidden></span></button>
+        <button type="button" role="tab" id="mtRun" data-camp="sawmill" data-t="run" aria-controls="mpRun">Run<span class="dot" hidden></span></button>
+      </div>
+      <div class="tpanes" id="millView">
+        <div class="tpane" id="mpMill" data-pane="sawmill:mill" role="tabpanel" aria-labelledby="mtMill">
           <section class="panel">
-            <p class="eyebrow">Sawmill · Whistle Pond</p>
+            <p class="eyebrow">Sawing</p>
             <h2 id="mName">Saw pit</h2>
             <p class="meta" id="mMeta"></p>
             <div class="facts" id="mFacts"></div>
@@ -681,27 +836,30 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
             <p class="spec" id="mSawWhy"></p>
             <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Clear sells at 3×, Select 2× and Common 1× the log price. Common makes plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
           </section>
-          <section class="panel">
-            <p class="eyebrow">This mill run</p>
-            <h2 id="mRunTitle">Mill run 1</h2>
-            <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 bd ft. Closing the mill resets only the mill.</p>
-            <button class="draftbtn" id="mDraftBtn" type="button" hidden>Pick perk (1)</button>
-            <div class="facts" id="mRunStats" style="margin-top:8px"></div>
-            <div class="group" style="margin-top:12px"><h3>Perks<small id="mPerkCount"></small></h3><div id="mPerks"></div></div>
-            <div class="group"><h3>Close camp</h3><div class="closebox" id="mClose"></div></div>
-          </section>
         </div>
-        <div class="col">
+        <div class="tpane" id="mpStructs" data-pane="sawmill:structs" role="tabpanel" aria-labelledby="mtStructs" hidden>
           <section class="panel">
             <p class="eyebrow">Structures</p>
             <h2>Built to stay</h2>
             <p class="meta">Built from Prime spars, finds and mill cash. They stay built when any camp closes.</p>
             <div id="mStructs"></div>
           </section>
+        </div>
+        <div class="tpane" id="mpSawyers" data-pane="sawmill:sawyers" role="tabpanel" aria-labelledby="mtSawyers" hidden>
           <section class="panel">
             <p class="eyebrow">Crew</p>
             <h2>Sawyers</h2>
             <div id="mCrew"></div>
+          </section>
+        </div>
+        <div class="tpane" id="mpRun" data-pane="sawmill:run" role="tabpanel" aria-labelledby="mtRun" hidden>
+          <section class="panel">
+            <p class="eyebrow">This mill run</p>
+            <h2 id="mRunTitle">Mill run 1</h2>
+            <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 bd ft. Closing the mill resets only the mill.</p>
+            <div class="facts" id="mRunStats" style="margin-top:8px"></div>
+            <div class="group" style="margin-top:12px"><h3>Perks<small id="mPerkCount"></small></h3><div id="mPerks"></div></div>
+            <div class="group"><h3>Close camp</h3><div class="closebox" id="mClose"></div></div>
           </section>
         </div>
       </div>
@@ -709,10 +867,17 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
     <section class="screen" id="wh" data-screen="warehouse" aria-labelledby="whTitle" hidden>
       <div class="panel whsheet">
         <header><div><h2 id="whTitle">Warehouse</h2><p>Shared by every camp. It never fills and it stays when you close camp. Sales pay Logging.</p></div><button class="closeb" id="whClose" type="button">Back</button></header>
-        <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection</button><button type="button" data-t="almanac" aria-pressed="false">Almanac</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
+        <div class="tabs" id="whTabs" role="group" aria-label="Warehouse view"><button type="button" data-t="stock" aria-pressed="true">Stock</button><button type="button" data-t="log" aria-pressed="false">Collection</button><button type="button" data-t="ledger" aria-pressed="false">Ledger</button></div>
         <div id="whBody"></div>
         <div id="whGrid" hidden></div>
       </div>
+    </section>
+    <section class="screen" id="scrAlm" data-screen="almanac" aria-labelledby="almTitle" hidden>
+      <section class="panel">
+        <p class="eyebrow">Almanac</p>
+        <h2 id="almTitle">Weather cards</h2>
+        <div id="almBody"></div>
+      </section>
     </section>
     <section class="screen" id="scrShop" data-screen="shop" aria-label="Shop" hidden>
       <section class="panel">
@@ -781,9 +946,9 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
     <button type="button" id="btShop" data-bt="shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span>Shop</span><span class="dot" id="btShopDot" hidden></span></button>
     <button type="button" id="btMore" data-bt="more" aria-expanded="false" aria-controls="side"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg><span>More</span><span class="dot" id="btMoreDot" hidden></span></button>
   </nav>
+  <div class="cpick" id="campPick" hidden role="dialog" aria-labelledby="cpH"><h3 id="cpH">Switch camp</h3><div id="cpList"></div></div>
 </div>
 
-<div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="modal" id="mg" hidden role="dialog" aria-modal="true" aria-labelledby="mgTitle">
   <div class="sheet">
     <header><div><h2 id="mgTitle">Place a fall</h2><p id="mgHelp"></p><p id="mgGear"></p></div><div class="hbtns"><button class="closeb" id="mgGuideBtn" type="button" aria-label="How to cut logs" title="How to cut logs" hidden>?</button><button class="closeb" id="mgClose" type="button">Close</button></div></header>
@@ -6618,7 +6783,7 @@ function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
 // stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees';
 // Trees by default, owner request 2026-10-26; a switch lasts for the session: every load opens on Trees again)
-function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock'}; }
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'stock', logTab:'work', millTab:'mill'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -7198,21 +7363,24 @@ function hand(stg){
 
 // ---------- static UI
 const chainEls = {};
+// the Work tab's stage cards (UI rework slice 2): rate, slowest tag, weather and speed chips, the wood waiting after the stage,
+// Play (the mini-game) and the hand button
+const STAGE_ICON = {fell:'#i-axe', buck:'#i-saw', skid:'#i-log', haul:'#i-cart'};
 function buildChain(){
-  const box = $('chain'); box.innerHTML = '';
+  const box = $('chain'); box.innerHTML = ''; box.classList.add('cards4');
   STAGES.forEach((s,i) => {
-    const r = document.createElement('div'); r.className = 'srow';
-    r.innerHTML = `<span class="n">${i+1}</span><div class="sm"><b>${s.name}</b><span class="rate"></span><span class="chipl neckchip">Slowest</span><span class="chipl pace" hidden></span><div class="cap"><i></i></div></div><div class="rbtns"><button class="act quick" type="button"></button>${GAMES[s.id] ? `<button class="act game" type="button">${GAMES[s.id]}</button>` : ''}</div>`;
+    const r = document.createElement('div'); r.className = 'stc'; r.dataset.stage = s.id;
+    const pl = `<div class="spile"><div class="bar"><i></i></div><div class="barlbl"><span>${PILES[i] ? PILES[i].label.replace(/^./, c => c.toUpperCase()) : 'Hauled this outpost'}</span><b>0</b></div></div>`;
+    r.innerHTML = `<h3><svg class="i" aria-hidden="true"><use href="${STAGE_ICON[s.id] || '#i-log'}"/></svg>${s.name}<span class="chipl neckchip">Slowest</span></h3><div class="rate"></div>` +
+      `<div class="chips"><span class="chipl wx" hidden></span><span class="chipl pace" hidden></span></div><div class="cap" title="Speed against the fastest stage"><i></i></div>${pl}` +
+      `<div class="rbtns">${GAMES[s.id] ? `<button class="act game" type="button">${GAMES[s.id]}</button>` : ''}<button class="act quick" type="button"></button></div>`;
     const btn = r.querySelector('.act.quick');
     btn.onclick = s.id === 'fell' ? () => chop() : () => hand(s.id);
     const gb = r.querySelector('.act.game'); if (gb) gb.onclick = () => openMG(s.id);
     box.appendChild(r); chainEls[s.id] = r;
-    if (PILES[i]){
-      const p = document.createElement('div'); p.className = 'pile';
-      p.innerHTML = `<span class="logs"></span><span><b>0</b> ${PILES[i].label}</span>`;
-      box.appendChild(p); chainEls[PILES[i].id] = p;
-    }
+    if (PILES[i]) chainEls[PILES[i].id] = r.querySelector('.spile');
   });
+  chainEls.haulPile = chainEls.haul.querySelector('.spile');
 }
 const eqRows = {};
 // buy amount toggle: ×1, ×10, ×25 or Max; totals follow the same +15%-per-unit curve as buying one at a time
@@ -7637,19 +7805,23 @@ function render(force){
     const gb = r.querySelector('.act.game'); if (gb) gb.disabled = s.id === 'fell' ? !t : srcPile(s.id).bf <= 0;
     const pc = r.querySelector('.pace'); const bl = (S.boost[s.id]||0) - S.t;
     pc.hidden = bl <= 0; if (bl > 0) pc.textContent = `Speed ×${boostF()} · ${Math.ceil(bl)} s`;
+    // weather on this stage (the season and its card together), display only
+    const wf = seasonF(s.id), wx = r.querySelector('.wx'), won = Math.abs(wf - 1) > .005;
+    wx.hidden = !won; if (won){ const ev = evNow(), wt = `Weather ×${fx2(wf)}`, wc = 'chipl wx ' + (wf > 1 ? 'good' : 'bad');
+      if (wx.textContent !== wt) wx.textContent = wt; if (wx.className !== wc) wx.className = wc; wx.title = ev && ev.tone !== 'none' ? ev.name : season(); }
     const btn = r.querySelector('.act.quick');
     if (s.id === 'fell'){ btn.textContent = `Chop ×${fmt(cmult())}`; btn.disabled = !t; }
     else { const src = s.id === 'buck' ? S.stems : s.id === 'skid' ? S.cut : S.landing;
       btn.textContent = `${s.name} ${fmt(handAmt(s.id))} bd ft`; btn.disabled = src.bf <= 0; }
   });
   renderSlider();
+  // the wood waiting after each stage: a short bar on a log scale (full at 1M bd ft); Haul shows what this outpost delivered
   PILES.forEach(p => {
     const el = chainEls[p.id]; const v = S[p.id].bf;
     el.querySelector('b').textContent = bf(v);
-    const n = Math.min(12, Math.ceil(Math.log10(1+v)*2));
-    const logs = el.querySelector('.logs');
-    if (logs.childElementCount !== n){ logs.innerHTML = Array.from({length:n}, (_,i) => `<i style="height:${6 + (i%3)*3}px"></i>`).join(''); }
+    el.querySelector('.bar i').style.width = (Math.min(12, Math.ceil(Math.log10(1+v)*2))/12*100).toFixed(1) + '%';
   });
+  { const hp = chainEls.haulPile, d = S.run.deliv; hp.querySelector('b').textContent = bf(d); hp.querySelector('.bar i').style.width = Math.min(100, d/CLOSE_VOL*100).toFixed(1) + '%'; }
   // equipment
   document.querySelectorAll('#buyN button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.n === 'max' ? 'max' : +b.dataset.n) === S.ui.buyN)));
   document.querySelectorAll('#eq .group').forEach(g => {
@@ -7783,7 +7955,13 @@ function showToast(t){
   el.querySelector('b').textContent = t.name; el.querySelector('span').textContent = t.line;
   box.appendChild(el);
   while (box.childElementCount > toastMax()) box.firstChild.remove();
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4500);
+  // phones: each toast has its own timer (two show above the bottom tabs); computers: one at a time in the top bar, each for 4.5 s
+  if (mq('(max-width:700px)')) setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4500);
+  armToast();
+}
+function armToast(){
+  const box = $('toasts'), el = box && box.firstElementChild; if (!el || el.dataset.on) return; el.dataset.on = '1';
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); armToast(); }, 400); }, 4500);
 }
 function renderGoals(){
   const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
@@ -8967,6 +9145,10 @@ function normalize(){
     sawRefund(m); } // a log picked for Saw for grade but never sawn (the page closed mid-game) goes back
   if (!['logging','sawmill'].includes(S.ui.camp) || (S.ui.camp === 'sawmill' && !S.camps.sawmill)) S.ui.camp = 'logging';
   if (!SCREENS.includes(S.ui.screen) || (S.ui.screen === 'sawmill' && !S.camps.sawmill)) S.ui.screen = S.ui.camp;
+  // camp tabs (slice 2); the Almanac left the warehouse for its own screen
+  if (!CAMP_TABS.logging.includes(S.ui.logTab)) S.ui.logTab = 'work';
+  if (!CAMP_TABS.sawmill.includes(S.ui.millTab)) S.ui.millTab = 'mill';
+  if (!['stock', 'log', 'ledger'].includes(S.ui.whTab)) S.ui.whTab = 'stock';
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
 }
@@ -9016,6 +9198,16 @@ function renderRun(){
   $('rbLegacy').textContent = canClose() ? fmt(legacyNow()) : '—';
   $('rbBank').textContent = fmt(S.meta.legacy);
   const db = $('draftBtn'); db.hidden = !r.dq.length; if (r.dq.length) db.textContent = `Pick perk (${r.dq.length})`;
+  // camp header (UI rework slice 2): era, the lot, the close-camp bar and goal, Close camp, perk chips
+  { const t = tract(), ok = canClose(), era = ERAS[S.era].name, lot = t ? t.name : 'No timber';
+    if ($('rbEra').textContent !== era) $('rbEra').textContent = era; if ($('chLot').textContent !== lot) $('chLot').textContent = lot;
+    $('chBar').style.width = (ok ? 100 : Math.min(100, r.deliv/CLOSE_VOL*100)).toFixed(1) + '%'; $('chBar').parentNode.classList.toggle('ready', ok);
+    const g = ok ? `Ready to close: +${fmt(legacyNow())} shares` : `Close camp at ${ERAS[1].name} or ${bf(CLOSE_VOL)} delivered · ${bf(r.deliv)}`;
+    if ($('chGoal').textContent !== g) $('chGoal').textContent = g;
+    const cb = $('chClose'); cb.disabled = !ok || !!r.setup; cb.title = ok ? '' : 'Not ready yet';
+    const pc = {}; r.perks.forEach(id => pc[id] = (pc[id] || 0) + 1);
+    list('chPerks', Object.keys(pc).map(id => id + pc[id]).join(), Object.keys(pc).map(id => { const p = PMAP[id];
+      return `<span class="chipl r-${p.r}" title="${p.desc.replace(/"/g, '&quot;')}">${p.name}${pc[id] > 1 ? ` ×${pc[id]}` : ''}</span>`; }).join('')); }
   $('runTitle').textContent = `Outpost ${r.n}`;
   $('runMeta').textContent = (r.mods.length ? `Extra rules: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')} (shares ×${modMult().toFixed(2)}). ` : 'No extra rules. ') +
     'Play mini-games to earn perks. You also earn one for each new era, every 5 goals and every 5 orders filled.';
@@ -9064,7 +9256,9 @@ function bindRogue(){
   $('nrClose').onclick = () => { nrEl.hidden = true; render(true); maybeStory(); };
   nrEl.addEventListener('click', e => { if (e.target === nrEl){ nrEl.hidden = true; render(true); maybeStory(); } });
   window.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!dEl.hidden) closeDraft(); else if (!nrEl.hidden){ nrEl.hidden = true; render(true); maybeStory(); }
-    else if (!$('story').hidden) closeStory(false); else if (!$('bellTray').hidden){ toggleBell(false); $('bellBtn').focus(); } else if (app.classList.contains('drawer')){ toggleDrawer(false); $('btMore').focus(); } });
+    else if (!$('story').hidden) closeStory(false); else if (!$('bellTray').hidden){ toggleBell(false); $('bellBtn').focus(); }
+    else if (!$('campPick').hidden){ toggleCampPick(false); $('btCamp').focus(); }
+    else if (app.classList.contains('drawer')){ toggleDrawer(false); const rb = $('railBtn'); (rb.offsetParent ? rb : $('btMore')).focus(); } });
   bindCompany();
 }
 
@@ -9547,18 +9741,53 @@ function renderStrip(){
 // ---------- the frame (UI rework slice 1): one screen at a time, picked from the sidebar, the bottom tabs or the bell
 const SCREENS = ['logging', 'sawmill', 'warehouse', 'shop', 'orders', 'board', 'almanac', 'settings'];
 const CAMP_SCREENS = ['logging', 'sawmill'];
+// the tabs inside each camp screen (slice 2); the last one opened is remembered per camp
+const CAMP_TABS = {logging:['work', 'lots', 'crews', 'camp', 'log'], sawmill:['mill', 'structs', 'sawyers', 'run']};
+const TAB_KEY = {logging:'logTab', sawmill:'millTab'};
+const campTab = c => CAMP_TABS[c].includes(S.ui[TAB_KEY[c]]) ? S.ui[TAB_KEY[c]] : CAMP_TABS[c][0];
 const screenOk = sc => SCREENS.includes(sc) && !(sc === 'sawmill' && !S.camps.sawmill);
-// go to a screen; `then` (optional) runs after it renders, e.g. to scroll to and focus a panel
-function go(sc, then){
+const toTop = () => { try { (document.scrollingElement || document.documentElement).scrollTop = 0; } catch(e){} };
+// go to a screen; `then` (optional) runs after it renders, e.g. to scroll to and focus a panel; `tab` opens a camp tab
+function go(sc, then, tab){
   if (!screenOk(sc)) sc = 'logging';
-  if (CAMP_SCREENS.includes(sc)){ S.ui.camp = sc; if (sc === 'sawmill') S.ui.millSeen = true; closeArmed = false; millArmed = false; }
-  if (sc === 'warehouse' || sc === 'almanac'){ S.newCount = 0; if (sc === 'almanac') S.ui.whTab = 'almanac'; else if (S.ui.whTab === 'almanac') S.ui.whTab = 'stock'; }
+  if (CAMP_SCREENS.includes(sc)){ S.ui.camp = sc; if (sc === 'sawmill') S.ui.millSeen = true; closeArmed = false; millArmed = false;
+    if (tab && CAMP_TABS[sc].includes(tab)) S.ui[TAB_KEY[sc]] = tab; }
+  if (sc === 'warehouse') S.newCount = 0;
   const moved = S.ui.screen !== sc; S.ui.screen = sc;
-  toggleDrawer(false); toggleBell(false);
-  if (sc === 'warehouse' || sc === 'almanac') renderWh();
+  toggleDrawer(false); toggleBell(false); toggleCampPick(false);
+  if (sc === 'warehouse') renderWh();
   render(true);
-  if (moved) try { (document.scrollingElement || document.documentElement).scrollTop = 0; } catch(e){}
+  if (moved || tab) toTop();
   if (then) then();
+}
+// pick a camp tab: shows its pane, keeps the scroll at the top of the screen
+function setTab(c, t, focus){
+  if (!CAMP_TABS[c] || !CAMP_TABS[c].includes(t)) return;
+  const was = campTab(c); S.ui[TAB_KEY[c]] = t;
+  render(true); if (was !== t){ const h = $(c === 'sawmill' ? 'millTabs' : 'logTabs'); if (h && h.getBoundingClientRect().top < $('topbar').offsetHeight) try { h.scrollIntoView({block:'start'}); } catch(e){} }
+  if (focus){ const b = document.querySelector(`.ctabs [data-camp="${c}"][data-t="${t}"]`); if (b) b.focus(); }
+}
+function renderTabs(){
+  const dots = {}; bellNow.forEach(i => { if (i.tab) dots[i.camp + ':' + i.tab] = 1; });
+  for (const c of CAMP_SCREENS){
+    const cur = campTab(c);
+    document.querySelectorAll(`.ctabs [data-camp="${c}"]`).forEach(b => { const on = b.dataset.t === cur;
+      if (b.getAttribute('aria-selected') !== String(on)){ b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
+      const d = b.querySelector('.dot'); if (d) d.hidden = on || !dots[c + ':' + b.dataset.t]; });
+    document.querySelectorAll(`.tpane[data-pane^="${c}:"]`).forEach(p => { const on = p.dataset.pane === c + ':' + cur; if (p.hidden === on) p.hidden = !on; });
+  }
+}
+// phones: a second tap on the Camp tab opens a small camp picker (camps in the fog are shown greyed)
+function toggleCampPick(on){
+  const el = $('campPick'), b = $('btCamp'); if (!el) return; on = on == null ? el.hidden : !!on;
+  if (!on){ if (!el.hidden){ el.hidden = true; b.setAttribute('aria-expanded', 'false'); } return; }
+  const open = !!S.camps.sawmill, cur = CAMP_SCREENS.includes(S.ui.screen) ? S.ui.screen : '';
+  const row = (c, icon, name, sub) => `<button type="button" data-pick="${c}"${cur === c ? ' aria-current="page"' : ''}><svg class="i" aria-hidden="true"><use href="${icon}"/></svg><b>${name}</b><small>${sub}</small></button>`;
+  $('cpList').innerHTML = row('logging', '#i-axe', 'Logging', $('navLogSub').textContent) + (open ? row('sawmill', '#i-saw', 'Sawmill', $('navMillSub').textContent) : '') +
+    '<div class="locked" aria-label="Fishing: in the fog, opens later"><svg class="i" aria-hidden="true"><use href="#i-fish"/></svg><b>Fishing</b><small>In the fog · opens later</small></div>';
+  $('cpList').querySelectorAll('[data-pick]').forEach(x => x.onclick = () => { toggleCampPick(false); go(x.dataset.pick); const t = $('btCamp'); if (t) t.focus(); });
+  el.hidden = false; b.setAttribute('aria-expanded', 'true');
+  const f = el.querySelector('[aria-current="page"]') || el.querySelector('button'); if (f) f.focus();
 }
 function setCamp(c){ if (c === 'sawmill' && !S.camps.sawmill) return; go(c); }
 // scroll a panel into view and focus its first control (bell and sidebar shortcuts)
@@ -9568,6 +9797,8 @@ const app = $('app');
 function toggleDrawer(on){
   if (!app) return; on = on == null ? !app.classList.contains('drawer') : !!on;
   app.classList.toggle('drawer', on); $('drawerBg').hidden = !on; $('btMore').setAttribute('aria-expanded', String(on));
+  const rb = $('railBtn'); rb.setAttribute('aria-expanded', String(on)); rb.setAttribute('aria-label', on ? 'Hide names' : 'Show names'); rb.title = rb.getAttribute('aria-label');
+  if (on) toggleCampPick(false);
   if (on){ const f = $('side').querySelector('[aria-current="page"]') || $('side').querySelector('button'); if (f) f.focus(); }
 }
 function toggleBell(on){
@@ -9580,15 +9811,20 @@ function bellItems(){
   const out = [], m = S.camps.sawmill;
   if (S.run.dq.length) out.push({k:'perkL', camp:'logging', t:'Perk ready', s:`Logging · ${S.run.dq.length} to pick`, b:'Pick', fn:() => openDraft('logging')});
   if (m && m.dq.length) out.push({k:'perkM', camp:'sawmill', t:'Perk ready', s:`Sawmill · ${m.dq.length} to pick`, b:'Pick', fn:() => openDraft('sawmill')});
-  if (S.short) out.push({k:'owed', camp:'logging', t:'Wages owed', s:`Logging · ${money(S.owed)}, crews at half speed`, b:'Go to camp', fn:() => go('logging')});
-  if (stallSoon()) out.push({k:'stall', camp:'logging', t:'Logs are stuck', s:'Logging · no crew and no cash', b:'Go to camp', fn:() => go('logging')});
-  if (!tract()) out.push({k:'nolot', camp:'logging', t:'No timber', s:'Buy a lot or take a hire job', b:'Lots', fn:() => go('logging', () => reveal('sales'))});
-  else if (S.tracts.length <= 1 && !hireActive() && S.forSale.length && cheapestSale() <= S.cash) out.push({k:'next', camp:'logging', t:'No lot after this one', s:'Logging · you can buy one now', b:'Lots', fn:() => go('logging', () => reveal('sales'))});
+  if (S.short) out.push({k:'owed', camp:'logging', tab:'crews', t:'Wages owed', s:`Logging · ${money(S.owed)}, crews at half speed`, b:'Crews', fn:() => go('logging', () => reveal('yard'), 'crews')});
+  if (stallSoon()) out.push({k:'stall', camp:'logging', tab:'work', t:'Logs are stuck', s:'Logging · no crew and no cash', b:'Work', fn:() => go('logging', () => reveal('chain'), 'work')});
+  if (!tract()) out.push({k:'nolot', camp:'logging', tab:'lots', t:'No timber', s:'Buy a lot or take a hire job', b:'Lots', fn:() => go('logging', () => reveal('sales'), 'lots')});
+  else if (S.tracts.length <= 1 && !hireActive() && S.forSale.length && cheapestSale() <= S.cash) out.push({k:'next', camp:'logging', tab:'lots', t:'No lot after this one', s:'Logging · you can buy one now', b:'Lots', fn:() => go('logging', () => reveal('sales'), 'lots')});
   const hand = S.orders.open.map(o => SODEF(o.id) && Core.orderRemaining(SODEF(o.id), o.given).some(x => bankN(x.item) > 0 && !S.locks.includes(x.item)) ? SODEF(o.id) : null).find(Boolean);
   if (hand) out.push({k:'hand', camp:'orders', t:'Special order', s:`${hand.short}: you can hand in`, b:'Open', fn:() => go('orders', () => reveal('spGroup'))});
-  if (!S.run.setup && canClose()) out.push({k:'close', camp:'logging', t:'Close camp ready', s:`Logging · +${fmt(legacyNow())} shares`, b:'Close camp', fn:() => go('logging', () => reveal('closeBox'))});
-  if (m && m.dry && S.bulk.logs < 1 && !m.buyCove) out.push({k:'pond', camp:'sawmill', t:'Mill pond empty', s:'Sawmill · buying logs is off', b:'Turn on', fn:() => { m.buyCove = true; toggleBell(false); render(); }});
-  if (m && canCloseMill()) out.push({k:'mclose', camp:'sawmill', t:'Mill can close', s:`Sawmill · +${fmt(millLegacyNow())} shares`, b:'Close mill', fn:() => go('sawmill', () => reveal('mClose'))});
+  // a charter order that runs out before the season changes
+  const ends = S.contracts.filter(c => c.vol > c.done && c.end - S.t <= SEASON_LEN - S.st).sort((a, b) => a.end - b.end)[0];
+  if (ends) out.push({k:'ends', camp:'orders', t:'Order ends soon', s:`${ends.mill} · ${clockLeft(ends.end - S.t)} left, ${Math.floor(ends.done/ends.vol*100)}% done`, b:'Open', fn:() => go('orders', () => reveal('contracts'))});
+  if (!S.run.setup && canClose()) out.push({k:'close', camp:'logging', tab:'log', t:'Close camp ready', s:`Logging · +${fmt(legacyNow())} shares`, b:'Close camp', fn:() => go('logging', () => reveal('closeBox'), 'log')});
+  if (m && m.dry && S.bulk.logs < 1 && !m.buyCove) out.push({k:'pond', camp:'sawmill', tab:'mill', t:'Mill pond empty', s:'Sawmill · buying logs is off', b:'Turn on', fn:() => { m.buyCove = true; toggleBell(false); render(); }});
+  if (m && canCloseMill()) out.push({k:'mclose', camp:'sawmill', tab:'run', t:'Mill can close', s:`Sawmill · +${fmt(millLegacyNow())} shares`, b:'Close mill', fn:() => go('sawmill', () => reveal('mClose'), 'run')});
+  // season news that came in during a mini-game waits; the bell says so
+  if (!mgEl.hidden && dispQ.length) out.push({k:'news', camp:'', t:'Season news waiting', s:'Shows when you close the game', b:'Read', fn:() => { closeMG(); render(true); }});
   return out;
 }
 let bellNow = [];
@@ -9604,8 +9840,9 @@ function renderFrame(){
   const open = !!S.camps.sawmill;
   if (!screenOk(S.ui.screen)) S.ui.screen = 'logging';
   const sc = S.ui.screen, mill = sc === 'sawmill';
-  document.querySelectorAll('.screen[data-screen]').forEach(el => { const on = el.dataset.screen === sc || (el.id === 'wh' && sc === 'almanac'); if (el.hidden === on) el.hidden = !on; });
+  document.querySelectorAll('.screen[data-screen]').forEach(el => { const on = el.dataset.screen === sc; if (el.hidden === on) el.hidden = !on; });
   $('logView').hidden = sc !== 'logging'; $('millView').hidden = !mill;
+  if (sc === 'almanac') renderAlm();
   document.querySelectorAll('.nav [data-go]').forEach(b => { const cur = b.dataset.go === sc; if (cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   const sm = document.querySelector('.brand h1 small'), st = mill ? 'Sawmill · Whistle Pond · 1890' : 'Logging · Fogbound Coast · 1890'; if (sm && sm.textContent !== st) sm.textContent = st;
   // camps: outpost number and the close-camp bar
@@ -9621,6 +9858,7 @@ function renderFrame(){
   bellNow = bellItems(); const by = c => bellNow.some(i => i.camp === c);
   showN('bellN', bellNow.length); $('bellBtn').setAttribute('aria-label', bellNow.length ? `Needs you now: ${bellNow.length}` : 'Needs you now: nothing');
   if (!$('bellTray').hidden) renderBell();
+  renderTabs();
   $('navLogDot').hidden = !by('logging'); $('navMillDot').hidden = !open || !by('sawmill');
   const picks = r.dq.length + (open ? S.camps.sawmill.dq.length : 0);
   $('navShopDot').hidden = !picks; const ss = picks ? `${picks} ${picks === 1 ? 'perk' : 'perks'} to pick` : 'Coming soon'; if ($('navShopSub').textContent !== ss) $('navShopSub').textContent = ss;
@@ -9681,8 +9919,17 @@ function renderBunk(){
 }
 // the warehouse screen: stock (sell, sell surplus, lock, order tags), collection log, almanac, ledger
 const whEl = $('wh');
-function openWh(tab){ if (tab) S.ui.whTab = tab; go(S.ui.whTab === 'almanac' ? 'almanac' : 'warehouse'); const f = whEl.querySelector('#whTabs button[aria-pressed="true"]'); if (f) f.focus(); }
+function openWh(tab){ if (tab === 'almanac'){ go('almanac'); return; } if (tab) S.ui.whTab = tab; go('warehouse'); const f = whEl.querySelector('#whTabs button[aria-pressed="true"]'); if (f) f.focus(); }
 function closeWh(){ go(S.ui.camp); }
+// the Almanac screen (slice 2: its own screen, no longer a warehouse tab): every season's weather cards, seen and unseen
+function renderAlm(){
+  const W = S.weather, seen = Core.SEASON_EVENTS.filter(e => W.seen[e.id]).length, tone = {none:'Calm', good:'Good', neutral:'Mixed', bad:'Bad'};
+  const key = JSON.stringify(W.seen) + '|' + (meta('almanac') ? W.next : '') + '|' + !!meta('signals');
+  list('almBody', key, `<p class="meta">${seen} of ${Core.SEASON_EVENTS.length} cards seen. Each season brings one, the same for every camp.${meta('almanac') && W.next ? ` Next season: ${Core.eventDef(W.next).name}.` : ''}${meta('signals') ? ' Storm signals: bad weather 30% rarer.' : ''}</p>` +
+    SEASONS.map(sn => `<div class="group"><h3>${sn}</h3>` + Core.SEASON_EVENTS.filter(e => e.season === sn).map(e => { const f = W.seen[e.id];
+      return f ? `<div class="witem"><span class="cnt">${fmt(f.n || 1)}</span><div class="info"><b>${e.name}</b> <span class="chipl">${tone[e.tone]}</span><p>${e.card}</p><p>${e.fx}.${e.counter ? ` Fix: ${e.counter}.` : ''}${e.silver ? ` Upside: ${e.silver}.` : ''} First seen: ${f.first}.</p></div></div>`
+        : `<div class="witem"><span class="cnt">—</span><div class="info"><b>???</b><p>Not seen yet. A ${sn.toLowerCase()} card.</p></div></div>`; }).join('') + '</div>').join(''));
+}
 function itemRow(d){
   const n = bankN(d.id), tags = [], locked = S.locks.includes(d.id);
   S.orders.open.forEach(o => { const od = SODEF(o.id), r = od ? Core.orderRemaining(od, o.given).find(x => x.item === d.id) : null; if (r) tags.push(`${od.short} needs ${r.qty} more`); });
@@ -9699,14 +9946,6 @@ function renderWh(){
     box.innerHTML = `<p class="meta">${found} of ${Core.ITEMS.length} found. Kept forever.</p>` + Core.ITEMS.map(d => { const f = S.found[d.id];
       return f ? `<div class="witem ir-${d.rarity}"><span class="cnt">${fmt(f.total)}</span><div class="info"><b>${d.name}</b> <span class="chipl rchip">${RARITY_ITEM[d.rarity]}</span><p>${d.from}. First found: ${f.first}. ${fmt(f.total)} in all.</p></div></div>`
         : `<div class="witem"><span class="cnt">—</span><div class="info"><b>???</b><p>Not found yet.</p></div></div>`; }).join('');
-    return;
-  }
-  if (tab === 'almanac'){
-    const W = S.weather, seen = Core.SEASON_EVENTS.filter(e => W.seen[e.id]).length, tone = {none:'Calm', good:'Good', neutral:'Mixed', bad:'Bad'};
-    box.innerHTML = `<p class="meta">${seen} of ${Core.SEASON_EVENTS.length} cards seen. Each season brings one, the same for every camp.${meta('almanac') && W.next ? ` Next season: ${Core.eventDef(W.next).name}.` : ''}${meta('signals') ? ' Storm signals: bad weather 30% rarer.' : ''}</p>` +
-      SEASONS.map(sn => `<div class="group"><h3>${sn}</h3>` + Core.SEASON_EVENTS.filter(e => e.season === sn).map(e => { const f = W.seen[e.id];
-        return f ? `<div class="witem"><span class="cnt">${fmt(f.n || 1)}</span><div class="info"><b>${e.name}</b> <span class="chipl">${tone[e.tone]}</span><p>${e.card}</p><p>${e.fx}.${e.counter ? ` Fix: ${e.counter}.` : ''}${e.silver ? ` Upside: ${e.silver}.` : ''} First seen: ${f.first}.</p></div></div>`
-          : `<div class="witem"><span class="cnt">—</span><div class="info"><b>???</b><p>Not seen yet. A ${sn.toLowerCase()} card.</p></div></div>`; }).join('') + '</div>').join('');
     return;
   }
   if (tab === 'ledger'){
@@ -9800,6 +10039,15 @@ let millArmed = false;
 function renderMill(){
   const m = S.camps.sawmill, st = S.structures, sn = season(), rM = millRateNow()*60, ns = millSawyers(), maxS = Core.maxSawyers(st), row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
   $('mName').textContent = st['sawmill.headrig'] ? 'Saw mill' : st['sawmill.pond'] ? 'Water mill' : 'Saw pit';
+  // camp header (UI rework slice 2)
+  { const ok = canCloseMill(), set = (id, v) => { if ($(id).textContent !== v) $(id).textContent = v; };
+    set('mhRun', `Mill run ${m.n}`); set('mhName', $('mName').textContent); set('mhRate', bf(rM)); set('mhInc', money(m.ema*60)); set('mhPerks', String(m.perks.length));
+    $('mhBar').style.width = (ok ? 100 : Math.min(100, m.sawn/Core.MILL_CLOSE_BF*100)).toFixed(1) + '%'; $('mhBar').parentNode.classList.toggle('ready', ok);
+    set('mhGoal', ok ? `Ready to close: +${fmt(millLegacyNow())} Sawmill shares` : `Close the mill at ${bf(Core.MILL_CLOSE_BF)} sawn · ${bf(m.sawn)}`);
+    $('mhClose').disabled = !ok;
+    const pc = {}; m.perks.forEach(id => pc[id] = (pc[id] || 0) + 1);
+    list('mhPerkChips', Object.keys(pc).map(id => id + pc[id]).join(), Object.keys(pc).map(id => { const p = PMAP[id];
+      return `<span class="chipl r-${p.r}" title="${p.desc.replace(/"/g, '&quot;')}">${p.name}${pc[id] > 1 ? ` ×${pc[id]}` : ''}</span>`; }).join('')); }
   $('mMeta').textContent = st['sawmill.pond'] ? `${sn}: water power ×${Core.millPower(st, sn).toFixed(2)} (spring ×${(Core.POND_POWER*Core.SITE.power.Spring).toFixed(2)}, winter ×${(Core.POND_POWER*Core.SITE.power.Winter).toFixed(2)}).`
     : 'Hand power: the same every season until the mill pond turns a wheel.';
   $('mFacts').innerHTML = row('Sawing', `${bf(rM)}/min`) + row('Sawyers', `${ns} of ${maxS}`) + row('Log pond', bf(S.bulk.logs) + (m.dry && S.bulk.logs < 1 ? (m.buyCove ? ' · buying logs' : ' · empty') : '')) +
@@ -9854,21 +10102,34 @@ function renderMill(){
 function bindCompany(){
   $('lsCash').onclick = () => openWh('ledger'); $('lsShares').onclick = () => go('board');
   document.querySelectorAll('.nav [data-go]').forEach(b => b.onclick = () => { go(b.dataset.go); if (!app.classList.contains('drawer')) b.focus(); });
-  $('lsWh').onclick = () => openWh(S.ui.whTab === 'almanac' ? 'stock' : S.ui.whTab);
-  $('btCamp').onclick = () => go(CAMP_SCREENS.includes(S.ui.screen) && S.camps.sawmill ? (S.ui.camp === 'sawmill' ? 'logging' : 'sawmill') : S.ui.camp);
-  $('btOrders').onclick = () => go('orders'); $('btWh').onclick = () => openWh(S.ui.whTab === 'almanac' ? 'stock' : S.ui.whTab); $('btShop').onclick = () => go('shop');
-  $('btMore').onclick = () => toggleDrawer(); $('drawerBg').onclick = () => toggleDrawer(false);
+  $('lsWh').onclick = () => openWh(S.ui.whTab);
+  // Camp tab: first tap goes to your camp; a second tap (already on a camp) opens the camp picker
+  $('btCamp').setAttribute('aria-haspopup', 'dialog'); $('btCamp').setAttribute('aria-expanded', 'false'); $('btCamp').setAttribute('aria-controls', 'campPick');
+  $('btCamp').onclick = () => { if (CAMP_SCREENS.includes(S.ui.screen)) toggleCampPick(); else go(S.ui.camp); };
+  $('btOrders').onclick = () => go('orders'); $('btWh').onclick = () => openWh(S.ui.whTab); $('btShop').onclick = () => go('shop');
+  $('btMore').onclick = () => toggleDrawer(); $('drawerBg').onclick = () => toggleDrawer(false); $('railBtn').onclick = () => toggleDrawer();
   $('bellBtn').onclick = () => toggleBell();
   $('shopLog').onclick = () => openDraft('logging'); $('shopMill').onclick = () => openDraft('sawmill');
-  document.addEventListener('click', e => { const tr = $('bellTray'); if (!tr.hidden && !tr.contains(e.target) && !$('bellBtn').contains(e.target)) toggleBell(false); });
+  document.addEventListener('click', e => { const tr = $('bellTray'); if (!tr.hidden && !tr.contains(e.target) && !$('bellBtn').contains(e.target)) toggleBell(false);
+    const cp = $('campPick'); if (!cp.hidden && !cp.contains(e.target) && !$('btCamp').contains(e.target)) toggleCampPick(false); });
+  // camp tabs: tap, or arrow keys along the strip
+  document.querySelectorAll('.ctabs').forEach(strip => {
+    strip.querySelectorAll('[data-t]').forEach(b => b.onclick = () => setTab(b.dataset.camp, b.dataset.t));
+    strip.addEventListener('keydown', e => { const b = e.target.closest && e.target.closest('[data-t]'); if (!b) return;
+      const ts = CAMP_TABS[b.dataset.camp], i = ts.indexOf(b.dataset.t), k = e.key;
+      const j = k === 'ArrowRight' ? (i + 1) % ts.length : k === 'ArrowLeft' ? (i + ts.length - 1) % ts.length : k === 'Home' ? 0 : k === 'End' ? ts.length - 1 : -1;
+      if (j < 0) return; e.preventDefault(); setTab(b.dataset.camp, ts[j], true); });
+  });
+  // camp header buttons: Close camp opens the in-page confirm on the Log tab (Run tab for the mill)
+  $('chClose').onclick = () => { if (!canClose() || S.run.setup) return; go('logging', null, 'log'); closeArmed = true; render(); const y = $('closeYes'); if (y){ try { y.scrollIntoView({block:'center'}); } catch(e){} y.focus(); } };
+  $('mhClose').onclick = () => { if (!canCloseMill()) return; go('sawmill', null, 'run'); millArmed = true; render(); const y = $('mCloseYes'); if (y){ try { y.scrollIntoView({block:'center'}); } catch(e){} y.focus(); } };
   $('millShare').addEventListener('input', e => { S.millShare = Math.max(0, Math.min(Core.MILL_SHARE_MAX, (+e.target.value || 0)/100)); renderSlider(); });
   $('mSawBtn').onclick = () => openMG('saw');
   $('mCove').onclick = () => { const m = S.camps.sawmill; if (m){ m.buyCove = !m.buyCove; render(); } };
   $('mBundle').onclick = () => { const m = S.camps.sawmill; if (m){ m.bundle = !m.bundle; render(); } };
   $('mDraftBtn').onclick = () => openDraft('sawmill');
   $('whClose').onclick = closeWh;
-  $('whTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.whTab = b.dataset.t; const sc = b.dataset.t === 'almanac' ? 'almanac' : 'warehouse';
-    if (S.ui.screen !== sc){ S.ui.screen = sc; render(true); } renderWh(); b.focus(); });
+  $('whTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.whTab = b.dataset.t; renderWh(); b.focus(); });
   $('stGo').onclick = () => closeStory(true); $('stLater').onclick = () => closeStory(false);
 }
 
