@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse Icon Sheet</title>
+<meta name="description" content="Placeholder item icons drawn in code, and a mockup of the revamped Warehouse screen (desktop and phone, light and dark).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Tokens copied from prototype/timberline.html, plus the new rarity and tile tokens this revamp adds. */
+:root{
+  --bg:#E3E8DF; --panel:#F3F5F0; --ink:#1B241E; --muted:#5A685E; --line:#C3CCC1;
+  --accent:#E0560B; --accent-ink:#FFFFFF; --good:#2F7A45; --warn:#B4520A; --bad:#B3261E; --sky:#D5DED3;
+  --f-display:"Zilla Slab", "Rockwell", Georgia, serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* new: item tiles and rarity frames */
+  --tile:#E9E4D6; --tile-hi:#F6F2E7;
+  --r-common:#7D8A80; --r-uncommon:#2F7A63; --r-rare:#5B4C9A; --r-made:#E0560B;
+  --sil:#1B241E;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --sky:#16201A;
+  --tile:#2A2F28; --tile-hi:#343A31;
+  --r-common:#8C998F; --r-uncommon:#5EC2A0; --r-rare:#A796F0; --r-made:#FF7A2E;
+  --sil:#E0E6DC; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --panel:#19201B; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --sky:#16201A;
+  --tile:#2A2F28; --tile-hi:#343A31;
+  --r-common:#8C998F; --r-uncommon:#5EC2A0; --r-rare:#A796F0; --r-made:#FF7A2E;
+  --sil:#E0E6DC; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;font-weight:700}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.top small{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
+.top h1{font-size:1.9rem}
+.top p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.fogline{height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--sky) 50%,var(--line) 82%,transparent);margin:16px 0 28px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:6px 12px;font-size:.82rem;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+section.block{margin-top:40px}
+section.block>h2{font-size:1.35rem}
+section.block>p.lede{margin:4px 0 16px;color:var(--muted);max-width:70ch}
+.note{border-left:4px solid var(--accent);background:var(--panel);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.88rem;max-width:80ch}
+
+/* ---------- item tile (the one component everything uses) */
+.tile{position:relative;width:56px;height:56px;border-radius:6px;background:radial-gradient(circle at 50% 40%,var(--tile-hi),var(--tile) 70%);
+  border:1px solid var(--rc,var(--r-common));padding:3px;display:grid;place-items:center;flex:none}
+.tile svg{width:48px;height:48px;display:block}
+.tile.r-uncommon,.tile.r-rare,.tile.r-made{border-width:2px;padding:2px}
+.tile.r-rare{box-shadow:inset 0 0 0 1px var(--tile),inset 0 0 0 2px var(--rc)}
+.r-common{--rc:var(--r-common)} .r-uncommon{--rc:var(--r-uncommon)} .r-rare{--rc:var(--r-rare)} .r-made{--rc:var(--r-made)}
+/* rarity pips sit on the top edge: none common, 1 diamond uncommon, 2 diamonds rare, a square stamp for made goods */
+.pips{position:absolute;top:-5px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+.pips i{width:8px;height:8px;background:var(--rc);transform:rotate(45deg);border:1.5px solid var(--panel)}
+.r-made .pips i{transform:none;border-radius:1px}
+.cnt{position:absolute;right:-3px;bottom:-4px;font-family:var(--f-num);font-size:11px;font-weight:600;line-height:1;padding:2px 4px;border-radius:4px;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+.cnt.zero{color:var(--muted)}
+.newdot{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+.lock{position:absolute;left:-4px;bottom:-4px;width:16px;height:16px;border-radius:4px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
+.lock svg{width:10px;height:10px}
+.need{position:absolute;left:-7px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid var(--accent);display:grid;place-items:center;color:var(--accent);font:700 10px/1 var(--f-body)}
+.tile.unknown svg{filter:brightness(0);opacity:.28}
+:root[data-theme="dark"] .tile.unknown svg{filter:brightness(0) invert(1);opacity:.22}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile.unknown svg{filter:brightness(0) invert(1);opacity:.22}}
+.tile.unknown .q{position:absolute;inset:0;display:grid;place-items:center;font:700 18px/1 var(--f-display);color:var(--muted)}
+.tile.sm{width:28px;height:28px;padding:1px;border-radius:4px}
+.tile.sm svg{width:24px;height:24px}
+.tile.lg{width:108px;height:108px;padding:5px;border-radius:10px}
+.tile.lg svg{width:96px;height:96px}
+.tile.lg .pips i{width:11px;height:11px}
+
+/* ---------- icon sheet */
+.sheetgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 12px}
+.icard{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.icard div{min-width:0}
+.icard b{display:block;font-size:.86rem;line-height:1.25}
+.icard code{display:block;font-family:var(--f-num);font-size:10.5px;color:var(--muted);overflow-wrap:anywhere}
+.chip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;color:var(--muted);margin-top:3px}
+.chip.live{color:var(--good);border-color:var(--good)}
+.chip.fish{border-style:dashed}
+.cat h3{font-size:1.02rem;margin:22px 0 10px;display:flex;gap:8px;align-items:baseline}
+.cat h3 span{font-family:var(--f-body);font-size:.8rem;color:var(--muted);font-weight:500}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.rule{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.rule h3{font-size:1rem;margin-bottom:10px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);text-align:center;max-width:86px}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.sw div{font-size:11px;color:var(--muted)}
+.sw span{display:block;height:26px;border-radius:4px;border:2px solid #2B241C;margin-bottom:3px}
+
+/* ---------- shell stand-in (the parallel UI rework owns the real sidebar and top bar) */
+.shell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:180px 1fr;grid-template-rows:auto 1fr;min-height:640px}
+.shell .tb{grid-column:1/-1;display:flex;gap:18px;align-items:center;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);font-size:.82rem;color:var(--muted);flex-wrap:wrap}
+.shell .tb b{font-family:var(--f-num);color:var(--ink)}
+.shell .tb .cash b{color:var(--accent)}
+.shell nav{background:var(--panel);border-right:1px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:2px;font-size:.86rem}
+.shell nav small{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:10px 8px 4px}
+.shell nav a{padding:6px 8px;border-radius:5px;color:var(--ink);text-decoration:none;display:flex;justify-content:space-between}
+.shell nav a.on{background:var(--ink);color:var(--panel)}
+.shell nav a .nb{font-family:var(--f-num);font-size:11px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 6px}
+.shell main{min-width:0;padding:16px}
+.stand{font-size:11px;color:var(--muted);text-align:right;margin-top:6px}
+
+/* ---------- the Warehouse screen */
+.wh{container-type:inline-size;position:relative;min-width:0}
+.whhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.whhead h2{font-size:1.4rem}
+.whhead p{margin:2px 0 0;color:var(--muted);font-size:.84rem}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;font-weight:600;font-size:.86rem;min-height:36px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--panel)}
+.spares{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.spares small{font-size:.74rem;color:var(--muted);max-width:30ch;text-align:right}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:14px 0 10px;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;border-bottom:3px solid transparent;background:transparent;padding:8px 12px;font-weight:600;font-size:.88rem;color:var(--muted);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button .c{font-family:var(--f-num);font-size:11px;font-weight:400}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tools input[type=search]{flex:1 1 160px;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 10px;font-size:.88rem;min-height:36px}
+.tools select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 8px;font-size:.86rem;min-height:36px}
+.fchips{display:flex;gap:6px;flex-wrap:wrap}
+.fchips button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600;min-height:32px}
+.fchips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.tools .more{display:none}
+.body{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+@container (min-width:720px){.body{grid-template-columns:minmax(0,1fr) 300px}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:14px 10px;justify-items:center;padding:6px 4px}
+.grid .tile{cursor:pointer}
+.grid button.tile{font:inherit;color:inherit}
+.grid .tile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:3px}
+.gh{grid-column:1/-1;justify-self:stretch;font:600 12px/1 var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px dotted var(--line);padding:8px 0 6px;display:flex;justify-content:space-between}
+.empty{color:var(--muted);font-size:.88rem;padding:20px 4px}
+.bulk{grid-column:1/-1;justify-self:stretch;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.bcard{display:flex;gap:10px;align-items:center;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;text-align:left;min-width:0;cursor:pointer}
+.bcard[aria-current="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.bcard b{display:block;font-size:.88rem}
+.bcard span{display:block;font-family:var(--f-num);font-size:.86rem}
+.bcard small{display:block;font-size:.74rem;color:var(--muted)}
+.prog{grid-column:1/-1;justify-self:stretch;display:flex;gap:10px;align-items:center;font-size:.8rem;color:var(--muted)}
+.prog .bar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--good)}
+
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;position:sticky;top:12px}
+.detail .dh{display:flex;gap:12px;align-items:center}
+.detail h3{font-size:1.15rem;line-height:1.2}
+.detail .rar{font-size:.78rem;font-weight:600;color:var(--rc);display:flex;gap:6px;align-items:center;margin-top:3px}
+.detail .rar i{width:8px;height:8px;background:var(--rc);transform:rotate(45deg);display:inline-block}
+.detail .rar.r-made i{transform:none}
+.detail p{margin:10px 0 0;font-size:.86rem}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.facts div{border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.facts small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.facts b{font-family:var(--f-num);font-size:.95rem;font-weight:600}
+.dsec{margin-top:12px}
+.dsec h4{margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.dsec ul{margin:0;padding:0;list-style:none;font-size:.84rem}
+.dsec li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px dotted var(--line)}
+.dsec li:first-child{border-top:0}
+.dsec li b{font-family:var(--f-num);font-weight:600;white-space:nowrap}
+.dsec li.kept b{color:var(--accent)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.acts .confirm{flex-basis:100%;font-size:.8rem;color:var(--bad)}
+.dclose{display:none}
+.hint{font-size:.78rem;color:var(--muted);margin-top:10px}
+
+/* phone: the detail becomes a bottom sheet, filters fold behind one button */
+@container (max-width:719px){
+  .tools .fchips{display:none}
+  .tools.open .fchips{display:flex;flex-basis:100%}
+  .tools .more{display:inline-block}
+  .detail{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:14px 14px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);max-height:78%;overflow:auto;z-index:5}
+  .detail.none{display:none}
+  .dclose{display:inline-block;margin-left:auto}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:12px 6px}
+  .spares{align-items:stretch;width:100%}
+  .spares small{text-align:left;max-width:none}
+}
+.phone{width:360px;max-width:100%;height:740px;border:10px solid #22261F;border-radius:34px;overflow:hidden;background:var(--bg);position:relative;margin:0 auto;transform:translateZ(0)}
+.phone .scr{position:absolute;inset:0;overflow:auto;padding:12px 16px 24px}
+.phone .ptop{display:flex;justify-content:space-between;font-size:.76rem;color:var(--muted);margin:-2px 0 8px;font-family:var(--f-num)}
+.phone .ptop b{color:var(--accent)}
+.duo{display:grid;grid-template-columns:1fr;gap:32px;align-items:start}
+.phonerow{display:grid;grid-template-columns:380px minmax(0,1fr);gap:28px;align-items:start}
+.phonerow ul{margin:0;padding-left:18px;font-size:.88rem;color:var(--muted);max-width:60ch}
+.phonerow li{margin-bottom:6px}
+@media (max-width:860px){.phonerow{grid-template-columns:1fr}}
+@media (max-width:640px){.shell{grid-template-columns:1fr}.shell nav{display:none}.phone{border-width:0;border-radius:0;height:auto;min-height:600px}.phone .scr{position:relative;padding:12px 0}.phone{transform:none}}
+@media (prefers-reduced-motion:no-preference){.tile{transition:transform .12s}.grid .tile:hover{transform:translateY(-2px)}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <small>Outpost Company · design mockup · 2026-10-28</small>
+      <h1>Warehouse revamp: item icons</h1>
+      <p>Every item gets a 48×48 placeholder icon drawn in code from a small descriptor (shape, tint, badge). No image files, no outside art. Human-made art replaces them later, one icon key per item.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-th="auto" aria-pressed="true">Auto</button><button type="button" data-th="light" aria-pressed="false">Light</button><button type="button" data-th="dark" aria-pressed="false">Dark</button>
+    </div>
+  </header>
+  <div class="fogline"></div>
+  <p class="note"><b>Placeholders.</b> These icons are for the game screen during Early Access. The Steam page, capsule art and trailer need human-made art (see the store-page plan). Any icon can be swapped for a drawn one by its key without touching game code.</p>
+
+  <section class="block" id="sheet">
+    <h2>Icon sheet</h2>
+    <p class="lede">All 23 items, 9 bulk stocks and tanbark (cash, not an item). "Live" items are in the game today; "Planned" come with the species and Sawmill slices; "Fishing" are stubs for the Fishing camp.</p>
+    <div id="sheetBody"></div>
+  </section>
+
+  <section class="block" id="rules">
+    <h2>Icon rules</h2>
+    <p class="lede">One frame, four rarities, five states. Rarity is shown three ways (frame color, frame weight, pips on the top edge) and always named in text, so it never relies on color.</p>
+    <div class="rules">
+      <div class="rule"><h3>Rarity frames</h3><div class="row" id="rRarity"></div></div>
+      <div class="rule"><h3>States</h3><div class="row" id="rStates"></div></div>
+      <div class="rule"><h3>Sizes</h3><div class="row" id="rSizes"></div><p class="hint">24 px for toasts and order cards, 48 px in the grid, 96 px in the detail pane.</p></div>
+      <div class="rule"><h3>Palette</h3><div class="sw" id="rPal"></div><p class="hint">One ink outline (2 px, round joins) and flat fills from a coast palette. Icons look the same in both themes, as drawn art would; only the tile behind them changes.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="screen">
+    <h2>Warehouse screen</h2>
+    <p class="lede">A mid-game sample (Logging outpost 4, Sawmill open). Tap any tile. Selling and locking work in this mockup. The sidebar and top bar are stand-ins for the parallel UI rework.</p>
+    <div class="duo">
+      <div>
+        <div class="shell">
+          <div class="tb"><span>Outpost Company</span><span class="cash">Logging cash <b>$12,400</b></span><span>Sawmill cash <b>$2,150</b></span><span>Shares <b>38</b> · <b>9</b></span></div>
+          <nav aria-label="Sidebar stand-in"><small>Camps</small><a href="#screen">Logging</a><a href="#screen">Sawmill</a><small>Company</small><a href="#screen" class="on">Warehouse <span class="nb">3</span></a><a href="#screen">Orders</a><a href="#screen">Shop</a><a href="#screen">Almanac</a></nav>
+          <main><div class="wh" id="whDesk"></div></main>
+        </div>
+        <p class="stand">Desktop. The shell is a stand-in.</p>
+      </div>
+      <div class="phonerow">
+        <div>
+        <div class="phone"><div class="scr"><div class="ptop"><span>Logging <b>$12.4K</b></span><span>Shares 38</span><span>☰</span></div><div class="wh" id="whPhone"></div></div></div>
+        <p class="stand" style="text-align:center">Phone, 360 px wide. Tap a tile: the detail opens as a bottom sheet.</p>
+        </div>
+        <ul>
+          <li>Same screen, one layout rule: under 720 px of width the detail pane becomes a bottom sheet and the filter chips fold behind <b>Filter</b>.</li>
+          <li>Tiles stay 56 px (48 px art) so they are easy to tap; five fit across a 360 px phone.</li>
+          <li>Tabs scroll sideways; the current tab is underlined, not only colored.</li>
+          <li>Sell spares stays at the top on every size: it is the one-tap answer for idle players.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* =====================================================================
+   ICON SYSTEM (placeholder art). Pure functions, no DOM: this block moves
+   into packages/core/src/icons.ts as is. iconSvg(spec) returns an SVG string.
+   ===================================================================== */
+const INK = '#2B241C';
+const O = `stroke="${INK}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"`;
+const T = `stroke="${INK}" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"`;
+/* tints: base, light, dark (and bark for wood) */
+const TINTS = {
+  pine:     {b:'#D2A86A', l:'#EBCF9A', d:'#8E6438', bark:'#8A5A34'},
+  spruce:   {b:'#E2D2A8', l:'#F4EBCF', d:'#A08A5C', bark:'#7C6A55'},
+  hemlock:  {b:'#B9845E', l:'#D9AC88', d:'#7A4D30', bark:'#5E3826'},
+  maple:    {b:'#E7CFA0', l:'#F7EBCB', d:'#B0915E', bark:'#8E8B80'},
+  oak:      {b:'#C29A63', l:'#DEC08F', d:'#87643C', bark:'#5E5246'},
+  redwood:  {b:'#B9563A', l:'#E0957A', d:'#7E2C1C', bark:'#8E3A26'},
+  brass:    {b:'#C9A143', l:'#ECD38A', d:'#8C6B22'},
+  bronze:   {b:'#5E9B88', l:'#9CCAB8', d:'#3C6B5C'},
+  amber:    {b:'#E0921F', l:'#F6C86C', d:'#A55E0E'},
+  fog:      {b:'#9DB5BC', l:'#DCE7E8', d:'#4F666E'},
+  iron:     {b:'#767A76', l:'#A9ACA7', d:'#454845'},
+  stone:    {b:'#A79C88', l:'#D2C9B5', d:'#6F6655'},
+  paper:    {b:'#E4D6B2', l:'#F6EEDA', d:'#B9A77E'},
+  silver:   {b:'#9FB1B4', l:'#D4DFDF', d:'#5A6E74'},
+  seaglass: {b:'#7FB7A4', l:'#C3E4D7', d:'#3F7766'},
+  pearl:    {b:'#EDE5D4', l:'#FFFFFF', d:'#B8AD98'},
+  wax:      {b:'#CEC5AC', l:'#ECE6D3', d:'#8B826A'},
+  bark:     {b:'#9A6440', l:'#C48E62', d:'#5E3826'},
+};
+const STAMP = '#D9541A', ROPE = '#B48A4E', TWINE = '#8E3A26';
+
+/* Glyphs: each draws inside 0..48 and leaves the top-left 16×16 free for a badge where it can. */
+const GLYPHS = {
+  // a pile of three log ends: bulk logs by species
+  pile(c){ const end = (x, y) => `<circle cx="${x}" cy="${y}" r="9.5" fill="${c.bark}" ${O}/><circle cx="${x}" cy="${y}" r="6.8" fill="${c.l}"/><circle cx="${x}" cy="${y}" r="3.8" ${T}/><circle cx="${x}" cy="${y}" r="1.3" fill="${c.d}"/>`;
+    return end(15, 34) + end(33, 34) + end(24, 18); },
+  // a long peeled mast pole, end grain at the top right
+  spar(c){ return `<path d="M6 36 L34 8 L41 15 L13 43 Z" fill="${c.b}" ${O}/><path d="M11 37 L35 13 M15 40 L38 17" ${T}/>`+
+    `<ellipse cx="37.5" cy="11.5" rx="5" ry="3.2" transform="rotate(-45 37.5 11.5)" fill="${c.l}" ${O}/><circle cx="37.5" cy="11.5" r="1.1" fill="${c.d}"/>`; },
+  // one stout log, side view, bark pattern by species
+  log(c, o){ return `<path d="M9 17 H35 V35 H9 Q5 26 9 17 Z" fill="${c.bark}" ${O}/>` + barkLines(o.pattern) +
+    `<ellipse cx="35" cy="26" rx="7.5" ry="9" fill="${c.l}" ${O}/><ellipse cx="35" cy="26" rx="4.5" ry="5.6" ${T}/><ellipse cx="35" cy="26" rx="1.7" ry="2.1" fill="${c.d}"/>`; },
+  // a thick cross-section slice with a deep heart
+  disc(c){ return `<ellipse cx="25" cy="30" rx="18" ry="13" fill="${c.bark}" ${O}/><ellipse cx="25" cy="26" rx="18" ry="13" fill="${c.bark}" ${O}/>`+
+    `<ellipse cx="25" cy="26" rx="15" ry="10.5" fill="${c.l}"/><ellipse cx="25" cy="26" rx="11" ry="7.6" ${T}/><ellipse cx="25" cy="26" rx="7.5" ry="5.2" fill="${c.b}" ${O}/><ellipse cx="25" cy="26" rx="3.5" ry="2.4" fill="${c.d}"/>`; },
+  // a board in perspective; figure: clear | knot1 | knots | quarter | spalt | birdseye
+  board(c, o){ const f = o.figure || 'clear';
+    let fig = '';
+    if (f === 'knot1') fig = knot(22, 25);
+    if (f === 'knots') fig = knot(17, 27) + knot(27, 21) + knot(33, 23);
+    if (f === 'quarter') fig = `<path d="M15 27 l4 -1 M21 22 l5 -1 M26 25 l4 -1 M30 19 l5 -1 M19 30 l3 -1 M33 22 l3 -1" stroke="${c.d}" stroke-width="2.2" stroke-linecap="round"/>`;
+    if (f === 'spalt') fig = `<path d="M12 29 q4 -5 8 -2 t9 -6 t8 -2 M17 33 q5 -3 9 -6 t7 -4" stroke="${INK}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+    if (f === 'birdseye') fig = [[16,28],[21,24],[26,27],[30,21],[34,24],[24,31],[19,32]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="none" stroke="${c.d}" stroke-width="1.2"/>`).join('');
+    return `<path d="M18 38 L42 18 V22 L18 42 Z" fill="${c.d}" ${O}/><path d="M6 31 L18 38 V42 L6 35 Z" fill="${c.b}" ${O}/>`+
+      `<path d="M6 31 L30 11 L42 18 L18 38 Z" fill="${c.l}" ${O}/><path d="M11 32 L33 14 M15 35 L37 17" ${T}/>` + fig; },
+  // three boards stacked, two straps: a plank bundle (straps:false for the lumber yard)
+  bundle(c, o){ const plank = y => `<rect x="5" y="${y}" width="34" height="8" fill="${c.b}" ${O}/><rect x="39" y="${y}" width="5" height="8" fill="${c.l}" ${O}/><path d="M9 ${y+4} H34" ${T}/>`;
+    const k = o.knots || 0, kn = [knot(12, 33), knot(28, 25), knot(20, 17), knot(31, 33)].slice(0, k).join('');
+    const straps = o.straps === false ? '' : `<path d="M14 11 V41 M30 11 V41" stroke="${ROPE}" stroke-width="3.2"/><path d="M14 11 V41 M30 11 V41" stroke="${INK}" stroke-width="1" opacity=".55" stroke-dasharray="2 2"/>`;
+    return plank(13) + plank(21) + plank(29) + kn + straps; },
+  // a squared timber
+  beam(c){ return `<path d="M6 22 L30 7 L42 13 L18 28 Z" fill="${c.l}" ${O}/><path d="M18 28 L42 13 V24 L18 39 Z" fill="${c.b}" ${O}/><path d="M6 22 L18 28 V39 L6 33 Z" fill="${c.l}" ${O}/>`+
+    `<path d="M9 26 l6 3 v6 l-6 -3 z" ${T}/><path d="M22 31 L39 20 M22 35 L39 24" ${T}/>`; },
+  burl(c){ return `<path d="M11 31 C5 23 11 10 22 12 C28 5 41 11 39 21 C45 29 37 41 26 38 C18 43 9 39 11 31 Z" fill="${c.b}" ${O}/>`+
+    `<path d="M19 24 c2 -4 8 -3 7 1 c-1 3 -5 2 -4 0 M29 30 c3 -2 6 1 3 3 c-2 1 -3 -1 -2 -2 M30 18 c2 -1 4 1 2 2" ${T}/>` +
+    [[16,30],[23,32],[34,24],[25,18],[19,18]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${c.d}"/>`).join(''); },
+  drop(c){ return `<path d="M25 6 C31 16 39 22 39 31 A14 13 0 0 1 11 31 C11 22 19 16 25 6 Z" fill="${c.b}" ${O}/>`+
+    `<path d="M16 30 C16 25 19 21 22 18" stroke="${c.l}" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="30" cy="33" r="2" fill="${c.d}"/><circle cx="25" cy="37" r="1.2" fill="${c.d}"/>`; },
+  marker(c){ return `<path d="M21 27 H29 V44 H21 Z" fill="${TINTS.stone.b}" ${O}/><circle cx="25" cy="19" r="13" fill="${c.b}" ${O}/><circle cx="25" cy="19" r="9.5" ${T}/>`+
+    `<path d="M25 12 V26 M18 19 H32" stroke="${c.d}" stroke-width="1.6"/><path d="M25 9.5 L22.5 13.5 H27.5 Z" fill="${c.d}"/><circle cx="25" cy="19" r="1.6" fill="${c.d}"/>`; },
+  deadeye(c){ return `<circle cx="25" cy="25" r="16" fill="${c.b}" ${O}/><circle cx="25" cy="25" r="13" ${T}/>`+
+    `<circle cx="25" cy="17.5" r="3.2" fill="${c.d}" ${O}/><circle cx="18.5" cy="29" r="3.2" fill="${c.d}" ${O}/><circle cx="31.5" cy="29" r="3.2" fill="${c.d}" ${O}/>`+
+    `<path d="M14 15 a14 14 0 0 1 7 -5" stroke="${c.l}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`; },
+  lens(c){ return `<circle cx="25" cy="25" r="16" fill="${c.d}" ${O}/><circle cx="25" cy="25" r="12" fill="${c.b}"/>`+
+    `<path d="M14 27 q5 -4 10 0 t11 0 M16 32 q4 -3 9 0 t8 0" stroke="${c.l}" stroke-width="2" fill="none" stroke-linecap="round"/>`+
+    `<path d="M17 18 a10 10 0 0 1 7 -4" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/>`; },
+  axehead(c){ return `<path d="M7 19 H19 L33 11 Q43 25 33 39 L19 31 H7 Z" fill="${c.b}" ${O}/><rect x="10" y="22" width="6" height="6" fill="${c.d}" ${O}/>`+
+    `<path d="M31 14 Q38 25 31 36" stroke="${c.l}" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="1.6" fill="${TINTS.amber.d}"/><circle cx="27" cy="30" r="1.2" fill="${TINTS.amber.d}"/>`; },
+  knotstone(c){ return `<path d="M9 29 C7 17 19 8 30 11 C41 14 43 29 36 36 C30 42 13 41 9 29 Z" fill="${c.b}" ${O}/>`+
+    `<ellipse cx="25" cy="25" rx="8.5" ry="7" fill="${c.l}" ${O}/><ellipse cx="25" cy="25" rx="5" ry="4" ${T}/><ellipse cx="25" cy="25" rx="1.8" ry="1.5" fill="${c.d}"/><path d="M33 17 L37 13 M13 33 L17 31 L15 36" ${T}/>`; },
+  barkstrip(c){ const s = dy => `<path d="M7 ${36+dy} C13 ${22+dy} 25 ${13+dy} 41 ${12+dy} L42 ${18+dy} C28 ${19+dy} 18 ${27+dy} 13 ${39+dy} Z" fill="${c.b}" ${O}/><path d="M14 ${33+dy} C19 ${25+dy} 27 ${19+dy} 37 ${17+dy}" ${T}/>`;
+    return s(-4) + s(5); },
+  spikes(c){ return `<path d="M9 13 L13 9 L16 12 L38 34 L40 40 L34 38 L12 16 Z" fill="${c.b}" ${O}/><path d="M7 11 L11 7 L17 13 L13 17 Z" fill="${c.d}" ${O}/>`+
+    `<path d="M33 9 L38 12 L31 26 Q28 31 22 33 L13 40 L10 37 L19 30 Q24 27 27 22 Z" fill="${c.l}" ${O}/>`; },
+  fish(c){ return `<path d="M5 26 C13 13 30 13 37 23 L44 16 L43 34 L37 28 C30 38 13 38 5 26 Z" fill="${c.b}" ${O}/>`+
+    `<path d="M9 28 C16 33 28 33 35 27" stroke="${c.l}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M18 18 L23 11 L28 17" fill="${c.d}" ${O}/>`+
+    `<circle cx="12" cy="23" r="1.8" fill="${INK}"/><path d="M17 20 Q15 25 17 30" ${T}/>`; },
+  float(c){ return `<circle cx="25" cy="27" r="15" fill="${c.b}" ${O}/><path d="M13 19 L37 35 M13 35 L37 19 M10 27 H40 M25 12 V42" stroke="${ROPE}" stroke-width="1.6" fill="none"/>`+
+    `<path d="M22 10 q3 -5 6 0" stroke="${ROPE}" stroke-width="2.2" fill="none"/><path d="M16 21 a11 11 0 0 1 6 -5" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".75"/>`; },
+  chart(c){ return `<path d="M8 13 H40 V37 H8 Z" fill="${c.l}" ${O}/><rect x="6" y="9" width="36" height="5" rx="2.5" fill="${c.b}" ${O}/><rect x="6" y="36" width="36" height="5" rx="2.5" fill="${c.b}" ${O}/>`+
+    `<path d="M12 31 C15 26 19 29 21 24 C23 19 28 22 30 18 C32 15 35 17 37 16" ${T}/><path d="M28 27 l4 4 M32 27 l-4 4" stroke="${TWINE}" stroke-width="1.8" stroke-linecap="round"/>`+
+    `<ellipse cx="16" cy="20" rx="4" ry="2.5" fill="${c.d}" opacity=".35"/>`; },
+  pearl(c){ return `<path d="M5 30 Q25 46 45 30 Q42 24 25 26 Q8 24 5 30 Z" fill="${TINTS.stone.l}" ${O}/><path d="M10 30 Q25 40 40 30" ${T}/>`+
+    `<circle cx="25" cy="23" r="8" fill="${c.b}" ${O}/><circle cx="22" cy="20" r="2.4" fill="${c.l}"/>`; },
+  ambergris(c){ return `<path d="M8 30 C6 21 15 14 22 16 C27 10 38 13 40 21 C45 28 39 38 29 37 C21 41 10 38 8 30 Z" fill="${c.b}" ${O}/>`+
+    `<path d="M14 27 c4 -2 8 2 12 0 s7 -4 10 -2 M17 33 c3 1 7 -1 10 1" stroke="${c.d}" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M17 20 a7 7 0 0 1 5 -2" stroke="${c.l}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`; },
+  parcel(c){ return `<path d="M7 20 L25 12 L42 19 L24 27 Z" fill="${c.l}" ${O}/><path d="M7 20 L24 27 V41 L7 33 Z" fill="${c.b}" ${O}/><path d="M24 27 L42 19 V33 L24 41 Z" fill="${c.d}" ${O}/>`+
+    `<path d="M16 16 L33 23 V37 M15 23.5 V37" stroke="${TWINE}" stroke-width="2" fill="none"/><path d="M33 23 q4 -6 7 -2 q-3 3 -7 2" fill="none" stroke="${TWINE}" stroke-width="1.6"/>`; },
+};
+function knot(x, y){ return `<ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.6" fill="${INK}" opacity=".75"/>`; }
+function barkLines(p){
+  const L = {
+    plates:  'M12 21 h7 M22 21 h6 M14 26 h8 M25 26 h5 M12 31 h6 M21 31 h7',
+    scales:  'M13 21 q2 -2 4 0 M20 21 q2 -2 4 0 M27 21 q2 -2 4 0 M16 26 q2 -2 4 0 M23 26 q2 -2 4 0 M13 31 q2 -2 4 0 M20 31 q2 -2 4 0 M27 31 q2 -2 4 0',
+    furrows: 'M11 20 Q19 23 29 19 M11 25 Q20 28 29 24 M11 30 Q19 33 29 29',
+    smooth:  'M12 22 H29 M12 30 H27',
+    blocky:  'M12 20 h5 v5 M20 20 h6 v5 M13 27 h6 v5 M22 27 h6 v5',
+    fibrous: 'M11 19 H30 M11 22 H30 M11 25 H30 M11 28 H30 M11 31 H30',
+  }[p] || '';
+  return L ? `<path d="${L}" stroke="${INK}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>` : '';
+}
+/* Badges sit top-left. prime: the grader's stamp. q: Quarter-sawn. grade: a lumber tag. */
+const BADGES = {
+  prime: () => `<circle cx="9.5" cy="9.5" r="7.5" fill="${STAMP}" stroke="${INK}" stroke-width="1.6"/><text x="9.5" y="13.3" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="11" fill="#FFF7EC">P</text>`,
+  q:     () => `<circle cx="9.5" cy="9.5" r="7.5" fill="${STAMP}" stroke="${INK}" stroke-width="1.6"/><text x="9.5" y="13.3" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="11" fill="#FFF7EC">Q</text>`,
+  grade: t => `<rect x="2" y="2" width="20" height="12" rx="2" fill="#F6EEDA" stroke="${INK}" stroke-width="1.4"/><text x="12" y="11.4" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="8.5" fill="${INK}">${t}</text>`,
+};
+/* The one entry point. spec = {glyph, tint, badge?, badgeText?, pattern?, figure?, knots?, straps?}. ART overrides by key. */
+const ART = {}; // later: ART['logging.prime_spar'] = '<svg ...drawn art...>' or an image URL
+function iconSvg(key, spec, label){
+  if (ART[key]) return ART[key];
+  const c = TINTS[spec.tint] || TINTS.paper, g = GLYPHS[spec.glyph];
+  const body = g ? g(c, spec) : `<rect x="8" y="8" width="32" height="32" rx="4" fill="${c.b}" ${O}/>`;
+  const badge = spec.badge ? BADGES[spec.badge](spec.badgeText || '') : '';
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label || key}">${body}${badge}</svg>`;
+}
+
+/* =====================================================================
+   CATALOG (mirrors the proposed core data: ItemDef + icon, BulkDef)
+   status: live = in items.ts today; planned = species/Sawmill slices; fish = Fishing stub
+   ===================================================================== */
+const ITEMS = [
+  // Prime
+  {id:'logging.prime_spar', name:'Prime spar', cat:'prime', skill:'Logging', rarity:'made', sell:40, status:'live', icon:{glyph:'spar', tint:'spruce', badge:'prime'},
+    desc:'A straight, knot-free log stamped Prime. Good for ship masts.', from:'Perfect falls (3 from a spruce), clean grade 1 cuts, idle crews about 1 tree in 50', uses:['Orders','Building','Mill input']},
+  {id:'logging.prime_maple', name:'Prime maple', cat:'prime', skill:'Logging', rarity:'made', sell:60, status:'planned', icon:{glyph:'log', tint:'maple', badge:'prime', pattern:'smooth'},
+    desc:'A clear maple log stamped Prime. Makes the best flooring.', from:'Perfect falls on maple (2 in Winter), from Steam Camp', uses:['Orders','Building']},
+  {id:'logging.prime_oak', name:'Prime oak', cat:'prime', skill:'Logging', rarity:'made', sell:70, status:'planned', icon:{glyph:'log', tint:'oak', badge:'prime', pattern:'blocky'},
+    desc:'A heavy oak log stamped Prime. Wanted for staves and frames.', from:'Perfect falls on oak (2 each), from Diesel Road', uses:['Orders','Building']},
+  {id:'logging.cloudwood_heartwood', name:'Redwood heartwood', cat:'prime', skill:'Logging', rarity:'rare', sell:200, status:'planned', icon:{glyph:'disc', tint:'redwood', badge:'prime'},
+    desc:'The deep red heart of a giant. The city wants it.', from:'A perfect fall on a giant redwood, Into the Interior', uses:['Orders','Landfall City','Collection']},
+  {id:'fishing.prize_fish', name:'Prize fish', cat:'prime', skill:'Fishing', rarity:'made', sell:45, status:'fish', icon:{glyph:'fish', tint:'silver', badge:'prime'},
+    desc:'A big fish landed clean. Fishing’s Prime.', from:'Top results landing a large or giant fish', uses:['Orders','Sell']},
+  // Finds
+  {id:'logging.burl', name:'Burl', cat:'find', skill:'Logging', rarity:'common', sell:30, status:'live', icon:{glyph:'burl', tint:'bark'},
+    desc:'A swirly lump of wood. Buyers pay well for it.', from:'The felling and bucking games; idle crews, rarely', uses:['Sell','Building','Collection']},
+  {id:'logging.amber_pitch', name:'Amber pitch', cat:'find', skill:'Logging', rarity:'common', sell:12, status:'live', icon:{glyph:'drop', tint:'amber'},
+    desc:'Hard tree sap. Seals ship hulls and the mill pond dam.', from:'The bucking game (pine has the most)', uses:['Orders','Building','Sell']},
+  {id:'logging.survey_marker', name:'Survey marker', cat:'find', skill:'Logging', rarity:'uncommon', sell:18, status:'live', icon:{glyph:'marker', tint:'brass'},
+    desc:'An old brass marker. Trade one for a perk reroll.', from:'The skid game', uses:['Reroll','Building','Sell']},
+  {id:'logging.ships_fitting', name:'Ship’s fitting', cat:'find', skill:'Logging', rarity:'uncommon', sell:22, status:'live', icon:{glyph:'deadeye', tint:'bronze'},
+    desc:'Bronze parts from a wreck. Builds the circular saw.', from:'The haul game (washed up by the cove road)', uses:['Orders','Building','Sell']},
+  {id:'logging.fog_glass', name:'Fog-glass', cat:'find', skill:'Logging', rarity:'rare', sell:90, status:'live', icon:{glyph:'lens', tint:'fog'},
+    desc:'A smoky, sea-worn lens. Nobody knows who made it.', from:'Top results in the felling, skid and haul games', uses:['Sell','Building','Collection']},
+  {id:'logging.lost_axe_head', name:'Lost axe-head', cat:'find', skill:'Logging', rarity:'common', sell:8, status:'planned', icon:{glyph:'axehead', tint:'iron'},
+    desc:'A rusty axe-head with a maker’s mark. Six marks to find.', from:'The felling and skid games', uses:['Collection','Sell']},
+  {id:'logging.petrified_knot', name:'Petrified knot', cat:'find', skill:'Logging', rarity:'rare', sell:110, status:'planned', icon:{glyph:'knotstone', tint:'stone'},
+    desc:'A knot turned to stone. Hints at land further in.', from:'Felling and bucking, Into the Interior', uses:['Orders','Collection','Sell']},
+  {id:'sawmill.tramp_iron', name:'Tramp iron', cat:'find', skill:'Sawmill', rarity:'common', sell:4, status:'planned', icon:{glyph:'spikes', tint:'iron'},
+    desc:'Old spikes found inside logs. Sold as scrap.', from:'Saw boards; idle sawyers', uses:['Orders','Sell']},
+  {id:'sawmill.spalted_board', name:'Spalted board', cat:'find', skill:'Sawmill', rarity:'uncommon', sell:35, status:'planned', icon:{glyph:'board', tint:'maple', figure:'spalt'},
+    desc:'A board with dark ink lines. Cabinet makers love it.', from:'Saw boards; idle sawyers', uses:['Sell','Collection']},
+  {id:'sawmill.birdseye', name:'Birdseye figure', cat:'find', skill:'Sawmill', rarity:'rare', sell:150, status:'planned', icon:{glyph:'board', tint:'maple', figure:'birdseye'},
+    desc:'Maple full of tiny eyes. Worth a lot.', from:'A Clear maple board through a figure cell', uses:['Orders','Sell','Collection']},
+  {id:'fishing.glass_float', name:'Glass float', cat:'find', skill:'Fishing', rarity:'common', sell:10, status:'fish', icon:{glyph:'float', tint:'seaglass'},
+    desc:'A net float of green glass, washed in.', from:'Fishing games', uses:['Sell','Collection']},
+  {id:'fishing.drowned_chart', name:'Drowned chart', cat:'find', skill:'Fishing', rarity:'uncommon', sell:18, status:'fish', icon:{glyph:'chart', tint:'paper'},
+    desc:'A soaked sea chart. Trade one for a perk reroll.', from:'The net game, Deep Gully', uses:['Reroll','Orders','Sell']},
+  {id:'fishing.fog_pearl', name:'Fog pearl', cat:'find', skill:'Fishing', rarity:'rare', sell:90, status:'fish', icon:{glyph:'pearl', tint:'pearl'},
+    desc:'A grey pearl. Can stand in for fog-glass.', from:'Top results in fog', uses:['Sell','Collection']},
+  {id:'fishing.ambergris', name:'Ambergris', cat:'find', skill:'Fishing', rarity:'rare', sell:250, status:'fish', icon:{glyph:'ambergris', tint:'wax'},
+    desc:'A waxy lump from the deep. Worth a fortune.', from:'Top results, Deep Gully', uses:['Sell','Collection']},
+  // Lumber and goods
+  {id:'sawmill.quarter_sawn', name:'Quarter-sawn board', cat:'lumber', skill:'Sawmill', rarity:'made', sell:25, status:'live', icon:{glyph:'board', tint:'oak', badge:'q', figure:'quarter'},
+    desc:'A top board from a Prime log. The Admiralty wants it for decks.', from:'A great Saw boards run on a Prime log', uses:['Orders','Sell']},
+  {id:'sawmill.plank_bundle', name:'Plank bundle', cat:'lumber', skill:'Sawmill', rarity:'made', sell:10, status:'live', icon:{glyph:'bundle', tint:'pine'},
+    desc:'500 bd ft of Common lumber. Builds the bunkhouse.', from:'Common lumber at the Sawmill', uses:['Building','Orders','Sell']},
+  {id:'sawmill.cloudwood_beam', name:'Redwood beam', cat:'lumber', skill:'Sawmill', rarity:'made', sell:120, status:'planned', icon:{glyph:'beam', tint:'redwood'},
+    desc:'One great squared beam. For the city’s halls.', from:'The Beam cut on a redwood log', uses:['Orders','Landfall City']},
+  {id:'fishing.smoked_ration', name:'Smoked ration', cat:'lumber', skill:'Fishing', rarity:'made', sell:3, status:'fish', icon:{glyph:'parcel', tint:'paper'},
+    desc:'Smoked fish in paper. Feeds the logging crews.', from:'The smokehouse', uses:['Logging wages','Orders']},
+  // not an item: shown for reference only
+  {id:'logging.tanbark', name:'Tanbark', cat:'find', skill:'Logging', rarity:'common', sell:14, status:'cash', icon:{glyph:'barkstrip', tint:'bark'},
+    desc:'Hemlock bark for tanners. Sold for cash as you cut.', from:'Hemlock in Spring and Summer', uses:['Cash']},
+];
+const BULK = [
+  {id:'company.logs.pine', name:'Pine logs', tab:'logs', icon:{glyph:'pile', tint:'pine'}, desc:'Waiting in the log pond for the Sawmill.'},
+  {id:'company.logs.spruce', name:'Spruce logs', tab:'logs', icon:{glyph:'pile', tint:'spruce'}, desc:'Light and quick to saw. Poor as boards.'},
+  {id:'company.logs.hemlock', name:'Hemlock logs', tab:'logs', icon:{glyph:'pile', tint:'hemlock'}, desc:'Makes plank bundles and pier beams.'},
+  {id:'company.logs.maple', name:'Maple logs', tab:'logs', icon:{glyph:'pile', tint:'maple'}, desc:'Flooring, and sometimes birdseye.'},
+  {id:'company.logs.oak', name:'Oak logs', tab:'logs', icon:{glyph:'pile', tint:'oak'}, desc:'Slow to saw. Clear boards turn Quarter-sawn.'},
+  {id:'company.logs.cloudwood', name:'Redwood logs', tab:'logs', icon:{glyph:'pile', tint:'redwood'}, desc:'Saw as beams for the city.'},
+  {id:'sawmill.lumber.clear', name:'Clear lumber', tab:'lumber', camp:true, icon:{glyph:'bundle', tint:'pine', straps:false, knots:0, badge:'grade', badgeText:'CL'}, desc:'No knots. Sells at 3× the log price.'},
+  {id:'sawmill.lumber.select', name:'Select lumber', tab:'lumber', camp:true, icon:{glyph:'bundle', tint:'pine', straps:false, knots:1, badge:'grade', badgeText:'SE'}, desc:'A few small knots. Sells at 2×.'},
+  {id:'sawmill.lumber.common', name:'Common lumber', tab:'lumber', camp:true, icon:{glyph:'bundle', tint:'pine', straps:false, knots:4, badge:'grade', badgeText:'CO'}, desc:'Knotty. Sells at 1×, or makes plank bundles.'},
+];
+const RAR = {made:'Made', common:'Common', uncommon:'Uncommon', rare:'Rare'};
+const PIPS = {made:1, common:0, uncommon:1, rare:2};
+const STATUS = {live:['Live','live'], planned:['Planned',''], fish:['Fishing','fish'], cash:['Cash, not an item','']};
+const CATS = [['prime','Prime timber'], ['find','Finds'], ['lumber','Lumber and goods']];
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? (n/1e3).toFixed(1).replace(/\.0$/, '') + 'K' : Math.round(n).toLocaleString('en-US');
+
+/* tile markup: always a labelled element; state never by color alone */
+const LOCK_SVG = `<svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="4.5" width="7" height="5" rx="1" fill="currentColor"/><path d="M3 4.5 V3 a2 2 0 0 1 4 0 V4.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`;
+function tileHtml(it, o = {}){
+  const tag = o.button ? 'button' : 'div', size = o.size ? ' ' + o.size : '';
+  const r = it.rarity || 'common', pips = PIPS[r] ? `<span class="pips" aria-hidden="true">${'<i></i>'.repeat(PIPS[r])}</span>` : '';
+  const bits = [it.name, RAR[r]];
+  if (o.count != null) bits.push(`${o.count.toLocaleString('en-US')} held`);
+  if (o.needed) bits.push('needed for an order or building');
+  if (o.isNew) bits.push('new');
+  if (o.locked) bits.push('locked');
+  if (o.unknown) { bits.length = 0; bits.push('Not found yet'); }
+  const label = bits.join(', ');
+  return `<${tag} class="tile r-${r}${size}${o.unknown ? ' unknown' : ''}" ${o.button ? `type="button" data-id="${it.id}"` : 'role="img"'} aria-label="${label}" title="${o.unknown ? '???' : it.name}">` +
+    iconSvg(it.id, it.icon, it.name).replace('role="img"', 'aria-hidden="true"') + pips +
+    (o.unknown ? '<span class="q" aria-hidden="true">?</span>' : '') +
+    (o.count != null && !o.unknown ? `<span class="cnt${o.count ? '' : ' zero'}" aria-hidden="true">${fmt(o.count)}</span>` : '') +
+    (o.isNew ? '<span class="newdot" aria-hidden="true"></span>' : '') +
+    (o.locked ? `<span class="lock" aria-hidden="true">${LOCK_SVG}</span>` : '') +
+    (o.needed && !o.isNew ? '<span class="need" aria-hidden="true">!</span>' : '') + `</${tag}>`;
+}
+
+/* ---------- icon sheet */
+(function sheet(){
+  const card = it => `<div class="icard">${tileHtml(it)}<div><b>${it.name}</b><code>${it.id}</code><span class="chip ${STATUS[it.status][1]}">${STATUS[it.status][0]}</span></div></div>`;
+  const bcard = b => `<div class="icard">${tileHtml(Object.assign({rarity:'common'}, b))}<div><b>${b.name}</b><code>${b.id}</code><span class="chip">${b.camp ? 'Sawmill camp stock' : 'Log pond, bd ft'}</span></div></div>`;
+  document.getElementById('sheetBody').innerHTML =
+    CATS.map(([k, label]) => { const xs = ITEMS.filter(i => i.cat === k && i.status !== 'cash');
+      return `<div class="cat"><h3>${label} <span>${xs.length}</span></h3><div class="sheetgrid">${xs.map(card).join('')}</div></div>`; }).join('') +
+    `<div class="cat"><h3>Bulk stocks <span>9 · counted in bd ft</span></h3><div class="sheetgrid">${BULK.map(bcard).join('')}</div></div>` +
+    `<div class="cat"><h3>Not an item <span>shown in toasts and the ledger</span></h3><div class="sheetgrid">${ITEMS.filter(i => i.status === 'cash').map(card).join('')}</div></div>`;
+  const by = id => ITEMS.find(i => i.id === id);
+  document.getElementById('rRarity').innerHTML = [['logging.burl','Common: thin grey frame'],['logging.ships_fitting','Uncommon: green, 1 pip'],['logging.fog_glass','Rare: violet, double, 2 pips'],['logging.prime_spar','Made: orange, square stamp']]
+    .map(([id, t]) => `<figure>${tileHtml(by(id))}<figcaption>${t}</figcaption></figure>`).join('');
+  document.getElementById('rStates').innerHTML = [
+    [tileHtml(by('logging.amber_pitch'), {count:12}), 'Count'],
+    [tileHtml(by('logging.fog_glass'), {count:1, isNew:true}), 'New'],
+    [tileHtml(by('logging.prime_spar'), {count:14, needed:true}), 'Needed'],
+    [tileHtml(by('logging.ships_fitting'), {count:3, locked:true}), 'Locked'],
+    [tileHtml(by('logging.petrified_knot'), {unknown:true}), 'Not found'],
+  ].map(([h, t]) => `<figure>${h}<figcaption>${t}</figcaption></figure>`).join('');
+  document.getElementById('rSizes').innerHTML = ['sm', '', 'lg'].map(s => `<figure>${tileHtml(by('logging.prime_spar'), {size:s})}<figcaption>${s === 'sm' ? '24' : s === 'lg' ? '96' : '48'} px</figcaption></figure>`).join('');
+  const pal = [['pine','Pine'],['spruce','Spruce'],['hemlock','Hemlock'],['maple','Maple'],['oak','Oak'],['redwood','Redwood'],['amber','Amber'],['brass','Brass'],['bronze','Bronze'],['fog','Fog-glass'],['iron','Iron'],['stone','Stone']];
+  document.getElementById('rPal').innerHTML = pal.map(([k, n]) => `<div><span style="background:${TINTS[k].b}"></span>${n}</div>`).join('');
+})();
+
+/* =====================================================================
+   WAREHOUSE SCREEN (sample state). Two independent instances: desktop and phone.
+   ===================================================================== */
+function makeState(){
+  return {
+    bank:{'logging.prime_spar':14,'logging.burl':7,'logging.amber_pitch':3,'logging.survey_marker':2,'logging.ships_fitting':3,'logging.fog_glass':1,
+          'logging.prime_maple':5,'sawmill.quarter_sawn':4,'sawmill.plank_bundle':6,'logging.lost_axe_head':2,'sawmill.tramp_iron':11},
+    found:{'logging.prime_spar':41,'logging.burl':19,'logging.amber_pitch':22,'logging.survey_marker':6,'logging.ships_fitting':9,'logging.fog_glass':2,
+           'logging.prime_maple':5,'sawmill.quarter_sawn':7,'sawmill.plank_bundle':18,'logging.lost_axe_head':3,'sawmill.tramp_iron':14},
+    bulk:{'company.logs.pine':18400,'company.logs.spruce':6200,'company.logs.hemlock':9100,'company.logs.maple':2400,'sawmill.lumber.clear':3100,'sawmill.lumber.select':5600,'sawmill.lumber.common':8800},
+    isNew:{'logging.fog_glass':1,'logging.prime_maple':1,'sawmill.tramp_iron':1},
+    locks:{'logging.ships_fitting':1},
+    needs:{
+      'logging.prime_spar':[{who:'Admiralty spar order', n:2, kind:'order'}, {who:'Edger (to build)', n:3, kind:'build'}],
+      'logging.amber_pitch':[{who:'Patch the Perseverance', n:3, kind:'order'}, {who:'Admiralty spar order', n:2, kind:'order'}],
+      'logging.ships_fitting':[{who:'Patch the Perseverance', n:3, kind:'order'}, {who:'Edger (to build)', n:2, kind:'build'}],
+      'sawmill.plank_bundle':[{who:'Bunkhouse level 3', n:16, kind:'build'}],
+      'logging.prime_maple':[{who:'Company House floor', n:8, kind:'order'}],
+      'logging.burl':[{who:'Company House floor', n:2, kind:'order'}],
+    },
+    tab:'all', sort:'default', filter:null, q:'', sel:null, armed:null, toolsOpen:false,
+  };
+}
+const SORTS = [['default','Group'],['name','Name'],['count','Count'],['value','Value'],['rarity','Rarity']];
+const FILTERS = [['needed','Needed'],['new','New'],['spare','Spare'],['locked','Locked']];
+const RORD = {rare:0, uncommon:1, made:2, common:3};
+const realItems = ITEMS.filter(i => i.status !== 'cash' && i.status !== 'fish');   // what this save could ever hold
+const UNITS = {logs:'bd ft'};
+
+function mountWh(root, phone){
+  const S = makeState();
+  const n = id => S.bank[id] || 0;
+  const needOf = id => (S.needs[id] || []).reduce((a, x) => a + x.n, 0);
+  const spare = id => S.locks[id] ? 0 : Math.max(0, n(id) - needOf(id));
+  const spareValue = () => realItems.reduce((a, i) => a + spare(i.id)*i.sell, 0);
+  const itemOf = id => ITEMS.find(i => i.id === id) || BULK.find(b => b.id === id);
+
+  function visible(){
+    let xs = realItems.filter(i => n(i.id) > 0);
+    if (S.tab !== 'all') xs = xs.filter(i => i.cat === S.tab);
+    if (S.q) xs = xs.filter(i => i.name.toLowerCase().includes(S.q.toLowerCase()));
+    if (S.filter === 'needed') xs = xs.filter(i => needOf(i.id) > 0);
+    if (S.filter === 'new') xs = xs.filter(i => S.isNew[i.id]);
+    if (S.filter === 'spare') xs = xs.filter(i => spare(i.id) > 0);
+    if (S.filter === 'locked') xs = xs.filter(i => S.locks[i.id]);
+    const cmp = {name:(a,b) => a.name.localeCompare(b.name), count:(a,b) => n(b.id) - n(a.id), value:(a,b) => n(b.id)*b.sell - n(a.id)*a.sell, rarity:(a,b) => RORD[a.rarity] - RORD[b.rarity]}[S.sort];
+    return cmp ? xs.slice().sort(cmp) : xs;
+  }
+  const tileFor = i => tileHtml(i, {button:true, count:n(i.id), isNew:!!S.isNew[i.id], locked:!!S.locks[i.id], needed:needOf(i.id) > 0});
+
+  function gridHtml(){
+    if (S.tab === 'collection'){
+      return CATS.map(([k, label]) => { const xs = realItems.filter(i => i.cat === k), got = xs.filter(i => S.found[i.id]).length;
+        return `<div class="gh"><span>${label}</span><span>${got} of ${xs.length}</span></div><div class="prog"><div class="bar"><i style="width:${Math.round(got/xs.length*100)}%"></i></div><span>${got === xs.length ? 'Complete' : `${xs.length - got} to find`}</span></div>` +
+          xs.map(i => S.found[i.id] ? tileHtml(i, {button:true, count:S.found[i.id]}) : tileHtml(i, {button:true, unknown:true})).join(''); }).join('');
+    }
+    if (S.tab === 'logs' || (S.tab === 'lumber' && !S.q && !S.filter)){
+      const bs = BULK.filter(b => b.tab === S.tab && (S.bulk[b.id] || S.tab === 'logs'));
+      const head = S.tab === 'logs' ? `<div class="gh"><span>Log pond</span><span>${fmt(bs.reduce((a, b) => a + (S.bulk[b.id] || 0), 0))} bd ft</span></div>` : `<div class="gh"><span>Lumber yard · Sawmill camp</span><span>resets at mill close</span></div>`;
+      const cards = `<div class="bulk">${bs.map(b => `<button type="button" class="bcard" data-id="${b.id}" aria-label="${b.name}, ${(S.bulk[b.id] || 0).toLocaleString('en-US')} board feet">${tileHtml(Object.assign({rarity:'common'}, b))}<div><b>${b.name}</b><span>${fmt(S.bulk[b.id] || 0)} bd ft</span><small>${b.desc}</small></div></button>`).join('')}</div>`;
+      if (S.tab === 'logs') return head + cards + `<p class="empty" style="grid-column:1/-1">Logs are not sold here. The Sawmill saws them; Logging sells the rest at the cove.</p>`;
+      const xs = visible();
+      return `<div class="gh"><span>Warehouse goods</span><span>${xs.length}</span></div>` + xs.map(tileFor).join('') + head + cards;
+    }
+    const xs = visible();
+    if (!xs.length) return `<p class="empty">${S.filter || S.q ? 'Nothing matches. Clear the filter to see everything.' : 'Empty. Perfect falls and good cuts make Prime timber. Mini-games turn up finds; idle crews do too, rarely.'}</p>`;
+    if (S.tab === 'all' && S.sort === 'default'){
+      return CATS.map(([k, label]) => { const g = xs.filter(i => i.cat === k); return g.length ? `<div class="gh"><span>${label}</span><span>${g.length}</span></div>` + g.map(tileFor).join('') : ''; }).join('');
+    }
+    return xs.map(tileFor).join('');
+  }
+
+  function detailHtml(){
+    const it = S.sel && itemOf(S.sel);
+    if (!it) return `<p class="hint" style="margin:0">Tap an item to see what it is for, what needs it and where it comes from.</p>`;
+    const bulk = !!BULK.find(b => b.id === it.id);
+    const close = `<button class="btn dclose" type="button" data-close>Close</button>`;
+    if (bulk){
+      return `<div class="dh">${tileHtml(Object.assign({rarity:'common'}, it), {size:'lg'})}<div><h3>${it.name}</h3><div class="rar r-common">${it.camp ? 'Sawmill camp stock' : 'Log pond'}</div></div>${close}</div>
+        <div class="facts"><div><small>Held</small><b>${fmt(S.bulk[it.id] || 0)} bd ft</b></div><div><small>Stays at close camp</small><b>${it.camp ? 'No' : 'Yes'}</b></div></div>
+        <p>${it.desc}</p><p class="hint">${it.camp ? 'Sold from the Sawmill page. Common goes into plank bundles first while the bunkhouse needs them.' : 'Choose which species go to the mill with the send toggles on the Logging page.'}</p>`;
+    }
+    const tab = S.tab === 'collection', found = S.found[it.id];
+    if (tab && !found){
+      return `<div class="dh">${tileHtml(it, {size:'lg', unknown:true})}<div><h3>???</h3><div class="rar r-${it.rarity}"><i></i> ${RAR[it.rarity]}</div></div>${close}</div>
+        <p>Not found yet.</p><div class="dsec"><h4>Turns up in</h4><ul><li><span>${it.from.split(/[,;]/)[0]}</span></li></ul></div>`;
+    }
+    const have = n(it.id), need = needOf(it.id), sp = spare(it.id), locked = !!S.locks[it.id];
+    const needs = (S.needs[it.id] || []).map(x => `<li class="${x.kind === 'build' ? 'kept' : ''}"><span>${x.who}</span><b>${x.kind === 'build' ? 'keep ' : ''}${x.n}</b></li>`).join('');
+    const armed = S.armed === it.id;
+    return `<div class="dh">${tileHtml(it, {size:'lg', count:tab ? found : have, locked})}<div><h3>${it.name}</h3><div class="rar r-${it.rarity}">${'<i></i>'.repeat(PIPS[it.rarity])} ${RAR[it.rarity]} · ${it.skill}</div></div>${close}</div>
+      <div class="facts"><div><small>${tab ? 'Found in all' : 'You have'}</small><b>${fmt(tab ? found : have)}</b></div><div><small>Sells for</small><b>${money(it.sell)}</b></div>
+        ${tab ? `<div><small>First found</small><b>Spring 1891</b></div><div><small>Held now</small><b>${fmt(have)}</b></div>` : `<div><small>Needed</small><b>${need}</b></div><div><small>Spare</small><b>${sp}</b></div>`}</div>
+      <p>${it.desc}</p>
+      ${needs && !tab ? `<div class="dsec"><h4>Needed for</h4><ul>${needs}</ul></div>` : ''}
+      <div class="dsec"><h4>Comes from</h4><ul><li><span>${it.from}</span></li></ul></div>
+      <div class="dsec"><h4>Used for</h4><ul><li><span>${it.uses.join(' · ')}</span></li></ul></div>
+      ${tab ? '' : `<div class="acts">
+        <button class="btn" type="button" data-sell1 ${have && !locked ? '' : 'disabled'}>Sell 1 · ${money(it.sell)}</button>
+        <button class="btn" type="button" data-sellspare ${sp ? '' : 'disabled'}>Sell spare ${sp ? '(' + sp + ')' : ''}</button>
+        <button class="btn${armed ? ' danger' : ''}" type="button" data-sellall ${have && !locked ? '' : 'disabled'}>${armed ? 'Sell all anyway' : 'Sell all'}</button>
+        <button class="btn" type="button" data-lock aria-pressed="${locked}">${locked ? 'Locked' : 'Lock'}</button>
+        ${armed ? `<span class="confirm" role="status">${need} are needed for orders or building. Tap again to sell all ${have}.</span>` : ''}
+        ${locked ? `<span class="hint" style="flex-basis:100%;margin:0">Locked: never sold, and auto-fill skips it.</span>` : ''}
+      </div>`}`;
+  }
+
+  function render(){
+    const total = realItems.reduce((a, i) => a + n(i.id), 0), news = Object.keys(S.isNew).length, sv = spareValue();
+    const count = k => k === 'all' ? total : k === 'collection' ? `${realItems.filter(i => S.found[i.id]).length}/${realItems.length}` : k === 'logs' ? fmt(BULK.filter(b => b.tab === 'logs').reduce((a, b) => a + (S.bulk[b.id] || 0), 0)) : realItems.filter(i => i.cat === k).reduce((a, i) => a + n(i.id), 0);
+    const TABS = [['all','All'],['prime','Prime'],['find','Finds'],['lumber','Lumber'],['logs','Logs'],['collection','Collection']];
+    root.innerHTML = `<div class="whhead"><div><h2>Warehouse</h2><p>${total} items${news ? ` · ${news} new` : ''}. Shared by every camp. Stays when you close camp.</p></div>
+        <div class="spares"><button class="btn primary" type="button" data-spares ${sv ? '' : 'disabled'}>Sell spares · ${money(sv)}</button><small>Keeps what orders and buildings need, and anything locked.</small></div></div>
+      <div class="tabs" role="tablist" aria-label="Warehouse sections">${TABS.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l} <span class="c">${count(k)}</span></button>`).join('')}</div>
+      ${S.tab === 'collection' || S.tab === 'logs' ? '' : `<div class="tools${S.toolsOpen ? ' open' : ''}">
+        <input type="search" placeholder="Find an item" aria-label="Find an item" value="${S.q}" data-q>
+        <label class="sr" for="${root.id}-sort">Sort</label><select id="${root.id}-sort" data-sort>${SORTS.map(([k, l]) => `<option value="${k}"${S.sort === k ? ' selected' : ''}>Sort: ${l}</option>`).join('')}</select>
+        <button class="btn more" type="button" data-more aria-expanded="${S.toolsOpen}">Filter${S.filter ? ' · 1' : ''}</button>
+        <div class="fchips" role="group" aria-label="Show only">${FILTERS.map(([k, l]) => `<button type="button" data-f="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div></div>`}
+      <div class="body"><div class="grid" role="list" aria-label="Items">${gridHtml()}</div>
+        <aside class="detail${S.sel ? '' : ' none'}" aria-label="Item details">${detailHtml()}</aside></div>`;
+    root.querySelectorAll('.grid [data-id]').forEach(b => { b.setAttribute('role', 'listitem'); if (b.dataset.id === S.sel) b.setAttribute('aria-current', 'true'); });
+  }
+
+  root.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t || !root.contains(t)) return;
+    const d = t.dataset, it = S.sel && ITEMS.find(i => i.id === S.sel);
+    if (d.tab){ S.tab = d.tab; S.sel = null; S.armed = null; S.filter = null; }
+    else if (d.id){ S.sel = d.id; S.armed = null; if (S.tab !== 'collection') delete S.isNew[d.id]; }
+    else if (d.close != null){ S.sel = null; }
+    else if (d.f){ S.filter = S.filter === d.f ? null : d.f; }
+    else if (d.more != null){ S.toolsOpen = !S.toolsOpen; }
+    else if (d.spares != null){ realItems.forEach(i => { S.bank[i.id] = n(i.id) - spare(i.id); }); }
+    else if (it && d.sell1 != null){ S.bank[it.id] = n(it.id) - 1; S.armed = null; }
+    else if (it && d.sellspare != null){ S.bank[it.id] = n(it.id) - spare(it.id); S.armed = null; }
+    else if (it && d.sellall != null){ if (needOf(it.id) > 0 && S.armed !== it.id){ S.armed = it.id; } else { S.bank[it.id] = 0; S.armed = null; } }
+    else if (it && d.lock != null){ S.locks[it.id] ? delete S.locks[it.id] : (S.locks[it.id] = 1); S.armed = null; }
+    else return;
+    const focusSel = d.id ? `[data-id="${d.id}"]` : d.tab ? `[data-tab="${d.tab}"]` : d.f ? `[data-f="${d.f}"]` : Object.keys(d).length ? `[data-${Object.keys(d)[0]}]` : null;
+    render();
+    const f = focusSel && root.querySelector(phone && d.id ? '.detail [data-close]' : focusSel); if (f) f.focus();
+  });
+  root.addEventListener('change', e => { if (e.target.dataset.sort != null){ S.sort = e.target.value; render(); root.querySelector('[data-sort]').focus(); } });
+  root.addEventListener('input', e => { if (e.target.dataset.q != null){ S.q = e.target.value; const pos = e.target.selectionStart; render(); const q = root.querySelector('[data-q]'); q.focus(); q.setSelectionRange(pos, pos); } });
+  // arrow keys move between tiles (roving focus on the grid)
+  root.addEventListener('keydown', e => {
+    if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+    const cur = e.target.closest('.grid [data-id]'); if (!cur) return;
+    const all = [...root.querySelectorAll('.grid [data-id]')], i = all.indexOf(cur);
+    const cols = Math.max(1, Math.round(root.querySelector('.grid').clientWidth / (cur.offsetWidth + 10)));
+    const j = {ArrowLeft:i - 1, ArrowRight:i + 1, ArrowUp:i - cols, ArrowDown:i + cols}[e.key];
+    if (all[j]){ e.preventDefault(); all[j].focus(); }
+  });
+  if (!phone && root.clientWidth >= 720) S.sel = 'logging.prime_spar';
+  render();
+}
+mountWh(document.getElementById('whDesk'), false);
+mountWh(document.getElementById('whPhone'), true);
+
+/* theme switch */
+document.querySelectorAll('[data-th]').forEach(b => b.onclick = () => {
+  const v = b.dataset.th; if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v);
+  document.querySelectorAll('[data-th]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+});
+</script>
+</body>
+</html>
