@@ -953,14 +953,14 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
             <p class="meta" id="mLedger"></p>
             <div class="mbtns"><button class="act game" type="button" id="mSawBtn">Saw boards</button><button class="act" type="button" id="mCove" aria-pressed="true">Buy logs: on</button><button class="act" type="button" id="mBundle" aria-pressed="true">Bundle: on</button></div>
             <p class="spec" id="mSawWhy"></p>
-            <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Clear sells at 3×, Select 2× and Common 1× the log price. Common makes plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
+            <div class="group"><h3>Lumber yard<small id="mYardSub"></small></h3><p class="meta">Fine boards sell for 3×, Good 2× and Common 1× the log price. Common boards make plank bundles first while the bunkhouse needs them.</p><div class="yard" id="mYard"></div></div>
           </section>
         </div>
         <div class="tpane" id="mpStructs" data-pane="sawmill:structs" role="tabpanel" aria-labelledby="mtStructs" hidden>
           <section class="panel">
             <p class="eyebrow">Structures</p>
             <h2>Built to stay</h2>
-            <p class="meta">Built from Prime spars, finds and mill cash. They stay built when any camp closes.</p>
+            <p class="meta">Built from Prime logs, finds and mill cash. They stay built when any camp closes.</p>
             <div id="mStructs"></div>
           </section>
         </div>
@@ -975,7 +975,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
           <section class="panel">
             <p class="eyebrow">This mill run</p>
             <h2 id="mRunTitle">Mill run 1</h2>
-            <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 bd ft. Closing the mill resets only the mill.</p>
+            <p class="meta">Play Saw boards to earn perks. The mill also earns one every 30,000 wood sawn. Closing the mill resets only the mill.</p>
             <div class="facts" id="mRunStats" style="margin-top:8px"></div>
             <div class="group" style="margin-top:12px"><h3>Perks<small id="mPerkCount"></small></h3><div id="mPerks"></div></div>
             <div class="group"><h3>Close camp</h3><div class="closebox" id="mClose"></div></div>
@@ -1075,8 +1075,8 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
     <div class="mgwrap">
     <div class="guide" id="mgGuide" hidden role="note" aria-labelledby="mgGuideT"><b id="mgGuideT">How to cut logs</b>
       <ol id="mgGuideL"><li><b>Pick a spot.</b> Orange marks show where a log can end: 8, 10, 12, 14 or 16 ft from your last cut.</li>
-        <li><b>Check the color.</b> Green is grade 1, dark is grade 2 (knots), amber is grade 3 (bend), grey is pulp. Tap or click to cut.</li>
-        <li><b>Send it.</b> Cut off the rot and keep knots and bends out of your best logs. A top under 8 in is pulp. Stuck? Hint shows the next best cut, for a few points.</li></ol>
+        <li><b>Check the color.</b> Green is a Fine log, dark is Good (knots), amber is Common (bend), grey is firewood. Tap or click to cut.</li>
+        <li><b>Send it.</b> Cut off the rot and keep knots and bends out of your best logs. A top under 8 in is firewood. Stuck? Hint shows the next best cut, for a few points.</li></ol>
       <button class="mbtn primary" id="mgGuideOk" type="button">Got it</button></div>
     <canvas class="mgc" id="mgCanvas" width="640" height="400" tabindex="0" aria-label="Mini-game field"></canvas></div>
     <p class="peek" id="mgPeek" aria-live="polite" hidden></p>
@@ -1095,7 +1095,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
   <div class="sheet">
     <header><div><h2 id="dTitle">Pick a perk</h2><p id="dHelp">Pick one. Perks last until you close camp.</p></div><button class="closeb" id="dClose" type="button">Later</button></header>
     <div class="cards" id="dCards"></div>
-    <div class="mgbar"><span id="dStatus"></span><div id="dBtns"><button class="mbtn" id="dMarker" type="button" hidden>Use marker</button><button class="mbtn" id="dReroll" type="button">Reroll</button></div></div>
+    <div class="mgbar"><span id="dStatus"></span><div id="dBtns"><button class="mbtn" id="dMarker" type="button" hidden>Use token</button><button class="mbtn" id="dReroll" type="button">Reroll</button></div></div>
   </div>
 </div>
 <div class="modal" id="newrun" hidden role="dialog" aria-modal="true" aria-labelledby="nrTitle">
@@ -1265,19 +1265,19 @@ var Core = (function(exports) {
 			id: "buck",
 			name: "Buck",
 			verb: "Bucking",
-			unit: "bd ft/s"
+			unit: "wood/s"
 		},
 		{
 			id: "skid",
 			name: "Skid",
 			verb: "Skidding",
-			unit: "bd ft/s"
+			unit: "wood/s"
 		},
 		{
 			id: "haul",
 			name: "Haul",
 			verb: "Hauling",
-			unit: "bd ft/s"
+			unit: "wood/s"
 		}
 	]);
 	var PILES = deepFreeze([
@@ -1538,7 +1538,7 @@ var Core = (function(exports) {
 			id: "scalestick",
 			era: 0,
 			name: "Measuring stick",
-			desc: "Bucking game: shows what each log is worth, and the marks show each cut’s grade.",
+			desc: "Bucking game: shows what each log is worth, and the marks show each cut’s tier.",
 			cost: 450,
 			mult: {},
 			game: "buck"
@@ -1593,7 +1593,7 @@ var Core = (function(exports) {
 		{
 			id: "grade",
 			era: 0,
-			name: "Grade rules",
+			name: "Log grading",
 			desc: "Log value ×1.12. Bucking game: hints cost half as much.",
 			cost: 2500,
 			mult: { value: 1.12 },
@@ -1981,7 +1981,7 @@ var Core = (function(exports) {
 			target: 40
 		},
 		smith: {
-			text: "Deliver 8 million bd ft in all",
+			text: "Deliver 8 million wood in all",
 			stats: ["deliv"],
 			target: 8e6
 		},
@@ -1996,7 +1996,7 @@ var Core = (function(exports) {
 			target: 120
 		},
 		airbrakes: {
-			text: "Deliver 75 million bd ft in all",
+			text: "Deliver 75 million wood in all",
 			stats: ["deliv"],
 			target: 75e6
 		},
@@ -2011,7 +2011,7 @@ var Core = (function(exports) {
 			target: 100
 		},
 		optimize: {
-			text: "Deliver 500 million bd ft in all",
+			text: "Deliver 500 million wood in all",
 			stats: ["deliv"],
 			target: 5e8
 		},
@@ -2031,7 +2031,7 @@ var Core = (function(exports) {
 			target: 40
 		},
 		arch: {
-			text: "Deliver 25 million bd ft in all",
+			text: "Deliver 25 million wood in all",
 			stats: ["deliv"],
 			target: 25e6
 		},
@@ -2515,17 +2515,17 @@ var Core = (function(exports) {
 		}], 15),
 		once("first_crew", "On the payroll", "Hire your first crew.", [atLeast("crew", 1)], 25),
 		once("full_chain", "Stump to mill", "Have a crew working every stage.", [atLeast("crewedStages", 4)], 100, 1),
-		ladder("d10k", "10 MBF", "Deliver 10,000 bd ft.", "deliv", 1e4, 150, 1),
-		ladder("d50k", "50 MBF", "Deliver 50,000 bd ft.", "deliv", 5e4, 500, 1),
-		ladder("d250k", "Quarter million", "Deliver 250,000 bd ft.", "deliv", 25e4, 1800, 2),
-		ladder("d1m", "A million board feet", "Deliver 1,000,000 bd ft.", "deliv", 1e6, 6e3, 2),
-		ladder("d2m", "Second shift", "Deliver 2 million bd ft.", "deliv", 2e6, 1e4, 1),
-		ladder("d3m", "Three million", "Deliver 3 million bd ft.", "deliv", 3e6, 2e4, 1),
-		ladder("d10m", "Ten million", "Deliver 10 million bd ft.", "deliv", 1e7, 7e4, 3),
-		ladder("d30m", "Thirty million", "Deliver 30 million bd ft.", "deliv", 3e7, 25e4, 2),
-		ladder("d100m", "A hundred million", "Deliver 100 million bd ft.", "deliv", 1e8, 9e5, 3),
-		ladder("d300m", "Three hundred million", "Deliver 300 million bd ft.", "deliv", 3e8, 3e6, 2),
-		ladder("d1b", "A billion board feet", "Deliver 1 billion bd ft.", "deliv", 1e9, 12e6, 5),
+		ladder("d10k", "10K wood", "Deliver 10,000 wood.", "deliv", 1e4, 150, 1),
+		ladder("d50k", "50K wood", "Deliver 50,000 wood.", "deliv", 5e4, 500, 1),
+		ladder("d250k", "Quarter million", "Deliver 250,000 wood.", "deliv", 25e4, 1800, 2),
+		ladder("d1m", "A million wood", "Deliver 1,000,000 wood.", "deliv", 1e6, 6e3, 2),
+		ladder("d2m", "Second shift", "Deliver 2 million wood.", "deliv", 2e6, 1e4, 1),
+		ladder("d3m", "Three million", "Deliver 3 million wood.", "deliv", 3e6, 2e4, 1),
+		ladder("d10m", "Ten million", "Deliver 10 million wood.", "deliv", 1e7, 7e4, 3),
+		ladder("d30m", "Thirty million", "Deliver 30 million wood.", "deliv", 3e7, 25e4, 2),
+		ladder("d100m", "A hundred million", "Deliver 100 million wood.", "deliv", 1e8, 9e5, 3),
+		ladder("d300m", "Three hundred million", "Deliver 300 million wood.", "deliv", 3e8, 3e6, 2),
+		ladder("d1b", "A billion wood", "Deliver 1 billion wood.", "deliv", 1e9, 12e6, 5),
 		ladder("e10k", "Ten thousand dollars", "Earn $10K in sales.", "earned", 1e4, 300, 0),
 		ladder("e100k", "Six figures", "Earn $100K in sales.", "earned", 1e5, 3e3, 1),
 		ladder("e1m", "Millionaire charter", "Earn $1M in sales.", "earned", 1e6, 3e4, 1),
@@ -3224,8 +3224,8 @@ var Core = (function(exports) {
 		pine: {
 			...BUCK_STD,
 			pitchMult: 2,
-			tag: "Pine: finds amber pitch twice as often.",
-			guide: "<b>Pine:</b> amber pitch turns up twice as often. 16 ft logs pay ×1.15."
+			tag: "Pine: finds amber sap twice as often.",
+			guide: "<b>Pine:</b> amber sap turns up twice as often. 16 ft logs pay ×1.15."
 		},
 		spruce: {
 			...BUCK_STD,
@@ -3245,7 +3245,7 @@ var Core = (function(exports) {
 			},
 			g1Prime: 14,
 			tag: "Spruce: knots only in the top half. 16 ft logs pay ×1.25.",
-			guide: "<b>Spruce:</b> knots only in the top half, so the lower logs are clear. 16 ft logs pay ×1.25; Prime needs a grade 1 log of 14 ft."
+			guide: "<b>Spruce:</b> knots only in the top half, so the lower logs are Fine. 16 ft logs pay ×1.25; Prime needs a Fine log of 14 ft."
 		},
 		hemlock: {
 			...BUCK_STD,
@@ -3270,8 +3270,8 @@ var Core = (function(exports) {
 				14: 1,
 				16: 1
 			},
-			tag: "Hemlock: deep rot at the base, and cracks can make logs grade 3. Every length pays the same.",
-			guide: "<b>Hemlock:</b> rot runs 4–10 ft up from the base, and any log that crosses the cracks is grade 3. Every length pays the same."
+			tag: "Hemlock: deep rot at the base, and cracks can make Common logs. Every length pays the same.",
+			guide: "<b>Hemlock:</b> rot runs 4–10 ft up from the base, and any log that crosses the cracks is a Common log. Every length pays the same."
 		}
 	});
 	/** Bucking rules for a species (the standard rules when it has none of its own yet). */
@@ -3316,8 +3316,8 @@ var Core = (function(exports) {
 	var SPECIES_ORDER_OFF_TRACT = .6;
 	/** "Best for" line per species. */
 	var BEST_FOR = deepFreeze({
-		pine: "boards and amber pitch",
-		spruce: "Prime spars (3 from a perfect fall)",
+		pine: "boards and amber sap",
+		spruce: "Prime logs (3 from a perfect fall)",
 		hemlock: "bark money in Spring and Summer",
 		maple: "boards",
 		oak: "boards",
@@ -4033,22 +4033,33 @@ var Core = (function(exports) {
 		"3": "common",
 		P: "scrap"
 	});
+	/** Board grade names for players (the ids stay clear/select/common): Fine, Good, Common. */
+	var BOARD_LABEL = deepFreeze({
+		clear: "Fine",
+		select: "Good",
+		common: "Common"
+	});
+	/** A log grade for players: 1 Fine, 2 Good, 3 Common, 'P' firewood. */
+	function logTierName(g) {
+		const t = LOG_TIER[String(g)];
+		return t ? TIER_LABEL[t] : TIER_LABEL.common;
+	}
 	var ITEMS = deepFreeze([
 		{
 			id: "logging.prime_spar",
-			name: "Prime spar",
-			plural: "Prime spars",
+			name: "Prime log",
+			plural: "Prime logs",
 			skill: "logging",
 			category: "prime",
 			rarity: "made",
 			sell: 40,
-			desc: "A straight, knot-free log stamped Prime. Good for ship masts.",
+			desc: "A perfect log, stamped Prime. Builds the mill and fills big orders.",
 			uses: [
 				"order",
 				"structure",
 				"sell"
 			],
-			from: "Perfect falls (3 from a spruce) and grade 1 logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50",
+			from: "Perfect falls (3 from a spruce) and Fine logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50",
 			tier: "prime",
 			icon: {
 				glyph: "spar",
@@ -4058,8 +4069,8 @@ var Core = (function(exports) {
 		},
 		{
 			id: "logging.burl",
-			name: "Burl",
-			plural: "Burls",
+			name: "Swirl knot",
+			plural: "Swirl knots",
 			skill: "logging",
 			category: "find",
 			rarity: "common",
@@ -4079,13 +4090,13 @@ var Core = (function(exports) {
 		},
 		{
 			id: "logging.amber_pitch",
-			name: "Amber pitch",
-			plural: "Amber pitch",
+			name: "Amber sap",
+			plural: "Amber sap",
 			skill: "logging",
 			category: "find",
 			rarity: "common",
 			sell: 12,
-			desc: "Hard tree sap. Seals ship hulls and the mill pond dam.",
+			desc: "Hard tree sap. Seals ship hulls and the water wheel’s dam.",
 			uses: [
 				"order",
 				"structure",
@@ -4101,13 +4112,13 @@ var Core = (function(exports) {
 		},
 		{
 			id: "logging.survey_marker",
-			name: "Survey marker",
-			plural: "Survey markers",
+			name: "Restock token",
+			plural: "Restock tokens",
 			skill: "logging",
 			category: "find",
 			rarity: "uncommon",
 			sell: 18,
-			desc: "An old brass marker. Use one for a perk reroll (2 per outpost).",
+			desc: "A brass company token. Use one to reroll your perk cards (2 per outpost).",
 			uses: [
 				"reroll",
 				"sell",
@@ -4122,13 +4133,13 @@ var Core = (function(exports) {
 		},
 		{
 			id: "logging.ships_fitting",
-			name: "Ship’s fitting",
-			plural: "Ship’s fittings",
+			name: "Shipwreck bronze",
+			plural: "Shipwreck bronze",
 			skill: "logging",
 			category: "find",
 			rarity: "uncommon",
 			sell: 22,
-			desc: "Bronze parts from a wreck. Used to build the circular saw.",
+			desc: "Bronze parts washed ashore from a wreck. Builds the circular saw.",
 			uses: [
 				"order",
 				"structure",
@@ -4144,8 +4155,8 @@ var Core = (function(exports) {
 		},
 		{
 			id: "logging.fog_glass",
-			name: "Fog-glass",
-			plural: "Fog-glass",
+			name: "Fog lens",
+			plural: "Fog lenses",
 			skill: "logging",
 			category: "find",
 			rarity: "rare",
@@ -4165,13 +4176,13 @@ var Core = (function(exports) {
 		},
 		{
 			id: "sawmill.quarter_sawn",
-			name: "Quarter-sawn board",
-			plural: "Quarter-sawn boards",
+			name: "Prime board",
+			plural: "Prime boards",
 			skill: "sawmill",
 			category: "mill",
 			rarity: "made",
 			sell: 25,
-			desc: "A top board from a Prime log. The Admiralty wants it for decks.",
+			desc: "The best board, from a great run on a Prime log. The Admiralty wants it for decks.",
 			uses: ["sell", "future:raising"],
 			from: "A great Saw boards run on a Prime log",
 			tier: "prime",
@@ -4190,9 +4201,9 @@ var Core = (function(exports) {
 			category: "mill",
 			rarity: "made",
 			sell: 10,
-			desc: "500 bd ft of Common lumber. Builds the bunkhouse.",
+			desc: "500 wood of Common boards. Builds the bunkhouse.",
 			uses: ["structure", "sell"],
-			from: "Common lumber at the Sawmill",
+			from: "Common boards at the Sawmill",
 			tier: "common",
 			icon: {
 				glyph: "bundle",
@@ -4215,7 +4226,7 @@ var Core = (function(exports) {
 		},
 		{
 			id: "sawmill.lumber.clear",
-			name: "Clear lumber",
+			name: "Fine boards",
 			tab: "boards",
 			scope: "camp",
 			tier: "fine",
@@ -4225,11 +4236,11 @@ var Core = (function(exports) {
 				straps: false,
 				knots: 0
 			},
-			desc: "No knots. Sells at 3× the log price."
+			desc: "No knots. Sell for 3× the log price."
 		},
 		{
 			id: "sawmill.lumber.select",
-			name: "Select lumber",
+			name: "Good boards",
 			tab: "boards",
 			scope: "camp",
 			tier: "good",
@@ -4239,11 +4250,11 @@ var Core = (function(exports) {
 				straps: false,
 				knots: 1
 			},
-			desc: "A few small knots. Sells at 2×."
+			desc: "A few small knots. Sell for 2×."
 		},
 		{
 			id: "sawmill.lumber.common",
-			name: "Common lumber",
+			name: "Common boards",
 			tab: "boards",
 			scope: "camp",
 			tier: "common",
@@ -4253,7 +4264,7 @@ var Core = (function(exports) {
 				straps: false,
 				knots: 4
 			},
-			desc: "Knotty. Sells at 1×, or makes plank bundles."
+			desc: "Knotty. Sell for 1×, or make plank bundles."
 		}
 	]);
 	var ITEM_BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
@@ -4504,9 +4515,9 @@ var Core = (function(exports) {
 		id: "admiralty_spar",
 		skill: "logging",
 		client: "The Admiralty",
-		name: "Admiralty spar order",
+		name: "Admiralty mast order",
 		short: "Admiralty",
-		text: "The Admiralty wants Prime spars for ship masts, and pitch to seal them.",
+		text: "The Admiralty wants Prime logs for ship masts, and amber sap to seal them.",
 		needs: [{
 			item: "logging.prime_spar",
 			qty: 16
@@ -4524,7 +4535,7 @@ var Core = (function(exports) {
 		client: "the captain of the Perseverance",
 		name: "Patch the Perseverance",
 		short: "Perseverance",
-		text: "The company ship is leaking. Her captain needs pitch and bronze fittings before she sails.",
+		text: "The company ship is leaking. Her captain needs amber sap and shipwreck bronze before she sails.",
 		needs: [{
 			item: "logging.amber_pitch",
 			qty: 6
@@ -4562,14 +4573,50 @@ var Core = (function(exports) {
 	var ORDER_PERKS = deepFreeze([{
 		id: "sparman",
 		r: "rare",
-		name: "Spar man",
-		desc: "Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime, but perfect falls give no speed boost."
+		name: "Prime hunter",
+		desc: "Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime log, but perfect falls give no speed boost."
 	}, {
 		id: "pitchboiler",
 		r: "rare",
-		name: "Pitch boiler",
-		desc: "Bucking game: each pulp piece becomes amber pitch (2 at most) instead of pulp value. Idle buckers find pitch 3× as often."
+		name: "Sap boiler",
+		desc: "Bucking game: each firewood piece becomes amber sap (2 at most) instead of firewood value. Idle buckers find sap 3× as often."
 	}]);
+	/**
+	* Old player-facing names and their new ones, longest first. Ids and save keys never change; this only rewrites text a
+	* save already holds (the camp log). Each rule is idempotent: new names never match an old pattern.
+	*/
+	var RENAMES = [
+		[/Admiralty spar order/g, "Admiralty mast order"],
+		[/Prime spars/g, "Prime logs"],
+		[/Prime spar/g, "Prime log"],
+		[/Quarter-sawn boards/g, "Prime boards"],
+		[/Quarter-sawn board/g, "Prime board"],
+		[/(Ship|ship)[’']s fittings/g, "shipwreck bronze"],
+		[/Ship[’']s fitting/g, "Shipwreck bronze"],
+		[/ship[’']s fitting/g, "shipwreck bronze"],
+		[/Survey markers/g, "Restock tokens"],
+		[/Survey marker/g, "Restock token"],
+		[/survey markers/g, "restock tokens"],
+		[/survey marker/g, "restock token"],
+		[/Fog-glass/g, "Fog lens"],
+		[/fog-glass/g, "fog lens"],
+		[/Amber pitch/g, "Amber sap"],
+		[/amber pitch/g, "amber sap"],
+		[/\bBurls\b/g, "Swirl knots"],
+		[/\bBurl\b/g, "Swirl knot"],
+		[/\bburls\b/g, "swirl knots"],
+		[/\bburl\b/g, "swirl knot"],
+		[/Spar man/g, "Prime hunter"],
+		[/Pitch boiler/g, "Sap boiler"],
+		[/Mill pond & wheel/g, "Water wheel"],
+		[/\b(\d+) MBF\b/g, "$1K wood"],
+		[/board feet/g, "wood"],
+		[/bd ft/g, "wood"]
+	];
+	/** Old item names and "bd ft" in a line of saved text, rewritten in the new words. */
+	function renameOldText(text) {
+		return RENAMES.reduce((t, [re, to]) => t.replace(re, to), text);
+	}
 	//#endregion
 	//#region packages/core/src/icons.ts
 	var INK = "#2B241C";
@@ -4831,7 +4878,7 @@ var Core = (function(exports) {
 			id: "sawmill.pond",
 			skill: "sawmill",
 			target: "sawmill",
-			name: "Mill pond & wheel",
+			name: "Water wheel",
 			desc: "Dam the creek and turn a water wheel.",
 			levels: [{
 				items: [{
@@ -5078,7 +5125,7 @@ var Core = (function(exports) {
 			id: "saw.advance",
 			cost: 3,
 			name: "Log crate",
-			desc: "Start each mill run with 3,000 bd ft of logs."
+			desc: "Start each mill run with 3,000 wood of logs."
 		},
 		{
 			id: "saw.crew",
@@ -5104,7 +5151,7 @@ var Core = (function(exports) {
 			id: "chaincarriage",
 			r: "rare",
 			name: "Chain carriage",
-			desc: "Saw boards: a top run brings the next log at once, outer boards one grade better, up to 3 logs."
+			desc: "Saw boards: a top run brings the next log at once, outer boards one tier better, up to 3 logs."
 		},
 		{
 			id: "sawyerseye",
@@ -5116,7 +5163,7 @@ var Core = (function(exports) {
 			id: "pondmonkey",
 			r: "common",
 			name: "Pond monkey",
-			desc: "Prime logs always come first, and each gives 1 extra Clear board."
+			desc: "Prime logs always come first, and each gives 1 extra Fine board."
 		},
 		{
 			id: "turndog",
@@ -5128,7 +5175,7 @@ var Core = (function(exports) {
 			id: "bigstick",
 			r: "legendary",
 			name: "Big stick",
-			desc: "Once per mill run, a giant log arrives: twice the wood, and its Clear boards are worth ×3."
+			desc: "Once per mill run, a giant log arrives: twice the wood, and its Fine boards are worth ×3."
 		}
 	]);
 	/** Sawmill perks that can be offered: commons stack (Pond monkey), the rest once per mill outpost. */
@@ -5722,7 +5769,7 @@ var Core = (function(exports) {
 		const sf = slopeFactor(lot.slope, sky), df = distanceFactor(lot.miles);
 		const seas = seasonLines(lot.mix, ctx.season);
 		const details = [];
-		details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} bd ft/s.`);
+		details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} wood/s.`);
 		details.push(`Weight ${f2(wt)}: skid and haul ×${f2(1 / wt)}. ${lot.miles} mi haul: hauling ×${f2(df)}. ${upper(SLOPES[lot.slope].label)} ground: skidding ×${f2(sf)}.`);
 		if (!(r.fell > 0 && r.buck > 0 && r.skid > 0 && r.haul > 0)) {
 			const short = `${Lead}: hire ${QUEUE_STAGES.filter((s) => !(r[s] > 0)).map((s) => CREW[s]).join(" and ")} to see how this lot suits your camp.` + (seas.now[0] ? ` ${seas.now[0]}` : "");
@@ -6374,7 +6421,7 @@ var Core = (function(exports) {
 			name: "Supply ship",
 			lasts: "instant",
 			card: "The Perseverance is in early with hands, hay and parts.",
-			fx: "Crews, machines and lots 15% cheaper this season · +1 ship’s fitting",
+			fx: "Crews, machines and lots 15% cheaper this season · +1 shipwreck bronze",
 			effects: [
 				{
 					kind: "hire",
@@ -6509,7 +6556,7 @@ var Core = (function(exports) {
 			card: "A fall storm blew trees down across the haul road.",
 			fx: "Hauling ×0.85 · felling ×1.1 (the wind knocks trees down) · felling-game wind ×1.5",
 			counter: "Drive a clean load to clear the road",
-			silver: "Idle haulers find ship’s fittings twice as often; a perfect fall gives +1 Prime",
+			silver: "Idle haulers find shipwreck bronze twice as often; a perfect fall gives +1 Prime",
 			effects: [
 				{
 					kind: "stage",
@@ -6887,6 +6934,7 @@ var Core = (function(exports) {
 	exports.BEST_FOR = BEST_FOR;
 	exports.BIG_STICK_CLEAR = BIG_STICK_CLEAR;
 	exports.BOARD_GRADES = BOARD_GRADES;
+	exports.BOARD_LABEL = BOARD_LABEL;
 	exports.BOARD_TIER = BOARD_TIER;
 	exports.BOOST_BANK = BOOST_BANK;
 	exports.BOOST_STAGES = BOOST_STAGES;
@@ -7124,6 +7172,7 @@ var Core = (function(exports) {
 	exports.legacyBase = legacyBase;
 	exports.legacyGain = legacyGain;
 	exports.levelBundles = levelBundles;
+	exports.logTierName = logTierName;
 	exports.lotRates = lotRates;
 	exports.lotStatAverages = lotStatAverages;
 	exports.lotStatChips = lotStatChips;
@@ -7171,6 +7220,7 @@ var Core = (function(exports) {
 	exports.quarterSawn = quarterSawn;
 	exports.queueOrder = queueOrder;
 	exports.rareSpecies = rareSpecies;
+	exports.renameOldText = renameOldText;
 	exports.requirementProgress = requirementProgress;
 	exports.rngPick = rngPick;
 	exports.rngRange = rngRange;
@@ -7312,7 +7362,8 @@ function fmt(n){
   return fix(v) + FMT_UNITS[i];
 }
 const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n));
-const bf = n => fmt(n) + ' bd ft';
+// wood is counted in board feet; players see it as "wood" (docs/design/resource-names.md §3: 1 wood = 1 board foot)
+const bf = n => fmt(n) + ' wood';
 const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt(s/3600)+' h';
 
 // the weather now (undefined in a quiet stretch); wxMute lets the return summary compare against a quiet stretch
@@ -7960,7 +8011,7 @@ const lotFits = (t, ahead, orders) => Core.orderFit(t, orders, {caps:bareCaps(),
 // pine bucking finds amber pitch twice as often: a plain hint when special orders still want pitch (no estimate, no badge)
 function pitchHint(t){
   const P = 'logging.amber_pitch', want = Math.max(0, orderNeed(P) - Math.max(0, bankN(P) - reserveFor(P))), sh = Core.mixShare(t.mix, 'pine');
-  return want > 0 && sh >= .3 ? `<p class="ofit">Pine ${Math.round(sh*100)}%: twice the amber pitch when bucking (orders want ${want} more).</p>` : '';
+  return want > 0 && sh >= .3 ? `<p class="ofit">Pine ${Math.round(sh*100)}%: twice the amber sap when bucking (orders want ${want} more).</p>` : '';
 }
 function noteFor(t, current){
   const ev = evNow(), factors = {};
@@ -8300,7 +8351,7 @@ function render(force){
     const rt = s.id === 'fell' ? `${fmt(rate('fell'))} chops/s ≈ ${bf(caps.fell)}/s` : `${bf(caps[s.id])}/s`;
     const upstreamCrew = STAGES.slice(0, STAGES.indexOf(s)).some(x => baseRate(x.id) > 0);
     const rEl = r.querySelector('.rate');
-    rEl.textContent = caps[s.id] > 0 ? rt : s.id === 'haul' && S.landing.bf > 0 ? 'no hauler: a buyer takes 6 bd ft/s at 60% price' : upstreamCrew ? 'no crew: wood is piling up' : 'by hand only';
+    rEl.textContent = caps[s.id] > 0 ? rt : s.id === 'haul' && S.landing.bf > 0 ? 'no hauler: a buyer takes 6 wood/s at 60% price' : upstreamCrew ? 'no crew: wood is piling up' : 'by hand only';
     rEl.style.color = caps[s.id] <= 0 && upstreamCrew ? 'var(--warn)' : '';
     r.querySelector('.cap i').style.width = (caps[s.id]/maxCap*100).toFixed(1)+'%';
     const gb = r.querySelector('.act.game'); if (gb) gb.disabled = s.id === 'fell' ? !t : srcPile(s.id).bf <= 0;
@@ -8313,7 +8364,7 @@ function render(force){
     const btn = r.querySelector('.act.quick');
     if (s.id === 'fell'){ btn.textContent = `Chop ×${fmt(cmult())}`; btn.disabled = !t; }
     else { const src = s.id === 'buck' ? S.stems : s.id === 'skid' ? S.cut : S.landing;
-      btn.textContent = `${s.name} ${fmt(handAmt(s.id))} bd ft`; btn.disabled = src.bf <= 0; }
+      btn.textContent = `${s.name} ${fmt(handAmt(s.id))} wood`; btn.disabled = src.bf <= 0; }
   });
   renderSlider();
   // the wood waiting after each stage: a short bar on a log scale (full at 1M bd ft); Haul shows what this outpost delivered
@@ -8539,14 +8590,14 @@ const GAMES = {fell:'Fell tree', buck:'Cut logs', skid:'Skid logs', haul:'Drive 
 const srcPile = k => k === 'buck' ? S.stems : k === 'skid' ? S.cut : S.landing;
 const MG_HELP = {
   fell: () => `Aim the tree at the gap, then cut with your ${['axe','crosscut saw','chainsaw','felling head'][S.era]}. Stop while the hinge (the uncut strip) is green so it falls where you aimed.`,
-  buck: () => 'Cut the trunk into logs: 8, 10, 12, 14 or 16 ft, at least 8 in at the top, no rot. Knots and bends lower the grade. Tap ? for help.',
+  buck: () => 'Cut the trunk into logs: 8, 10, 12, 14 or 16 ft, at least 8 in at the top, no rot. Knots and bends make a log worse. Tap ? for help.',
   skid: () => `Drag logs to the landing with your ${['ox team','steam winch','tractor','skidder'][S.era]}. Stay on the trail, miss stumps and ${perk('greased') ? 'drive through mud: it speeds you up' : 'go around mud'}. Long loads swing wide.`,
   haul: () => `Load your ${['sled','train','log truck','self-loading truck'][S.era]} and drive to the cove. Full loads and fast runs pay more. Brake downhill or the load runs away.`,
-  saw: () => 'Cut a log into boards. Saw takes a board off the side facing the saw. Turn rolls the log. Outer wood is best, so turn when the grade drops. Tap ? for help.',
+  saw: () => 'Cut a log into boards. Saw takes a board off the side facing the saw. Turn rolls the log. Outer wood is best, so turn when the boards get worse. Tap ? for help.',
 };
 // the ? guide card, per game (bucking's text lives in the page; Saw for grade's is here)
-const SAW_GUIDE = ['<b>Pick a log.</b> Tap one. Big and Prime logs pay more but hide more knots. Prime logs use a Prime spar.',
-  '<b>Saw or turn.</b> Tap SAW or the log to cut a board. Tap TURN to roll the log. Green is Clear, amber is Common. Each knot drops a board one grade.',
+const SAW_GUIDE = ['<b>Pick a log.</b> Tap one. Big and Prime logs pay more but hide more knots. A Prime log on the deck uses one Prime log from the warehouse.',
+  '<b>Saw or turn.</b> Tap SAW or the log to cut a board. Tap TURN to roll the log. Green is Fine, amber is Common. Each knot drops a board one tier.',
   '<b>Beat the target.</b> The target is two boards a side, then turn. The mark shows the better move. Finish early for up to +10%.'];
 let BUCK_GUIDE = null;
 function setGuide(kind){
@@ -8867,10 +8918,10 @@ function optimal(){
   return {val:best[L], cuts:cuts.reverse()};
 }
 const segDollars = v => B && B.optPre && B.optPre.val > 0 && S.stems.bf > 0 ? v/B.optPre.val * B.amt*(S.stems.val/S.stems.bf)*1.2*vmult()*market() : 0;
-const gradeName = x => x.g === 'P' ? `pulp (${x.why})` : `grade ${x.g} log` + (x.why ? ` (${x.why})` : '');
+const gradeName = x => x.g === 'P' ? `firewood (${x.why})` : `${Core.logTierName(x.g)} log` + (x.why ? ` (${x.why})` : '');
 function buckStatus(){
   const sg = segsOf(B.cuts), saw = sg.filter(x => x.g !== 'P'), pen = buckPenalty();
-  status(wxGameText('buck') + `${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} logs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} bd ft` +
+  status(wxGameText('buck') + `${sg.length} ${sg.length === 1 ? 'piece' : 'pieces'} · ${saw.length} logs · ${fmt(saw.reduce((a,x) => a + x.bf, 0))} wood` +
     (B.hints ? ` · ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}, −${Math.round(pen*100)} points` : ''));
 }
 // the next cut of the best plan: first take out a cut that is not in it, otherwise add the first missing one
@@ -8946,8 +8997,8 @@ function buckSend(){
   status(`You got ${pct(r0)}% of the best value` + (pen > 0 ? `, −${pct(pen)} for ${B.hints} ${B.hints === 1 ? 'hint' : 'hints'}: ${pct(rs)}%` : '') +
     (r > rs ? ', counted as 100%' : '') + `. ${money(S.cut.val - before)} of logs sent` +
     (counts ? '' : `. Under ${pct(BUCK_COUNT_MIN)}% does not count as a run`) +
-    (prime ? `. ${prime.qty} grade 1 ${prime.qty === 1 ? 'log' : 'logs'} stamped Prime: +${prime.qty} to the warehouse` : '') +
-    (pitch ? `. Pitch boiler: +${pitch} amber pitch` : '') +
+    (prime ? `. ${prime.qty} Fine ${prime.qty === 1 ? 'log' : 'logs'} stamped Prime: +${prime.qty} to the warehouse` : '') +
+    (pitch ? `. Sap boiler: +${pitch} amber sap` : '') +
     (r >= .97 ? `. Your buckers work ${boostTxt()}.` : '. Green dashes show the best cuts.') + takeClear());
   buttons([{label:'Cut another', primary:true, disabled:S.stems.bf <= 0, fn:buckInit}, {label:'Done', fn:closeMG}]);
   buckPeek(); render();
@@ -9009,11 +9060,11 @@ function buckDraw(){
   // pieces
   const sg = segsOf(B.cuts), y1 = Math.max(216, 200 + lh), y2 = y1 + Math.max(15, lh), y3 = y2 + Math.max(14, lh);
   sg.forEach(x => {
-    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g), lab = `${x.len}′ ${x.g === 'P' ? 'pulp' : 'G' + x.g}`;
+    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g), lab = `${x.len}′ ${x.g === 'P' ? 'firewood' : Core.logTierName(x.g)}`;
     cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4);
     cx.font = cfont(12, 600);
     if (xb - xa > Math.max(34, tw(lab) + 4)){ cx.fillText(lab, (xa+xb)/2, y1);
-      const l2 = x.g === 'P' ? 'cords' : `${Math.round(x.bf)} bd ft`; cx.font = cfont(11); cx.fillStyle = C.muted;
+      const l2 = x.g === 'P' ? 'sold here' : `${Math.round(x.bf)} wood`; cx.font = cfont(11); cx.fillStyle = C.muted;
       if (tw(l2) + 4 < xb - xa) cx.fillText(l2, (xa+xb)/2, y2);
       if (has('scalestick')){ cx.fillStyle = C.ink; cx.fillText(money(segDollars(x.val)), (xa+xb)/2, y3); } }
   });
@@ -9512,7 +9563,7 @@ function reroll(camp = 'logging'){ const r = dRun(camp); if (!r || r.rerolls <= 
 const MARKER = 'logging.survey_marker', MARKER_MAX = 2;
 const canMarker = () => bankN(MARKER) > 0 && (S.run.markerRerolls || 0) < MARKER_MAX && S.run.dq.length > 0;
 function markerReroll(){ if (!canMarker()) return false; S.bank[MARKER]--; S.run.markerRerolls = (S.run.markerRerolls || 0) + 1; S.run.offer = rollCards(S.run.dq[0], 'logging');
-  note('Used a survey marker for new perk cards.'); return true; }
+  note('Used a restock token for new perk cards.'); return true; }
 
 function closeCamp(){
   if (!canClose()) return 0;
@@ -9652,6 +9703,10 @@ function normalize(){
   // camp tabs (slice 2); the Almanac left the warehouse for its own screen
   if (!CAMP_TABS.logging.includes(S.ui.logTab)) S.ui.logTab = 'work';
   if (!CAMP_TABS.sawmill.includes(S.ui.millTab)) S.ui.millTab = 'mill';
+  // resource renames (2026-10-28, docs/design/resource-names.md): the camp log a save holds reads in the new names and "wood";
+  // ids and save keys never change, and the rewrite is idempotent, so it runs on every load
+  if (!Array.isArray(S.log)) S.log = [];
+  S.log = S.log.filter(e => e && typeof e === 'object').map(e => (typeof e.text === 'string' ? Object.assign(e, {text:Core.renameOldText(e.text)}) : e));
   // the warehouse grid (slice 3): the old Stock and Collection tabs map to All and Collection; sort and filter merge with defaults
   S.ui.whTab = ({stock:'all', log:'collection'})[S.ui.whTab] || S.ui.whTab;
   if (!whTabOk(S.ui.whTab)) S.ui.whTab = 'all';
@@ -9683,8 +9738,8 @@ function renderDraft(){
     if (dRun(dCamp).dq.length){ renderDraft(); const f = dEl.querySelector('.pcard'); if (f) f.focus(); } else closeDraft(); });
   const rr = $('dReroll'); rr.textContent = `Reroll (${r.rerolls})`; rr.disabled = r.rerolls <= 0;
   const mk = $('dMarker'); mk.hidden = mill || bankN(MARKER) <= 0;
-  if (!mk.hidden){ mk.disabled = !canMarker(); mk.textContent = `Use marker (${bankN(MARKER)} · ${MARKER_MAX - (S.run.markerRerolls || 0)} left)`; }
-  $('dStatus').textContent = r.rerolls > 0 ? 'Reroll replaces all the cards.' : mill ? 'No rerolls left.' : `No rerolls left. The board’s Lucky compass adds one each outpost${bankN(MARKER) ? '; a survey marker gives one more' : ''}.`;
+  if (!mk.hidden){ mk.disabled = !canMarker(); mk.textContent = `Use token (${bankN(MARKER)} · ${MARKER_MAX - (S.run.markerRerolls || 0)} left)`; }
+  $('dStatus').textContent = r.rerolls > 0 ? 'Reroll replaces all the cards.' : mill ? 'No rerolls left.' : `No rerolls left. The board’s Lucky compass adds one each outpost${bankN(MARKER) ? '; a restock token gives one more' : ''}.`;
 }
 function openNewRun(){
   if (!S.run.setup) return; nrPick = []; lastFocus = document.activeElement; nrEl.hidden = false; renderNewRun();
@@ -9786,7 +9841,7 @@ function addItem(id, qty, quiet){
   S.bank[id] = bankN(id) + qty; S.newCount = (S.newCount || 0) + qty; S.unseen[id] = (S.unseen[id] || 0) + qty;
   const d = IDEF(id), f = S.found[id];
   if (!f){ S.found[id] = {first:`${season()} ${S.year}`, total:qty}; note(`New find: ${d.name}.`); toast({label:'New find', name:d.name, line:d.desc}); }
-  else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime timber' : d.category === 'mill' ? 'Mill goods' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc}); }
+  else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime!' : d.category === 'mill' ? 'Made' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc}); }
   postOrders(); autoFill();
 }
 // Prime from the felling game: a perfect fall stamps by species; Spar man also stamps a good fall on a conifer (1 log). Domino falls add none.
@@ -9915,7 +9970,7 @@ function openSawmill(quiet){
   S.bulk.logs += Core.FOUNDING_CRATE.logsBf;
   Core.FOUNDING_CRATE.items.forEach(st => { S.bank[st.item] = bankN(st.item) + st.qty; S.newCount = (S.newCount || 0) + st.qty; S.unseen[st.item] = (S.unseen[st.item] || 0) + st.qty;
     if (!S.found[st.item]) S.found[st.item] = {first:'Founding crate', total:st.qty}; else S.found[st.item].total += st.qty; });
-  note(`The ship left a crate on the beach: saw blades, Prime spars, pitch, a ship’s fitting, 20,000 bd ft of logs and ${money(Core.CAMP_MONEY.crateCash)} of mill cash. “No more raw logs home. Saw them here.” A Sawmill opens by the cove.`);
+  note(`The ship left a crate on the beach: saw blades, Prime logs, amber sap, shipwreck bronze, 20,000 wood of logs and ${money(Core.CAMP_MONEY.crateCash)} of mill cash. “No more raw logs home. Saw them here.” A Sawmill opens by the cove.`);
   postOrders();
 }
 const bundling = () => { const m = S.camps.sawmill; return !!m && m.bundle && Core.bundlesStillNeeded(S.structures) > bankN(BUNDLE); };
@@ -9930,7 +9985,7 @@ function sawLumber(bfG, clearMult = 1){
     rev += amt*Core.lumberPrice(g, mk)*(g === 'clear' ? clearMult : 1);
   }
   m.cash += rev; m.earned += rev; m.bucket += rev;
-  while (m.sawn - (m.draftMark || 0) >= MILL_DRAFT_BF){ m.draftMark = (m.draftMark || 0) + MILL_DRAFT_BF; millQueueDraft(.35, `${fmt(MILL_DRAFT_BF)} bd ft sawn`); }
+  while (m.sawn - (m.draftMark || 0) >= MILL_DRAFT_BF){ m.draftMark = (m.draftMark || 0) + MILL_DRAFT_BF; millQueueDraft(.35, `${fmt(MILL_DRAFT_BF)} wood sawn`); }
   return rev;
 }
 // the idle loop: saw from the log pond, buy at the cove when it runs dry (if on and affordable)
@@ -9977,7 +10032,7 @@ function closeMill(){
   S.mruns.length = Math.min(S.mruns.length, 12);
   S.camps.sawmill = freshMill(m.n + 1);
   if (mmeta('saw.advance')) S.bulk.logs += Core.LOG_CRATE_BF; // mill board: Log crate
-  note(`Closed mill run ${m.n}: ${fmt(m.sawn)} bd ft sawn, ${gain} Sawmill shares sent home. Structures stay for mill run ${m.n + 1}.`);
+  note(`Closed mill run ${m.n}: ${fmt(m.sawn)} wood sawn, ${gain} Sawmill shares sent home. Structures stay for mill run ${m.n + 1}.`);
   toast({label:'Mill closed', name:`+${gain} Sawmill shares`, line:'Logging keeps going. Structures, warehouse and log pond stay.'});
   return gain;
 }
@@ -10031,7 +10086,7 @@ function sawDeck(){
   if (prime && !mperk('pondmonkey')) deck[deck.length - 1] = {log:Core.genSawLog(sawRng, {prime:true}), src:'prime'};
   return deck.slice(0, 3);
 }
-const deckLabel = (d, i) => `${i + 1} · ${d.log.dia} in${d.src === 'prime' ? ' Prime' : d.src === 'giant' ? ' giant' : ''} · grade ${d.log.logGrade}`;
+const deckLabel = (d, i) => `${i + 1} · ${d.log.dia} in${d.src === 'prime' ? ' Prime' : d.src === 'giant' ? ' giant' : ''} · ${Core.logTierName(d.log.logGrade)} log`;
 function sawInit(chain){
   W = {phase:'pick', deck:null, log:null, src:'pond', cut:null, t:0, busy:0, flash:null, flashT:0, par:0, chain:chain || 0, res:null, cellBf:0};
   if (chain){ const log = Core.genSawLog(sawRng, {outerUp:true}); W.deck = [{log, src:'pond'}]; sawPick(0); if (W.phase === 'pick'){ sawInit(0); return; } }
@@ -10087,7 +10142,8 @@ function sawStep(dt){
   if (W.t >= Core.SAW_LIMIT) sawFinish(true);
 }
 const FACE = ['top','right','bottom','left'];
-const boardTxt = b => b.grade < 0 ? 'scrap (too narrow)' : `${Core.boardGradeName(b.grade).replace(/^./, c => c.toUpperCase())} board, ${b.width} wide`;
+const boardLabel = g => Core.BOARD_LABEL[Core.boardGradeName(g)] || 'Scrap';
+const boardTxt = b => b.grade < 0 ? 'scrap (too narrow)' : `${boardLabel(b.grade)} board, ${b.width} wide`;
 function sawStatus(){
   const v = Core.sawValue(W.log, W.cut) - Core.cantCells(W.log, W.cut), nb = W.cut.boards.length;
   status(`${nb} ${nb === 1 ? 'board' : 'boards'} cut · value ${fmt(v)} (target ${fmt(W.par)}; the core counts as Common) · ${Math.max(0, Core.SAW_LIMIT - W.t).toFixed(0)} s left.`);
@@ -10136,8 +10192,8 @@ function sawFinish(timeUp){
   W.res = {value, score, q, qs, rev, bfG};
   status(`${tier}: ${Math.round(score*100)}% of target (target ${fmt(W.par)}, you got ${fmt(value)}` +
     `${bonus > 0 ? `, +${Math.round(bonus*100)}% for time left` : timeUp ? ', time ran out and the rest became Common' : ''}). ` +
-    `${bf(bfG.clear)} Clear, ${bf(bfG.select)} Select, ${bf(bfG.common)} Common` + (qs ? `, and ${qs} Quarter-sawn ${qs === 1 ? 'board' : 'boards'} to the warehouse` : '') +
-    `. Sold for ${money(rev)}${nb ? `, plus ${nb} plank ${nb === 1 ? 'bundle' : 'bundles'}` : ''}.` + (monkey ? ' Pond monkey: an extra Clear board.' : '') + (L.giant ? ' Big stick: Clear boards paid ×3.' : '') +
+    `${bf(bfG.clear)} Fine, ${bf(bfG.select)} Good, ${bf(bfG.common)} Common` + (qs ? `, and ${qs} Prime ${qs === 1 ? 'board' : 'boards'} to the warehouse` : '') +
+    `. Sold for ${money(rev)}${nb ? `, plus ${nb} plank ${nb === 1 ? 'bundle' : 'bundles'}` : ''}.` + (monkey ? ' Pond monkey: an extra Fine board.' : '') + (L.giant ? ' Big stick: Fine boards paid ×3.' : '') +
     (chainOk ? ' Chain carriage: the next log is coming.' : ''));
   const bb = [{label:'Saw another', primary:!chainOk, disabled:!!sawBlock(), fn:() => sawInit(0)}];
   if (chainOk) bb.unshift({label:`Next log (${W.chain + 1}/3)`, primary:true, disabled:!canSupply(80*cellBfNow()), fn:() => sawInit(W.chain + 1)});
@@ -10178,7 +10234,7 @@ function sawDraw(){
     const pos = deckPos(W.deck.length), room = W.deck.length > 1 ? Math.abs(pos[1].x - pos[0].x) - 10 : Wd - 12, f13 = fpx(13), f11 = fpx(11);
     W.deck.forEach((d, i) => { const p = pos[i], r = logR(d.log); drawEnd(d.log, p.x, p.y, r);
       // labels under each log; on a small canvas they wrap instead of running into the next log
-      const l1 = `${i + 1} · ${d.log.dia} in · grade ${d.log.logGrade}`, l2 = d.src === 'prime' ? 'uses 1 Prime spar' : `${bf(deckNeed(d))}${S.bulk.logs >= deckNeed(d) ? ' from the pond' : ` · buy for ${money(coveCost(deckNeed(d)))}`}`;
+      const l1 = `${i + 1} · ${d.log.dia} in · ${Core.logTierName(d.log.logGrade)} log`, l2 = d.src === 'prime' ? 'uses 1 Prime log' : `${bf(deckNeed(d))}${S.bulk.logs >= deckNeed(d) ? ' from the pond' : ` · buy for ${money(coveCost(deckNeed(d)))}`}`;
       cx.textAlign = 'center'; cx.fillStyle = C.ink; cx.font = cfont(13, 600);
       const a = wrapTxt(l1, room);
       let y = p.y + r + 13 + f13; a.forEach(t => { ctext(t, p.x, y); y += f13 + 3; });
@@ -10221,13 +10277,13 @@ function sawDraw(){
   hud(Wd, 0, 11, () => {
   cx.textAlign = 'right'; cx.font = '600 11px ' + font; cx.fillStyle = C.muted; cx.fillText('Boards cut', 630, 24);
   c.boards.slice(-rows).forEach((b, i) => { const y = 32 + i*22; cx.fillStyle = boardCol(b.grade); cx.globalAlpha = .85; cx.fillRect(630 - b.width*9, y, b.width*9, 14); cx.globalAlpha = 1;
-    cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.fillText(b.grade < 0 ? 'scrap' : `${Core.boardGradeName(b.grade)} ${b.width}`, 625 - b.width*9, y + 11); }); });
+    cx.fillStyle = C.ink; cx.font = '11px ' + font; cx.fillText(b.grade < 0 ? 'scrap' : `${boardLabel(b.grade)} ${b.width}`, 625 - b.width*9, y + 11); }); });
   if (W.phase === 'saw'){
     const here = Core.nextBoard(L, c, c.face, k), adv = sawMarkOn() ? Core.sawAdvice(L, c, k.eye) : null;
     if (guide){ cx.textAlign = 'center'; cx.fillStyle = boardCol(here.grade); cx.font = cfont(13, 600); ctext(`Next: ${boardTxt(here)}${here.knots ? ` (${here.knots} ${here.knots === 1 ? 'knot' : 'knots'})` : ''}`, Wd/2, Math.min(312, SAW_BTN.saw.y - 5)); }
     sawButtonDraw(SAW_BTN.turn, 'TURN ⟳', `next side · ${sawTurnTime() ? sawTurnTime() + ' s' : 'instant'}`, false, adv === 'turn');
     sawButtonDraw(SAW_BTN.saw, 'SAW ▸', 'cut a board · or tap the log', true, adv === 'saw');
-    if (W.flashT > 0 && W.flash){ cx.textAlign = 'center'; cx.fillStyle = boardCol(W.flash.grade); cx.font = cfont(16, 600); ctext(W.flash.grade < 0 ? 'Scrap' : `${Core.boardGradeName(W.flash.grade).toUpperCase()} board`, sx, Math.max(fpx(16) + 4, oy - R - 18)); }
+    if (W.flashT > 0 && W.flash){ cx.textAlign = 'center'; cx.fillStyle = boardCol(W.flash.grade); cx.font = cfont(16, 600); ctext(W.flash.grade < 0 ? 'Scrap' : `${boardLabel(W.flash.grade).toUpperCase()} board`, sx, Math.max(fpx(16) + 4, oy - R - 18)); }
     if (W.busy > 0){ cx.textAlign = 'center'; cx.fillStyle = C.muted; cx.font = cfont(12); cx.fillText('…', Wd/2, 296); }
   } else if (W.res){ cx.textAlign = 'center'; cx.fillStyle = W.res.q >= .97 ? C.good : C.ink; cx.font = cfont(18, 600); cx.fillText(`${Math.round(W.res.score*100)}% of target`, Wd/2, 340); }
   cx.textAlign = 'left';
@@ -10328,7 +10384,7 @@ function bellItems(){
   const ends = S.contracts.filter(c => c.vol > c.done && c.end - S.t <= SEASON_LEN - S.st).sort((a, b) => a.end - b.end)[0];
   if (ends) out.push({k:'ends', camp:'orders', t:'Order ends soon', s:`${ends.mill} · ${clockLeft(ends.end - S.t)} left, ${Math.floor(ends.done/ends.vol*100)}% done`, b:'Open', fn:() => go('orders', () => reveal('contracts'))});
   if (!S.run.setup && canClose()) out.push({k:'close', camp:'logging', tab:'log', t:'Close camp ready', s:`Logging · +${fmt(legacyNow())} shares`, b:'Close camp', fn:() => go('logging', () => reveal('closeBox'), 'log')});
-  if (m && m.dry && S.bulk.logs < 1 && !m.buyCove) out.push({k:'pond', camp:'sawmill', tab:'mill', t:'Mill pond empty', s:'Sawmill · buying logs is off', b:'Turn on', fn:() => { m.buyCove = true; toggleBell(false); render(); }});
+  if (m && m.dry && S.bulk.logs < 1 && !m.buyCove) out.push({k:'pond', camp:'sawmill', tab:'mill', t:'Log pond empty', s:'Sawmill · buying logs is off', b:'Turn on', fn:() => { m.buyCove = true; toggleBell(false); render(); }});
   if (m && canCloseMill()) out.push({k:'mclose', camp:'sawmill', tab:'run', t:'Mill can close', s:`Sawmill · +${fmt(millLegacyNow())} shares`, b:'Close mill', fn:() => go('sawmill', () => reveal('mClose'), 'run')});
   // season news that came in during a mini-game waits; the bell says so
   if (!mgEl.hidden && dispQ.length) out.push({k:'news', camp:'', t:'Season news waiting', s:'Shows when you close the game', b:'Read', fn:() => { closeMG(); render(true); }});
@@ -10411,7 +10467,7 @@ function renderSpecials(){
       (d.unlockPerk ? ` · ${O.perks.includes(d.unlockPerk) ? `${PMAP[d.unlockPerk].name} is unlocked` : `unlocks the ${PMAP[d.unlockPerk].name} perk`}` : '') +
       `. ${o.due <= S.run.n ? 'Due by the end of this outpost.' : `Due by the end of outpost ${o.due} (the next one).`}</p>` +
       `<div class="cbtns"><button class="buy" type="button" data-hand="${o.id}" ${canGive ? '' : 'disabled'}>Hand in</button></div></div>`; }).join('')
-    : `<p class="empty">${S.found[SPAR] ? 'No special orders right now. Orders come back in a later outpost.' : 'No special orders yet. They start once you make a Prime spar: get a perfect fall, or cut a trunk at 90% or better.'}</p>`;
+    : `<p class="empty">${S.found[SPAR] ? 'No special orders right now. Orders come back in a later outpost.' : 'No special orders yet. They start once you make a Prime log: get a perfect fall, or cut a tree at 90% or better.'}</p>`;
   list('specials', key, body + `<div class="cbtns" style="display:flex;margin-top:8px"><button class="act" type="button" id="spAuto" aria-pressed="${O.autoFill}">Auto-fill: ${O.autoFill ? 'on' : 'off'}</button></div>`,
     box => { box.querySelectorAll('[data-hand]').forEach(b => b.onclick = () => { handIn(b.dataset.hand, false); render(true); });
       box.querySelector('#spAuto').onclick = () => { O.autoFill = !O.autoFill; if (O.autoFill) autoFill(); render(true); const f = $('spAuto'); if (f) f.focus(); }; });
@@ -10512,7 +10568,7 @@ function whGridHtml(tab){
   }
   const xs = whItems(tab);
   let html;
-  if (!xs.length) html = `<p class="empty">${S.ui.whFilter ? 'Nothing matches. Clear the filter to see everything.' : 'Empty. Perfect falls and good cuts make Prime spars. Mini-games turn up finds; idle crews do too, rarely.'}</p>`;
+  if (!xs.length) html = `<p class="empty">${S.ui.whFilter ? 'Nothing matches. Clear the filter to see everything.' : 'Empty. Perfect falls and great cuts make Prime logs. Mini-games turn up finds; idle crews do too, rarely.'}</p>`;
   else if (tab === 'all' && S.ui.whSort === 'default') html = WH_GROUPS.map(([k, label]) => { const g = xs.filter(i => i.category === k);
     return g.length ? `<div class="igh"><span>${label}</span><span>${fmt(g.reduce((a, i) => a + bankN(i.id), 0))}</span></div>` + g.map(itemTile).join('') : ''; }).join('');
   else html = xs.map(itemTile).join('');
@@ -10693,7 +10749,7 @@ function openStory(){
   $('stBody').innerHTML = `<p>The ship left a crate on the beach: saw blades, ${itemsTxt(Core.FOUNDING_CRATE.items[0])}, ${itemsTxt(Core.FOUNDING_CRATE.items[1])}, ${itemsTxt(Core.FOUNDING_CRATE.items[2])} and ${bf(Core.FOUNDING_CRATE.logsBf)} of logs, with a note from the board:</p>
     <p><i>“No more raw logs home. Saw them here.”</i></p>
     <ul><li>A <b>Sawmill</b> tab opens: a saw pit, two sawyers and its own cash.</li>
-    <li>Build the <b>Mill pond &amp; wheel</b> and the <b>Circular saw</b> from the crate. Buildings stay when you close camp.</li>
+    <li>Build the <b>Water wheel</b> and the <b>Circular saw</b> from the crate. Buildings stay when you close camp.</li>
     <li>Logging sends the mill the logs it can saw, up to a cap you set. The mill makes <b>plank bundles</b> for a bunkhouse that makes crews cheaper.</li>
     <li>Logging keeps going while you work the mill. Each camp closes on its own.</li></ul>`;
   $('story').hidden = false; $('stGo').focus();
@@ -10714,14 +10770,14 @@ function renderMill(){
     list('mhPerkChips', Object.keys(pc).map(id => id + pc[id]).join(), Object.keys(pc).map(id => { const p = PMAP[id];
       return `<span class="chipl r-${p.r}" title="${p.desc.replace(/"/g, '&quot;')}">${p.name}${pc[id] > 1 ? ` ×${pc[id]}` : ''}</span>`; }).join('')); }
   $('mMeta').textContent = st['sawmill.pond'] ? `${sn}: water power ×${Core.millPower(st, sn).toFixed(2)} (spring ×${(Core.POND_POWER*Core.SITE.power.Spring).toFixed(2)}, winter ×${(Core.POND_POWER*Core.SITE.power.Winter).toFixed(2)}).`
-    : 'Hand power: the same every season until the mill pond turns a wheel.';
+    : 'Hand power: the same every season until the water wheel is built.';
   $('mFacts').innerHTML = row('Sawing', `${bf(rM)}/min`) + row('Sawyers', `${ns} of ${maxS}`) + row('Log pond', bf(S.bulk.logs) + (m.dry && S.bulk.logs < 1 ? (m.buyCove ? ' · buying logs' : ' · empty') : '')) +
     row('Income', `${money(m.ema*60)}/min`) + row('Plank bundles', fmt(bankN(BUNDLE)));
   $('mLedger').textContent = `With Logging this mill run: logs bought −${money(m.logPaid || 0)} · bundles sold +${money(m.bundleIn || 0)}.`;
-  const why = sawBlock(); $('mSawBtn').disabled = !!why; $('mSawWhy').textContent = why || (S.bulk.logs < 1 ? `Bought logs cost ${money(Core.coveLogPrice(market())*1000)} per 1,000 bd ft.` : '');
+  const why = sawBlock(); $('mSawBtn').disabled = !!why; $('mSawWhy').textContent = why || (S.bulk.logs < 1 ? `Bought logs cost ${money(Core.coveLogPrice(market())*1000)} per 1,000 wood.` : '');
   $('mCove').textContent = `Buy logs: ${m.buyCove ? 'on' : 'off'}`; $('mCove').setAttribute('aria-pressed', String(m.buyCove));
   $('mBundle').textContent = `Bundle: ${m.bundle ? 'on' : 'off'}`; $('mBundle').setAttribute('aria-pressed', String(m.bundle));
-  $('mYard').innerHTML = Core.BOARD_GRADES.map(g => `<div><small>${g}</small><b>${bf(m.yard[g])}</b></div>`).join('');
+  $('mYard').innerHTML = Core.BOARD_GRADES.map(g => `<div><small>${Core.BOARD_LABEL[g]}</small><b>${bf(m.yard[g])}</b></div>`).join('');
   $('mYardSub').textContent = `${bf(m.sawn)} sawn`;
   $('mRunTitle').textContent = `Mill run ${m.n}`;
   const db = $('mDraftBtn'); db.hidden = !m.dq.length; if (m.dq.length) db.textContent = `Pick perk (${m.dq.length})`;
@@ -10752,7 +10808,7 @@ function renderMill(){
     box => box.querySelectorAll('[data-build]').forEach(b => b.onclick = () => { buildStructure(b.dataset.build); }));
   // crew
   const hc = Core.sawyerCost(m.hired), full = ns >= maxS;
-  list('mCrew', `${ns}|${maxS}|${m.cash >= hc}|${hc}`, `<div class="row"><div class="info"><b>Sawyer</b><span class="own">×${ns}</span><p>Saws ${fmt(Core.SAWYER_BF_MIN*millMult())} bd ft a minute by hand, more with water. Room for ${maxS}.</p></div>
+  list('mCrew', `${ns}|${maxS}|${m.cash >= hc}|${hc}`, `<div class="row"><div class="info"><b>Sawyer</b><span class="own">×${ns}</span><p>Saws ${fmt(Core.SAWYER_BF_MIN*millMult())} wood a minute by hand, more with water. Room for ${maxS}.</p></div>
     <div class="btns"><button class="buy" type="button" id="mHire" ${full || m.cash < hc ? 'disabled' : ''}>${full ? 'No room' : money(hc)}</button></div></div>`,
     box => { box.querySelector('#mHire').onclick = () => { hireSawyer(); const f = $('mHire'); if (f) f.focus(); }; });
   // the mill's board

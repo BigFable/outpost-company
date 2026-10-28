@@ -57,7 +57,7 @@ const near=(a,b)=>Math.abs(a-b)<1e-6;
  ok(iSp>=0 && near(done[iSp],600),'the spruce order takes the spruce share (60%) first: '+done[iSp]);
  ok(near(done[regs[0].i],400) && near(done[regs[1].i],0),'the rest fills the regular order due soonest');
  const bar=$('contracts').querySelector(`[data-cbar="${iSp}"]`); E('render(true)');
- ok(/600 bd ft of 5(\.00)?K bd ft/.test($('contracts').querySelector(`[data-cdone="${iSp}"]`).textContent),'progress text updates: '+$('contracts').querySelector(`[data-cdone="${iSp}"]`).textContent);
+ ok(/600 wood of 5(\.00)?K wood/.test($('contracts').querySelector(`[data-cdone="${iSp}"]`).textContent),'progress text updates: '+$('contracts').querySelector(`[data-cdone="${iSp}"]`).textContent);
  ok(bar && parseFloat($('contracts').querySelector(`[data-cbar="${iSp}"]`).style.width)>11,'the progress bar moves');
 
  // ---------- 5. Rush clerk: two regular orders fill from the same logs, one bonus per log

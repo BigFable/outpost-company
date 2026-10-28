@@ -22,7 +22,7 @@ export interface StructureDef {
 export const STRUCTURES: readonly StructureDef[] = deepFreeze([
   {id:'sawmill.pit', skill:'sawmill', target:'sawmill', name:'Saw pit', desc:'Two sawyers saw logs by hand over a pit.',
     levels:[{items:[], cash:0, effect:'2 sawyers, hand power'}]},
-  {id:'sawmill.pond', skill:'sawmill', target:'sawmill', name:'Mill pond & wheel', desc:'Dam the creek and turn a water wheel.',
+  {id:'sawmill.pond', skill:'sawmill', target:'sawmill', name:'Water wheel', desc:'Dam the creek and turn a water wheel.',
     levels:[{items:[{item:'logging.prime_spar', qty:3}, {item:'logging.amber_pitch', qty:2}], cash:100, effect:'Water power: sawing ×2.5, room for 10 more sawyers. Seasons now matter'}]},
   {id:'sawmill.headrig', skill:'sawmill', target:'sawmill', name:'Circular saw', desc:'A big round saw on a moving log cart, run by the wheel.',
     levels:[{items:[{item:'logging.prime_spar', qty:2}, {item:'logging.ships_fitting', qty:1}], cash:250, effect:'+2 sawyers and room for 44 more; in Saw boards, turns take 1 s, not 2'}]},
@@ -173,7 +173,7 @@ export function levelBundles(l: StructureLevel): number {
 
 /** The mill's board (spent with Sawmill Charter Shares). */
 export const MILL_META: readonly MetaNodeDef[] = deepFreeze([
-  {id:'saw.advance', cost:3, name:'Log crate', desc:'Start each mill run with 3,000 bd ft of logs.'},
+  {id:'saw.advance', cost:3, name:'Log crate', desc:'Start each mill run with 3,000 wood of logs.'},
   {id:'saw.crew', cost:5, name:'Extra sawyers', desc:'Start each mill run with 2 more sawyers.'},
   {id:'saw.sharp', cost:8, name:'Saw filer', desc:'Every sawyer saws ×1.2.'},
   {id:'saw.chronicler', cost:10, name:'Mill clerk', desc:'Shares from closing the mill +15%.'},
@@ -182,11 +182,11 @@ export const MILL_META: readonly MetaNodeDef[] = deepFreeze([
 // ---------- perks (Sawmill drafts)
 
 export const SAW_PERKS: readonly PerkDef[] = deepFreeze([
-  {id:'chaincarriage', r:'rare', name:'Chain carriage', desc:'Saw boards: a top run brings the next log at once, outer boards one grade better, up to 3 logs.'},
+  {id:'chaincarriage', r:'rare', name:'Chain carriage', desc:'Saw boards: a top run brings the next log at once, outer boards one tier better, up to 3 logs.'},
   {id:'sawyerseye', r:'rare', name:'Sawyer’s eye', desc:'Saw boards: see hidden knots one board ahead on every side.'},
-  {id:'pondmonkey', r:'common', name:'Pond monkey', desc:'Prime logs always come first, and each gives 1 extra Clear board.'},
+  {id:'pondmonkey', r:'common', name:'Pond monkey', desc:'Prime logs always come first, and each gives 1 extra Fine board.'},
   {id:'turndog', r:'common', name:'Turn and dog', desc:'Saw boards: turning the log is instant.'},
-  {id:'bigstick', r:'legendary', name:'Big stick', desc:'Once per mill run, a giant log arrives: twice the wood, and its Clear boards are worth ×3.'},
+  {id:'bigstick', r:'legendary', name:'Big stick', desc:'Once per mill run, a giant log arrives: twice the wood, and its Fine boards are worth ×3.'},
 ]);
 /** Sawmill perks that can be offered: commons stack (Pond monkey), the rest once per mill outpost. */
 export function sawDraftPool(drafted: readonly string[]): PerkDef[] {

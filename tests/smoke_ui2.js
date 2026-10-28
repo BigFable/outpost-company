@@ -43,7 +43,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.run.perks = []; S.season = SEASONS.indexOf('Spring'); S.weather.cur = null; render(true)`);
  const wx=d.querySelector('#chain .stc[data-stage=skid] .wx'); ok(!wx.hidden && /Weather ×0\./.test(wx.textContent) && wx.classList.contains('bad'),'Spring mud shows a weather chip on Skid: '+wx.textContent);
  E(`S.season = SEASONS.indexOf('Fall'); render(true)`); ok(d.querySelector('#chain .stc[data-stage=fell] .wx').hidden,'no weather chip when the season changes nothing');
- E(`S.stems.bf = 5000; render(true)`); ok(/5(\.00)?K bd ft/.test(d.querySelector('#chain .stc[data-stage=fell] .spile b').textContent),'Fell shows the felled trees waiting');
+ E(`S.stems.bf = 5000; render(true)`); ok(/5(\.00)?K wood/.test(d.querySelector('#chain .stc[data-stage=fell] .spile b').textContent),'Fell shows the felled trees waiting');
  // ---------- 4. bell items route to a tab and dot it
  E(`S.short = true; S.owed = 300; setTab('logging','work'); render(true)`);
  ok(!d.querySelector('#ltCrews .dot').hidden && d.querySelector('#ltWork .dot').hidden,'wages owed puts a dot on the Crews tab');

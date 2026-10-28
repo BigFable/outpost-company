@@ -32,7 +32,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  ok($('lsWhV').textContent==='4 items' && !$('lsWhNew').hidden && /4 new/.test($('lsWhNew').textContent),'ledger strip counts items with a new badge: '+$('lsWhNew').textContent);
  $('lsWh').click();
  ok(!$('wh').hidden && $('lsWhNew').hidden && d.querySelectorAll('#whGrid button.itile').length===2 && d.querySelectorAll('#whGrid .inew').length===2,'clicking the warehouse opens the grid (2 tiles with new dots) and clears the sidebar badge');
- d.querySelector('#whGrid [data-it="logging.burl"]').click(); ok(/Burl/.test($('whDetail').textContent) && !E('S.unseen["logging.burl"]'),'tapping a tile opens its panel and clears its new dot');
+ d.querySelector('#whGrid [data-it="logging.burl"]').click(); ok(/Swirl knot/.test($('whDetail').textContent) && !E('S.unseen["logging.burl"]'),'tapping a tile opens its panel and clears its new dot');
  const c0=E('S.cash'); d.querySelector('[data-s1="logging.burl"]').click();
  ok(E(`bankN('logging.burl')`)===2 && E('S.cash')-c0===E(`Core.itemSellPrice('logging.burl', 0)`),'Sell 1 pays the item price into the logging camp');
  d.querySelector('#whGrid [data-it="logging.fog_glass"]').click(); d.querySelector('[data-lk="logging.fog_glass"]').click(); ok(E('S.locks.includes("logging.fog_glass")') && !!d.querySelector('#whGrid [data-it="logging.fog_glass"] .ilock'),'lock an item from its panel; the tile shows a lock');

@@ -36,6 +36,10 @@ export const TIER_DIAMONDS: Readonly<Record<Tier, number>> = deepFreeze({scrap:0
 /** Board grades and log grades on the ladder (ids unchanged: clear/select/common, 1/2/3/'P' where 'P' is pulp, now firewood). */
 export const BOARD_TIER: Readonly<Record<'clear' | 'select' | 'common', Tier>> = deepFreeze({clear:'fine', select:'good', common:'common'} as const);
 export const LOG_TIER: Readonly<Record<'1' | '2' | '3' | 'P', Tier>> = deepFreeze({'1':'fine', '2':'good', '3':'common', P:'scrap'} as const);
+/** Board grade names for players (the ids stay clear/select/common): Fine, Good, Common. */
+export const BOARD_LABEL: Readonly<Record<'clear' | 'select' | 'common', string>> = deepFreeze({clear:'Fine', select:'Good', common:'Common'});
+/** A log grade for players: 1 Fine, 2 Good, 3 Common, 'P' firewood. */
+export function logTierName(g: number | string): string { const t = LOG_TIER[String(g) as '1' | '2' | '3' | 'P']; return t ? TIER_LABEL[t] : TIER_LABEL.common; }
 
 export interface ItemDef {
   readonly id: ItemId; readonly name: string; readonly plural: string; readonly desc: string;
@@ -54,30 +58,30 @@ export interface ItemStack { readonly item: ItemId; readonly qty: number }
 export interface CurrencyDef { readonly id: CurrencyId; readonly name: string; readonly scope: 'outpost' | 'skill' | 'company'; readonly skill?: SkillId }
 
 export const ITEMS: readonly ItemDef[] = deepFreeze([
-  {id:'logging.prime_spar', name:'Prime spar', plural:'Prime spars', skill:'logging', category:'prime', rarity:'made', sell:40,
-    desc:'A straight, knot-free log stamped Prime. Good for ship masts.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and grade 1 logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50', tier:'prime', icon:{glyph:'spar', tint:'spruce', badge:'prime'}},
-  {id:'logging.burl', name:'Burl', plural:'Burls', skill:'logging', category:'find', rarity:'common', sell:30,
+  {id:'logging.prime_spar', name:'Prime log', plural:'Prime logs', skill:'logging', category:'prime', rarity:'made', sell:40,
+    desc:'A perfect log, stamped Prime. Builds the mill and fills big orders.', uses:['order','structure','sell'], from:'Perfect falls (3 from a spruce) and Fine logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50', tier:'prime', icon:{glyph:'spar', tint:'spruce', badge:'prime'}},
+  {id:'logging.burl', name:'Swirl knot', plural:'Swirl knots', skill:'logging', category:'find', rarity:'common', sell:30,
     desc:'A swirly lump of wood. Buyers pay well for it.', uses:['sell','collection','future:sawmill'], from:'Felling and bucking', tier:'common', icon:{glyph:'burl', tint:'bark'}},
-  {id:'logging.amber_pitch', name:'Amber pitch', plural:'Amber pitch', skill:'logging', category:'find', rarity:'common', sell:12,
-    desc:'Hard tree sap. Seals ship hulls and the mill pond dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pine has the most)', tier:'common', icon:{glyph:'drop', tint:'amber'}},
-  {id:'logging.survey_marker', name:'Survey marker', plural:'Survey markers', skill:'logging', category:'find', rarity:'uncommon', sell:18,
-    desc:'An old brass marker. Use one for a perk reroll (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding', tier:'good', icon:{glyph:'marker', tint:'brass'}},
-  {id:'logging.ships_fitting', name:'Ship’s fitting', plural:'Ship’s fittings', skill:'logging', category:'find', rarity:'uncommon', sell:22,
-    desc:'Bronze parts from a wreck. Used to build the circular saw.', uses:['order','structure','sell','future:raising'], from:'Hauling (washed up by the cove road)', tier:'good', icon:{glyph:'deadeye', tint:'bronze'}},
-  {id:'logging.fog_glass', name:'Fog-glass', plural:'Fog-glass', skill:'logging', category:'find', rarity:'rare', sell:90,
+  {id:'logging.amber_pitch', name:'Amber sap', plural:'Amber sap', skill:'logging', category:'find', rarity:'common', sell:12,
+    desc:'Hard tree sap. Seals ship hulls and the water wheel’s dam.', uses:['order','structure','sell','future:smelting'], from:'Bucking (pine has the most)', tier:'common', icon:{glyph:'drop', tint:'amber'}},
+  {id:'logging.survey_marker', name:'Restock token', plural:'Restock tokens', skill:'logging', category:'find', rarity:'uncommon', sell:18,
+    desc:'A brass company token. Use one to reroll your perk cards (2 per outpost).', uses:['reroll','sell','future:surveying'], from:'Skidding', tier:'good', icon:{glyph:'marker', tint:'brass'}},
+  {id:'logging.ships_fitting', name:'Shipwreck bronze', plural:'Shipwreck bronze', skill:'logging', category:'find', rarity:'uncommon', sell:22,
+    desc:'Bronze parts washed ashore from a wreck. Builds the circular saw.', uses:['order','structure','sell','future:raising'], from:'Hauling (washed up by the cove road)', tier:'good', icon:{glyph:'deadeye', tint:'bronze'}},
+  {id:'logging.fog_glass', name:'Fog lens', plural:'Fog lenses', skill:'logging', category:'find', rarity:'rare', sell:90,
     desc:'A smoky, sea-worn lens. Nobody knows who made it.', uses:['sell','collection','future:surveying'], from:'Top results in felling, skidding and hauling', tier:'rare', icon:{glyph:'lens', tint:'fog'}},
-  {id:'sawmill.quarter_sawn', name:'Quarter-sawn board', plural:'Quarter-sawn boards', skill:'sawmill', category:'mill', rarity:'made', sell:25,
-    desc:'A top board from a Prime log. The Admiralty wants it for decks.', uses:['sell','future:raising'], from:'A great Saw boards run on a Prime log', tier:'prime', icon:{glyph:'board', tint:'oak', figure:'quarter', badge:'prime'}},
+  {id:'sawmill.quarter_sawn', name:'Prime board', plural:'Prime boards', skill:'sawmill', category:'mill', rarity:'made', sell:25,
+    desc:'The best board, from a great run on a Prime log. The Admiralty wants it for decks.', uses:['sell','future:raising'], from:'A great Saw boards run on a Prime log', tier:'prime', icon:{glyph:'board', tint:'oak', figure:'quarter', badge:'prime'}},
   {id:'sawmill.plank_bundle', name:'Plank bundle', plural:'Plank bundles', skill:'sawmill', category:'mill', rarity:'made', sell:10,
-    desc:'500 bd ft of Common lumber. Builds the bunkhouse.', uses:['structure','sell'], from:'Common lumber at the Sawmill', tier:'common', icon:{glyph:'bundle', tint:'pine'}},
+    desc:'500 wood of Common boards. Builds the bunkhouse.', uses:['structure','sell'], from:'Common boards at the Sawmill', tier:'common', icon:{glyph:'bundle', tint:'pine'}},
 ]);
 /** Bulk stocks: counted in wood, shown in the Warehouse but not sold there. */
 export interface BulkDef { readonly id: string; readonly name: string; readonly tab: 'logs' | 'boards'; readonly scope: 'company' | 'camp'; readonly tier: Tier; readonly icon: IconSpec; readonly desc: string }
 export const BULK: readonly BulkDef[] = deepFreeze([
   {id:'company.logs', name:'Log pond', tab:'logs', scope:'company', tier:'common', icon:{glyph:'pile', tint:'pine'}, desc:'Logs waiting for the Sawmill. Logging fills it; the mill saws it.'},
-  {id:'sawmill.lumber.clear', name:'Clear lumber', tab:'boards', scope:'camp', tier:'fine', icon:{glyph:'bundle', tint:'pine', straps:false, knots:0}, desc:'No knots. Sells at 3× the log price.'},
-  {id:'sawmill.lumber.select', name:'Select lumber', tab:'boards', scope:'camp', tier:'good', icon:{glyph:'bundle', tint:'pine', straps:false, knots:1}, desc:'A few small knots. Sells at 2×.'},
-  {id:'sawmill.lumber.common', name:'Common lumber', tab:'boards', scope:'camp', tier:'common', icon:{glyph:'bundle', tint:'pine', straps:false, knots:4}, desc:'Knotty. Sells at 1×, or makes plank bundles.'},
+  {id:'sawmill.lumber.clear', name:'Fine boards', tab:'boards', scope:'camp', tier:'fine', icon:{glyph:'bundle', tint:'pine', straps:false, knots:0}, desc:'No knots. Sell for 3× the log price.'},
+  {id:'sawmill.lumber.select', name:'Good boards', tab:'boards', scope:'camp', tier:'good', icon:{glyph:'bundle', tint:'pine', straps:false, knots:1}, desc:'A few small knots. Sell for 2×.'},
+  {id:'sawmill.lumber.common', name:'Common boards', tab:'boards', scope:'camp', tier:'common', icon:{glyph:'bundle', tint:'pine', straps:false, knots:4}, desc:'Knotty. Sell for 1×, or make plank bundles.'},
 ] as BulkDef[]);
 
 const ITEM_BY_ID: ReadonlyMap<ItemId, ItemDef> = new Map(ITEMS.map((i) => [i.id, i]));
@@ -248,12 +252,12 @@ export interface SpecialOrderDef {
   readonly dueOutposts: number;
 }
 export const SPECIAL_ORDERS: readonly SpecialOrderDef[] = deepFreeze([
-  {id:'admiralty_spar', skill:'logging', client:'The Admiralty', name:'Admiralty spar order', short:'Admiralty',
-    text:'The Admiralty wants Prime spars for ship masts, and pitch to seal them.',
+  {id:'admiralty_spar', skill:'logging', client:'The Admiralty', name:'Admiralty mast order', short:'Admiralty',
+    text:'The Admiralty wants Prime logs for ship masts, and amber sap to seal them.',
     needs:[{item:'logging.prime_spar', qty:16}, {item:'logging.amber_pitch', qty:2}], bonusPct:0.15, unlockPerk:'sparman',
     trigger:['logging.prime_spar'], dueOutposts:2},
   {id:'caulk_perseverance', skill:'logging', client:'the captain of the Perseverance', name:'Patch the Perseverance', short:'Perseverance',
-    text:'The company ship is leaking. Her captain needs pitch and bronze fittings before she sails.',
+    text:'The company ship is leaking. Her captain needs amber sap and shipwreck bronze before she sails.',
     needs:[{item:'logging.amber_pitch', qty:6}, {item:'logging.ships_fitting', qty:3}], bonusPct:0.08,
     rewardItems:[{item:'logging.burl', qty:2}], unlockPerk:'pitchboiler',
     trigger:['logging.amber_pitch', 'logging.ships_fitting'], dueOutposts:2},
@@ -277,6 +281,32 @@ export function orderRemaining(def: SpecialOrderDef, given: Readonly<Record<Item
 
 /** Order perks: rare, rule-changing, offered in Logging drafts once their order is filled. */
 export const ORDER_PERKS: readonly PerkDef[] = deepFreeze([
-  {id:'sparman', r:'rare', name:'Spar man', desc:'Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime, but perfect falls give no speed boost.'},
-  {id:'pitchboiler', r:'rare', name:'Pitch boiler', desc:'Bucking game: each pulp piece becomes amber pitch (2 at most) instead of pulp value. Idle buckers find pitch 3× as often.'},
+  {id:'sparman', r:'rare', name:'Prime hunter', desc:'Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime log, but perfect falls give no speed boost.'},
+  {id:'pitchboiler', r:'rare', name:'Sap boiler', desc:'Bucking game: each firewood piece becomes amber sap (2 at most) instead of firewood value. Idle buckers find sap 3× as often.'},
 ]);
+
+// ---------- resource renames (docs/design/resource-names.md, owner 2026-10-28)
+
+/**
+ * Old player-facing names and their new ones, longest first. Ids and save keys never change; this only rewrites text a
+ * save already holds (the camp log). Each rule is idempotent: new names never match an old pattern.
+ */
+const RENAMES: readonly (readonly [RegExp, string])[] = [
+  [/Admiralty spar order/g, 'Admiralty mast order'],
+  [/Prime spars/g, 'Prime logs'], [/Prime spar/g, 'Prime log'],
+  [/Quarter-sawn boards/g, 'Prime boards'], [/Quarter-sawn board/g, 'Prime board'],
+  [/(Ship|ship)[’']s fittings/g, 'shipwreck bronze'],
+  [/Ship[’']s fitting/g, 'Shipwreck bronze'], [/ship[’']s fitting/g, 'shipwreck bronze'],
+  [/Survey markers/g, 'Restock tokens'], [/Survey marker/g, 'Restock token'], [/survey markers/g, 'restock tokens'], [/survey marker/g, 'restock token'],
+  [/Fog-glass/g, 'Fog lens'], [/fog-glass/g, 'fog lens'],
+  [/Amber pitch/g, 'Amber sap'], [/amber pitch/g, 'amber sap'],
+  [/\bBurls\b/g, 'Swirl knots'], [/\bBurl\b/g, 'Swirl knot'], [/\bburls\b/g, 'swirl knots'], [/\bburl\b/g, 'swirl knot'],
+  [/Spar man/g, 'Prime hunter'], [/Pitch boiler/g, 'Sap boiler'],
+  [/Mill pond & wheel/g, 'Water wheel'],
+  [/\b(\d+) MBF\b/g, '$1K wood'],
+  [/board feet/g, 'wood'], [/bd ft/g, 'wood'],
+];
+/** Old item names and "bd ft" in a line of saved text, rewritten in the new words. */
+export function renameOldText(text: string): string {
+  return RENAMES.reduce((t, [re, to]) => t.replace(re, to), text);
+}

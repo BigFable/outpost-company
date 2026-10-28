@@ -42,7 +42,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  let cards=[...d.querySelectorAll('#stash .scard')];
  ok(cards.map(c=>c.dataset.sp).join()==='pine,hemlock,spruce','one card per species owned: '+cards.map(c=>c.dataset.sp).join());
  const pc=cards[0].textContent;
- ok(/Pine/.test(pc) && /\d+ trees · [\d.]+K bd ft · \$[\d.]+K?/.test(pc) && /Chops 20/.test(cards[0].querySelector('[data-stat="chops"]').textContent) && cards[0].querySelector('[data-stat="weight"]') && cards[0].querySelector('[data-stat="prime"]'),'a card shows trees, bd ft, value, chops, weight and Prime: '+cards[0].querySelector('summary').textContent.trim());
+ ok(/Pine/.test(pc) && /\d+ trees · [\d.]+K wood · \$[\d.]+K?/.test(pc) && /Chops 20/.test(cards[0].querySelector('[data-stat="chops"]').textContent) && cards[0].querySelector('[data-stat="weight"]') && cards[0].querySelector('[data-stat="prime"]'),'a card shows trees, bd ft, value, chops, weight and Prime: '+cards[0].querySelector('summary').textContent.trim());
  ok(/Light/.test(cards[2].querySelector('summary').textContent) && cards[2].querySelector('[data-stat="weight"]').dataset.v==='good','spruce is tagged light');
  const pineLots=[...cards[0].querySelectorAll('.slots li')];
  ok(pineLots.length===2 && /Home lot: \d+ trees \(70%\)/.test(pineLots[0].textContent) && /Crews here/.test(pineLots[0].textContent) && /Spruce head, Lot 7: 10 trees \(20%\) · hilly · 2 mi/.test(pineLots[1].textContent),'tap a species: its lots, with count, share, slope and miles');

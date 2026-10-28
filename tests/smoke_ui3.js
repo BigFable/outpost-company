@@ -25,7 +25,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok([...$('whTabs').querySelectorAll('[role=tab]')].map(b=>b.dataset.t).join()==='all,prime,find,mill,logs,collection,ledger' && /Boards/.test($('whTabs').textContent),'tabs: All, Prime, Finds, Boards, Logs, Collection (Ledger until it moves)');
  ok(/Pick an item|Tap an item/.test($('whDetail').textContent) && $('whDetail').classList.contains('none'),'no item picked: the panel shows a hint (and the phone sheet stays closed)');
  tile('logging.burl').click();
- ok(!$('whDetail').classList.contains('none') && /Burl/.test($('whDetail').textContent) && /Comes from/.test($('whDetail').textContent) && !E(`S.unseen['logging.burl']`) && !tile('logging.burl').querySelector('.inew') && tile('logging.burl').getAttribute('aria-current')==='true','tapping a tile opens its panel, marks it current and clears its new dot');
+ ok(!$('whDetail').classList.contains('none') && /Swirl knot/.test($('whDetail').textContent) && /Comes from/.test($('whDetail').textContent) && !E(`S.unseen['logging.burl']`) && !tile('logging.burl').querySelector('.inew') && tile('logging.burl').getAttribute('aria-current')==='true','tapping a tile opens its panel, marks it current and clears its new dot');
  const c0=E('S.cash'); d.querySelector('#whDetail [data-s1="logging.burl"]').click();
  ok(E(`bankN('logging.burl')`)===4 && E('S.cash')-c0===E(`sellPrice('logging.burl')`) && tile('logging.burl').querySelector('.icnt').textContent==='4','Sell 1 from the panel sells one and pays Logging');
  d.querySelector('#whDetail [data-lk="logging.burl"]').click();
@@ -63,10 +63,17 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // ---------- 2. an old save: the old warehouse tab and the old new-count carry over
  E('save()'); const st=w.localStorage.getItem('timberline-v2'); dom.window.close();
  const old=JSON.parse(st); delete old.unseen; old.newCount=3; old.ui.whTab='stock'; delete old.ui.whSort; delete old.ui.whFilter; old.bank={'logging.burl':2,'logging.fog_glass':1};
+ old.log=[{at:'Fal 1890', text:'New find: Burl.'}, {at:'Fal 1890', text:'Special order from The Admiralty: Admiralty spar order. 16 Prime spars and 2 Amber pitch by the end of next outpost.'}, {at:'Win 1890', text:'Closed mill run 1: 30.0K bd ft sawn. Used a survey marker; got a Ship’s fitting and Fog-glass.'}];
  dom=mk(JSON.stringify(old)); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
  ok(E('S.ui.whTab')==='all' && E('S.ui.whSort')==='default' && E('S.ui.whFilter')===null,'old save: Stock becomes All; sort and filter take their defaults');
  ok(E(`S.unseen['logging.burl']`)===1 && E(`S.unseen['logging.fog_glass']`)===1,'old save with new items: every held item gets its new dot once');
  E(`go('warehouse')`); ok(d.querySelectorAll('#whGrid .inew').length===2,'and the grid shows them');
+ // resource renames: the camp log a save holds reads in the new names; ids and save keys do not change
+ const logT=E(`S.log.map(e=>e.text).join(' | ')`);
+ ok(/New find: Swirl knot\./.test(logT) && /Admiralty mast order\. 16 Prime logs and 2 Amber sap/.test(logT) && /30\.0K wood sawn\. Used a restock token; got a Shipwreck bronze and Fog lens/.test(logT) && !/Burl|spar|bd ft|pitch|marker|fitting|Fog-glass/.test(logT),'old save: the camp log is rewritten in the new names: '+logT);
+ ok(E(`bankN('logging.burl')`)===2 && E(`Object.keys(S.bank).join()`)==='logging.burl,logging.fog_glass','item ids and counts are untouched');
+ ok(d.querySelector('#whGrid [data-it="logging.burl"]').getAttribute('aria-label').startsWith('Swirl knot, Common tier') && d.querySelector('#whGrid [data-it="logging.fog_glass"]').getAttribute('aria-label').startsWith('Fog lens, Rare tier'),'the grid shows the new names');
+ E(`render(true)`); ok(/Swirl knot/.test(d.getElementById('ledger').textContent) && !/Burl/.test(d.getElementById('ledger').textContent),'the camp log on screen uses the new names');
  dom.window.close();
  const old2=JSON.parse(st); old2.ui.whTab='log'; old2.unseen='junk';
  dom=mk(JSON.stringify(old2)); await sleep(300); w=dom.window; E=s=>w.__eval(s);

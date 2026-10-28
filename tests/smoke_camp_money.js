@@ -28,7 +28,7 @@ const near=(a,b)=>Math.abs(a-b)<1e-9;
   ok(E('S.camps.sawmill.n')===2 && E('S.camps.sawmill.cash')===E('Core.FOUNDING_CRATE.cash')+300,'the crate cash comes every mill run: mill run 2 starts with it too');
   // ---------- the mill board's saw.advance: the Log crate (logs, not cash)
   const node=E(`JSON.stringify(Core.MILL_META.find(x=>x.id==='saw.advance'))`);
-  ok(/"name":"Log crate"/.test(node) && /3,000 bd ft of logs/.test(node),'saw.advance is the Log crate: '+node);
+  ok(/"name":"Log crate"/.test(node) && /3,000 wood of logs/.test(node),'saw.advance is the Log crate: '+node);
   E(`S.shares.sawmill.legacy=99; buyMillMeta('saw.advance'); S.bulk.logs=0; S.camps.sawmill.sawn = Core.MILL_CLOSE_BF; closeMill()`);
   ok(E('S.camps.sawmill.n')===3 && E('S.bulk.logs')===3000 && E('S.camps.sawmill.cash')===E('Core.millStartCash()'),'with the Log crate, mill run 3 starts with 3,000 bd ft in the pond and no extra cash');
   E(`S.bulk.logs=0; S.camps.sawmill.sawn = Core.MILL_CLOSE_BF; closeMill()`); ok(E('S.bulk.logs')===3000,'and every mill run after');
