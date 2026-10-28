@@ -59,6 +59,16 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`S.orders.open=[{id:'caulk_perseverance', posted:1, due:2, given:{}}]; go('orders')`);
  ok(d.querySelectorAll('#specials .itile.sm').length===2,'order cards show a small picture for each item they need');
  E(`S.orders.open=[]; go('logging')`);
+ // ---------- 3. the tier ladder everywhere quality shows: logs, boards, the lumber yard
+ ok(E(`[1,2,3,'P'].map(g => Core.logTierName(g)).join()`)==='Fine,Good,Common,Firewood' && E(`[0,1,2].map(boardTier).join()`)==='fine,good,common','log grades and board grades sit on the ladder (Fine, Good, Common; firewood below)');
+ ok(E(`gradeCol(1) === tierCol('fine') && gradeCol(2) === tierCol('good') && gradeCol(3) === tierCol('common') && gradeCol('P') === C.bark`) && E(`boardCol(0) === tierCol('fine') && boardCol(2) === tierCol('common')`),'bucking and saw colors come from the tier tokens');
+ ok(E(`readColors(), Core.TIERS.every(t => 't-' + t in C)`),'the canvas reads every tier color');
+ E(`openSawmill(true); S.story.card = false; $('story').hidden = true; go('sawmill', null, 'mill')`);
+ const yard=[...d.querySelectorAll('#mYard>div')];
+ ok(yard.map(x=>x.className).join()==='t-fine,t-good,t-common' && yard.map(x=>x.querySelectorAll('.dd i').length).join()==='2,1,0' && /Fine/.test(yard[0].textContent) && /Good/.test(yard[1].textContent),'lumber yard: Fine (2 diamonds), Good (1), Common (0)');
+ E(`go('warehouse'); openWh('mill')`);
+ ok(d.querySelectorAll('#whGrid .bcard').length===3 && /Fine boards/.test($('whGrid').textContent) && d.querySelector('#whGrid .bcard .itile.t-fine .idia').children.length===2,'Boards tab: the lumber yard by tier with diamonds');
+ E(`go('logging')`);
  ok(!errs.length,'no console errors: '+errs.slice(0,3).join(' | '));
  // ---------- 2. an old save: the old warehouse tab and the old new-count carry over
  E('save()'); const st=w.localStorage.getItem('timberline-v2'); dom.window.close();

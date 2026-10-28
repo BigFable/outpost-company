@@ -337,7 +337,8 @@ details.notei[open] summary{justify-content:flex-start}
 .struct .costs .short{color:var(--bad)}
 .struct .cbtns{margin-top:6px}
 .yard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
-.yard div{border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0}
+.yard div{border:1px solid var(--line);border-left:4px solid var(--rc,var(--line));border-radius:4px;padding:6px 8px;min-width:0}
+.yard small .tierw{font-size:inherit;letter-spacing:.04em}
 .yard small{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .yard b{font-family:var(--f-num);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .storybox{font-size:.92rem}
@@ -1075,7 +1076,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
     <div class="mgwrap">
     <div class="guide" id="mgGuide" hidden role="note" aria-labelledby="mgGuideT"><b id="mgGuideT">How to cut logs</b>
       <ol id="mgGuideL"><li><b>Pick a spot.</b> Orange marks show where a log can end: 8, 10, 12, 14 or 16 ft from your last cut.</li>
-        <li><b>Check the color.</b> Green is a Fine log, dark is Good (knots), amber is Common (bend), grey is firewood. Tap or click to cut.</li>
+        <li><b>Check the color.</b> Blue is a Fine log (2 diamonds), green is Good (knots, 1 diamond), grey is Common (bend), brown dashes are firewood. Tap or click to cut.</li>
         <li><b>Send it.</b> Cut off the rot and keep knots and bends out of your best logs. A top under 8 in is firewood. Stuck? Hint shows the next best cut, for a few points.</li></ol>
       <button class="mbtn primary" id="mgGuideOk" type="button">Got it</button></div>
     <canvas class="mgc" id="mgCanvas" width="640" height="400" tabindex="0" aria-label="Mini-game field"></canvas></div>
@@ -8529,7 +8530,17 @@ const mgEl = $('mg'), cv = $('mgCanvas'), cx = cv.getContext ? cv.getContext('2d
 const MG = {kind:null, raf:0, lt:0, LW:640, LH:400};
 let C = {}, F = null, B = null, K = null, H = null, W = null;
 function readColors(){ const cs = getComputedStyle(document.documentElement);
-  ['bg','panel','ink','muted','line','accent','bark','needle','needle2','sky','good','warn','bad','pile'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim()); }
+  ['bg','panel','ink','muted','line','accent','bark','needle','needle2','sky','good','warn','bad','pile'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim());
+  Core.TIERS.forEach(t => C['t-' + t] = cs.getPropertyValue('--r-' + t).trim()); }
+// the tier ladder on the canvas: the tier's color and its diamonds (0-4) centred at x, y, so color is never the only cue
+const tierCol = t => C['t-' + t] || C.muted;
+function drawDia(cx, x, y, t, sz = 3.5){
+  const n = Core.TIER_DIAMONDS[t] || 0; if (!n) return;
+  const gap = sz*2 + 1.5, x0 = x - (n - 1)*gap/2;
+  cx.save(); cx.fillStyle = tierCol(t); cx.strokeStyle = C.panel; cx.lineWidth = 1;
+  for (let i = 0; i < n; i++){ const xi = x0 + i*gap; cx.beginPath(); cx.moveTo(xi, y - sz); cx.lineTo(xi + sz, y); cx.lineTo(xi, y + sz); cx.lineTo(xi - sz, y); cx.closePath(); cx.fill(); cx.stroke(); }
+  cx.restore();
+}
 // phones (narrow or short screens): the sheet fills the screen, the canvas is sized to fit beside the header and buttons,
 // canvas text stays at 12 CSS px or more and on-canvas buttons at 44 CSS px or more
 const mq = q => { try { return !!(window.matchMedia && window.matchMedia(q).matches); } catch(e){ return false; } };
@@ -8597,7 +8608,7 @@ const MG_HELP = {
 };
 // the ? guide card, per game (bucking's text lives in the page; Saw for grade's is here)
 const SAW_GUIDE = ['<b>Pick a log.</b> Tap one. Big and Prime logs pay more but hide more knots. A Prime log on the deck uses one Prime log from the warehouse.',
-  '<b>Saw or turn.</b> Tap SAW or the log to cut a board. Tap TURN to roll the log. Green is Fine, amber is Common. Each knot drops a board one tier.',
+  '<b>Saw or turn.</b> Tap SAW or the log to cut a board. Tap TURN to roll the log. Blue is Fine, green is Good, grey is Common. Each knot drops a board one tier.',
   '<b>Beat the target.</b> The target is two boards a side, then turn. The mark shows the better move. Finish early for up to +10%.'];
 let BUCK_GUIDE = null;
 function setGuide(kind){
@@ -8985,7 +8996,7 @@ function buckSend(){
   if (perk('pitchboiler')){ const pulp = sg.filter(x => x.g === 'P'); pitch = Math.min(2, pulp.length);
     if (pitch){ addItem('logging.amber_pitch', pitch); const pv = pulp.reduce((a,x) => a + x.val, 0); pulpCut = mine > 0 ? Math.max(0, 1 - pv/mine) : 1; } }
   move(S.stems, S.cut, B.amt, m*vmult()*pulpCut);
-  const prime = counts ? Core.primeFromBuck(B.sp, sg, rs) : null; if (prime) addItem(prime.item, prime.qty);
+  const prime = counts ? Core.primeFromBuck(B.sp, sg, rs) : null; if (prime) addItem(prime.item, prime.qty); B.primeN = prime ? prime.qty : 0;
   B.done = true; B.hint = null; buckKeep = null;
   if (r >= .97) grantBoost('buck');
   if (counts){
@@ -9009,7 +9020,8 @@ function hideGuide(){ const was = !$('mgGuide').hidden; $('mgGuide').hidden = tr
   if (was || !phoneUI()){ if (MG.kind === 'saw') S.ui.sawIntro = true; else S.ui.buckIntro = true; }
   if (was) $('mgGuideBtn').classList.remove('new');
   if (mgEl.classList.contains('info')){ mgEl.classList.remove('info'); sizeCanvas(); } }
-const gradeCol = g => g === 1 ? C.good : g === 2 ? C.ink : g === 3 ? C.warn : C.muted;
+const segTier = g => Core.LOG_TIER[String(g)] || 'scrap';
+const gradeCol = g => g === 'P' ? C.bark : tierCol(segTier(g));
 function buckDraw(){
   if (!cx || !B) return;
   const W = MG.LW, H = MG.LH, cy0 = 120, k = 1.6, guide = S.ui.buckGuide;
@@ -9059,9 +9071,15 @@ function buckDraw(){
       if (!crowd || len % 4 === 0) cx.fillText(String(len), x, yT - 10); }); }
   // pieces
   const sg = segsOf(B.cuts), y1 = Math.max(216, 200 + lh), y2 = y1 + Math.max(15, lh), y3 = y2 + Math.max(14, lh);
+  // after sending: the pieces stamped Prime (the first Fine logs of the species' Prime length) show yellow with 3 diamonds
+  const pr = B.done && B.primeN ? Core.PRIME_RULES.find(r => r.species === B.sp) : null;
+  const stamped = pr ? sg.filter(x => x.g === 1 && x.len >= pr.buckMinLen).slice(0, B.primeN) : [];
   sg.forEach(x => {
-    const xa = xOf(x.a), xb = xOf(x.b), col = gradeCol(x.g), lab = `${x.len}′ ${x.g === 'P' ? 'firewood' : Core.logTierName(x.g)}`;
-    cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4);
+    const xa = xOf(x.a), xb = xOf(x.b), t = stamped.includes(x) ? 'prime' : segTier(x.g), col = x.g === 'P' ? C.bark : tierCol(t);
+    const lab = `${x.len}′ ${x.g === 'P' ? 'firewood' : t === 'prime' ? 'Prime' : Core.logTierName(x.g)}`;
+    if (x.g === 'P'){ cx.strokeStyle = col; cx.lineWidth = 2; cx.setLineDash([4,3]); cx.beginPath(); cx.moveTo(xa+2, 198); cx.lineTo(xb - 2, 198); cx.stroke(); cx.setLineDash([]); }
+    else { cx.fillStyle = col; cx.fillRect(xa+2, 196, Math.max(1, xb - xa - 4), 4); if (xb - xa > 34) drawDia(cx, (xa+xb)/2, 190, t); }
+    cx.fillStyle = col;
     cx.font = cfont(12, 600);
     if (xb - xa > Math.max(34, tw(lab) + 4)){ cx.fillText(lab, (xa+xb)/2, y1);
       const l2 = x.g === 'P' ? 'sold here' : `${Math.round(x.bf)} wood`; cx.font = cfont(11); cx.fillStyle = C.muted;
@@ -10204,8 +10222,9 @@ function sawFinish(timeUp){
 const logR = log => 18 + log.n*6;
 const deckPos = n => n === 3 ? [{x:115, y:185}, {x:320, y:185}, {x:525, y:185}] : n === 2 ? [{x:200, y:185}, {x:440, y:185}] : [{x:320, y:185}];
 const sawCs = log => Math.min(26, 240/log.n);
-const zoneCol = z => z === 0 ? C.good : z === 1 ? C.muted : C.warn;
-const boardCol = g => g === 0 ? C.good : g === 1 ? C.ink : g === 2 ? C.warn : C.muted;
+const zoneCol = z => tierCol(z === 0 ? 'fine' : z === 1 ? 'good' : 'common');
+const boardTier = g => Core.BOARD_TIER[Core.boardGradeName(g)] || 'scrap';
+const boardCol = g => g < 0 ? C.muted : tierCol(boardTier(g));
 function drawEnd(log, x, y, r){ // a log end on the deck: bark ring, zones (with guides), visible knots
   circle(x, y, r + 5, C.bark); circle(x, y, r, C.pile);
   const n = log.n, cs = 2*r/n/Math.SQRT2*1.38;
@@ -10777,7 +10796,7 @@ function renderMill(){
   const why = sawBlock(); $('mSawBtn').disabled = !!why; $('mSawWhy').textContent = why || (S.bulk.logs < 1 ? `Bought logs cost ${money(Core.coveLogPrice(market())*1000)} per 1,000 wood.` : '');
   $('mCove').textContent = `Buy logs: ${m.buyCove ? 'on' : 'off'}`; $('mCove').setAttribute('aria-pressed', String(m.buyCove));
   $('mBundle').textContent = `Bundle: ${m.bundle ? 'on' : 'off'}`; $('mBundle').setAttribute('aria-pressed', String(m.bundle));
-  $('mYard').innerHTML = Core.BOARD_GRADES.map(g => `<div><small>${Core.BOARD_LABEL[g]}</small><b>${bf(m.yard[g])}</b></div>`).join('');
+  $('mYard').innerHTML = Core.BOARD_GRADES.map(g => `<div class="t-${Core.BOARD_TIER[g]}"><small>${tierWord(Core.BOARD_TIER[g])}</small><b>${bf(m.yard[g])}</b></div>`).join('');
   $('mYardSub').textContent = `${bf(m.sawn)} sawn`;
   $('mRunTitle').textContent = `Mill run ${m.n}`;
   const db = $('mDraftBtn'); db.hidden = !m.dq.length; if (m.dq.length) db.textContent = `Pick perk (${m.dq.length})`;
