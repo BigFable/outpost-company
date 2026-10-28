@@ -3,7 +3,7 @@ import { GOLDEN } from './__fixtures__/prototype-golden';
 import { ERA_SPECIES, ERAS, PERKS, TRACT_BASE } from './content';
 import { eraCost } from './formulas';
 import {
-  draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genTract, makeTract, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
+  draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genRichTract, genTract, LOT_SLOTS, lotsToOpen, makeTract, orderSpeciesPool, rareSpecies, slotsOpen, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
 } from './generators';
 import { rngPick, rngRange } from './rng';
 import { GROUNDS, mixWeight, SPECIES_CLIENTS, speciesId } from './species';
@@ -285,5 +285,69 @@ describe('push-inland listing guarantee (Steam Camp cash trap)', () => {
     expect(must(out[1]).price).toBeLessThanOrEqual(7500);
     const ok = [mk(30000), mk(7000)];
     expect(ensureAffordableListing(ok, 7500)).toEqual(ok);
+  });
+});
+
+describe('land office lot slots', () => {
+  const o = { stumpMult: 1, thinSurvey: false, cruiser: false };
+  it('four slots: 2, 3, 4 species and the AFK lot, opening at 0 / 2 / 3 / 4 lots', () => {
+    expect(LOT_SLOTS.map((s) => s.need)).toEqual([0, 2, 3, 4]);
+    expect(LOT_SLOTS.map((s) => s.species).slice(0, 3)).toEqual([2, 3, 4]);
+    expect(LOT_SLOTS[2]?.rare).toBe(true);
+    expect(LOT_SLOTS[3]?.afk).toBe(true);
+  });
+  it('unlock thresholds count lifetime lots cut out', () => {
+    expect([0, 1, 2, 3, 4, 9].map(slotsOpen)).toEqual([1, 1, 2, 3, 4, 4]);
+    expect(slotsOpen(Number.NaN)).toBe(1);
+    expect(lotsToOpen(1, 0)).toBe(2);
+    expect(lotsToOpen(1, 1)).toBe(1);
+    expect(lotsToOpen(3, 4)).toBe(0);
+    expect(lotsToOpen(0, 0)).toBe(0);
+  });
+  it('rare tree per era: maple, oak, cloudwood, cloudwood', () => {
+    expect([0, 1, 2, 3].map(rareSpecies)).toEqual(['maple', 'oak', 'cloudwood', 'cloudwood']);
+  });
+  it('species count per slot, current era only, rare at 10-20%', () => {
+    for (let era = 0; era < 4; era++) {
+      const rng = simLcg(era + 7);
+      for (let i = 0; i < 200; i++) {
+        const t2 = genRichTract(rng, era, 3, false, o);
+        expect(t2.mix.length).toBe(3);
+        expect(new Set(t2.mix.map((m) => m[0])).size).toBe(3);
+        t2.mix.forEach(([id]) => expect(ERA_SPECIES[era]).toContain(id));
+        const t3 = genRichTract(rng, era, 4, true, o);
+        expect(t3.mix.length).toBe(4);
+        expect(new Set(t3.mix.map((m) => m[0])).size).toBe(4);
+        const r = must(t3.mix.find((m) => m[0] === rareSpecies(era)));
+        const share = r[1] / t3.mix.reduce((a, m) => a + m[1], 0);
+        expect(share).toBeGreaterThanOrEqual(0.09);
+        expect(share).toBeLessThanOrEqual(0.21);
+        expect(r[1]).toBeGreaterThanOrEqual(10);
+        expect(r[1]).toBeLessThanOrEqual(20);
+        const main = must(t3.mix[0])[1];
+        expect(main).toBeGreaterThanOrEqual(40);
+        expect(main).toBeLessThanOrEqual(60);
+        t3.mix.forEach((m) => expect(m[1]).toBeGreaterThanOrEqual(5));
+        expect(t3.price).toBeGreaterThan(0);
+        if (era > 0) expect(t3.ground).toBe('mixed');
+      }
+    }
+  });
+  it('documents its draws: species picks, shares, weights, trees, miles, slope, place, lot', () => {
+    const r = scripted([0, 0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0]);
+    const t = genRichTract(r, 0, 4, true, o);
+    expect(r.used()).toBe(12);
+    expect(t.mix.map((m) => m[0])).toEqual(['pine', 'spruce', 'hemlock', 'maple']);
+    expect(t.ground).toBe('coast');
+    const r2 = scripted([0, 0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0]);
+    expect(genRichTract(r2, 0, 3, false, o).mix.length).toBe(3);
+    expect(r2.used()).toBe(11);
+  });
+  it('orders name the rare tree only once slot 3 is open', () => {
+    expect(orderSpeciesPool(0, 2)).toEqual(['pine', 'spruce', 'hemlock']);
+    expect(orderSpeciesPool(0, 3)).toEqual(['pine', 'spruce', 'hemlock', 'maple']);
+    expect(orderSpeciesPool(1, 1)).not.toContain('oak');
+    expect(orderSpeciesPool(1, 4)).toContain('oak');
+    expect(orderSpeciesPool(3, 4)).toEqual([...must(ERA_SPECIES[3])]);
   });
 });

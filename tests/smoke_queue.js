@@ -132,6 +132,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // ---------- 6. the AFK lot: Cutover slash country
  let afkBoards=0, multi=false, afk=null;
+ E('S.stats.tracts=4; S.stats.slots=4;'); // lot slots (2026-10-28): the AFK lot lists in slot 4, open at 4 lots cut out
  for(let i=0;i<40;i++){ E('refreshSales()'); const n=E('S.forSale.filter(t=>t.afk).length'); if(n>1) multi=true; if(n){ afkBoards++; afk=E('JSON.parse(JSON.stringify(S.forSale.find(t=>t.afk)))'); } }
  ok(!multi && afkBoards===40,'exactly one AFK lot on every board ('+afkBoards+' of 40)');
  ok(afk && afk.ground==='cutover' && afk.trees>=12*60 && afk.trees<=18*60 && ['flat','rolling'].includes(afk.slope) && afk.miles<=3,'Cove AFK lot: 12-18x the trees, flat or rolling, close in: '+(afk&&afk.trees)+' trees');

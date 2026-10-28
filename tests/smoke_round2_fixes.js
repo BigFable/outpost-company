@@ -17,6 +17,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const cheapest=()=>E('cheapestSale()');
 
  // 1. Steam Camp push through the company tab button: always an affordable tract (many tries, real Math.random)
+ // lot slots (2026-10-28): three lots cut out open slots 1-3 (the guarantee lives on slot 1)
+ E('S.stats.tracts=3; S.stats.slots=3;');
  let worst=0, tries=60;
  for(let i=0;i<tries;i++){
    E(`S.era=0; S.cash=eraCost(1); S.tracts=[]; render(true);`);
@@ -26,7 +28,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  }
  ok(worst<=7500,`every Steam Camp push lists a tract at or under $7,500 (worst cheapest of ${tries}: $${worst})`);
  const shown=[...d.querySelectorAll('#sales .row.lot:not(.afk) button[data-i]')].length; // plus at most one AFK lot (cutover), on its own stream
- ok(shown===3,'land office still shows three regular listings: '+shown);
+ ok(shown===3,'with slots 1-3 open the land office shows three regular listings: '+shown);
  // the 3-minute board refresh keeps the guarantee
  let worstR=0; for(let i=0;i<60;i++){ E(`S.saleT=0; tick(0.5);`); worstR=Math.max(worstR, cheapest()); }
  ok(worstR<=7500,'refreshed boards at Steam Camp keep a tract at or under $7,500: $'+worstR);
