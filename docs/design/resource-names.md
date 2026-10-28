@@ -1,6 +1,6 @@
 # Resource names: one tier ladder, plain names
 
-**Status: Approved (owner, 2026-10-28)**: the rename table, the tier ladder, "wood" as the unit, and perk tiers left alone for now. Burl and Survey marker get new names too; the names below are **pending owner pick**. *Design reviewer, 2026-10-28. Owner request: "Gamify and simplify all inventory resources in the game — Prime spar should probably just be 'Prime log', and so forth. Make it more easily digestible to someone who doesn't fully know logging lingo." Builds on `inventory-revamp.md` (icons and frames; its tier colors are superseded by section 1 here), `prime-timber-drops-inventory.md`, `sawmill-camp.md`, `species-overhaul.md`, `fishing-camp.md`, `perk-shop.md` and the glossary in `docs/style/plain-language.md`. Text only: no ids, saves, numbers or balance change.*
+**Status: Approved (owner, 2026-10-28)**: the rename table, the tier ladder, "wood" as the unit, and perk tiers left alone for now. Burl → Swirl knot and Survey marker → Restock token (owner picks, 2026-10-28). *Design reviewer, 2026-10-28. Owner request: "Gamify and simplify all inventory resources in the game — Prime spar should probably just be 'Prime log', and so forth. Make it more easily digestible to someone who doesn't fully know logging lingo." Builds on `inventory-revamp.md` (icons and frames; its tier colors are superseded by section 1 here), `prime-timber-drops-inventory.md`, `sawmill-camp.md`, `species-overhaul.md`, `fishing-camp.md`, `perk-shop.md` and the glossary in `docs/style/plain-language.md`. Text only: no ids, saves, numbers or balance change.*
 
 ## For the owner: what changes
 
@@ -78,9 +78,9 @@ Ids stay exactly as they are (section 5). "Keep" means the name is already plain
 
 | Current name | New name | What it's for | Tier |
 | --- | --- | --- | --- |
-| Burl | **Swirl knot** *(pending owner pick)* | A swirly lump of wood. Sells well; builds the drying yard | Common |
+| Burl | **Swirl knot** | A swirly lump of wood. Sells well; builds the drying yard | Common |
 | Amber pitch | **Amber sap** | Hard tree sap. Seals ships and the water wheel's dam | Common |
-| Survey marker | **Brass token** *(pending owner pick)* | An old brass marker. Restocks the Shop now (2 per outpost) | Good |
+| Survey marker | **Restock token** | A company token. Restocks the Shop now (2 per outpost) | Good |
 | Ship's fitting | **Shipwreck bronze** | Bronze parts washed ashore. Builds saws and fixes ships | Good |
 | Fog-glass | **Fog lens** | A smoky lens nobody can explain. Rare and valuable | Rare |
 | Lost axe-head (planned) | **Old axe head** | Lost by crews long ago. Collect the maker's marks | Common |
@@ -140,7 +140,7 @@ Why not the other options:
 Paths are `prototype/timberline.html` unless noted. Line numbers are as of today. Tests that assert on this text move with it.
 
 **Core data (`packages/core/src`, then `core:inline`).**
-- `items.ts`: names, plurals and descs of all 8 live items (Prime log, Swirl knot, Amber sap, Brass token, Shipwreck bronze, Fog lens, Prime board, Plank bundle); `from` lines ("grade 1 logs" → "Fine logs"); add the display `tier` field (section 5).
+- `items.ts`: names, plurals and descs of all 8 live items (Prime log, Swirl knot, Amber sap, Restock token, Shipwreck bronze, Fog lens, Prime board, Plank bundle); `from` lines ("grade 1 logs" → "Fine logs"); add the display `tier` field (section 5).
 - `items.ts` special orders: "Admiralty spar order" → **Admiralty mast order**, text "The Admiralty wants Prime logs for ship masts, and amber sap to seal them." *Patch the Perseverance*: "needs amber sap and shipwreck bronze before she sails."
 - `items.ts` order perks: *Spar man* → **Prime hunter** ("a good fall … also gives 1 Prime log"); *Pitch boiler* → **Sap boiler** ("each firewood piece becomes amber sap … Idle buckers find sap 3× as often").
 - `sawmill.ts`: structure names and descs (Water wheel; Circular saw "needs shipwreck bronze"); bunkhouse costs read "plank bundles"; *Pond monkey* "each gives 1 extra Fine board"; *Chain carriage* "outer boards one tier better"; *Big stick* "its Fine boards are worth ×3"; the board-grade name helper returns Fine/Good/Common.
@@ -198,10 +198,10 @@ export const TIER_LABEL: Record<Tier, string>; // 'Firewood' | 'Common' | 'Good'
 **Pending owner pick:**
 
 1. **Burl** (a swirly lump that grows on a trunk; sells well, builds the drying yard).
-   - **Swirl knot** (recommended): says what it looks like, matches the icon, and sits next to *Stone knot* as a pair.
+   - **Swirl knot** (owner's pick; recommended): says what it looks like, matches the icon, and sits next to *Stone knot* as a pair.
    - Lucky knot: more gamified, but implies a luck effect it does not have.
    - Tree lump: the plainest, but sounds like junk for an item that sells well.
 2. **Survey marker** (an old brass marker; per `perk-shop.md` it buys a full Shop restock, 2 per outpost).
-   - **Brass token** (recommended): plain, matches the brass icon, and "token" says "spend me".
-   - Restock token: names the use exactly, but loses all flavor and reads like a menu button.
+   - Brass token (recommended): plain, matches the brass icon, and "token" says "spend me".
+   - **Restock token** (owner's pick): names the use exactly, but loses all flavor and reads like a menu button.
    - Lucky marker: keeps the survey picture, but does not say what it does.
