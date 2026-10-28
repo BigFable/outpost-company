@@ -3,7 +3,7 @@ import { GOLDEN } from './__fixtures__/prototype-golden';
 import { ERA_SPECIES, ERAS, PERKS, TRACT_BASE } from './content';
 import { eraCost } from './formulas';
 import {
-  draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genRichTract, genTract, LOT_SLOTS, lotsToOpen, makeTract, orderSpeciesPool, rareSpecies, slotsOpen, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
+  AFK_LOT, AFK_MIX, genAfkLot, draftPool, draftWeight, ensureAffordableListing, fitTractPrice, genHire, genListings, genOffer, genRichTract, genTract, LOT_SLOTS, lotsToOpen, makeTract, orderSpeciesPool, rareSpecies, slotsOpen, PUSH_TRACT_SHARE, pushTractCap, milesWithRoad, pickFromMix, roadCost, rollDraft, tractPrice,
 } from './generators';
 import { rngPick, rngRange } from './rng';
 import { GROUNDS, mixWeight, SPECIES_CLIENTS, speciesId } from './species';
@@ -296,6 +296,20 @@ describe('land office lot slots', () => {
     expect(LOT_SLOTS.map((s) => s.species).slice(0, 3)).toEqual([2, 3, 4]);
     expect(LOT_SLOTS[2]?.rare).toBe(true);
     expect(LOT_SLOTS[3]?.afk).toBe(true);
+  });
+  it('the AFK slot is always for sale (no restock wait); no other slot is', () => {
+    expect(LOT_SLOTS.map((s) => !!s.always)).toEqual([false, false, false, true]);
+    // relisting after a buy draws a fresh, equivalent AFK lot from the same stream: same mix, size range and price rule
+    const rng = simLcg(42), base = TRACT_BASE[1] ?? 0;
+    const a = genAfkLot(rng, 1, o), b = genAfkLot(rng, 1, o), c = genAfkLot(rng, 1, o);
+    for (const t of [a, b, c]) {
+      expect(t.afk).toBe(true);
+      expect(t.mix).toEqual(AFK_MIX[1]?.map((m) => [m[0], m[1]]));
+      expect(t.trees).toBeGreaterThanOrEqual(Math.round(base * AFK_LOT.trees[0]));
+      expect(t.trees).toBeLessThanOrEqual(Math.round(base * AFK_LOT.trees[1]));
+      expect(t.price).toBe(tractPrice(t.trees * t.val, t.miles, t.slope, AFK_LOT.landMult));
+    }
+    expect(new Set([a.name, b.name, c.name]).size).toBeGreaterThan(1);
   });
   it('unlock thresholds count lifetime lots cut out', () => {
     expect([0, 1, 2, 3, 4, 9].map(slotsOpen)).toEqual([1, 1, 2, 3, 4, 4]);

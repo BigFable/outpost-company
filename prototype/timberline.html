@@ -3459,6 +3459,7 @@ var Core = (function(exports) {
 	* The four slots, one listing each. Slot 1 is today's listing (genTract, with the
 	* push-tract price guarantee); slots 2 and 3 list genRichTract lots; slot 4 the AFK lot.
 	* Unlocks count lifetime lots cut out, so they stay open through close camp.
+	* The AFK slot is `always` for sale: no restock wait (owner request 2026-10-28).
 	*/
 	var LOT_SLOTS = deepFreeze([
 		{
@@ -3481,7 +3482,8 @@ var Core = (function(exports) {
 			name: "AFK lot",
 			species: 3,
 			need: 4,
-			afk: true
+			afk: true,
+			always: true
 		}
 	]);
 	/** Main species share on a rich lot, and the rare tree's share (percent). */
@@ -6989,6 +6991,8 @@ const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
 // Slot 1 is the plain lot with the push-tract price guarantee; slots 2 and 3 open at 2 and 3 lifetime lots cut out
 // (Core.genRichTract: 3 species, then 4 with a rare tree); slot 4, the AFK lot (own 'land' stream), at 4.
 // Slots never close: they count S.stats.tracts, which survives close camp.
+// The AFK lot is always for sale (owner 2026-10-28, Core.LOT_SLOTS[3].always): buying it lists another at once, and the
+// board's 3-minute refresh keeps its listing (a push inland, a new outpost or new extra rules still draw a fresh one).
 const openSlots = () => Core.slotsOpen(S.stats.tracts);
 function genSlot(k){
   let t;
@@ -7003,9 +7007,12 @@ function capSlot1(){
   if (cap === undefined || i < 0 || S.forSale.some(x => !x.afk && x.price <= cap)) return;
   S.forSale[i] = Object.assign(Core.fitTractPrice(S.forSale[i], cap), {slot:0});
 }
-function refreshSales(){
-  const n = openSlots(); S.forSale = []; S.afkHeld = false;
-  for (let k = 0; k < n; k++) S.forSale.push(genSlot(k));
+function refreshSales(keepAlways){
+  const n = openSlots(), was = S.forSale; S.forSale = []; S.afkHeld = false;
+  for (let k = 0; k < n; k++){
+    const old = keepAlways && Core.LOT_SLOTS[k].always ? was.find(x => x.slot === k) : null;
+    S.forSale.push(old || genSlot(k));
+  }
   S.saleT = 180; capSlot1();
 }
 // a slot that just opened gets its listing now, with a note and a toast (old saves open theirs quietly in normalize)
@@ -7027,9 +7034,8 @@ function buyTract(i){
   t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++; standOf(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
-  // the slot relists its own kind of lot; the AFK lot is not relisted until the next board
-  if (t.afk){ S.forSale.splice(i, 1); S.afkHeld = true; }
-  else { S.forSale[i] = genSlot(t.slot || 0); capSlot1(); }
+  // the slot relists its own kind of lot at once (the AFK lot too: it is always for sale)
+  S.forSale[i] = genSlot(t.slot || 0); if (!t.afk) capSlot1();
   delete t.slot;
   note(`Bought ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
@@ -7230,7 +7236,7 @@ function tick(dt){
     S.contracts.splice(S.contracts.indexOf(c), 1);
   }
   S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !ordFull())) refreshOffers();
-  S.saleT -= dt; if (S.saleT <= 0) refreshSales();
+  S.saleT -= dt; if (S.saleT <= 0) refreshSales(true);
   // the company advance: any sale this tick resets the stall clock; a stall past Core.STALL_SEC gets the missing crews advanced
   if (S.bucket > 0) S.lastSale = S.t;
   else { const st = stallNow(); if (st) companyAdvance(st); }
@@ -7515,7 +7521,7 @@ function listingCard(t, i, fits, note, best, orders){
     ${fitHtml(fits)}${pitchHint(t)}</div>
     <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
 }
-// a slot with no listing: locked (goal and progress), or the AFK lot already bought this board
+// a slot with no listing: locked (goal and progress); an open slot always relists at once
 function slotRow(k){
   const s = Core.LOT_SLOTS[k], left = Core.lotsToOpen(k, S.stats.tracts);
   if (left > 0) return `<div class="row locked" data-slot="${k}" data-locked="1"><div class="info"><b>${s.name}</b><span class="chipl lockchip">Locked</span>
@@ -9056,7 +9062,7 @@ function normalize(){
   S.stats.tracts = Math.max(0, Math.floor(+S.stats.tracts || 0));
   // lot slots (2026-10-28): an old save opens the slots its lifetime lots cut out have earned, without the unlock notes
   if (!hadSlots) S.stats.slots = Core.slotsOpen(S.stats.tracts);
-  S.afkHeld = !!S.afkHeld;
+  S.afkHeld = false; // the AFK lot is always for sale now (2026-10-28); boot relists it on an old save that held it
   S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
   S.ui = Object.assign(freshUi(), S.ui && typeof S.ui === 'object' ? S.ui : {}); if (!BUY_NS.includes(S.ui.buyN)) S.ui.buyN = 1;
   if (!Array.isArray(S.runs)) S.runs = [];
@@ -10196,7 +10202,7 @@ $('saveBtn').onclick = () => { openWh('ledger'); const b = $('svCopy'); if (b) b
 
 function boot(){
   if (!S.forSale.length) refreshSales();
-  else { for (let k = 0; k < openSlots(); k++) if (!S.forSale.some(x => x.slot === k) && !(Core.LOT_SLOTS[k].afk && S.afkHeld)) S.forSale.push(genSlot(k));
+  else { for (let k = 0; k < openSlots(); k++) if (!S.forSale.some(x => x.slot === k)) S.forSale.push(genSlot(k));
     S.forSale.sort((a, b) => a.slot - b.slot); }
   S.stats.slots = Math.max(S.stats.slots || 1, openSlots());
   if (!S.offers.length && !ordFull()) refreshOffers();

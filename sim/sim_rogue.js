@@ -3,7 +3,8 @@ const html=fs.readFileSync(__dirname+'/'+(process.env.GAME||'game_rogue.html'),'
 function run(profile, seed, hours=4, opt={}){
   // 'idle-away' plays exactly like 'idle' while present, but checks in on a schedule (AWAY_MIN present / away minutes, default
   // 20/40). While away the bot makes no decisions; the game just ticks. Policy (balance agent, 2026-10-25): on leaving, if the
-  // queue would run out before it is back and the AFK lot costs <= cash - 1.5x upkeep, buy it, then top the queue up with normal
+  // queue would run out before it is back, buy AFK lots (always for sale since 2026-10-28; up to AFKMAX, default 4) while each costs
+  // <= cash - 1.5x upkeep and the queue still runs out, then top the queue up with normal
   // lots; on return, put the crews on the first normal lot (cutNow). Never buy the AFK lot while present. NOAFK=1 skips the AFK buy.
   const AWAYP = profile==='idle-away', PB = AWAYP ? 'idle' : profile;
   const RUNS=opt.runs||3, NOPERK=!!process.env.NOPERK, NOMETA=!!process.env.NOMETA, CAP=(opt.capMin||150)*60, POLICY=opt.policy||'gas';
@@ -77,8 +78,8 @@ function run(profile, seed, hours=4, opt={}){
   const dt=0.5, T=hours*3600; const ev=[]; let lastBuy=0, longest={gap:0,at:0,era:0}; const stats={stump:0,noTimber:0,short:0,neg:0,neck:{}, hire:0, contractsWon:0, contractsLost:0};
   const eraT=[0]; let lastContract=[];
   const reserve=()=>G.upkeep()*1.5;
-  const AWAY=(process.env.AWAY_MIN||'20,40').split(',').map(Number), NOAFK=!!process.env.NOAFK;
-  const SLOTT={}; const AX={afkLocked:0, awayMin:0, dryAwayMin:0, leaves:0, queueOk:0, afkBuys:0, afkBroke:0, fillBuys:0, afkCutMin:0}; let wasAway=false;
+  const AWAY=(process.env.AWAY_MIN||'20,40').split(',').map(Number), NOAFK=!!process.env.NOAFK, AFKMAX=process.env.AFKMAX!=null?+process.env.AFKMAX:4;
+  const SLOTT={}; const AX={afkLocked:0, awayMin:0, dryAwayMin:0, leaves:0, queueOk:0, afkBuys:0, afkExtra:0, afkBroke:0, fillBuys:0, afkCutMin:0, afkOwnedMax:0}; let wasAway=false;
   const capsNow=()=>({fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)});
   const queueSec=()=>S.tracts.reduce((a,t)=>a+Core.cutOutSeconds(capsNow(),t),0);
   const bestNormal=()=>S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(capsNow(),t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
@@ -180,12 +181,16 @@ function run(profile, seed, hours=4, opt={}){
     if(EVENTS && G.setWxMute && Math.round(S.t*2)%2===0){ const nc=()=>G.tract()?Math.min(...STG.map(cap)):0; const a=nc(); let b=a; if(evNow()){ G.setWxMute(true); b=nc(); G.setWxMute(false); } if(b>0){ wxPace.tw+=1-a/b; wxPace.n++; } }
     if(AWAYP){
       if(G.tract() && G.tract().afk) AX.afkCutMin+=dt/60;
+      AX.afkOwnedMax=Math.max(AX.afkOwnedMax, S.tracts.filter(t=>t.afk).length);
       const cyc=(AWAY[0]+AWAY[1])*60, ph=(S.t-runStart)%cyc, away=(S.t-runStart)>OPEN_SEC && ph>=AWAY[0]*60;
       if(away){ AX.awayMin+=dt/60; if(!G.tract()) AX.dryAwayMin+=dt/60; }
       if(away && !wasAway){ // leaving
         const i=S.forSale.findIndex(t=>t.afk), t=S.forSale[i], need=queueSec() < AWAY[1]*60; AX.leaves++; if(!need) AX.queueOk++;
         if(!t && need && (S.stats.slots||1)<4) AX.afkLocked++; // lot slots: the AFK lot's slot not open yet
-        if(!NOAFK && t && need){ if(t.price<=S.cash-reserve()){ stats.stump+=t.price; G.buyTract(i); AX.afkBuys++; } else AX.afkBroke++; }
+        // the AFK lot is always for sale (2026-10-28): buy as many as it takes to cover the time away (AFKMAX, default 4 a leave)
+        if(!NOAFK && t && need){ if(t.price>S.cash-reserve()) AX.afkBroke++;
+          for(let g=0; g<AFKMAX && queueSec() < AWAY[1]*60; g++){ const j=S.forSale.findIndex(x=>x.afk), a=S.forSale[j]; if(!a || a.price>S.cash-reserve()) break;
+            stats.stump+=a.price; G.buyTract(j); AX.afkBuys++; if(g) AX.afkExtra++; } }
         for(let g=0; g<5 && S.tracts.length<5 && queueSec() < AWAY[1]*60; g++){ const o=bestNormal(); if(!o) break; stats.stump+=o.price; G.buyTract(o.i); AX.fillBuys++; } }
       if(!away && wasAway && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } // back
       wasAway=away; if(away) continue;
