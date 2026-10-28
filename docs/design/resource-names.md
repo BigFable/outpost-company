@@ -1,6 +1,6 @@
 # Resource names: one tier ladder, plain names
 
-**Status: Proposal for the owner.** *Design reviewer, 2026-10-28. Owner request: "Gamify and simplify all inventory resources in the game — Prime spar should probably just be 'Prime log', and so forth. Make it more easily digestible to someone who doesn't fully know logging lingo." Builds on `inventory-revamp.md` (icons, frames, rare = violet), `prime-timber-drops-inventory.md`, `sawmill-camp.md`, `species-overhaul.md`, `fishing-camp.md`, `perk-shop.md` and the glossary in `docs/style/plain-language.md`. Text only: no ids, saves, numbers or balance change.*
+**Status: Approved (owner, 2026-10-28)**: the rename table, the tier ladder, "wood" as the unit, and perk tiers left alone for now. Burl and Survey marker get new names too; the names below are **pending owner pick**. *Design reviewer, 2026-10-28. Owner request: "Gamify and simplify all inventory resources in the game — Prime spar should probably just be 'Prime log', and so forth. Make it more easily digestible to someone who doesn't fully know logging lingo." Builds on `inventory-revamp.md` (icons, frames, rare = violet), `prime-timber-drops-inventory.md`, `sawmill-camp.md`, `species-overhaul.md`, `fishing-camp.md`, `perk-shop.md` and the glossary in `docs/style/plain-language.md`. Text only: no ids, saves, numbers or balance change.*
 
 ## For the owner: what changes
 
@@ -12,7 +12,7 @@ After this change there is **one ladder of five words**, used for logs, boards a
 
 - A log you cut is a **Common log**, **Good log**, **Fine log** or, stamped by a great cut, a **Prime log**. The scraps are **Firewood**.
 - The mill makes **Common boards**, **Good boards**, **Fine boards** and, from a great run on a Prime log, **Prime boards**.
-- Finds sit on the same ladder: a burl is Common, a survey marker is Good, a fog lens is Rare.
+- Finds sit on the same ladder: a swirl knot is Common, a brass token is Good, a fog lens is Rare.
 - The frame around every picture shows the tier with a color **and** a shape (pips or a stamp), and the word is written in the detail pane. Rare stays violet.
 - "bd ft" becomes **wood**: "Deliver 10K wood", "Log pond 18K wood". The numbers do not change (1 wood = 1 board foot); only the label does.
 
@@ -23,14 +23,14 @@ The 1890 flavor stays where it costs nothing: *Amber sap*, *Shipwreck bronze*, *
 | Tier | Means | Frame (color + shape) | Token | Used for |
 | --- | --- | --- | --- | --- |
 | *Scrap* (floor, not a rung) | Worth a little, sold on the spot | No frame, dashed grey outline | `--r-scrap` (new) | Firewood (pulp), saw-game scrap |
-| **Common** | Everyday stuff | 1 px grey, no pip | `--r-common` | Common logs, Common boards, plank bundles, Amber sap, Burls |
+| **Common** | Everyday stuff | 1 px grey, no pip | `--r-common` | Common logs, Common boards, plank bundles, Amber sap, Swirl knots |
 | **Good** | Better than most | 2 px green, 1 diamond pip | `--r-uncommon` (shown as Good) | Good logs, Good boards, uncommon finds |
 | **Fine** | Top quality from normal work | 2 px blue, 2 diamond pips | `--r-fine` (new) | Fine logs, Fine boards, Marbled board |
 | **Prime** | Stamped for skill: the best cut, the best fall | 2 px orange, square **P** stamp | `--r-made` (shown as Prime) | Prime log, Prime maple, Prime oak, Prime boards, Redwood beam, Prize fish |
 | **Rare** | Luck: few ever turn up | 2 px violet, doubled, 3 diamond pips | `--r-rare` | Fog lens, Stone knot, Redwood heart, Bird's-eye board, Fog pearl, Ambergris |
 
 **Rules.**
-- **Tier means how hard it is to get**, and so roughly how much it is worth. It is not an exact price: a Common burl sells for more than a Good survey marker. The detail pane always shows the price.
+- **Tier means how hard it is to get**, and so roughly how much it is worth. It is not an exact price: a Common swirl knot sells for more than a Good brass token. The detail pane always shows the price.
 - **Never color alone.** Pips (0, 1, 2, P, 3) and frame weight carry the tier; the tile's accessible label and the detail pane say the word ("Prime log, Prime tier, 14 held").
 - **Prime is earned, Rare is luck.** Prime always comes from a great mini-game result or the idle trickle; Rare is a drop roll. That is why Prime sits below Rare even though Prime items are what orders want most.
 - **The tier word goes in the name only for logs and boards** ("Fine boards"). Finds keep their own names; their tier shows on the frame.
@@ -75,9 +75,9 @@ Ids stay exactly as they are (section 5). "Keep" means the name is already plain
 
 | Current name | New name | What it's for | Tier |
 | --- | --- | --- | --- |
-| Burl | keep: **Burl** | A swirly lump of wood. Sells well; builds the drying yard | Common |
+| Burl | **Swirl knot** *(pending owner pick)* | A swirly lump of wood. Sells well; builds the drying yard | Common |
 | Amber pitch | **Amber sap** | Hard tree sap. Seals ships and the water wheel's dam | Common |
-| Survey marker | keep: **Survey marker** | An old brass marker. Rerolls your perk choices (2 per outpost) | Good |
+| Survey marker | **Brass token** *(pending owner pick)* | An old brass marker. Restocks the Shop now (2 per outpost) | Good |
 | Ship's fitting | **Shipwreck bronze** | Bronze parts washed ashore. Builds saws and fixes ships | Good |
 | Fog-glass | **Fog lens** | A smoky lens nobody can explain. Rare and valuable | Rare |
 | Lost axe-head (planned) | **Old axe head** | Lost by crews long ago. Collect the maker's marks | Common |
@@ -106,7 +106,7 @@ Ids stay exactly as they are (section 5). "Keep" means the name is already plain
 | --- | --- | --- | --- |
 | Prize fish | keep | A giant catch, stamped like Prime timber | Prime |
 | Glass float | keep | A drifting net float. Collection | Common |
-| Drowned chart | **Old sea chart** | A soaked map. Rerolls your perk choices | Good |
+| Drowned chart | **Old sea chart** | A soaked map. Restocks the Shop now | Good |
 | Fog pearl | keep | Fishing's fog lens | Rare |
 | Ambergris | keep: **Ambergris** (desc "a waxy whale treasure") | Collection; sells high | Rare |
 | Smoked ration | keep | Feeds Logging crews: wages ×0.85 while stocked | Common |
@@ -137,7 +137,7 @@ Why not the other options:
 Paths are `prototype/timberline.html` unless noted. Line numbers are as of today. Tests that assert on this text move with it.
 
 **Core data (`packages/core/src`, then `core:inline`).**
-- `items.ts`: names, plurals and descs of all 8 live items (Prime log, Burl, Amber sap, Survey marker, Shipwreck bronze, Fog lens, Prime board, Plank bundle); `from` lines ("grade 1 logs" → "Fine logs"); add the display `tier` field (section 5).
+- `items.ts`: names, plurals and descs of all 8 live items (Prime log, Swirl knot, Amber sap, Brass token, Shipwreck bronze, Fog lens, Prime board, Plank bundle); `from` lines ("grade 1 logs" → "Fine logs"); add the display `tier` field (section 5).
 - `items.ts` special orders: "Admiralty spar order" → **Admiralty mast order**, text "The Admiralty wants Prime logs for ship masts, and amber sap to seal them." *Patch the Perseverance*: "needs amber sap and shipwreck bronze before she sails."
 - `items.ts` order perks: *Spar man* → **Prime hunter** ("a good fall … also gives 1 Prime log"); *Pitch boiler* → **Sap boiler** ("each firewood piece becomes amber sap … Idle buckers find sap 3× as often").
 - `sawmill.ts`: structure names and descs (Water wheel; Circular saw "needs shipwreck bronze"); bunkhouse costs read "plank bundles"; *Pond monkey* "each gives 1 extra Fine board"; *Chain carriage* "outer boards one tier better"; *Big stick* "its Fine boards are worth ×3"; the board-grade name helper returns Fine/Good/Common.
@@ -188,10 +188,17 @@ export const TIER_LABEL: Record<Tier, string>; // 'Firewood' | 'Common' | 'Good'
 
 **Cut:** renaming perks beyond the two that name resources, renaming camp and place names, a separate Prime log per conifer species.
 
-## 7. Owner questions
+## 7. Owner decisions and the open pick
 
-1. **"wood" instead of "bd ft"?** Recommendation: yes. Alternative: keep "bd ft" and add a tap-to-explain.
-2. **The ladder words.** Common → Good → Fine → Prime → Rare, with firewood below. Fine is a new blue frame. Recommendation: approve as is.
-3. **Keep Burl and Survey marker?** Both are plain and the pictures explain them. Recommendation: keep. Alternatives: "Swirl burl", "Brass marker".
-4. **Perk rarity words.** Perks say Common, Rare and Legendary in the Shop, so "Rare" means two things. Recommendation: leave perks alone for now and give perk cards a different frame style (cards, not tiles). Rename perk tiers only if playtesters mix them up.
-5. **Mill pond & wheel → Water wheel?** Recommendation: yes. It frees "pond" for the Log pond.
+**Decided (2026-10-28):** "wood" replaces bd ft; the ladder Common → Good → Fine → Prime → Rare, with firewood below and Fine in blue; perk tiers stay Common, Rare, Legendary and Curse for now (perk cards get a different frame style from item tiles); Mill pond & wheel becomes Water wheel; Burl and Survey marker are renamed.
+
+**Pending owner pick:**
+
+1. **Burl** (a swirly lump that grows on a trunk; sells well, builds the drying yard).
+   - **Swirl knot** (recommended): says what it looks like, matches the icon, and sits next to *Stone knot* as a pair.
+   - Lucky knot: more gamified, but implies a luck effect it does not have.
+   - Tree lump: the plainest, but sounds like junk for an item that sells well.
+2. **Survey marker** (an old brass marker; per `perk-shop.md` it buys a full Shop restock, 2 per outpost).
+   - **Brass token** (recommended): plain, matches the brass icon, and "token" says "spend me".
+   - Restock token: names the use exactly, but loses all flavor and reads like a menu button.
+   - Lucky marker: keeps the survey picture, but does not say what it does.
