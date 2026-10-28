@@ -18,6 +18,7 @@ export * from './species';
 export * from './queue';
 export * from './lotstats';
 export * from './stash';
+export * from './stall';
 export * from './weather';
 export * from './rng';
 export { deepFreeze } from './freeze';

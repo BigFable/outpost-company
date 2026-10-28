@@ -94,8 +94,12 @@ function run(profile, seed, hours=4, opt={}){
   const NOSAW=!!process.env.NOSAWGAME;
   let mgClock=0;
   for(let t=0;t<T;t+=dt){
-    const c0=CS().slice();
+    const c0=CS().slice(), e0=S.earned;
     G.tick(dt);
+    // zero-income stretch (2026-10-28): the longest run of seconds with no log revenue at all, measured inside each outpost
+    // zeroIncStall: the same, counted only while there is timber or wood in a pile to sell (a dry queue is noTimber/dryAway)
+    if(S.earned>e0+1e-9){ XT.zi=0; XT.zs=0; } else { XT.zi=(XT.zi||0)+dt; if(XT.zi>(XT.ziMax||0)){ XT.ziMax=XT.zi; XT.ziAt=S.t-XT.zi; }
+      if(G.tract() || S.stems.bf>0 || S.cut.bf>0 || S.landing.bf>0){ XT.zs=(XT.zs||0)+dt; if(XT.zs>(XT.zsMax||0)){ XT.zsMax=XT.zs; XT.zsAt=S.t-XT.zs; } } else XT.zs=0; }
     for(const c of c0) if(c.sp && !CS().includes(c)){ if(c.done>=c.vol-1e-6) XT.spFill++; else XT.spMiss++; }
     if(G.cutOf && G.tract() && G.cutOf(G.tract()).pf<0.8) XT.pickLow+=dt;
     // manual clicks
@@ -204,7 +208,7 @@ function run(profile, seed, hours=4, opt={}){
           ...(MILL ? {prime:i1.prime-i0.prime, orders:i1.orders, bonus:Math.round(Math.min(.25,S.orders.bonusPct)*100), salesPct:+(i1.sales/Math.max(1,S.run.earned)*100).toFixed(2), toMill:Math.round(i1.toMill), bunk:S.structures['logging.bunkhouse']||0} : {})});
         if(runsOut.length>=RUNS) break;
         G.closeCamp(); wxRun=wx0(); wxPace.tw=0; wxPace.n=0; runItem0={prime:(S.found[SPAR]||{}).total||0, sales:0, orders:0, toMill:0}; if(!NOMETA) for(const id of META_ORDER){ const m=G.META.find(x=>x.id===id); if(!m) continue; if(S.meta.legacy<m.cost) break; G.buyMeta(id); }
-        G.startRun(opt.mods&&runsOut.length>=1?opt.mods:[]); S.run.t0=S.t; runStart=S.t; peakLpm=0; lHist.length=0; curDrafts=0; achCash=0; lastBuy=S.t; eraT.length=0;
+        XT.zi=0; XT.zs=0; G.startRun(opt.mods&&runsOut.length>=1?opt.mods:[]); S.run.t0=S.t; runStart=S.t; peakLpm=0; lHist.length=0; curDrafts=0; achCash=0; lastBuy=S.t; eraT.length=0;
         continue; } } if(!stats.upgT) stats.upgT=[]; while(S.upg.length>stats.upgT.length) stats.upgT.push(Math.round(S.t/60)); if(!stats.achT) stats.achT=[]; if(S.ach&&S.ach.length>stats.achT.length) stats.achT.push(Math.round(S.t/60));
     // bot decisions
     // Company scrip allows a hire job only when out of timber and cash; atRisk() and acceptHire() apply the game's own rule
@@ -214,7 +218,9 @@ function run(profile, seed, hours=4, opt={}){
       // species overhaul: every profile buys by "best value per work for my camp" (Core.tractScore on pine-weight capacities); no draws
       const caps={fell:G.rate('fell'), buck:G.rate('buck'), skid:G.rate('skid',1), haul:G.rate('haul',1)};
       // the AFK lot (cutover) is never bought here: only idle-away buys it, on leaving (Core.tractScore scores it 0 anyway)
-      const best=S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()).sort((a,b)=>b.score-a.score)[0];
+      // early buy order (2026-10-28): keep cash for the crews a lot needs before buying one (a felling, bucking and skidding crew); NOCREWRES=1 (diagnostic) buys as before
+      const crewRes=process.env.NOCREWRES ? 0 : ['fell','buck','skid'].reduce((m,st)=>m+(G.baseRate(st)>0?0:Math.min(...G.EQ.filter(e=>e.stage===st&&e.era<=S.era).map(e=>G.eqCost(e)))),0);
+      const best=S.forSale.map((t,i)=>({i,afk:!!t.afk,score:Core.tractScore(caps,t,Core.distanceFactor(t.miles)),price:t.price})).filter(o=>!o.afk && o.price<=S.cash-reserve()-crewRes).sort((a,b)=>b.score-a.score)[0];
       if(best){ stats.stump+=best.price; G.buyTract(best.i); bought('tract');
         if(AWAYP && G.tract() && G.tract().afk){ const j=S.tracts.findIndex(t=>!t.afk); if(j>0) G.cutNow(j); } } // present: crews off the AFK lot
     }
@@ -234,7 +240,9 @@ function run(profile, seed, hours=4, opt={}){
     // equipment for bottleneck, keep a tract reserve when queue low
     const neck=STG.reduce((a,b)=>cap(b)<cap(a)?b:a);
     const opts=G.EQ.filter(e=>e.stage===neck&&e.era<=S.era).map(e=>({e,c:G.eqCost(e)})).sort((a,b)=>b.e.rate/b.c - a.e.rate/a.c);
-    const tractRes = S.tracts.length<2 ? G.cheapestSale() : 0;
+    // stalled on a stage with no crew at all (2026-10-28): nothing sold for 2 min, so hire its first crew without holding back the lot reserve
+    const stalled = !process.env.NOCREWRES && G.baseRate(neck)<=0 && S.lastSale!=null && S.t-S.lastSale>=120;
+    const tractRes = S.tracts.length<2 && !stalled ? G.cheapestSale() : 0;
     if(opts[0] && S.cash>=opts[0].c+reserve()+(isFinite(tractRes)?tractRes*0.5:0)){ S.cash-=opts[0].c; S.own[opts[0].e.id]=(S.own[opts[0].e.id]||0)+1; bought('eq:'+opts[0].e.id); }
   }
   if(runsOut.length<RUNS) runsOut.push({n:S.run.n, min:Math.round((S.t-runStart)/60), steam:S.run.eraT[1]!=null?Math.round(S.run.eraT[1]/60):null, gas:S.run.eraT[2]!=null?Math.round(S.run.eraT[2]/60):null, legacy:G.legacyNow(), unfinished:true, perks:S.run.perks.join(','), deliv:Math.round(S.run.deliv)});
@@ -243,7 +251,8 @@ function run(profile, seed, hours=4, opt={}){
   const mill = MILL && S.camps.sawmill ? {openMin:millOpenT!=null?Math.round(millOpenT/60):null, firstStructMin:millEv.length?millEv[0].min:null, events:millEv, runs:millRunsOut, cur:{n:S.camps.sawmill.n, min:Math.round((S.t-S.camps.sawmill.t0)/60), sawn:Math.round(S.camps.sawmill.sawn), games:S.camps.sawmill.games, logPaid:Math.round(S.camps.sawmill.logPaid||0), bundleIn:Math.round(S.camps.sawmill.bundleIn||0), earned:Math.round(S.camps.sawmill.earned)}, shares:S.shares.sawmill.total} : null;
   const endT=runsOut.length? (runsOut.reduce((a,r)=>a+r.min,0)*60):S.t; let gap=0,gapAt=0,prev=0; for(const t of XT.ev.concat([Math.min(S.t,endT)])){ if(t>endT) break; if(t-prev>gap){gap=t-prev;gapAt=prev;} prev=t; }
   const xt={gapMin:+(gap/60).toFixed(1), gapAt:Math.round(gapAt/60), pondDryMin:Math.round(XT.pondDry/60), pondDryMaxMin:+((XT.dryMax||0)/60).toFixed(1), millDryMin:Math.round(XT.millDry/60), millShortMin:+((XT.short||0)/60).toFixed(1), millShortMaxMin:+((XT.shortMax||0)/60).toFixed(1), negMin:Math.round(stats.neg/60), noTimberMin:Math.round(stats.noTimber/60), shortMin:Math.round(stats.short/60), buyGapMin:Math.round(longest.gap/60), buyGapWhat:longest.what, coveSpend:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.logCost||0):0, millCash:S.camps&&S.camps.sawmill?Math.round(S.camps.sawmill.cash):0, hire:stats.hire,
-    stash:STASH?'first':'any', spFill:XT.spFill, spMiss:XT.spMiss, pickLowMin:Math.round(XT.pickLow/60), cFill:XT.cFill, cMiss:XT.cMiss, capMax:XT.capMax, activeMax:XT.activeMax};
+    stash:STASH?'first':'any', spFill:XT.spFill, spMiss:XT.spMiss, pickLowMin:Math.round(XT.pickLow/60), cFill:XT.cFill, cMiss:XT.cMiss, capMax:XT.capMax, activeMax:XT.activeMax,
+    zeroIncMaxMin:+((XT.ziMax||0)/60).toFixed(1), zeroIncAtMin:Math.round((XT.ziAt||0)/60), zeroIncStallMin:+((XT.zsMax||0)/60).toFixed(1), zeroIncStallAtMin:Math.round((XT.zsAt||0)/60), adv:S.stats.advances||0};
   return {slots:SLOTT, ...(AWAYP ? {AX:Object.fromEntries(Object.entries(AX).map(([k,v])=>[k,Math.round(v*10)/10]))} : {}), xt, runsOut, meta:S.meta, profile, seed, eraT, era:S.era, cash:S.cash, earned:S.earned, felled:S.felled, longest, stats, items, mill};
 }
 module.exports={run};

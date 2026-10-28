@@ -457,6 +457,8 @@ button,summary,input,.lcell{touch-action:manipulation}
       <button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button>
     </div>
     <div class="banner" id="short" hidden>Wages owed: <span id="owed"></span>. Crews work at half speed until sales pay it off. Haul by hand or sell gear to catch up.</div>
+    <div class="banner info" id="stall" hidden></div>
+    <div class="banner info" id="advOwed" hidden>Company advance owed: <span id="advAmt"></span>. Half of each log sale repays it.</div>
     <div class="banner info" id="stuck" hidden><b>No timber and no cash.</b> Take a hire job under Orders: the buyer gives the timber and pays an advance.</div>
   </header>
 
@@ -5410,6 +5412,79 @@ var Core = (function(exports) {
 		}));
 	}
 	//#endregion
+	//#region packages/core/src/stall.ts
+	/**
+	* The company advance (2026-10-28, no-soft-lock pillar): a zero-income stall
+	* and its rescue. Pure helpers, no randomness.
+	*
+	* A stall: logs (or standing trees) sit in a pile that a missing crew blocks,
+	* the camp has sold nothing for STALL_SEC, and cash is short of the cheapest
+	* crews that would unblock it. A player can work by hand; an idle player
+	* cannot. The rescue: the company advances those crews, and half of each
+	* later log sale repays it. Hauling never stalls (a local buyer carts logs
+	* off a landing with no haul crew), so only felling, bucking and skidding count.
+	* A camp with no crews at all is the opening of an outpost, worked by hand,
+	* and never counts as a stall.
+	*/
+	/** Seconds without a sale before the company steps in. */
+	var STALL_SEC = 120;
+	/** Share of each log sale (after wages owed) that repays an advance. */
+	var ADVANCE_REPAY_SHARE = .5;
+	/** The chain up to the landing, upstream first. */
+	var CHAIN = deepFreeze([
+		"fell",
+		"buck",
+		"skid"
+	]);
+	/** The cheapest crew for a stage at this era, priced at the next unit (null when none is available). */
+	function cheapestCrew(stage, era, own, hireMult = 1) {
+		let best = null;
+		for (const e of EQUIPMENT) {
+			if (e.stage !== stage || e.era > era) continue;
+			const cost = equipmentCost(e.cost * hireMult, own[e.id] || 0);
+			if (!best || cost < best.cost) best = {
+				id: e.id,
+				stage,
+				cost
+			};
+		}
+		return best;
+	}
+	/**
+	* The crews a stalled camp is missing between its furthest-along pile and the landing,
+	* ignoring time and cash (null when nothing is blocked). The furthest-along pile with
+	* stock decides: logs (skid), felled trees (buck, skid) or standing trees (fell, buck, skid).
+	*/
+	function blockedCrews(input) {
+		const from = input.cut > 1e-6 ? 2 : input.stems > 1e-6 ? 1 : input.trees >= 1 ? 0 : -1;
+		if (from < 0 || crewCount(input.own) === 0) return null;
+		const crews = [];
+		for (const st of CHAIN.slice(from)) {
+			if (crewRate(st, input.own) > 0) continue;
+			const c = cheapestCrew(st, input.era, input.own, input.hireMult ?? 1);
+			if (c) crews.push(c);
+		}
+		if (!crews.length) return null;
+		return {
+			crews,
+			cost: crews.reduce((a, c) => a + c.cost, 0)
+		};
+	}
+	/**
+	* A zero-income stall: a missing crew blocks the furthest-along pile, nothing has sold for
+	* STALL_SEC and cash cannot pay for the missing crews. Returns the crews to advance, or null.
+	*/
+	function stallRescue(input) {
+		if (!(input.sinceSale >= 120)) return null;
+		const b = blockedCrews(input);
+		return b && input.cash < b.cost ? b : null;
+	}
+	/** How much of a sale's net revenue goes to repaying an advance still owed. */
+	function advanceRepay(net, owed) {
+		if (!(net > 0) || !(owed > 0)) return 0;
+		return Math.min(owed, net * ADVANCE_REPAY_SHARE);
+	}
+	//#endregion
 	//#region packages/core/src/weather.ts
 	/**
 	* Seasonal events, slice 1 (docs/design/seasonal-events.md): one weather card per
@@ -6012,6 +6087,7 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.ADVANCE_REPAY_SHARE = ADVANCE_REPAY_SHARE;
 	exports.AFK_LOT = AFK_LOT;
 	exports.AFK_MIX = AFK_MIX;
 	exports.AFK_NOTE = AFK_NOTE;
@@ -6133,6 +6209,7 @@ var Core = (function(exports) {
 	exports.SPECIES_ORDER_PREM = SPECIES_ORDER_PREM;
 	exports.SPECIES_SEASON = SPECIES_SEASON;
 	exports.STAGES = STAGES;
+	exports.STALL_SEC = STALL_SEC;
 	exports.STAND_MIN = STAND_MIN;
 	exports.START_SAWYERS = START_SAWYERS;
 	exports.STASH_RULES = STASH_RULES;
@@ -6150,9 +6227,11 @@ var Core = (function(exports) {
 	exports.WIND_CAP = WIND_CAP;
 	exports.achievementMet = achievementMet;
 	exports.achievementProgress = achievementProgress;
+	exports.advanceRepay = advanceRepay;
 	exports.applyMults = applyMults;
 	exports.awaySummary = awaySummary;
 	exports.bestFor = bestFor;
+	exports.blockedCrews = blockedCrews;
 	exports.boardCells = boardCells;
 	exports.boardGradeName = boardGradeName;
 	exports.boardValue = boardValue;
@@ -6171,6 +6250,7 @@ var Core = (function(exports) {
 	exports.canCloseMill = canCloseMill;
 	exports.cantCells = cantCells;
 	exports.cantSquared = cantSquared;
+	exports.cheapestCrew = cheapestCrew;
 	exports.clamp = clamp;
 	exports.clauseMult = clauseMult;
 	exports.composeSeason = composeSeason;
@@ -6323,6 +6403,7 @@ var Core = (function(exports) {
 	exports.splitOrder = splitOrder;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
+	exports.stallRescue = stallRescue;
 	exports.standFromMix = standFromMix;
 	exports.standStats = standStats;
 	exports.standTotal = standTotal;
@@ -6386,7 +6467,10 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
-  millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather()});
+  millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather(),
+  // the company advance (2026-10-28): crews advanced to unblock a zero-income stall, still owed (forgiven at close camp).
+  // S.lastSale (the time of the last sale) is set by normalize() and close camp, so an old save's stall clock starts at its own time
+  adv:0});
 // seasonal events (Core: packages/core/src/weather.ts): company-wide, one roll per season change on the events stream, rolled one season ahead.
 // changes -1 = not yet known (an old save): normalize() sets it from the winters already worked, so a veteran company gets no gentle start.
 function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes:-1, burnt:false, off:false, stats:{bad:0, guard:0, fires:0, burned:0, maxStreak:0}}; }
@@ -6683,6 +6767,22 @@ function acceptHire(){
 }
 const cheapestSale = () => S.forSale.reduce((m,t) => Math.min(m, tractCost(t)), Infinity);
 const scripBlock = () => perk('scrip') && (!!tract() || S.cash >= cheapestSale());
+// a zero-income stall (Core: packages/core/src/stall.ts): a missing crew blocks the pile, nothing sold for 2 min, no cash for the crew
+const stallIn = sinceSale => ({cash:S.cash, sinceSale, own:S.own, era:S.era, trees:tract() ? tract().left : 0, stems:S.stems.bf, cut:S.cut.bf, hireMult:hireF()});
+const stallNow = () => Core.stallRescue(stallIn(S.t - S.lastSale));
+// the banner's early warning: the same stall, before the 2 minutes are up
+const stallSoon = () => S.t - S.lastSale >= 20 ? Core.stallRescue(stallIn(Infinity)) : null;
+const crewNames = r => r.crews.map(c => EQ.find(e => e.id === c.id).name.toLowerCase()).join(', ');
+function companyAdvance(r){
+  r.crews.forEach(c => { S.own[c.id] = own(c.id) + 1; });
+  S.adv += r.cost; S.stats.advances = (S.stats.advances || 0) + 1; S.lastSale = S.t;
+  note(`The company advanced a crew: ${crewNames(r)} (${money(r.cost)}). Half of each log sale repays it.`);
+  toast({label:'Company advance', name:crewNames(r), line:`Logs were stuck. Half of each log sale repays the ${money(r.cost)}.`});
+}
+function repayAdv(net){
+  if (!(S.adv > 0)) return;
+  const r = Core.advanceRepay(net, S.adv); S.adv -= r; S.cash -= r; if (S.adv < .01) S.adv = 0;
+}
 const atRisk = () => !hireActive() && !scripBlock() && S.cash < cheapestSale() &&
   (!tract() || S.tracts.reduce((a,t) => a + t.left, 0) < (tract().trees*.25));
 // the charter board: Core.OFFER_BOARD_SIZE orders; the first slot is always a regular (any wood) order, the rest may name a species
@@ -6774,7 +6874,7 @@ function deliver(amt){
     cs.forEach((c, j) => { rev += full*(sp.paid[j]/amt)*(c.prem + (perk('strict') ? .4 : 0)); c.done += sp.into[j]; });
     for (const c of cs.filter(c => c.done >= c.vol - 1e-6)){ S.stats.contracts++; note(`Filled the ${c.mill} order: ${bf(c.vol)}.`); S.contracts.splice(S.contracts.indexOf(c), 1); contractFilled(c); } }
   S.earned += rev; S.bucket += rev; S.run.earned += rev;
-  const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back;
+  const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back; repayAdv(rev - back);
   if (S.owed < .01) S.owed = 0;
   return rev;
 }
@@ -6812,7 +6912,7 @@ function tick(dt){
   if (fT && S.felled > f0) idlePrime(fT, S.felled - f0, fMix);
   if (baseRate('haul') <= 0 && S.landing.bf > 0){ // a local buyer carts logs off your landing
     const L = S.landing, amt = Math.min(L.bf, 6*dt), avg = L.val/L.bf; L.bf -= amt; L.val -= amt*avg; clean(L);
-    S.run.deliv += amt; const rev = amt*avg*.6*mktMod()*market(); S.earned += rev; S.run.earned += rev; S.bucket += rev; const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back; }
+    S.run.deliv += amt; const rev = amt*avg*.6*mktMod()*market(); S.earned += rev; S.run.earned += rev; S.bucket += rev; const back = Math.min(S.owed, rev); S.owed -= back; S.cash += rev - back; repayAdv(rev - back); }
   if (!S.util) S.util = {};
   for (const k in cap){ const u = full[k] > 0 ? used[k]/full[k] : 1; S.util[k] = (S.util[k] ?? 1) + (u - (S.util[k] ?? 1))*Math.min(1, dt/3); }
   idleFinds(dt, full);
@@ -6827,6 +6927,9 @@ function tick(dt){
   }
   S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !ordFull())) refreshOffers();
   S.saleT -= dt; if (S.saleT <= 0) refreshSales();
+  // the company advance: any sale this tick resets the stall clock; a stall past Core.STALL_SEC gets the missing crews advanced
+  if (S.bucket > 0) S.lastSale = S.t;
+  else { const st = stallNow(); if (st) companyAdvance(st); }
   // income average
   const k = Math.min(1, dt/20);
   S.ema += (S.bucket/dt - S.ema)*k; S.bucket = 0;
@@ -7360,6 +7463,10 @@ function render(force){
   $('tMktSub').textContent = mk >= prev ? 'Rising' : 'Falling';
   $('short').hidden = !S.short; if (S.short) $('owed').textContent = money(S.owed);
   $('stuck').hidden = !(atRisk() && !tract());
+  { const sw = stallSoon(), el = $('stall'); el.hidden = !sw;
+    if (sw){ const left = Math.max(0, Core.STALL_SEC - (S.t - S.lastSale)), txt = `Logs are stuck: no ${crewNames(sw)} and no cash. The company advances ${sw.crews.length > 1 ? 'them' : 'one'} in ${Math.ceil(left)} s, or work it by hand.`;
+      if (el.textContent !== txt) el.textContent = txt; }
+    $('advOwed').hidden = !(S.adv > 0); if (S.adv > 0) $('advAmt').textContent = money(S.adv); }
   // tract
   if (t){
     $('tName').textContent = t.name;
@@ -8354,7 +8461,7 @@ function haulStep(dt){
 function haulPay(c){
   if (!(c > 0)) return 0;
   S.earned += c; S.bucket += c; S.run.earned += c;
-  const back = Math.min(S.owed, c); S.owed -= back; S.cash += c - back; if (S.owed < .01) S.owed = 0;
+  const back = Math.min(S.owed, c); S.owed -= back; S.cash += c - back; repayAdv(c - back); if (S.owed < .01) S.owed = 0;
   return c;
 }
 function haulFinish(){
@@ -8598,7 +8705,7 @@ function closeCamp(){
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
   const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
   S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
-  S.cash = kept + (meta('cash') ? 750 : 0);
+  S.cash = kept + (meta('cash') ? 750 : 0); S.lastSale = S.t;
   if (meta('sled')){ S.own.axeman = 1; S.own.bucker = 1; S.own.oxen = 1; S.own.sled = 1; }
   S.run.rerolls = meta('reroll') ? 1 : 0; snapBase(); S.run.bounty = [];
   if (meta('starter')){ const c = PERKS.filter(p => p.r === 'common'); S.run.perks.push(pick(c).id); }
@@ -8697,6 +8804,9 @@ function normalize(){
   S.rng = Object.assign(freshRng(), obj(S.rng) ? S.rng : {});
   // seasonal events (2026-10-25): older saves have no weather; the first roll comes at the next season change
   S.weather = Object.assign(freshWeather(), obj(S.weather) ? S.weather : {});
+  // the company advance (2026-10-28): an old save owes nothing and its stall clock starts now
+  S.adv = Math.max(0, num(S.adv)); S.lastSale = typeof S.lastSale === 'number' && isFinite(S.lastSale) && S.lastSale <= S.t ? S.lastSale : num(S.t);
+  S.stats.advances = Math.max(0, num(S.stats.advances));
   if (!obj(S.weather.seen)) S.weather.seen = {};
   S.weather.stats = Object.assign(freshWeather().stats, obj(S.weather.stats) ? S.weather.stats : {});
   if (!(typeof S.weather.changes === 'number' && S.weather.changes >= 0)) S.weather.changes = (S.stats.winters || 0)*4;
