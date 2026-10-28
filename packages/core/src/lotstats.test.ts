@@ -6,6 +6,7 @@ import {
   eraLotAverages, LOT_STAT_BAND, LOT_STAT_BANDS, LOT_STAT_DIR, LOT_STATS, lotStatAverages, lotStatChips, primeChance, statVerdict, type LotStatId,
 } from './lotstats';
 import { simLcg } from './test-rng';
+import { HAUL_EASE, haulChip } from './lotstats';
 
 describe('era lot averages', () => {
   it('are stable: the same object every call, and frozen', () => {
@@ -95,5 +96,27 @@ describe('lot stat chips', () => {
   it('a species card reads only the stats it carries', () => {
     const ids = lotStatChips({ mix: [['spruce', 1]], hp: 14, val: 20, wt: 0.8 }, 0, 0, ['chops', 'value', 'weight', 'prime']).map((x) => x.id);
     expect(ids).toEqual(['chops', 'value', 'weight', 'prime']);
+  });
+});
+
+describe('the haul chip (distance and slope in one word)', () => {
+  it('flat and close is Easy, steep is Hard, the middle is OK', () => {
+    expect(haulChip({ miles: 1, slope: 'flat' })).toMatchObject({ key: 'easy', verdict: 'good' });
+    expect(haulChip({ miles: 4, slope: 'flat' }).key).toBe('easy');
+    expect(haulChip({ miles: 5, slope: 'flat' }).key).toBe('ok');
+    expect(haulChip({ miles: 12, slope: 'flat' }).key).toBe('ok');
+    expect(haulChip({ miles: 1, slope: 'rolling' }).key).toBe('easy');
+    expect(haulChip({ miles: 3, slope: 'rolling' })).toMatchObject({ key: 'ok', verdict: 'even' });
+    expect(haulChip({ miles: 8, slope: 'rolling' }).key).toBe('hard');
+    expect(haulChip({ miles: 1, slope: 'steep' })).toMatchObject({ key: 'hard', verdict: 'bad' });
+  });
+  it('is the distance factor times the skid factor; a skyline eases steep ground', () => {
+    expect(haulChip({ miles: 1, slope: 'flat' }).factor).toBeCloseTo(1, 9);
+    expect(haulChip({ miles: 6, slope: 'rolling' }).factor).toBeCloseTo(1.07 / 1.42 * 0.8, 9);
+    expect(haulChip({ miles: 1, slope: 'steep' }, true).key).toBe('easy');
+    expect(HAUL_EASE.easy).toBeGreaterThan(HAUL_EASE.hard);
+  });
+  it('a bad miles value reads as zero miles, never NaN', () => {
+    expect(haulChip({ miles: Number.NaN, slope: 'flat' }).key).toBe('easy');
   });
 });

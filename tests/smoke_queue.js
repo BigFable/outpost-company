@@ -26,38 +26,25 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    S.forSale.forEach(t=>t.price=100);
    S.contracts=[{mill:'the Admiralty spar yard', sp:'spruce', vol:3000, done:0, dur:400, end:S.t+400, prem:.4, penalty:0}];
    S.orders.open=[{id:'admiralty_spar', posted:S.run.n, due:S.run.n+1, given:{}}]; S.bank={}; S.stats.perfFell=20; S.felled=100; render(true);`);
- let cards=[...d.querySelectorAll('#sales .row.lot')];
- const bestOf=id=>cards.findIndex(c=>c.querySelector(`[data-best="${id}"]`));
- ok(bestOf('contract')===1 && /Best for the spruce order/.test(cards[1].textContent),'the spruce headland carries the "Best for the spruce order" badge');
- ok(bestOf('admiralty_spar')===1 && /Best for the Admiralty order/.test(cards[1].textContent),'and the Admiralty badge (spruce stamps 3 Prime spars)');
- const sprFit=[...cards[1].querySelectorAll('.ofit')].map(p=>p.textContent).join(' | ');
- ok(/spruce order in time/.test(sprFit),'order fit names the spruce order: '+sprFit);
- ok(/≈ \d+(\.\d)? (of the 16 )?Prime spars/.test(sprFit) && /Admiralty order/.test(sprFit),'order fit estimates Prime spars toward the Admiralty');
- ok(cards[0].querySelector('[data-order="contract"]')===null,'a lot with no spruce makes no claim on the spruce order');
- ok(d.querySelectorAll('#sales [data-best="contract"]').length===1,'one best listing per order');
- // stock already in the warehouse counts: with 16 spars on hand the Admiralty needs nothing more from the land office
+ // the land office listing no longer shows order fit (owner 2026-10-28: only what changes the choice); the helpers still run
+ // for the charter board's "Best lot" line, so they are checked here through the page's own functions
+ const cards=[...d.querySelectorAll('#sales .row.lot')];
+ ok(cards.length===3 && !d.querySelector('#sales [data-best], #sales .ofit, #sales .fit, #sales details'),'listings carry no badges, order-fit lines or camp notes');
+ const fitsNow=()=>E(`(()=>{ const o=fitOrders(); const f=S.forSale.map(t=>lotFits(t, aheadView(t), o)); return {f, best:Core.bestFor(f, S.forSale)}; })()`);
+ let F=fitsNow();
+ ok(F.best.contract===1 && F.best.admiralty_spar===1,'the spruce headland is still the best lot for the spruce order and the Admiralty spars');
+ const sprFit=F.f[1].map(x=>x.text).join(' | ');
+ ok(/spruce order in time/.test(sprFit) && /≈ \d+(\.\d)? (of the 16 )?Prime spars/.test(sprFit),'order fit names the spruce order and estimates Prime spars: '+sprFit);
+ ok(!F.f[0].some(x=>x.orderId==='contract'),'a lot with no spruce makes no claim on the spruce order');
  E(`S.bank={'logging.prime_spar':16, 'logging.amber_pitch':2}; S.orders.autoFill=false; render(true);`);
- ok(d.querySelectorAll('#sales [data-best="admiralty_spar"]').length===0,'Prime already in the warehouse covers the order: no Admiralty badge');
+ ok(fitsNow().best.admiralty_spar===undefined,'Prime already in the warehouse covers the order');
  E(`S.bank={}; render(true);`);
+ const ob0=d.querySelector('#contracts [data-obest="contract"]');
+ ok(ob0 && /Best lot: Spruce head, Lot 7 \(for sale\)/.test(ob0.textContent),'the charter board still names the best lot: '+(ob0&&ob0.textContent));
  // what is queued ahead counts too
  const before=E(`Core.orderFit(S.forSale[1], fitOrders(), {caps:bareCaps(), era:0, perfRate:perfRate()}, [])[0].amount`);
  const after=E(`Core.orderFit(S.forSale[1], fitOrders(), {caps:bareCaps(), era:0, perfRate:perfRate()}, S.tracts)[0].amount`);
  ok(after<=before,'the lots already queued ahead reduce what a listing can add before the deadline');
-
- // ---------- 2. the camp note: plain advice, the slowest stage, and a details fold
- E(`S.own={crosscut:4, bucker:20, oxen:1, sled:3}; render(true);`); cards=[...d.querySelectorAll('#sales .row.lot')];
- const fit2=cards[2].querySelector('.fit');
- ok(['skid','haul'].includes(fit2.dataset.fit) && /^Heavy hemlock: your (teams|haulers) are slowest here; (skidding|hauling) falls about \d+% behind felling/.test(fit2.textContent),'heavy hemlock with few teams: '+fit2.textContent);
- ok(/of logs an hour, \d+% (more|less) than Home lot|about the same as Home lot/.test(fit2.textContent),'value an hour against the lot crews are on');
- const det=cards[2].querySelector('details.fitmore');
- ok(det && !det.open && /On this lot: felling/.test(det.textContent) && /mi haul: hauling ×/.test(det.textContent),'details fold with the stage rates, haul and slope');
- det.open=true; det.dispatchEvent(new w.Event('toggle')); E(`render(true)`);
- ok(d.querySelectorAll('#sales .row.lot')[2].querySelector('details.fitmore').open,'an opened details fold stays open across re-renders');
- E(`S.own={}; render(true);`);
- ok(d.querySelector('#sales .fit').dataset.fit==='none' && /hire fallers/.test(d.querySelector('#sales .fit').textContent),'no crews: the note says what to hire');
- E(`S.own={axeman:2, bucker:20, oxen:4, sled:6}; S.season=0; render(true);`);
- ok(/Bark season: hemlock pays \+\$14 a tree until Fall/.test(d.querySelectorAll('#sales .row.lot')[2].querySelector('.fit').textContent),'the note mentions tanbark season in Spring');
- E(`S.season=2; render(true);`);
 
  // ---------- 3. switching lots keeps each lot's progress
  E(`S.contracts=[]; S.orders.open=[]; S.tracts=[Object.assign(Core.makeTract('Alpha',[['pine',100]],40,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Beta',[['spruce',100]],30,6,'steep','headland'),{seq:1}), Object.assign(Core.makeTract('Gamma',[['hemlock',100]],20,2,'rolling','swamp'),{seq:2})];
@@ -127,8 +114,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(afk.price/afk.trees < regPrice/reg.trees*0.5 && afk.val/afk.bf < reg.val/reg.bf,'cheaper per tree and poorer per bd ft than a normal lot');
  E(`S.forSale=S.forSale.filter(t=>!t.afk); S.forSale.push(Core.genAfkLot(Core.streamRng(S.rng,'land'), 0, saleOpts())); render(true);`);
  const ac=d.querySelector('#sales .row.lot.afk');
- ok(ac && /Logged-over land/.test(ac.textContent) && /For time away/.test(ac.textContent) && /Best for: time away/.test(ac.textContent),'the AFK card names its ground and what it is for');
- ok(/^Best for time away: poor wood, but lots of it\. It lasts about [\d.]+ (h|min) of work/.test(ac.querySelector('.fit').textContent),'its camp note: '+ac.querySelector('.fit').textContent);
+ ok(ac && /For time away/.test(ac.textContent) && /this lot adds \+ about \d/.test(ac.querySelector('[data-afkt]').textContent),'the AFK card says what it is for and how much cutting it adds: '+(ac&&ac.querySelector('[data-afkt]').textContent));
  // worse an hour than a good lot for the same camp, but it lasts several times as long
  const r=E(`(()=>{ const a=S.forSale.find(t=>t.afk), g=Core.makeTract('Good',[['pine',100]],60,1,'flat','coast'), c=bareCaps();
    return {va:Core.lotValueRate(c,a,'Fall'), vg:Core.lotValueRate(c,g,'Fall'), ta:Core.cutOutSeconds(c,a), tg:Core.cutOutSeconds(c,g)}; })()`);

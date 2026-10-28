@@ -37,12 +37,12 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(slots()==='0,1' && /New land office slot: Surveyed lot/.test(E('S.log.map(l=>l.text).join("|")')),'2 lots cut out: slot 2 opens with a note');
  const s2=E('S.forSale[1]');
  ok(s2.mix.length===3 && !s2.afk && s2.mix.every(m=>['pine','spruce','hemlock'].includes(m[0])),'slot 2 lists a 3-species Cove lot: '+s2.mix.map(m=>m.join(' ')).join(', '));
- ok(rows()[1].querySelectorAll('.stat').length>0 && /Surveyed lot/.test(rows()[1].querySelector('.slotchip').textContent),'slot 2 listing has stat chips and its slot name');
+ ok(rows()[1].querySelectorAll('.stat').length===2 && rows()[1].dataset.slot==='1' && !rows()[1].querySelector('.slotchip'),'slot 2 listing has the chops and haul chips (no slot-name chip since 2026-10-28)');
  cutOne();
  const s3=E('S.forSale[2]');
  ok(slots()==='0,1,2' && s3.mix.length===4 && s3.mix.some(m=>m[0]==='maple'),'3 lots: slot 3 opens with a 4-species lot incl. maple');
  const mw=s3.mix.find(m=>m[0]==='maple')[1]; ok(mw>=10 && mw<=20,'the rare maple is 10-20%: '+mw);
- ok(/Rare: Maple/.test(rows()[2].textContent),'slot 3 listing names its rare tree');
+ ok(/Maple \d+%/.test(rows()[2].textContent),'slot 3 listing shows its rare tree in the mix');
  cutOne();
  ok(slots()==='0,1,2,3' && E('S.forSale[3].afk')===true && d.querySelectorAll('#sales .row.locked').length===0,'4 lots: the AFK lot opens in slot 4; no locked rows left');
  ok(E('S.stats.slots')===4,'opened slots are recorded');

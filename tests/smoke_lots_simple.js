@@ -67,6 +67,30 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  dom=mk({'timberline-v2':raw}); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
  ok(E('S.ui.qView')==='stock' && !d.getElementById('qStock').hidden && d.querySelectorAll('#stock .stk[data-sp]').length===3,'a save left on the old Lots tab loads on Stock with its trees');
 
+ // ---------- 3. the land office listing: tree mix, tree count, price, chops chip, haul chip (Easy / OK / Hard)
+ E(`S.weather.off=true; S.weather.cur=null; S.stats.tracts=4; S.stats.slots=4; refreshSales();
+   S.forSale[0]=Object.assign(Core.makeTract('Near flat, Lot 1',[['pine',60],['hemlock',40]],50,1,'flat','coast'),{slot:0,price:400});
+   S.forSale[1]=Object.assign(Core.makeTract('Mid hill, Lot 2',[['spruce',50],['pine',30],['hemlock',20]],50,4,'rolling','headland'),{slot:1,price:300});
+   S.forSale[2]=Object.assign(Core.makeTract('Far steep, Lot 3',[['hemlock',60],['spruce',25],['maple',15]],50,9,'steep','swamp'),{slot:2,price:200});
+   S.cash=350; render(true);`);
+ const L=[...d.querySelectorAll('#sales .row.lot')], haul=c=>c.querySelector('[data-haul]');
+ ok(L.length===4 && L.slice(0,3).map(c=>haul(c).dataset.haul).join()==='easy,ok,hard','haul chips: Easy, OK, Hard ('+L.map(c=>haul(c).dataset.haul).join()+')');
+ ok(haul(L[0]).classList.contains('good') && haul(L[1]).classList.contains('even') && haul(L[2]).classList.contains('bad'),'haul chip colours: green, plain, red');
+ ok(L.every(c=>[...c.querySelectorAll('.stat')].map(s=>s.dataset.stat).join()==='chops,haul'),'each listing has exactly two chips: chops and haul');
+ ok(L.slice(0,3).every(c=>['good','bad','even'].includes(c.querySelector('[data-stat="chops"]').dataset.v)),'the chops chip is colour-coded against the average');
+ ok(/^50 trees · Pine 60% · Hemlock 40%$/.test(L[0].querySelector('.lotl').textContent) && L[0].querySelectorAll('.spbar i').length===2,'tree count and mix, with the mix bar: '+L[0].querySelector('.lotl').textContent);
+ const face=L.map(c=>c.querySelector('.info').textContent).join(' ');
+ ok(!/bd ft|Best for|Value|Weight|Prime|Slope|a tree|of logs an hour|slowest/.test(face) && !d.querySelector('#sales details, #sales .ofit, #sales .fit'),'no bd ft, value, weight, Prime, best-for or camp-note text left on the listings');
+ ok(L[1].querySelector('button.buy').textContent===E('money(300)') && !L[1].querySelector('button.buy').disabled && L[0].querySelector('button.buy').disabled,'the price is on the Buy button, which is off when you cannot pay');
+ L[1].querySelector('button.buy').click();
+ ok(E('S.tracts.some(t=>t.name==="Mid hill, Lot 2")'),'Buy still buys the lot');
+ ok(L[3].classList.contains('afk') && /For time away/.test(L[3].textContent) && L[3].querySelector('[data-afkt]'),'the AFK listing keeps its "for time away" tag and the cutting time it adds');
+ ok(/The AFK lot is always for sale/.test(txt('#saleMeta')),'the land office note says the AFK lot is always for sale');
+ // locked slots still show what opens them
+ E(`S.stats.tracts=2; S.stats.slots=2; refreshSales(); render(true);`);
+ const lk=[...d.querySelectorAll('#sales .row.locked[data-locked]')];
+ ok(lk.length===2 && /Opens at 3 lots cut out · 1 more lot/.test(lk[0].textContent) && /AFK lot/.test(lk[1].textContent),'locked slot rows keep the unlock goal');
+
  ok(errs.length===0,'no console errors '+errs.slice(0,3).join(' | '));
  console.log(fails?fails+' FAILED':'ALL PASS'); process.exit(fails?1:0);
 })();
