@@ -41,6 +41,32 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`buyTract(3); render(true);`);
  ok(txt('#stockedV')===add,'after buying it the stocked time is what it said it adds ('+add+')');
 
+ // ---------- 2. Your lots: Stock and Priority tabs
+ E(`S.tracts=[Object.assign(Core.makeTract('Home lot',[['pine',70],['hemlock',30]],100,1,'flat'),{seq:S.tractSeq++}), Object.assign(Core.makeTract('Spruce head, Lot 7',[['spruce',80],['pine',20]],50,2,'rolling','headland'),{seq:S.tractSeq++})];
+   S.tracts.forEach(t=>standOf(t)); setSite(); newTree(); S.ui.qView='stock'; render(true);`);
+ const tabs=[...d.querySelectorAll('#qTabs button')];
+ ok(tabs.map(b=>b.textContent).join()==='Stock,Priority' && tabs.every(b=>b.getAttribute('type')==='button'),'two tabs: Stock and Priority');
+ const rows=[...d.querySelectorAll('#stock .stk[data-sp]')];
+ ok(rows.map(r=>r.dataset.sp).join()==='pine,hemlock,spruce','one row per kind of tree owned (most first)');
+ ok(rows[0].querySelector('.sw.sp-pine') && /Pine/.test(rows[0].textContent) && rows[0].querySelector('[data-stn="pine"]').textContent==='80','a row has the colour, the name and the count: '+rows[0].textContent);
+ ok(rows[0].querySelector('[data-stb]').style.width==='100%' && Math.abs(parseFloat(rows[2].querySelector('[data-stb]').style.width)-50)<0.2,'bars scale to the biggest count (spruce 40 of 80 = 50%)');
+ ok(!d.querySelector('#stock .stat, #stock .fit, #stock button'),'no stat chips, notes or buttons on Stock');
+ ok(/^150 trees on 2 lots$/.test(txt('#stock .stk.total')),'a total line: '+txt('#stock .stk.total'));
+ E(`setStashRule('spruce','skip'); S.ui.qView='stock'; render(true);`);
+ ok(/Skip/.test(txt('#stock .stk[data-sp="spruce"]')) && !/Any/.test(txt('#stock .stk[data-sp="pine"]')),'a First or Skip rule shows as a tag on Stock');
+ tabs[1].dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+ ok(E('S.ui.qView')==='priority' && !d.getElementById('qTrees').hidden && d.getElementById('qStock').hidden && d.querySelectorAll('#stash .scard').length===3,'tap Priority: the Any / First / Skip cards');
+ ok(d.querySelector('#stash [data-rsp="spruce"][data-r="skip"]').getAttribute('aria-pressed')==='true','Priority shows the rule set');
+ E(`setStashRule('spruce','any'); render(true);`);
+ // old saves: the tab value maps across ('lots' → Stock, 'trees' → Priority) and a load opens on Stock
+ ok(E(`qViewOf('lots')`)==='stock' && E(`qViewOf('trees')`)==='priority' && E(`qViewOf(undefined)`)==='stock','old tab values map to the new tabs');
+ E(`S.ui.qView='trees'; render(true);`);
+ ok(!d.getElementById('qTrees').hidden && tabs[1].getAttribute('aria-pressed')==='true','an old "trees" value shows Priority');
+ E(`S.ui.qView='lots'; save();`);
+ const raw=w.localStorage.getItem('timberline-v2'); dom.window.close();
+ dom=mk({'timberline-v2':raw}); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
+ ok(E('S.ui.qView')==='stock' && !d.getElementById('qStock').hidden && d.querySelectorAll('#stock .stk[data-sp]').length===3,'a save left on the old Lots tab loads on Stock with its trees');
+
  ok(errs.length===0,'no console errors '+errs.slice(0,3).join(' | '));
  console.log(fails?fails+' FAILED':'ALL PASS'); process.exit(fails?1:0);
 })();

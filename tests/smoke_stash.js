@@ -32,13 +32,16 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  const st=E('S.tracts[0].stand'), lf=E('S.tracts[0].left');
  ok(lf<100 && near(st.pine+st.hemlock, lf) && near(st.pine/(st.pine+st.hemlock), .7),'under Any felling takes every species in proportion ('+lf+' left, pine '+(st.pine/lf*100).toFixed(1)+'%)');
 
- // ---------- 2. the Trees tab
+ // ---------- 2. the Priority tab (was Trees; 2026-10-28 Your lots has Stock and Priority)
  const tabs=[...d.querySelectorAll('#qTabs button')];
- ok(tabs.map(b=>b.textContent).join()==='Lots,Trees' && !$('qTrees').hidden && $('qLots').hidden && E('S.ui.qView')==='trees' && tabs[1].getAttribute('aria-pressed')==='true','a Lots tab next to Trees; Trees shows by default');
- click(tabs[0]);
- ok($('qTrees').hidden && !$('qLots').hidden && E('S.ui.qView')==='lots' && d.querySelectorAll('#tq .qrow').length===2,'tap Lots: the queue rows show');
+ ok(tabs.map(b=>b.textContent).join()==='Stock,Priority' && $('qTrees').hidden && !$('qStock').hidden && E('S.ui.qView')==='stock' && tabs[0].getAttribute('aria-pressed')==='true','a Stock tab next to Priority; Stock shows by default');
+ E('render(true)');
+ ok([...d.querySelectorAll('#stock .stk[data-sp]')].map(r=>r.dataset.sp).join()==='pine,hemlock,spruce' && new RegExp('^'+(E('S.tracts[0].left')+50)+' trees on 2 lots$').test(d.querySelector('#stock .stk.total').textContent),'Stock: one row per kind owned, and the total: '+d.querySelector('#stock .stk.total').textContent+' (left '+E('S.tracts[0].left')+')');
  click(tabs[1]);
- ok(!$('qTrees').hidden && $('qLots').hidden && E('S.ui.qView')==='trees','tap Trees: the stash shows again');
+ ok(!$('qTrees').hidden && $('qStock').hidden && E('S.ui.qView')==='priority','tap Priority: the tree rules show');
+ click(tabs[0]);
+ ok($('qTrees').hidden && !$('qStock').hidden && E('S.ui.qView')==='stock','tap Stock: the stock levels show again');
+ click(tabs[1]);
  let cards=[...d.querySelectorAll('#stash .scard')];
  ok(cards.map(c=>c.dataset.sp).join()==='pine,hemlock,spruce','one card per species owned: '+cards.map(c=>c.dataset.sp).join());
  const pc=cards[0].textContent;
@@ -113,14 +116,14 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<=e*Math.max(1,Math.abs(b));
  dom.window.close(); dom=mk({'timberline-v2':JSON.stringify(raw)}); await sleep(300); w=dom.window; d=w.document;
  const E2=s=>w.__eval(s);
  ok(JSON.stringify(E2('tract().stand'))==='{"pine":8,"cloudwood":5}','old save: an old lot gets counts from its mix and trees left (8 pine, 5 redwood of 13)');
- ok(JSON.stringify(E2('S.ui.stashRule'))==='{}' && E2('S.ui.qView')==='trees' && !d.getElementById('qTrees').hidden && E2('rulesAny')===true,'old save: every species on Any, the Trees tab first');
+ ok(JSON.stringify(E2('S.ui.stashRule'))==='{}' && E2('S.ui.qView')==='stock' && !d.getElementById('qStock').hidden && E2('rulesAny')===true,'old save: every species on Any, the Stock tab first');
  ok(E2('cutOf(tract()).hp')===20 && E2('cutOf(tract()).pf')===1,'old save: crews cut as before');
  // rules survive a save and reload
  E2(`setStashRule('pine','first'); S.ui.qView='lots'; save();`);
  const raw2=w.localStorage.getItem('timberline-v2');
  dom.window.close(); dom=mk({'timberline-v2':raw2}); await sleep(300); w=dom.window;
  ok(w.__eval('S.ui.stashRule.pine')==='first' && w.__eval('cutOf(tract()).species.join()')==='pine','rules and counts survive a reload');
- ok(w.__eval('S.ui.qView')==='trees' && !w.document.getElementById('qTrees').hidden && w.document.getElementById('qLots').hidden,'a save left on the Lots tab opens on Trees again (the switch lasts for the session)');
+ ok(w.__eval('S.ui.qView')==='stock' && w.document.getElementById('qTrees').hidden && !w.document.getElementById('qStock').hidden,'a save left on the old Lots tab opens on Stock (the switch lasts for the session)');
 
  ok(errs.length===0,'no console errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
  dom.window.close();

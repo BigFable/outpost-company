@@ -106,17 +106,19 @@ async function run(devName) {
   await shot('stage-cards', '#chain');
   ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#chain .stc')].map((x) => x.getBoundingClientRect()); return c.length === 4 && c.every((r) => r.right <= innerWidth + 1 && r.left >= -1); }), `${devName}: four stage cards on screen`);
   await shot('top-bar', '.top');
-  // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
+  // Your lots' Priority tab (lot stash; was Trees): cards, the rule switch, a species' lots and Cut here, all by touch
   await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
   await tapEl('#ltLots'); await sleep(150);
-  await tapEl('#qTabs [data-v=trees]'); await sleep(150);
-  ok(await page.evaluate(() => !document.getElementById('qTrees').hidden && document.querySelectorAll('#stash .scard').length >= 2), `${devName}: the Trees tab opens with a tap`);
+  ok(await page.evaluate(() => !document.getElementById('qStock').hidden && document.querySelectorAll('#stock .stk[data-sp]').length >= 2), `${devName}: Your lots opens on Stock, one row per kind`);
+  ok(await noSideScroll(), `${devName}: Stock tab has no sideways scroll`);
+  await tapEl('#qTabs [data-v=priority]'); await sleep(150);
+  ok(await page.evaluate(() => !document.getElementById('qTrees').hidden && document.querySelectorAll('#stash .scard').length >= 2), `${devName}: the Priority tab opens with a tap`);
   await tapEl('#stash .scard[data-sp=spruce] summary'); await sleep(100);
   await tapEl('#stash [data-rsp=spruce][data-r=first]'); await sleep(100);
   ok((await E(`S.ui.stashRule.spruce`)) === 'first' && (await E(`tract().name`)) !== 'Spruce head, Lot 7', `${devName}: tap First sets the rule`);
-  ok(await noSideScroll(), `${devName}: Trees tab has no sideways scroll`);
-  const st3 = await smallTargets(); ok(st3.length === 0, `${devName}: Trees tab tap targets are 44 px or more` + (st3.length ? ': ' + st3.slice(0, 12).join(' ') : ''));
-  const sx3 = await smallText(); ok(sx3.length === 0, `${devName}: Trees tab text is 12 px or more` + (sx3.length ? ': ' + sx3.slice(0, 12).join(' ') : ''));
+  ok(await noSideScroll(), `${devName}: Priority tab has no sideways scroll`);
+  const st3 = await smallTargets(); ok(st3.length === 0, `${devName}: Priority tab tap targets are 44 px or more` + (st3.length ? ': ' + st3.slice(0, 12).join(' ') : ''));
+  const sx3 = await smallText(); ok(sx3.length === 0, `${devName}: Priority tab text is 12 px or more` + (sx3.length ? ': ' + sx3.slice(0, 12).join(' ') : ''));
   await tapEl('#stash .scard[data-sp=spruce] [data-cut]'); await sleep(150);
   ok((await E(`tract().name`)) === 'Spruce head, Lot 7' && /Picking spruce/.test(await page.evaluate(() => document.getElementById('pickNote').textContent)), `${devName}: Cut here moves the crews; the picking note shows`);
   await shot('queue-trees', '#queuePanel');

@@ -63,7 +63,7 @@ const words=t=>t.replace(/\(.*?\)/g,' ').split(/[:·]/)[0].replace(/[−+]?\$?[\
 
  // 5. buttons stay at two words (numbers, money and on/off states aside)
  E2(`render(true)`);
- const sel='button.act, button.buy, button.mbtn, button.closeb, button.sellb, #qMode button, .qbtns button, #buyN button, #whTabs button, .draftbtn, .linkbtn';
+ const sel='button.act, button.buy, button.mbtn, button.closeb, button.sellb, #qTabs button, #buyN button, #whTabs button, .draftbtn, .linkbtn';
  const page=[...d2.querySelectorAll(sel)].map(b=>b.textContent).filter(t=>t.trim());
  const E3=E2(`setCamp('sawmill'), [...document.querySelectorAll(${JSON.stringify(sel)})].map(b=>b.textContent).filter(t=>t.trim())`);
  const long=[...page, ...E3, ...btns].filter(t=>words(t).length>2);

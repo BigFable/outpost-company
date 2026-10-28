@@ -51,12 +51,10 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(note && !note.open && note.querySelector('summary .ib').textContent==='i' && note.querySelector('.fit') && /On this lot: felling/.test(note.textContent),'camp note behind a closed "i"');
  ok(!s.querySelector('.info > p.fit') && !/chops a tree ·/.test(s.textContent),'no camp-note sentence or old stat sentence on the card face');
  ok(/Best for the spruce order/.test(s.querySelector('[data-best="contract"]').textContent),'the order-fit badge is kept');
- // 5. queue Lots rows (no price chip) and Trees cards
- E(`S.tracts.push(Object.assign(Core.makeTract('Bog',[['hemlock',100]],20,10,'steep','swamp'),{seq:S.tractSeq++})); S.ui.qView='lots'; render(true);`);
- const rows=[...d.querySelectorAll('#tq .qrow')];
- ok(rows.length===2 && rows.every(r=>chips(r).join()==='chops,value,weight,haul,slope,prime'),'queue rows: chips without a price');
- ok(v(rows[1],'haul').dataset.v==='bad' && v(rows[1],'slope').dataset.v==='bad' && rows[1].querySelector('details.notei'),'queue row: far, steep bog in red, camp note behind "i"');
- E(`S.ui.qView='trees'; render(true);`);
+ // 5. Priority cards (the per-lot queue rows became the Stock tab, 2026-10-28: no chips there)
+ E(`S.tracts.push(Object.assign(Core.makeTract('Bog',[['hemlock',100]],20,10,'steep','swamp'),{seq:S.tractSeq++})); S.ui.qView='stock'; render(true);`);
+ ok(d.querySelectorAll('#stock .stk[data-sp]').length>=1 && !d.querySelector('#stock .stat'),'Stock rows: kind and count only, no stat chips');
+ E(`S.ui.qView='priority'; render(true);`);
  const sc=d.querySelector('#stash .scard[data-sp="hemlock"]');
  ok(sc && chips(sc).join()==='chops,value,weight,prime' && v(sc,'weight').dataset.v==='bad','Trees card: hemlock chips, heavy in red');
  ok(errs.length===0,'no errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));

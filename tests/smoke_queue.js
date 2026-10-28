@@ -61,57 +61,43 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
 
  // ---------- 3. switching lots keeps each lot's progress
  E(`S.contracts=[]; S.orders.open=[]; S.tracts=[Object.assign(Core.makeTract('Alpha',[['pine',100]],40,1,'flat'),{seq:0}), Object.assign(Core.makeTract('Beta',[['spruce',100]],30,6,'steep','headland'),{seq:1}), Object.assign(Core.makeTract('Gamma',[['hemlock',100]],20,2,'rolling','swamp'),{seq:2})];
-   S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; S.ui.qView='lots'; render(true);`);
- let rows=()=>[...d.querySelectorAll('#tq .qrow')];
- ok(rows().length===3 && rows()[0].classList.contains('on') && /Crews here/.test(rows()[0].textContent),'queue lists the owned lots, crews on the first');
- ok(/33 of 40 trees left/.test(rows()[0].textContent) && /done in/.test(rows()[0].textContent) && /an hour/.test(rows()[0].textContent),'row shows trees left, time to cut out and value: '+rows()[0].querySelector('.spec').textContent);
+   S.tractSeq=3; S.tracts[0].left=33; setSite(); S.hp=7; S.vis='pine'; S.ui.qOrder='bought'; S.ui.qView='stock'; render(true);`);
+ // Your lots (2026-10-28): the per-lot queue list became the Stock tab; the queue itself still runs (Cut here on Priority)
+ const stk=()=>[...d.querySelectorAll('#stock .stk[data-sp]')];
+ ok(stk().map(r=>r.dataset.sp).join()==='pine,spruce,hemlock' && /33/.test(stk()[0].textContent) && /30/.test(stk()[1].textContent),'Stock lists the owned trees by kind: '+stk().map(r=>r.textContent).join(' | '));
+ ok(!d.querySelector('#tq') && !d.querySelector('#qMode'),'the per-lot queue list and its order buttons are gone');
  ok(/Crews are on Alpha/.test($('queue').textContent),'the active tract panel says which lot crews are on');
  const cash0=E('S.cash');
- rows()[1].querySelector('[data-qnow]').click();
+ E('cutNow(1)');
  ok(E('tract().name')==='Beta' && E('S.site.miles')===6 && E('S.site.slope')==='steep','Cut now: crews move to Beta and its site applies');
  ok(E('S.tracts[1].name')==='Alpha' && E('S.tracts[1].left')===33 && E('S.tracts[1].cur')===7 && E('S.tracts[1].curSp')==='pine','Alpha keeps its trees left and the tree crews were on');
  ok(E('S.cash')===cash0 && E('Core.TRACT_SWITCH_COST')===0,'switching is instant and free');
  ok(/Crews moved to Beta/.test(E('S.log[0].text')),'the ledger notes the move');
  E(`damage(3)`); const betaHp=E('S.hp');
- rows()[1].querySelector('[data-qnow]').click();
+ E('cutNow(1)');
  ok(E('tract().name')==='Alpha' && E('S.hp')===7 && E('S.vis')==='pine' && E('S.site.miles')===1,'switching back resumes Alpha on the same tree (7 chops left)');
  ok(E('S.tracts[1].cur')===betaHp,'and Beta keeps its partial tree');
 
- // ---------- 4. reorder: arrows, Cut next, pointer drag; the order modes
+ // ---------- 4. reorder (the queue logic, now without its list: moveTract, Cut next, the order modes)
  E(`render(true)`);
- rows()[2].querySelector('[data-qu]').click();
- ok(E('S.tracts.map(t=>t.name).join()')==='Alpha,Gamma,Beta' && E('S.ui.qOrder')==='hand','up arrow moves Gamma up and the queue is now set by hand');
- rows()[1].querySelector('[data-qd]').click();
- ok(E('S.tracts.map(t=>t.name).join()')==='Alpha,Beta,Gamma','down arrow moves it back');
- ok(rows()[0].querySelector('[data-qu]').disabled && rows()[2].querySelector('[data-qd]').disabled,'the arrows stop at the ends');
- ok(!rows()[1].querySelector('[data-qnext]') && rows()[2].querySelector('[data-qnext]'),'Cut next shows from the third lot down');
- rows()[2].querySelector('[data-qnext]').click();
+ E('moveTract(2, 1)');
+ ok(E('S.tracts.map(t=>t.name).join()')==='Alpha,Gamma,Beta' && E('S.ui.qOrder')==='hand','moving Gamma up sets the queue by hand');
+ E('moveTract(1, 2)');
+ ok(E('S.tracts.map(t=>t.name).join()')==='Alpha,Beta,Gamma','and back');
+ E('cutNext(2)');
  ok(E('S.tracts.map(t=>t.name).join()')==='Alpha,Gamma,Beta' && E('tract().name')==='Alpha','Cut next puts Gamma second without moving the crews');
- // pointer drag on the grip (mouse or touch): Beta (row 2) dragged to the top
- const PE=w.PointerEvent||w.MouseEvent;
- const fire=(el,type,y)=>el.dispatchEvent(new PE(type,{bubbles:true,cancelable:true,clientX:10,clientY:y,button:0,pointerId:1,pointerType:'touch'}));
- rows().forEach((r,i)=>{ r.getBoundingClientRect=()=>({top:i*100,bottom:i*100+100,left:0,right:390,width:390,height:100}); });
- const grip=rows()[2].querySelector('.qgrip');
- fire(grip,'pointerdown',250); fire(grip,'pointermove',150); fire(grip,'pointermove',40);
- ok(rows()[0].classList.contains('over'),'dragging over the first row marks the drop spot');
- fire(grip,'pointerup',40);
- ok(E('S.tracts.map(t=>t.name).join()')==='Beta,Alpha,Gamma' && E('tract().name')==='Beta','dropping on the top row moves Beta first and the crews with it');
- ok(E('S.hp')===betaHp,'Beta resumes its partial tree after the drag');
- const g2=rows()[1].querySelector('.qgrip'); fire(g2,'pointerdown',150); fire(g2,'pointercancel',150);
- ok(E('S.tracts.map(t=>t.name).join()')==='Beta,Alpha,Gamma','a cancelled drag changes nothing');
- ok(/touch-action:none/.test(src) && /\.qbtns button\{[^}]*min-height:44px/.test(src) && /\.qmode button\{[^}]*min-height:44px/.test(src),'grip, arrows and order buttons are touch-sized (44 px) and the grip claims the touch');
+ E('moveTract(2, 0)');
+ ok(E('S.tracts.map(t=>t.name).join()')==='Beta,Alpha,Gamma' && E('tract().name')==='Beta','moving Beta to the top moves the crews with it');
+ ok(E('S.hp')===betaHp,'Beta resumes its partial tree');
  // order modes: value an hour puts the most valuable waiting lot first; crews stay put
- const modeBtn=m=>d.querySelector(`#qMode button[data-m="${m}"]`);
- ok(d.querySelectorAll('#qMode button').length===4,'four order buttons: as bought, by order deadline, by value an hour, by hand');
- modeBtn('value').click();
+ E(`setQueueMode('value')`);
  const vph=E(`S.tracts.slice(1).map(t=>Core.lotValueRate(bareCaps(), t, effSeason(), false))`);
- ok(E('tract().name')==='Beta' && vph[0]>=vph[1] && modeBtn('value').getAttribute('aria-pressed')==='true','by value an hour: waiting lots sorted, crews stay on Beta');
- modeBtn('bought').click();
+ ok(E('tract().name')==='Beta' && vph[0]>=vph[1] && E('S.ui.qOrder')==='value','by value an hour: waiting lots sorted, crews stay on Beta');
+ E(`setQueueMode('bought')`);
  ok(E('S.tracts.map(t=>t.name).join()')==='Beta,Alpha,Gamma','as bought: waiting lots in purchase order');
  E(`S.contracts=[{mill:'Landfall Pier Works', sp:'hemlock', vol:2000, done:0, dur:300, end:S.t+300, prem:.4, penalty:0}]; render(true);`);
- modeBtn('deadline').click();
+ E(`setQueueMode('deadline')`);
  ok(E('S.tracts[1].name')==='Gamma','by order deadline: the hemlock lot that serves the signed hemlock order moves up');
- ok(rows()[1].querySelector('[data-fitb="contract"]'),'queued lots carry order-fit badges');
  E(`S.contracts=[]`);
  // a cut-out lot hands the crews to the next in the queue
  E(`S.ui.qOrder='hand'; S.tracts[0].left=1; S.hp=1; damage(1);`);
@@ -186,9 +172,9 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const E2=s=>w.__eval(s);
  ok(E2('S.tracts.map(t=>t.name).join()')==='Old one,Old two' && E2('S.tracts.map(t=>t.seq).join()')==='0,1' && E2('S.tractSeq')===2,'old save: the tracts arrays become the queue in their order, numbered 0 and 1');
  ok(E2('S.ui.qOrder')==='bought' && E2('S.hp')===4 && E2('tract().left')===12,'old save: as-bought order, and the current tree and trees left kept');
- ok(E2('S.ui.qView')==='trees' && !d.getElementById('qTrees').hidden,'old save: the queue opens on the Trees tab');
- d.querySelector('#qTabs [data-v="lots"]').click();
- ok(d.querySelectorAll('#tq .qrow').length===2 && /Crews here/.test(d.querySelector('#tq .qrow').textContent),'old save: the queue panel shows both lots');
+ ok(E2('S.ui.qView')==='stock' && !d.getElementById('qStock').hidden && d.getElementById('qTrees').hidden,'old save: Your lots opens on the Stock tab');
+ d.querySelector('#qTabs [data-v="priority"]').click();
+ ok(E2('S.ui.qView')==='priority' && !d.getElementById('qTrees').hidden && d.querySelectorAll('#stash .slots li').length>=2,'old save: Priority lists both lots under their trees');
 
  ok(errs.length===0,'no console errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));
  dom.window.close();
