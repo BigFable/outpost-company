@@ -6819,7 +6819,7 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], afkHeld:false, saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, payEma:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
   millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather(),
@@ -9130,7 +9130,8 @@ function normalize(){
   // money and the past-outposts list come from the save as-is: a damaged or hand-edited value must not break every comparison or the page
   if (!(typeof S.cash === 'number' && isFinite(S.cash))) S.cash = 0;
   const num = v => typeof v === 'number' && isFinite(v) ? v : 0;
-  // rising wages (2026-10-28): an old save has no slow income average yet; start it at the camp's income now
+  // rising wages (2026-10-28): S.payEma, the wage cap's slow income average, is not in fresh() (close camp drops it, so a new
+  // outpost starts at 0); an old save has none yet, so it starts at the camp's income now
   S.payEma = typeof S.payEma === 'number' && isFinite(S.payEma) ? S.payEma : Math.max(0, num(S.ema));
   S.runs =S.runs.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 12).map((x, i) => Object.assign(x, {
     n:num(x.n) || S.runs.length - i, min:num(x.min), deliv:num(x.deliv), earned:num(x.earned), legacy:num(x.legacy),
