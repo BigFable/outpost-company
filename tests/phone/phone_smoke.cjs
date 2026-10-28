@@ -158,8 +158,9 @@ async function run(devName) {
   await tapEl('#whDetail [data-lk]'); await sleep(100);
   if (await page.evaluate(() => getComputedStyle(document.querySelector('#whDetail [data-close]')).display !== 'none')) { await tapEl('#whDetail [data-close]'); await sleep(100);
     ok(await page.evaluate(() => document.getElementById('whDetail').classList.contains('none')), `${devName}: Close shuts the item panel`); }
-  for (const t of ['collection', 'ledger']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
-  // save backup: copy, then load it back (validation, confirm step)
+  for (const t of ['collection', 'logs']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
+  // save backup (Settings since slice 3): copy, then load it back (validation, confirm step)
+  await E(`go('settings')`); await sleep(150);
   await page.locator('#svCopy').scrollIntoViewIfNeeded(); await tapEl('#svCopy'); await sleep(200);
   const saveTxt = await page.evaluate(() => document.getElementById('svOut').value);
   ok(/^OUTPOST-SAVE:/.test(saveTxt) && saveTxt.length > 500, `${devName}: Copy save shows the save as text (${saveTxt.length} chars): ${await page.evaluate(() => document.getElementById('svMsg').textContent)}`);
@@ -273,7 +274,7 @@ async function run(devName) {
   const L = await E('B.L'), ft = 16, [bx, by] = await toScreen(40 + ft * 560 / L, 120);
   await tapXY(bx, by); await sleep(80);
   const pk1 = await page.evaluate(() => document.getElementById('mgPeek').textContent);
-  ok((await E('B.cuts.length')) === 0 && /At 16 ft/.test(pk1) && /(log|pulp)/.test(pk1) && /Tap again/.test(pk1), `${devName}: first tap previews the cut only: ${pk1}`);
+  ok((await E('B.cuts.length')) === 0 && /At 16 ft/.test(pk1) && /(log|firewood)/.test(pk1) && /Tap again/.test(pk1), `${devName}: first tap previews the cut only: ${pk1}`);
   await shot('mg-buck-preview');
   const [bx2] = await toScreen(40 + 28 * 560 / L, 120);
   await tapXY(bx2, by); await sleep(80);

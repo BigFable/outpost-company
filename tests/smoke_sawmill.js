@@ -40,7 +40,7 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  [...$('whTabs').querySelectorAll('button')].find(b=>b.dataset.t==='collection').click();
  ok(d.querySelectorAll('#whGrid button.itile').length===8 && d.querySelectorAll('#whGrid .itile.unknown').length===6 && d.querySelector('#whGrid [data-it="logging.burl"] .icnt').textContent==='3','collection: every item, 6 silhouettes, found ones with their lifetime count');
  d.querySelector('#whGrid .itile.unknown').click(); ok(/Not found yet/.test($('whDetail').textContent) && /Turns up in/.test($('whDetail').textContent),'a silhouette tells where it turns up');
- [...$('whTabs').querySelectorAll('button')].find(b=>b.dataset.t==='ledger').click(); ok(/Item sales/.test($('whBody').textContent),'ledger tab');
+ $('lsCash').click(); ok(E('S.ui.screen')==='logging' && E('S.ui.logTab')==='log' && /Item sales/.test($('ledgerFacts').textContent),'the ledger (Logging › Log) opens from the cash in the top bar');
  E(`go('logging')`);
  // ---------- 2. Prime timber and finds (separate seeded stream: no Math.random draws)
  E(`S.orders.autoFill=false; S.vis='pine'; F={sp:'pine', out:{k:'perfect', m:1.25, text:''}, phase:'fall'}; MG.kind='fell'`);

@@ -624,6 +624,27 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   .tray .ti button{min-height:44px}
 }
 @media (max-width:520px){#sales{grid-template-columns:minmax(0,1fr)}}
+/* Settings (slice 3): one row per choice, a segmented switch on the right */
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 0;flex-wrap:wrap}
+.setrow+.setrow{border-top:1px dotted var(--line)}
+.setrow .info{flex:1 1 220px;min-width:0}
+.setrow .info b{font-weight:600}
+.setrow .info p{margin:1px 0 0;font-size:.82rem;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--bg);flex:none}
+.seg button{border:0;background:transparent;padding:6px 14px;min-height:36px;font-size:.84rem;font-weight:600;color:var(--muted);border-radius:0}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+@media (pointer:coarse){.seg button{min-height:44px}}
+.setp .cbtns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.setp .confirm{border:1px solid var(--bad);border-radius:4px;padding:10px 12px;margin-top:8px;font-size:.84rem}
+.setp .mbtn{min-height:40px}
+@media (pointer:coarse){.setp .mbtn{min-height:44px}}
+/* Almanac guide: the tier ladder */
+.ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0}
+.ladder>div{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--bg);min-width:0}
+.ladder p{margin:0;font-size:.8rem;color:var(--muted)}
+#almBody{margin-top:10px}
+#almBody .igrid{padding-left:0;padding-right:0}
 /* ---------- UI rework slice 3: item tiles on the one tier ladder (docs/design/resource-names.md §1: Common grey 0 diamonds,
    Good green 1, Fine blue 2, Prime yellow 3, Rare orange 4; firewood dashed, none), the Warehouse grid and its item panel
    (docs/design/inventory-revamp.md). Tier is never color alone: diamond count, frame weight and the written word. */
@@ -775,7 +796,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
       <button type="button" id="lsOrd" data-go="orders" title="Charter board"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
       <button type="button" id="navBoard" data-go="board" title="Company board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
       <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
-      <button type="button" id="navSet" data-go="settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Save backup, new company</span></button>
+      <button type="button" id="navSet" data-go="settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Theme, save backup, new company</span></button>
     </nav>
     <p class="sidefoot">Saves on this device. <span id="saved"></span></p>
   </aside>
@@ -920,6 +941,11 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
             <div class="group"><h3>Close camp</h3><p class="meta">Load the ship and start a new outpost. You earn Charter Shares to spend on lasting help.<br>You lose: cash, crews, lots, orders and perks.<br>You keep: achievements, reputation and improvements.</p><div class="closebox" id="closeBox"></div></div>
           </section>
 
+          <section class="panel" id="ledgerPanel">
+            <p class="eyebrow">Ledger</p>
+            <h2>Money and shares</h2>
+            <div id="ledgerFacts"></div>
+          </section>
           <section class="panel ledger">
             <p class="eyebrow">Camp log</p>
             <ol id="ledger"></ol>
@@ -996,8 +1022,14 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
     <section class="screen" id="scrAlm" data-screen="almanac" aria-labelledby="almTitle" hidden>
       <section class="panel">
         <p class="eyebrow">Almanac</p>
-        <h2 id="almTitle">Weather cards</h2>
-        <div id="almBody"></div>
+        <h2 id="almTitle">The coast’s almanac</h2>
+        <p class="meta">What you have seen on the Fogbound Coast: the weather, the things you found, and how the company counts wood.</p>
+        <div class="ctabs" id="almTabs" role="tablist" aria-label="Almanac">
+          <button type="button" role="tab" data-at="weather" id="atWeather" aria-controls="almBody">Weather<span class="c" id="almNW"></span></button>
+          <button type="button" role="tab" data-at="finds" id="atFinds" aria-controls="almBody">Finds<span class="c" id="almNF"></span></button>
+          <button type="button" role="tab" data-at="guide" id="atGuide" aria-controls="almBody">Guide</button>
+        </div>
+        <div id="almBody" role="tabpanel"></div>
       </section>
     </section>
     <section class="screen" id="scrShop" data-screen="shop" aria-label="Shop" hidden>
@@ -1049,13 +1081,22 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
       </div>
     </section>
     <section class="screen" id="scrSet" data-screen="settings" aria-label="Settings" hidden>
-      <section class="panel">
+      <section class="panel setp">
         <p class="eyebrow">Settings</p>
-        <h2>Your company</h2>
+        <h2>How the game looks</h2>
+        <div class="setrow"><div class="info"><b id="setThemeL">Theme</b><p>Auto follows your device.</p></div><div class="seg" role="group" aria-labelledby="setThemeL" id="setTheme"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+        <div class="setrow"><div class="info"><b id="setNumL">Numbers</b><p id="setNumP">Short: 12.3K. Full: 12,345.</p></div><div class="seg" role="group" aria-labelledby="setNumL" id="setNum"><button type="button" data-v="short">Short</button><button type="button" data-v="full">Full</button></div></div>
+        <div class="setrow"><div class="info"><b id="setToastL">Pop-up news</b><p>Important: first finds, orders, unlocks and goals; not every find. The bell always lists what needs you.</p></div><div class="seg" role="group" aria-labelledby="setToastL" id="setToast"><button type="button" data-v="all">All</button><button type="button" data-v="important">Important</button><button type="button" data-v="none">None</button></div></div>
+      </section>
+      <section class="panel setp">
+        <p class="eyebrow">Your company</p>
+        <h2>Save and start over</h2>
         <p class="meta">The game saves on this device every few seconds. Save backup copies it as text you can keep or load on another device.</p>
-        <div class="foot">
-          <span class="rbtns" style="flex-direction:row;flex-wrap:wrap;gap:6px 14px"><button class="linkbtn" id="saveBtn" type="button">Save backup</button><button class="linkbtn" id="reset" type="button">New company</button></span>
-        </div>
+        <div id="setSave"></div>
+        <div class="group" id="newCo"><h3>New company</h3><p class="meta">Start again from the first outpost. This erases this company on this device.</p>
+          <div class="cbtns"><button class="mbtn" id="reset" type="button">New company…</button></div>
+          <div class="confirm" id="resetBox" hidden role="alert"><b>Erase this company?</b> Every camp, item, share and achievement goes. Copy a save backup first if you might want it.
+            <div class="cbtns"><button class="mbtn danger" id="resetYes" type="button">Erase company</button><button class="mbtn" id="resetNo" type="button">Keep playing</button></div></div></div>
       </section>
     </section>
   </main>
@@ -7334,7 +7375,7 @@ function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
 // stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees';
 // Trees by default, owner request 2026-10-26; a switch lasts for the session: every load opens on Trees again)
-function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'all', whSort:'default', whFilter:null, logTab:'work', millTab:'mill'}; }
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'all', whSort:'default', whFilter:null, logTab:'work', millTab:'mill', almTab:'weather', theme:'auto', numFmt:'short', toastLvl:'all'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -7355,6 +7396,8 @@ const FMT_UNITS = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
 function fmt(n){
   if (!isFinite(n)) return '0';
   if (Math.abs(n) < 10){ const r = Math.round(n*10)/10; if (Math.abs(r) < 10) return r.toString(); }
+  // Settings › Numbers: Full writes whole numbers out (12,345) up to a trillion, then falls back to short
+  if (S && S.ui && S.ui.numFmt === 'full' && Math.abs(n) < 1e12) return Math.round(n).toLocaleString('en-US');
   if (Math.abs(Math.round(n)) < 1000) return Math.round(n).toString();
   const fix = v => { const a = Math.abs(v), d = a < 10 ? 2 : a < 100 ? 1 : 0; let t = v.toFixed(d);
     if (d && Math.abs(+t) >= (d === 2 ? 10 : 100)) t = v.toFixed(d - 1); return t; };
@@ -8490,6 +8533,8 @@ const toastQ = [];
 const sheetOpen = () => !!document.querySelector('.modal:not([hidden])');
 const toastMax = () => mq('(max-width:520px)') ? 2 : 4;
 function toast(t){
+  const lvl = S && S.ui ? S.ui.toastLvl : 'all';
+  if (lvl === 'none' || (lvl === 'important' && t.minor)) return;
   if (sheetOpen()){ toastQ.push(t); if (toastQ.length > 8) toastQ.shift(); return; }
   showToast(t);
 }
@@ -9730,6 +9775,11 @@ function normalize(){
   if (!whTabOk(S.ui.whTab)) S.ui.whTab = 'all';
   if (!WH_SORTS.some(x => x[0] === S.ui.whSort)) S.ui.whSort = 'default';
   if (!WH_FILTERS.some(x => x[0] === S.ui.whFilter)) S.ui.whFilter = null;
+  // the Almanac's tabs and the Settings screen (slice 3)
+  if (!ALM_TABS.includes(S.ui.almTab)) S.ui.almTab = 'weather';
+  if (!['auto', 'light', 'dark'].includes(S.ui.theme)) S.ui.theme = 'auto';
+  if (!['short', 'full'].includes(S.ui.numFmt)) S.ui.numFmt = 'short';
+  if (!['all', 'important', 'none'].includes(S.ui.toastLvl)) S.ui.toastLvl = 'all';
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
 }
@@ -9790,6 +9840,7 @@ function renderRun(){
     list('chPerks', Object.keys(pc).map(id => id + pc[id]).join(), Object.keys(pc).map(id => { const p = PMAP[id];
       return `<span class="chipl r-${p.r}" title="${p.desc.replace(/"/g, '&quot;')}">${p.name}${pc[id] > 1 ? ` ×${pc[id]}` : ''}</span>`; }).join('')); }
   $('runTitle').textContent = `Outpost ${r.n}`;
+  if (S.ui.screen === 'logging' && campTab('logging') === 'log') list('ledgerFacts', ledgerFactsHtml(), ledgerFactsHtml());
   $('runMeta').textContent = (r.mods.length ? `Extra rules: ${r.mods.map(id => MODS.find(m => m.id === id).name).join(', ')} (shares ×${modMult().toFixed(2)}). ` : 'No extra rules. ') +
     'Play mini-games to earn perks. You also earn one for each new era, every 5 goals and every 5 orders filled.';
   const eT = i => r.eraT[i] != null ? mins(r.eraT[i]) : '—';
@@ -9859,7 +9910,7 @@ function addItem(id, qty, quiet){
   S.bank[id] = bankN(id) + qty; S.newCount = (S.newCount || 0) + qty; S.unseen[id] = (S.unseen[id] || 0) + qty;
   const d = IDEF(id), f = S.found[id];
   if (!f){ S.found[id] = {first:`${season()} ${S.year}`, total:qty}; note(`New find: ${d.name}.`); toast({label:'New find', name:d.name, line:d.desc}); }
-  else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime!' : d.category === 'mill' ? 'Made' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc}); }
+  else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime!' : d.category === 'mill' ? 'Made' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc, minor:true}); }
   postOrders(); autoFill();
 }
 // Prime from the felling game: a perfect fall stamps by species; Spar man also stamps a good fall on a conifer (1 log). Domino falls add none.
@@ -10425,6 +10476,7 @@ function renderFrame(){
   document.querySelectorAll('.screen[data-screen]').forEach(el => { const on = el.dataset.screen === sc; if (el.hidden === on) el.hidden = !on; });
   $('logView').hidden = sc !== 'logging'; $('millView').hidden = !mill;
   if (sc === 'almanac') renderAlm();
+  if (sc === 'settings') renderSettings();
   document.querySelectorAll('.nav [data-go]').forEach(b => { const cur = b.dataset.go === sc; if (cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   const sm = document.querySelector('.brand h1 small'), st = mill ? 'Sawmill · Whistle Pond · 1890' : 'Logging · Fogbound Coast · 1890'; if (sm && sm.textContent !== st) sm.textContent = st;
   // camps: outpost number and the close-camp bar
@@ -10528,7 +10580,7 @@ const itemPic = id => tileHtml(IDEF(id), {size:'sm', deco:true});
 // and lock, the collection with silhouettes and where each item turns up, the log pond and the lumber yard.
 // S.ui.whTab / whSort / whFilter are remembered; the picked item (whSel) is not.
 const whEl = $('wh');
-const WH_TABS = [['all','All'], ['prime','Prime'], ['find','Finds'], ['mill','Boards'], ['logs','Logs'], ['collection','Collection'], ['ledger','Ledger']];
+const WH_TABS = [['all','All'], ['prime','Prime'], ['find','Finds'], ['mill','Boards'], ['logs','Logs'], ['collection','Collection']];
 const WH_GROUPS = [['prime','Prime'], ['find','Finds'], ['mill','Boards']];
 const WH_SORTS = [['default','Group'], ['name','Name'], ['count','Count'], ['value','Value'], ['tier','Tier']];
 const WH_FILTERS = [['needed','Needed'], ['new','New'], ['spare','Spare'], ['locked','Locked']];
@@ -10538,6 +10590,7 @@ const whTabOk = t => WH_TABS.some(x => x[0] === t);
 let whSel = null, whArmed = null;
 function openWh(tab, sel){
   if (tab === 'almanac'){ go('almanac'); return; }
+  if (tab === 'ledger'){ openLedger(); return; }
   tab = WH_OLD_TAB[tab] || tab;
   if (tab && whTabOk(tab)){ if (tab !== S.ui.whTab){ whSel = null; whArmed = null; } S.ui.whTab = tab; }
   if (sel !== undefined) whPick(sel, true);
@@ -10559,7 +10612,7 @@ const bulkDef = id => Core.BULK.find(b => b.id === id);
 const bulkAmt = b => b.id === 'company.logs' ? S.bulk.logs : S.camps.sawmill ? (S.camps.sawmill.yard[b.id.split('.').pop()] || 0) : 0;
 const bulkCard = b => `<button type="button" class="bcard" data-it="${b.id}" aria-label="${escA(`${b.name}, ${bf(bulkAmt(b))}`)}">${tileHtml(b, {deco:true})}<span><b>${b.name}</b><span class="num">${bf(bulkAmt(b))}</span><small>${b.desc}</small></span></button>`;
 const whCount = k => k === 'all' ? fmt(bankTotal()) : k === 'collection' ? `${Core.ITEMS.filter(i => S.found[i.id]).length}/${Core.ITEMS.length}`
-  : k === 'logs' ? fmt(S.bulk.logs) : k === 'ledger' ? '' : fmt(Core.ITEMS.filter(i => i.category === k).reduce((a, i) => a + bankN(i.id), 0));
+  : k === 'logs' ? fmt(S.bulk.logs) : fmt(Core.ITEMS.filter(i => i.category === k).reduce((a, i) => a + bankN(i.id), 0));
 function whItems(tab){
   let xs = Core.ITEMS.filter(i => bankN(i.id) > 0 && (tab === 'all' || i.category === tab));
   const f = S.ui.whFilter;
@@ -10624,15 +10677,17 @@ function whDetailHtml(){
     `<div class="dsec"><h4>Comes from</h4><ul><li><span>${d.from}</span></li></ul></div>` +
     (uses.length ? `<div class="dsec"><h4>Used for</h4><ul><li><span>${uses.join(' · ')}</span></li></ul></div>` : '');
 }
-function whLedgerHtml(){
+// the ledger (slice 3: on the Logging Log tab, docs/design/ui-rework.md §6): both camps' money and shares
+function ledgerFactsHtml(){
   const m = S.camps.sawmill, bon = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct), row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
   return `<div class="group"><h3>Logging · outpost ${S.run.n}</h3><div class="facts">${row('Cash', money(S.cash))}${row('Earned', money(S.run.earned))}${row('Item sales', money(S.run.itemSales || 0))}` +
     `${row('Shares to spend', fmt(S.meta.legacy))}${row('Shares earned in all', fmt(S.meta.total))}${row('Special-order bonus', `+${Math.round(bon*100)}% of ${Math.round(Core.ORDER_BONUS_CAP*100)}%`)}` +
     `${row('Close now for', canClose() ? fmt(legacyNow()) + ' shares' : '—')}${S.run.toMill ? row('Logs sent to the mill', bf(S.run.toMill)) : ''}</div></div>` +
     (m ? `<div class="group"><h3>Sawmill · mill run ${m.n}</h3><div class="facts">${row('Cash', money(m.cash))}${row('Earned', money(m.earned))}${row('Spent on logs', money(m.logCost || 0))}` +
       `${row('Sawmill shares to spend', fmt(S.shares.sawmill.legacy))}${row('Earned in all', fmt(S.shares.sawmill.total))}</div></div>` : '') +
-    '<p class="meta">Each camp has its own cash. Logs and items move between camps; cash does not.</p>' + saveIoHtml();
+    '<p class="meta">Each camp has its own cash. Logs and items move between camps; cash does not. Save backup is in Settings.</p>';
 }
+const openLedger = () => go('logging', () => reveal('ledgerPanel'), 'log');
 // pick an item for the panel (null closes it); opening an item clears its new dot
 function whPick(id, quiet){
   whSel = id || null; whArmed = null;
@@ -10641,7 +10696,7 @@ function whPick(id, quiet){
 }
 function renderWh(){
   if (!whTabOk(S.ui.whTab)) S.ui.whTab = 'all';
-  const tab = S.ui.whTab, led = tab === 'ledger';
+  const tab = S.ui.whTab;
   if (whSel && !(Core.itemDef(whSel) || bulkDef(whSel))) whSel = null;
   const total = bankTotal(), news = Object.keys(S.unseen).filter(id => S.unseen[id] > 0 && bankN(id) > 0).length;
   const sub = `${fmt(total)} ${total === 1 ? 'item' : 'items'}${news ? ` · ${news} new` : ''}.`;
@@ -10650,12 +10705,11 @@ function renderWh(){
   sb.disabled = !(sv > 0); if (sb.textContent !== st) sb.textContent = st;
   list('whTabs', tab + '|' + WH_TABS.map(([k]) => whCount(k)).join(), WH_TABS.map(([k, l]) => { const c = whCount(k);
     return `<button type="button" role="tab" data-t="${k}" aria-selected="${tab === k}" tabindex="${tab === k ? 0 : -1}" aria-controls="whBody">${l}${c ? `<span class="c">${c}</span>` : ''}</button>`; }).join(''));
-  const tools = !['collection', 'logs', 'ledger'].includes(tab);
+  const tools = !['collection', 'logs'].includes(tab);
   list('whTools', tools ? `${S.ui.whSort}|${S.ui.whFilter}` : '-', tools ? `<label>Sort <select id="whSort">${WH_SORTS.map(([k, l]) => `<option value="${k}"${S.ui.whSort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
     `<div class="fchips" role="group" aria-label="Show only"><span>Show</span>${WH_FILTERS.map(([k, l]) => `<button type="button" data-f="${k}" aria-pressed="${S.ui.whFilter === k}">${l}</button>`).join('')}</div>` : '');
   $('whTools').hidden = !tools;
-  const det = $('whDetail'); det.hidden = led;
-  if (led){ list('whGrid', 'ledger', whLedgerHtml(), bindSaveIo); return; }
+  const det = $('whDetail');
   // keys hold only what the view shows, so the grid and the panel are not rebuilt under the player's finger while the camps run
   const bulkKey = b => b.id + bf(bulkAmt(b));
   const gk = [tab, S.ui.whSort, S.ui.whFilter, JSON.stringify(S.bank), S.locks.join(), JSON.stringify(S.unseen), Object.keys(S.found).map(k => k + S.found[k].total).join(),
@@ -10704,10 +10758,55 @@ function bindWh(){
     if (all[j]){ e.preventDefault(); all[j].focus(); }
   });
 }
-// the Almanac screen (slice 2: its own screen, no longer a warehouse tab): every season's weather cards, seen and unseen
+// Settings (slice 3): theme, number format, pop-up news; save backup and New company sit below them
+function applyTheme(){ const v = S.ui.theme, el = document.documentElement; if (v === 'light' || v === 'dark'){ if (el.getAttribute('data-theme') !== v) el.setAttribute('data-theme', v); } else el.removeAttribute('data-theme'); }
+const SET_KEYS = {setTheme:'theme', setNum:'numFmt', setToast:'toastLvl'};
+function renderSettings(){
+  for (const [id, k] of Object.entries(SET_KEYS)) $(id).querySelectorAll('[data-v]').forEach(b => { const on = String(b.dataset.v === S.ui[k]); if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on); });
+  const np = `Short: ${S.ui.numFmt === 'full' ? '12.3K' : fmt(12345)}. Full: 12,345.`; if ($('setNumP').textContent !== np) $('setNumP').textContent = np;
+}
+function bindSettings(){
+  for (const [id, k] of Object.entries(SET_KEYS)) $(id).querySelectorAll('[data-v]').forEach(b => b.onclick = () => { S.ui[k] = b.dataset.v; applyTheme(); readColors(); render(true); save(); b.focus(); });
+  $('setSave').innerHTML = saveIoHtml(); bindSaveIo($('setSave'));
+}
+// the Almanac screen: weather cards (seen and unseen), the collection, and a short guide to wood and the tier ladder
+const ALM_TABS = ['weather', 'finds', 'guide'];
+const TIER_GUIDE = [['common', 'Everyday stuff', 'logging.burl'], ['good', 'Better than most', 'logging.survey_marker'], ['fine', 'Top quality from normal work', 'sawmill.lumber.clear'],
+  ['prime', 'Stamped for skill: the best cut, the best fall', 'logging.prime_spar'], ['rare', 'Luck: few ever turn up', 'logging.fog_glass']];
+function almGuideHtml(){
+  return `<div class="group"><h3>Wood</h3><p class="meta">Wood is measured in board feet: a board 1 ft long, 1 ft wide and 1 in thick. 1 wood is 1 board foot.</p></div>` +
+    `<div class="group"><h3>Tiers</h3><p class="meta">Logs, boards and items share one ladder. More diamonds, harder to get. The panel always shows the price.</p><div class="ladder">` +
+    TIER_GUIDE.map(([t, line, id]) => `<div>${tileHtml(Core.itemDef(id) || bulkDef(id), {deco:true, size:'sm'})}<span>${tierWord(t)}<p>${line}</p></span></div>`).join('') +
+    `<div><span>${tierWord('scrap')}<p>Below the ladder: rot and short ends, sold on the spot</p></span></div></div>` +
+    '<p class="meta">Logs: Fine, Good and Common, or Prime when a great cut stamps them. Boards: Fine, Good and Common. Perk cards keep their own labels (Common, Rare, Legendary, Curse).</p></div>';
+}
+function almFindsHtml(){
+  const found = Core.ITEMS.filter(i => S.found[i.id]).length;
+  return `<p class="meta">${found} of ${Core.ITEMS.length} found. Kept forever. Tap one to see it in the Warehouse.</p><div class="igrid">` +
+    WH_GROUPS.map(([k, label]) => { const xs = Core.ITEMS.filter(i => i.category === k); if (!xs.length) return ''; const got = xs.filter(i => S.found[i.id]).length;
+      return `<div class="igh"><span>${label}</span><span>${got} of ${xs.length}</span></div>` +
+        xs.map(i => S.found[i.id] ? tileHtml(i, {button:true, count:S.found[i.id].total}) : tileHtml(i, {button:true, unknown:true})).join(''); }).join('') + '</div>';
+}
+function bindAlm(){
+  const tabs = $('almTabs');
+  tabs.addEventListener('click', e => { const b = e.target.closest('[data-at]'); if (!b) return; S.ui.almTab = b.dataset.at; renderAlm(); b.focus(); });
+  tabs.addEventListener('keydown', e => { const b = e.target.closest('[data-at]'); if (!b) return; const i = ALM_TABS.indexOf(b.dataset.at), k = e.key;
+    const j = k === 'ArrowRight' ? (i + 1) % ALM_TABS.length : k === 'ArrowLeft' ? (i + ALM_TABS.length - 1) % ALM_TABS.length : k === 'Home' ? 0 : k === 'End' ? ALM_TABS.length - 1 : -1;
+    if (j < 0) return; e.preventDefault(); S.ui.almTab = ALM_TABS[j]; renderAlm(); const f = tabs.querySelector(`[data-at="${ALM_TABS[j]}"]`); if (f) f.focus(); });
+  $('almBody').addEventListener('click', e => { const b = e.target.closest('[data-it]'); if (b) openWh('collection', b.dataset.it); });
+}
 function renderAlm(){
+  const tab = ALM_TABS.includes(S.ui.almTab) ? S.ui.almTab : 'weather';
+  $('almTabs').querySelectorAll('[data-at]').forEach(b => { const on = b.dataset.at === tab; if (b.getAttribute('aria-selected') !== String(on)){ b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; } });
+  const nw = `${Core.SEASON_EVENTS.filter(e => S.weather.seen[e.id]).length}/${Core.SEASON_EVENTS.length}`, nf = `${Core.ITEMS.filter(i => S.found[i.id]).length}/${Core.ITEMS.length}`;
+  if ($('almNW').textContent !== nw) $('almNW').textContent = nw; if ($('almNF').textContent !== nf) $('almNF').textContent = nf;
+  if (tab === 'finds'){ list('almBody', 'finds|' + Object.keys(S.found).map(k => k + S.found[k].total).join(), almFindsHtml()); return; }
+  if (tab === 'guide'){ list('almBody', 'guide', almGuideHtml()); return; }
+  renderAlmWeather();
+}
+function renderAlmWeather(){
   const W = S.weather, seen = Core.SEASON_EVENTS.filter(e => W.seen[e.id]).length, tone = {none:'Calm', good:'Good', neutral:'Mixed', bad:'Bad'};
-  const key = JSON.stringify(W.seen) + '|' + (meta('almanac') ? W.next : '') + '|' + !!meta('signals');
+  const key = 'weather|' + JSON.stringify(W.seen) + '|' + (meta('almanac') ? W.next : '') + '|' + !!meta('signals');
   list('almBody', key, `<p class="meta">${seen} of ${Core.SEASON_EVENTS.length} cards seen. Each season brings one, the same for every camp.${meta('almanac') && W.next ? ` Next season: ${Core.eventDef(W.next).name}.` : ''}${meta('signals') ? ' Storm signals: bad weather 30% rarer.' : ''}</p>` +
     SEASONS.map(sn => `<div class="group"><h3>${sn}</h3>` + Core.SEASON_EVENTS.filter(e => e.season === sn).map(e => { const f = W.seen[e.id];
       return f ? `<div class="witem"><span class="cnt">${fmt(f.n || 1)}</span><div class="info"><b>${e.name}</b> <span class="chipl">${tone[e.tone]}</span><p>${e.card}</p><p>${e.fx}.${e.counter ? ` Fix: ${e.counter}.` : ''}${e.silver ? ` Upside: ${e.silver}.` : ''} First seen: ${f.first}.</p></div></div>`
@@ -10759,7 +10858,7 @@ function bindSaveIo(box){
       msg(`Save found: Logging outpost ${d.run && d.run.n || 1}, ${money(d.cash)} cash. This replaces your current company. Press again to load it.`); return; }
     disarm(); buckKeep = null;
     S = Object.assign(fresh(), d); normalize(); boot(); save();
-    S.ui.whTab = 'ledger'; renderWh(); msg('Save loaded.', 'good');
+    go('settings'); msg('Save loaded.', 'good');
   };
 }
 // the one-time story card
@@ -10840,7 +10939,7 @@ function renderMill(){
     : '<p class="empty">No mill runs closed yet.</p>');
 }
 function bindCompany(){
-  $('lsCash').onclick = () => openWh('ledger'); $('lsShares').onclick = () => go('board');
+  $('lsCash').onclick = openLedger; $('lsShares').onclick = () => go('board');
   document.querySelectorAll('.nav [data-go]').forEach(b => b.onclick = () => { go(b.dataset.go); if (!app.classList.contains('drawer')) b.focus(); });
   $('lsWh').onclick = () => openWh(S.ui.whTab);
   // Camp tab: first tap goes to your camp; a second tap (already on a camp) opens the camp picker
@@ -10853,7 +10952,7 @@ function bindCompany(){
   document.addEventListener('click', e => { const tr = $('bellTray'); if (!tr.hidden && !tr.contains(e.target) && !$('bellBtn').contains(e.target)) toggleBell(false);
     const cp = $('campPick'); if (!cp.hidden && !cp.contains(e.target) && !$('btCamp').contains(e.target)) toggleCampPick(false); });
   // camp tabs: tap, or arrow keys along the strip
-  document.querySelectorAll('.ctabs').forEach(strip => { if (strip.id === 'whTabs') return;
+  document.querySelectorAll('.ctabs').forEach(strip => { if (strip.id === 'whTabs' || strip.id === 'almTabs') return;
     strip.querySelectorAll('[data-t]').forEach(b => b.onclick = () => setTab(b.dataset.camp, b.dataset.t));
     strip.addEventListener('keydown', e => { const b = e.target.closest && e.target.closest('[data-t]'); if (!b) return;
       const ts = CAMP_TABS[b.dataset.camp], i = ts.indexOf(b.dataset.t), k = e.key;
@@ -10868,7 +10967,7 @@ function bindCompany(){
   $('mCove').onclick = () => { const m = S.camps.sawmill; if (m){ m.buyCove = !m.buyCove; render(); } };
   $('mBundle').onclick = () => { const m = S.camps.sawmill; if (m){ m.bundle = !m.bundle; render(); } };
   $('mDraftBtn').onclick = () => openDraft('sawmill');
-  bindWh();
+  bindWh(); bindAlm();
   $('stGo').onclick = () => closeStory(true); $('stLater').onclick = () => closeStory(false);
 }
 
@@ -10891,8 +10990,8 @@ function load(){
 function brokenText(){ try { return localStorage.getItem(BROKEN_KEY) || ''; } catch(e){ return ''; } }
 function tellBroken(){
   if (!brokenSave) return;
-  note('Your saved company could not be read, so a new one started. The old save text is kept: open Save backup in the ledger to copy it.');
-  toast({label:'Save could not be read', name:'A new company started', line:'The old save is kept. Open Save backup in the ledger.'});
+  note('Your saved company could not be read, so a new one started. The old save text is kept: open Save backup in Settings to copy it.');
+  toast({label:'Save could not be read', name:'A new company started', line:'The old save is kept. Open Save backup in Settings.'});
 }
 // offline catch-up: on load (time since the last save) and whenever the page wakes after a long gap (QA-03: a hidden or throttled tab,
 // a sleeping machine, a frozen iframe). The same capped simulation either way; time past the cap is lost and the player is told.
@@ -10922,15 +11021,12 @@ function offline(sec){
   if (S.felled > f0 || S.cash !== c0) note(`While away (${capped ? mins(raw) + ', counted ' + mins(OFFLINE_CAP) : mins(away)}): ${fmt(S.felled-f0)} trees felled, cash ${S.cash >= c0 ? 'up' : 'down'} ${money(Math.abs(S.cash-c0))}.`);
   else if (capped) note(`Away ${mins(raw)}; only ${mins(OFFLINE_CAP)} counted.`);
 }
-const reset = $('reset'); let armed = null;
-reset.onclick = () => {
-  if (!armed){ reset.textContent = 'Confirm erase'; reset.classList.add('armed');
-    armed = setTimeout(() => { armed = null; reset.textContent = 'New company'; reset.classList.remove('armed'); }, 3000); return; }
-  clearTimeout(armed); armed = null; reset.textContent = 'New company'; reset.classList.remove('armed');
-  S = fresh(); normalize(); boot(); save();
-};
+// New company (Settings): a confirm on the page, never a dialog
+function armReset(on){ $('resetBox').hidden = !on; $('reset').setAttribute('aria-expanded', String(!!on)); const f = $(on ? 'resetNo' : 'reset'); if (f) f.focus(); }
+$('reset').onclick = () => armReset(true);
+$('resetNo').onclick = () => armReset(false);
+$('resetYes').onclick = () => { $('resetBox').hidden = true; S = fresh(); normalize(); boot(); save(); go('logging'); };
 $('road').onclick = buildRoad;
-$('saveBtn').onclick = () => { openWh('ledger'); const b = $('svCopy'); if (b) b.scrollIntoView({block:'nearest'}); };
 
 function boot(){
   if (!S.forSale.length) refreshSales();
@@ -10941,7 +11037,7 @@ function boot(){
   if (!S.hireOffer && !hireActive()) S.hireOffer = genHire();
   if (!S.log.length) note('Landed on the Fogbound Coast with an axe and no crew. Forty trees stand by the cove. Chop, buck, skid and haul by hand to earn your first dollars.');
   setSite(); if (S.hp == null) newTree();
-  renderLedger(); render(true);
+  applyTheme(); renderLedger(); render(true);
 }
 let loop = null;
 function start(data){
@@ -10949,7 +11045,7 @@ function start(data){
   if (hot) S = Object.assign(fresh(), data.S); else load();
   normalize();
   if (!hot) offline();
-  buildChain(); buildEquipment(); bindRogue(); boot(); checkAch(true); maybeStory(); tellBroken();
+  buildChain(); buildEquipment(); bindRogue(); bindSettings(); boot(); checkAch(true); maybeStory(); tellBroken();
   // real time is measured two ways: performance.now can stand still while a machine sleeps, Date.now keeps going
   let prev = performance.now(), prevWall = Date.now(), sinceSave = 0, sinceRender = 0;
   const pump = () => {

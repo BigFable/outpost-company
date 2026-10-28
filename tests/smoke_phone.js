@@ -22,8 +22,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  $('dClose').click(); await sleep(0);
  ok(/Queued/.test($('toasts').textContent),'the toast shows once the sheet closes');
  // save backup
- E(`S.cash = 4321`); E(`openWh('ledger')`);
- ok(!!$('svCopy') && !!$('svIn') && !!$('svLoad'),'save backup in the warehouse ledger');
+ E(`S.cash = 4321`); E(`go('settings')`);
+ ok(!!$('svCopy') && !!$('svIn') && !!$('svLoad'),'save backup on the Settings screen');
  const txt=E('saveText()'); ok(/^OUTPOST-SAVE:/.test(txt),'save as text');
  const bad=s=>{ try { E(`readSaveText(${JSON.stringify(s)})`); return ''; } catch(e){ return e.message; } };
  ok(/not an Outpost Company save/.test(bad('hello')) && /damaged/.test(bad(txt.slice(0,80))) && /Paste a save/.test(bad('  ')) && /not an Outpost/.test(bad('{"v":1}')),'junk, cut-short, empty and wrong-version saves are refused with a message');

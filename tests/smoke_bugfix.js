@@ -30,7 +30,7 @@ const {mk,sleep,ok,fails}=require('./repro/_h');
   const g=await mk({'timberline-v2':bad},{wait:400}); const {E,w,d}=g;
   ok(w.localStorage.getItem('timberline-v2-broken')===bad,'the unreadable text is kept under timberline-v2-broken');
   ok(E('S.log.some(l=>/could not be read/.test(l.text))'),'the activity log tells the player');
-  E("openWh('ledger')"); const b=d.getElementById('svBroken');
+  E("go('settings')"); const b=d.getElementById('svBroken');
   ok(!!b,'Save backup offers "Show the damaged save"');
   if(b){ b.click(); ok(d.getElementById('svOut').value===bad && !d.getElementById('svOut').hidden,'the button shows the damaged text for copying'); }
   E('save()'); ok(w.localStorage.getItem('timberline-v2-broken')===bad,'autosave does not touch the backup');

@@ -22,7 +22,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(tile('logging.prime_spar').classList.contains('t-prime') && tile('logging.prime_spar').querySelectorAll('.idia i').length===3 && tile('logging.fog_glass').querySelectorAll('.idia i').length===4 && !tile('logging.burl').querySelector('.idia'),'tiles carry the tier ladder: Prime 3 diamonds, Rare 4, Common none');
  ok(/Prime tier, 6 held/.test(tile('logging.prime_spar').getAttribute('aria-label')) && tile('logging.burl').querySelector('.icnt').textContent==='5' && !!tile('logging.burl').querySelector('svg'),'each tile has a picture, a count and a label that names the tier');
  ok(!!tile('logging.burl').querySelector('.inew') && /4 new/.test($('whSub').textContent),'new items have a dot and the header counts them');
- ok([...$('whTabs').querySelectorAll('[role=tab]')].map(b=>b.dataset.t).join()==='all,prime,find,mill,logs,collection,ledger' && /Boards/.test($('whTabs').textContent),'tabs: All, Prime, Finds, Boards, Logs, Collection (Ledger until it moves)');
+ ok([...$('whTabs').querySelectorAll('[role=tab]')].map(b=>b.dataset.t).join()==='all,prime,find,mill,logs,collection' && /Boards/.test($('whTabs').textContent),'tabs: All, Prime, Finds, Boards, Logs, Collection (the Ledger moved to Logging › Log)');
  ok(/Pick an item|Tap an item/.test($('whDetail').textContent) && $('whDetail').classList.contains('none'),'no item picked: the panel shows a hint (and the phone sheet stays closed)');
  tile('logging.burl').click();
  ok(!$('whDetail').classList.contains('none') && /Swirl knot/.test($('whDetail').textContent) && /Comes from/.test($('whDetail').textContent) && !E(`S.unseen['logging.burl']`) && !tile('logging.burl').querySelector('.inew') && tile('logging.burl').getAttribute('aria-current')==='true','tapping a tile opens its panel, marks it current and clears its new dot');
@@ -69,13 +69,42 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`go('warehouse'); openWh('mill')`);
  ok(d.querySelectorAll('#whGrid .bcard').length===3 && /Fine boards/.test($('whGrid').textContent) && d.querySelector('#whGrid .bcard .itile.t-fine .idia').children.length===2,'Boards tab: the lumber yard by tier with diamonds');
  E(`go('logging')`);
+ // ---------- 4. the Almanac: weather, finds and a guide; the Ledger on Logging › Log; Settings
+ $('navAlm').click();
+ ok(E('S.ui.screen')==='almanac' && E('S.ui.almTab')==='weather' && $('atWeather').getAttribute('aria-selected')==='true' && /cards seen/.test($('almBody').textContent),'the Almanac opens on its weather cards');
+ $('atFinds').click(); ok(E('S.ui.almTab')==='finds' && d.querySelectorAll('#almBody button.itile').length===E('Core.ITEMS.length') && d.querySelectorAll('#almBody .itile.unknown').length===E('Core.ITEMS.filter(i=>!S.found[i.id]).length'),'Finds: every item, silhouettes for the ones not found yet');
+ d.querySelector('#almBody [data-it="logging.burl"]').click(); ok(E('S.ui.screen')==='warehouse' && E('S.ui.whTab')==='collection' && /Swirl knot/.test($('whDetail').textContent),'tapping a find opens it in the Warehouse collection');
+ $('navAlm').click(); $('atGuide').click();
+ ok(/1 wood is 1 board foot/.test($('almBody').textContent) && d.querySelectorAll('#almBody .ladder>div').length===6 && /Legendary/.test($('almBody').textContent),'Guide: what wood means, the tier ladder with firewood below, perk labels unchanged');
+ key($('atGuide'),'ArrowRight'); ok(E('S.ui.almTab')==='weather' && d.activeElement===$('atWeather'),'arrow keys move along the Almanac tabs');
+ $('lsCash').click(); ok(E('S.ui.screen')==='logging' && E('S.ui.logTab')==='log' && !!$('lpLog').querySelector('#ledgerPanel') && /Shares to spend/.test($('ledgerFacts').textContent),'the Ledger lives on Logging › Log; the cash in the top bar opens it');
+ E(`openWh('ledger')`); ok(E('S.ui.screen')==='logging' && E('S.ui.logTab')==='log','openWh("ledger") still lands on the Ledger');
+ $('navSet').click();
+ ok(E('S.ui.screen')==='settings' && !!$('setSave').querySelector('#svCopy') && !!$('reset'),'Settings holds the save backup and New company');
+ ok(['setTheme','setNum','setToast'].every(id=>$(id).querySelector('[aria-pressed="true"]')) && $('setTheme').querySelector('[aria-pressed="true"]').dataset.v==='auto','Settings shows the current theme, number format and pop-up level');
+ $('setTheme').querySelector('[data-v=dark]').click(); ok(E('S.ui.theme')==='dark' && d.documentElement.getAttribute('data-theme')==='dark','Theme: Dark sets the dark theme');
+ $('setTheme').querySelector('[data-v=light]').click(); ok(d.documentElement.getAttribute('data-theme')==='light','Theme: Light');
+ $('setTheme').querySelector('[data-v=auto]').click(); ok(!d.documentElement.hasAttribute('data-theme'),'Theme: Auto follows the device');
+ $('setNum').querySelector('[data-v=full]').click(); ok(E('fmt(12345)')==='12,345' && E('money(2500000)')==='$2,500,000' && E('fmt(3.25)')==='3.3','Numbers: Full writes them out');
+ $('setNum').querySelector('[data-v=short]').click(); ok(E('fmt(12345)')==='12.3K','Numbers: Short again');
+ $('setToast').querySelector('[data-v=important]').click(); E(`$('toasts').innerHTML=''; addItem('logging.burl',1)`);
+ ok($('toasts').childElementCount===0,'Pop-up news: Important skips a repeat find');
+ E(`toast({label:'Special order', name:'Test', line:'x'})`); ok($('toasts').childElementCount===1,'and still shows important news');
+ $('setToast').querySelector('[data-v=none]').click(); E(`$('toasts').innerHTML=''; toast({name:'Test', line:'x'})`); ok($('toasts').childElementCount===0,'Pop-up news: None shows none');
+ $('setToast').querySelector('[data-v=all]').click();
+ // New company asks on the page first
+ E(`S.cash = 999`); $('reset').click();
+ ok(!$('resetBox').hidden && d.activeElement===$('resetNo') && E('S.cash')===999,'New company opens a confirm on the page; nothing is erased yet');
+ $('resetNo').click(); ok($('resetBox').hidden && E('S.cash')===999,'Keep playing closes it');
+ $('reset').click(); $('resetYes').click(); ok(E('S.cash')===0 && E('S.ui.screen')==='logging' && $('resetBox').hidden,'Erase company starts over');
  ok(!errs.length,'no console errors: '+errs.slice(0,3).join(' | '));
  // ---------- 2. an old save: the old warehouse tab and the old new-count carry over
  E('save()'); const st=w.localStorage.getItem('timberline-v2'); dom.window.close();
- const old=JSON.parse(st); delete old.unseen; old.newCount=3; old.ui.whTab='stock'; delete old.ui.whSort; delete old.ui.whFilter; old.bank={'logging.burl':2,'logging.fog_glass':1};
+ const old=JSON.parse(st); delete old.unseen; old.newCount=3; old.ui.whTab='stock'; delete old.ui.whSort; delete old.ui.whFilter; delete old.ui.almTab; delete old.ui.theme; delete old.ui.numFmt; delete old.ui.toastLvl; old.bank={'logging.burl':2,'logging.fog_glass':1};
  old.log=[{at:'Fal 1890', text:'New find: Burl.'}, {at:'Fal 1890', text:'Special order from The Admiralty: Admiralty spar order. 16 Prime spars and 2 Amber pitch by the end of next outpost.'}, {at:'Win 1890', text:'Closed mill run 1: 30.0K bd ft sawn. Used a survey marker; got a Ship’s fitting and Fog-glass.'}];
  dom=mk(JSON.stringify(old)); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
  ok(E('S.ui.whTab')==='all' && E('S.ui.whSort')==='default' && E('S.ui.whFilter')===null,'old save: Stock becomes All; sort and filter take their defaults');
+ ok(E('S.ui.almTab')==='weather' && E('S.ui.theme')==='auto' && E('S.ui.numFmt')==='short' && E('S.ui.toastLvl')==='all','old save: the Almanac tab and the settings take their defaults');
  ok(E(`S.unseen['logging.burl']`)===1 && E(`S.unseen['logging.fog_glass']`)===1,'old save with new items: every held item gets its new dot once');
  E(`go('warehouse')`); ok(d.querySelectorAll('#whGrid .inew').length===2,'and the grid shows them');
  // resource renames: the camp log a save holds reads in the new names; ids and save keys do not change
@@ -85,9 +114,10 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(d.querySelector('#whGrid [data-it="logging.burl"]').getAttribute('aria-label').startsWith('Swirl knot, Common tier') && d.querySelector('#whGrid [data-it="logging.fog_glass"]').getAttribute('aria-label').startsWith('Fog lens, Rare tier'),'the grid shows the new names');
  E(`render(true)`); ok(/Swirl knot/.test(d.getElementById('ledger').textContent) && !/Burl/.test(d.getElementById('ledger').textContent),'the camp log on screen uses the new names');
  dom.window.close();
- const old2=JSON.parse(st); old2.ui.whTab='log'; old2.unseen='junk';
+ const old2=JSON.parse(st); old2.ui.whTab='log'; old2.unseen='junk'; old2.ui.theme='purple'; old2.ui.numFmt=7;
  dom=mk(JSON.stringify(old2)); await sleep(300); w=dom.window; E=s=>w.__eval(s);
  ok(E('S.ui.whTab')==='collection' && typeof E('S.unseen')==='object','old save: Collection keeps its tab; a damaged new-dot map resets');
+ ok(E('S.ui.theme')==='auto' && E('S.ui.numFmt')==='short','damaged settings fall back to their defaults');
  dom.window.close();
  ok(!errs.length,'no console errors: '+errs.slice(0,3).join(' | '));
  process.exit(fails?1:0);
