@@ -5,6 +5,10 @@ Owner decisions only, newest first. Each entry: date, decision, why.
 | Date | Decision | Why |
 | --- | --- | --- |
 | 2026-10-28 | Burl → Swirl knot; Survey marker → Restock token | Owner's picks |
+| 2026-10-28 | AFK lot never runs out: always listed, buy as many as you like; show about how much idle cutting time you have stocked | Owner: let idle players stock up before going away |
+| 2026-10-28 | Your lots shows simple stock levels per tree type; the Trees tab becomes Priority; lots for sale show only what changes the choice (tree mix, count, price, chops colour-coded, one haul chip) | Owner: cut complexity |
+| 2026-10-28 | Crew wages rise with each extra crew of the same type, with a cap so total wages can never pass a set share of income (numbers set by the balance agent) | Owner picked rising wages + a cap over no cap or a Nest egg tweak |
+| 2026-10-28 | Rework achievements around the game's real milestones, so most need closing camp, the Sawmill and later outposts | A playtester earned every achievement without closing camp |
 | 2026-10-28 | Resource renames approved as proposed in docs/design/resource-names.md; unit "bd ft" → "wood"; perk tiers unchanged for now; Burl and Survey marker get new names (owner to pick). Tier ladder is one consistent diamond system: Common grey 0, Good green 1, Fine blue 2, Prime yellow 3, Rare orange 4 (supersedes "rare = violet") | Owner: diamond system must be consistent |
 | 2026-10-28 | Perk shop replaces the draft, as designed in docs/design/perk-shop.md (per-camp rotating shop, 5 slots incl. one rare/legendary and one curse, 10-min rotation plus new era, hold one slot, mini-game picks restock a slot), with changes: curses cost 1 (not free); plain names "Shop" and "perk points" (not Quartermaster/picks). Builds into the Shop screen in UI rework slice 3 | Owner approved with changes |
 | 2026-10-28 | Build "follow your lead" (docs/design/late-run-active-play.md) after the UI rework, to fix active play fading after the first outpost | Owner approved |
