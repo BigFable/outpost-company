@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UI Rework Mockup</title>
+<!-- Outpost Company UI rework: static clickable mockup. See docs/design/ui-rework.md. No external files. Numbers are examples. -->
+<style>
+:root{
+  --bg:#E3E8DF; --panel:#F3F5F0; --panel2:#EAEEE6; --ink:#1B241E; --muted:#5A685E; --line:#C3CCC1;
+  --accent:#E0560B; --accent-ink:#FFFFFF; --bark:#6B4A2F; --needle:#2E5C39; --needle2:#41794C; --sky:#D5DED3;
+  --good:#2F7A45; --warn:#B4520A; --bad:#B3261E; --pile:#B98A5E; --side:#DCE2D7; --rule:#CBD3C8;
+  --f-display:"Rockwell","Zilla Slab",Georgia,serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --panel:#19201B; --panel2:#1E2620; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; --side:#141A16; --rule:#232C25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --panel:#19201B; --panel2:#1E2620; --ink:#E0E6DC; --muted:#8C998F; --line:#2B352E;
+  --accent:#FF7A2E; --accent-ink:#1A0E05; --bark:#8C6544; --needle:#3D7A4B; --needle2:#57985F; --sky:#16201A;
+  --good:#6BC487; --warn:#FF9A55; --bad:#FF7B72; --pile:#A87C55; --side:#141A16; --rule:#232C25; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.4}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);margin:0;font-weight:700}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* mockup toolbar (not part of the game) */
+.mk{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 16px;border-bottom:1px dashed var(--line);font-size:.85rem;color:var(--muted)}
+.mk b{color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{padding:6px 12px;min-height:34px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.stagewrap{padding:16px;display:flex;justify-content:center}
+.frame{container-type:inline-size;width:100%;max-width:1440px;height:860px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg);position:relative}
+@media (max-width:520px){.stagewrap{padding:0}.frame,.frame.phone{height:100dvh;border-radius:0;border:0;width:100%}}
+.frame.phone{width:390px;height:780px;border-radius:28px;border-width:6px;border-color:var(--ink)}
+
+/* app shell */
+.app{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:100%}
+.side{grid-row:1 / span 2;background:var(--side);border-right:1px solid var(--line);overflow:auto;display:flex;flex-direction:column;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px)}
+.brand{padding:16px 16px 12px;background:var(--side);border-bottom:2px solid var(--ink)}
+.brand small{display:block;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.brand h1{font-size:1.35rem;line-height:1.1}
+.navh{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:14px 16px 4px;background:var(--side)}
+.nav{display:flex;flex-direction:column}
+.nav button{display:grid;grid-template-columns:22px 1fr auto;gap:2px 10px;align-items:center;text-align:left;padding:8px 14px 8px 13px;border-left:3px solid transparent;background:var(--side);min-height:44px}
+.nav button:hover{background:var(--panel2)}
+.nav button[aria-current="page"]{border-left-color:var(--accent);background:var(--panel)}
+.nav .nm{font-weight:600}
+.nav .sub{grid-column:2 / span 2;font-size:.75rem;color:var(--muted)}
+.nav .pb{grid-column:2 / span 2;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.nav .pb i{display:block;height:100%;background:var(--needle2)}
+.nav .locked{opacity:.55}
+.nav .locked .nm{font-style:italic}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--side)}
+.cnt{font-family:var(--f-num);font-size:.72rem;padding:1px 6px;border-radius:9px;border:1px solid var(--line);color:var(--muted)}
+.cnt.hot{border-color:var(--accent);color:var(--accent)}
+.sidefoot{margin-top:auto;padding:12px 16px;font-size:.72rem;color:var(--muted);background:var(--side)}
+
+.top{display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--line);background:var(--panel);min-height:58px}
+.tcell{padding:8px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;min-width:0}
+.tcell small{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.tcell b{font-family:var(--f-num);font-size:1.05rem;white-space:nowrap}
+.tcell .accent{color:var(--accent)}
+.tcell .minor{font-family:var(--f-num);font-size:.78rem;color:var(--muted);white-space:nowrap}
+.season{flex:1;min-width:0;text-align:left;display:flex;flex-direction:row;gap:12px;align-items:center;justify-content:flex-start}
+.season>div:first-child{display:flex;flex-direction:column}
+.season .wx{border-left:4px solid var(--good);padding-left:10px;min-width:0}
+.season .wx b{font-family:var(--f-display);font-size:1rem}
+.season .wx span{display:block;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spark{width:64px;height:22px}
+.bell{position:relative;padding:0 18px;display:flex;align-items:center;justify-content:center;min-width:56px}
+.bell .cnt{position:absolute;top:8px;right:8px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.only-phone{display:none!important}
+
+main{overflow:auto;position:relative}
+.screen{padding:18px 22px 40px;display:flex;flex-direction:column;gap:14px;max-width:1120px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.eyebrow{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 2px}
+.meta{color:var(--muted);font-size:.85rem;margin:4px 0 0}
+
+/* camp header */
+.chead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 18px;align-items:center}
+.chead h2{font-size:1.5rem}
+.chead .bar{grid-column:1 / -1}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem;color:var(--muted)}
+.stats b{color:var(--ink);font-family:var(--f-num)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-weight:600;font-size:.88rem;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:var(--accent);color:var(--accent)}
+.btn.sm{min-height:34px;padding:0 10px;font-size:.82rem}
+.btn[disabled]{opacity:.45;cursor:default}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--needle2);border-radius:4px}
+.bar.thin{height:5px}
+.bar.acc i{background:var(--accent)}
+.bar.warn i{background:var(--warn)}
+.barlbl{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;padding:2px 8px;border:1px solid var(--line);border-radius:12px;white-space:nowrap;position:relative}
+.chip.good{color:var(--good);border-color:currentColor}
+.chip.bad{color:var(--bad);border-color:currentColor}
+.chip.acc{color:var(--accent);border-color:currentColor}
+.chip.perk{background:var(--panel2)}
+/* tooltips: hover on desktop, tap toggles .tipon */
+[data-tip]{cursor:help}
+[data-tip]:hover::after,[data-tip].tipon::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 6px);z-index:20;width:max-content;max-width:240px;white-space:normal;
+  background:var(--ink);color:var(--bg);font-size:.78rem;padding:6px 9px;border-radius:5px;line-height:1.35;font-family:var(--f-body);text-transform:none;letter-spacing:0}
+
+/* in-screen tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{padding:10px 16px;min-height:44px;font-weight:600;font-size:.9rem;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* work tab */
+.worktop{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px}
+.lotcard{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.tree{background:linear-gradient(var(--sky),var(--panel));border-radius:6px;border:1px solid var(--line);height:150px;display:flex;align-items:flex-end;justify-content:center}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.85rem}
+.facts span{color:var(--muted)} .facts b{font-family:var(--f-num);text-align:right}
+.stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stage{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px;position:relative}
+.stage.slow{border-color:var(--warn);box-shadow:inset 0 3px 0 var(--warn)}
+.stage h3{font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.stage .rate{font-family:var(--f-num);font-size:1.15rem}
+.stage .rate small{font-size:.75rem;color:var(--muted);font-family:var(--f-body)}
+.stage .btnrow .btn{flex:1}
+.slider{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:30px}
+
+/* lots tab */
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.slot{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+.slot .sn{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.slot h3{font-size:.98rem}
+.slot.lock{border-style:dashed;background:transparent;color:var(--muted);justify-content:center;align-items:center;text-align:center;min-height:170px}
+.mix{display:flex;height:8px;border-radius:4px;overflow:hidden}
+.mix i{display:block;height:100%}
+.slot .foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:6px}
+.info{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);font-size:.8rem;font-weight:700;color:var(--muted)}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg2 button{padding:6px 14px;min-height:36px;font-size:.85rem;font-weight:600}
+.seg2 button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.sprow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.sprow:first-of-type{border-top:0}
+.sprow .nm{font-weight:600}
+.rule{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.rule button{min-width:62px;min-height:36px;font-size:.82rem;font-weight:600;border-left:1px solid var(--line)}
+.rule button:first-child{border-left:0}
+.rule button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* rows */
+.rows .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.rows .row:first-child{border-top:0}
+.row .nm{font-weight:600}
+.row small{color:var(--muted);font-size:.8rem;display:block}
+.grp{font-family:var(--f-display);font-size:1rem;margin:12px 0 2px}
+
+/* cards grid */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px}
+.card h3{font-size:1rem}
+.card .who{font-size:.75rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.card .foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:8px}
+.need{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:.82rem}
+.icn{width:26px;height:26px;border-radius:5px;background:var(--panel2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;color:var(--bark)}
+.icn svg{width:18px;height:18px}
+
+/* mill */
+.mill{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+.yard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ytile{border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.ytile small{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.ytile b{font-family:var(--f-num)}
+.carriage{height:54px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);position:relative;overflow:hidden}
+.carriage .log{position:absolute;left:8%;top:14px;height:26px;width:62%;background:var(--pile);border-radius:13px;border:2px solid var(--bark)}
+.carriage .blade{position:absolute;right:22%;top:4px;width:46px;height:46px;border-radius:50%;border:3px dashed var(--muted)}
+.struct{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 0;border-top:1px solid var(--line);align-items:center}
+.struct:first-child{border-top:0}
+.cost{display:flex;flex-wrap:wrap;gap:6px}
+.cost .c{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-family:var(--f-num);padding:2px 6px 2px 2px;border:1px solid var(--line);border-radius:5px}
+.cost .c.have{color:var(--good);border-color:currentColor}
+.cost .c.short{color:var(--bad);border-color:currentColor}
+.cost .c .icn{width:20px;height:20px}
+.cost .c .icn svg{width:14px;height:14px}
+
+/* warehouse */
+.wh{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px;align-items:start}
+.bulk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+.tile{aspect-ratio:1;border:1px solid var(--line);border-radius:6px;background:var(--panel2);position:relative;display:flex;align-items:center;justify-content:center;color:var(--bark)}
+.tile svg{width:34px;height:34px}
+.tile .q{position:absolute;right:5px;bottom:3px;font-family:var(--f-num);font-size:.75rem;color:var(--ink)}
+.tile .ph{position:absolute;left:5px;top:3px;font-size:.55rem;letter-spacing:.08em;color:var(--muted)}
+.tile.uncommon{border-width:2px;border-style:double;border-color:var(--needle2)}
+.tile.rare{border:2px solid var(--accent)}
+.tile.made{border-width:2px;border-style:dashed;border-color:var(--bark)}
+.tile.new{box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 45%,transparent)}
+.tile .flag{position:absolute;left:4px;bottom:4px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.tile .lk{position:absolute;right:4px;top:3px;width:12px;height:12px;color:var(--muted)}
+.tile[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:1px}
+.tile.empty{background:transparent;border-style:dashed;opacity:.5}
+.search{min-height:38px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:var(--panel);color:var(--ink);font:inherit;min-width:0;flex:1}
+.ipanel{position:sticky;top:0}
+.ipanel .big{width:72px;height:72px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);display:flex;align-items:center;justify-content:center;color:var(--bark)}
+.ipanel .big svg{width:46px;height:46px}
+
+/* shop */
+.offer{border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+.offer .tier{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}
+.offer.leg{border-color:var(--accent)}
+.placeholder{border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:8px 12px;font-size:.82rem}
+
+/* bell tray */
+.tray{position:absolute;right:10px;top:62px;width:330px;z-index:40;background:var(--panel);border:1px solid var(--ink);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px 0}
+.tray h3{font-size:.95rem;padding:8px 14px}
+.tray .ti{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 14px;border-top:1px solid var(--line);align-items:center}
+.tray .ti small{color:var(--muted);font-size:.78rem;display:block}
+.toast{position:absolute;right:16px;bottom:16px;z-index:30;width:280px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:.82rem;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.toast small{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+
+/* mini-game overlay inside main */
+.mgover{position:absolute;inset:0;z-index:35;background:var(--bg);display:flex;flex-direction:column;padding:14px 18px;gap:10px}
+.mgover header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mgcanvas{flex:1;border:1px solid var(--line);border-radius:8px;background:linear-gradient(var(--sky),var(--panel2));display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;min-height:0}
+.dimside .side{filter:grayscale(.6);opacity:.6;pointer-events:none}
+
+.bottom{display:none}
+.drawerbg{display:none}
+
+/* ---------- phone (container under 700 px) ---------- */
+@container (max-width:700px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+  .side{position:absolute;left:0;top:0;bottom:0;width:280px;z-index:50;transform:translateX(-102%);transition:transform .2s;grid-row:auto}
+  .app.drawer .side{transform:none;box-shadow:0 0 40px rgba(0,0,0,.35)}
+  .app.drawer .drawerbg{display:block;position:absolute;inset:0;z-index:45;background:rgba(0,0,0,.35)}
+  .only-phone{display:flex!important}
+  .only-desk{display:none!important}
+  .top{min-height:52px}
+  .tcell{padding:6px 10px}
+  .tcell.cashc{border-right:1px solid var(--line)}
+  .season .wx span{display:none}
+  .season{overflow:hidden;gap:8px}
+  .season>div:first-child small{display:none}
+  .season .wx{min-width:0;overflow:hidden}
+  .season .wx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.9rem}
+  .season .wx{padding-left:8px}
+  .bell{min-width:52px;padding:0 12px}
+  .screen{padding:12px 12px 24px;gap:10px}
+  .chead{grid-template-columns:1fr}
+  .chead h2{font-size:1.2rem}
+  .chead .btnrow .btn{flex:1}
+  .worktop{grid-template-columns:110px minmax(0,1fr)}
+  .tree{height:110px}
+  .stages{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stage{padding:10px}
+  .stage .btnrow{flex-direction:column}
+  .stage .btn{min-height:44px}
+  .slots{grid-template-columns:1fr}
+  .slot.lock{min-height:60px}
+  .mill{grid-template-columns:1fr}
+  .wh{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .bulk{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ipanel{position:absolute;left:0;right:0;bottom:0;z-index:30;border-radius:14px 14px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);top:auto}
+  .cards{grid-template-columns:1fr}
+  .btn{min-height:44px}
+  .rule button,.seg2 button{min-height:44px}
+  .tray{left:8px;right:8px;width:auto;top:56px}
+  .toast{left:12px;right:12px;width:auto;bottom:70px}
+  .chead .chip.perk{display:none}
+  .bottom{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom,0)}
+  .bottom button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;font-size:.72rem;font-weight:600;color:var(--muted);position:relative}
+  .bottom button[aria-current="page"]{color:var(--accent)}
+  .bottom button[aria-current="page"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+  .bottom .dot{position:absolute;top:9px;right:calc(50% - 16px)}
+  main{position:static}
+  .mgover{padding:10px;z-index:60}
+}
+@container (min-width:701px) and (max-width:1060px){
+  .app{grid-template-columns:72px minmax(0,1fr)}
+  .side .sub,.side .pb,.side .nm,.side .cnt,.navh,.brand small,.sidefoot{display:none}
+  .brand h1{font-size:0}
+  .brand h1::before{content:"OC";font-size:1.2rem}
+  .nav button{grid-template-columns:22px;justify-content:center;position:relative}
+  .nav .dot{position:absolute;right:14px;top:10px}
+  .stages{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .slots{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- original line icons: simple tool drawings -->
+  <symbol id="i-axe" viewBox="0 0 24 24"><path d="M5 21 15 8"/><path d="M13 5c2-2 5-2 7 0l-4 6c-1-2-2-3-3-3z"/></symbol>
+  <symbol id="i-saw" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 24 24"><path d="M3 12c3-5 10-6 14 0-4 6-11 5-14 0z"/><path d="M17 12l4-3v6z"/><circle cx="8" cy="11" r=".6"/></symbol>
+  <symbol id="i-crate" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="1"/><path d="M3 10h18M3 16h18M8 6v14M16 6v14"/></symbol>
+  <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1 11H5z"/><path d="M8 9a4 4 0 0 1 8 0"/><path d="M3 9l2-5h14l2 5"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M7 3h11v15a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2h11v2a3 3 0 0 0 3 3"/><path d="M7 3a2 2 0 0 0-2 2v11M10 8h5M10 12h5"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v14c-3-1-5-1-8 1-3-2-5-2-8-1z"/><path d="M12 6v14"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><rect x="3" y="9" width="16" height="7" rx="3.5"/><ellipse cx="19" cy="12.5" rx="2" ry="3.5"/><circle cx="19" cy="12.5" r="1"/></symbol>
+  <symbol id="i-spar" viewBox="0 0 24 24"><path d="M4 20 20 4"/><path d="M6 21l-3-3M21 6l-3-3"/><path d="M9 15l2 2M13 11l2 2"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c4 6 6 9 6 12a6 6 0 0 1-12 0c0-3 2-6 6-12z"/></symbol>
+  <symbol id="i-gearwheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/></symbol>
+  <symbol id="i-knot" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/><ellipse cx="12" cy="12" rx="4" ry="3"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-glass" viewBox="0 0 24 24"><path d="M6 3h12l-3 9v8H9v-8z"/></symbol>
+  <symbol id="i-plank" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="4"/><rect x="3" y="13" width="18" height="4"/></symbol>
+  <symbol id="i-marker" viewBox="0 0 24 24"><path d="M12 21v-8"/><path d="M8 13h8l-4-9z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+</svg>
+
+<div class="mk" role="toolbar" aria-label="Mockup controls">
+  <b>Outpost Company · UI rework mockup</b>
+  <span class="seg" id="mkView"><button type="button" data-v="desk" aria-pressed="true">Desktop</button><button type="button" data-v="phone" aria-pressed="false">Phone</button></span>
+  <span class="seg" id="mkTheme"><button type="button" data-t="" aria-pressed="true">Auto</button><button type="button" data-t="light" aria-pressed="false">Light</button><button type="button" data-t="dark" aria-pressed="false">Dark</button></span>
+  <span>Static: numbers are examples. Clickable: sidebar, bottom tabs, camp tabs, bell, Play, warehouse tiles, queue rules.</span>
+</div>
+
+<div class="stagewrap"><div class="frame" id="frame">
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Company">
+    <div class="brand"><small>Fogbound Coast · 1893</small><h1>Outpost Company</h1></div>
+    <div class="navh">Camps</div>
+    <nav class="nav" aria-label="Camps">
+      <button type="button" data-go="logging" aria-current="page"><svg class="i"><use href="#i-axe"/></svg><span class="nm">Logging</span><span class="dot" title="A perk to pick"></span><span class="sub">Outpost 3 · Cove Landing</span><span class="pb"><i style="width:72%"></i></span></button>
+      <button type="button" data-go="sawmill"><svg class="i"><use href="#i-saw"/></svg><span class="nm">Sawmill</span><span class="cnt">run 2</span><span class="sub">Saw pit · pond 62%</span><span class="pb"><i style="width:31%"></i></span></button>
+      <button type="button" class="locked" data-go="fog"><svg class="i"><use href="#i-fish"/></svg><span class="nm">Fishing</span><span></span><span class="sub">In the fog · opens later</span></button>
+    </nav>
+    <div class="navh">Company</div>
+    <nav class="nav" aria-label="Company">
+      <button type="button" data-go="warehouse"><svg class="i"><use href="#i-crate"/></svg><span class="nm">Warehouse</span><span class="cnt hot">3 new</span><span class="sub">11 kinds · 999K bd ft in the pond</span></button>
+      <button type="button" data-go="shop"><svg class="i"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="cnt">1:42</span><span class="sub">New stock next season</span></button>
+      <button type="button" data-go="orders"><svg class="i"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="dot" title="An order ends this season"></span><span class="sub">5 active · 1 ends soon</span></button>
+      <button type="button" data-go="board"><svg class="i"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="cnt">38</span><span class="sub">Charter Shares to spend</span></button>
+      <button type="button" data-go="almanac"><svg class="i"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="cnt">9/31</span><span class="sub">Weather and collection</span></button>
+      <button type="button" data-go="settings"><svg class="i"><use href="#i-gear"/></svg><span class="nm">Settings</span><span></span></button>
+    </nav>
+    <div class="sidefoot">Saved on this device · 12 s ago</div>
+  </aside>
+  <div class="drawerbg" id="drawerbg"></div>
+
+  <header class="top" aria-label="Money and season">
+    <div class="tcell cashc" data-tip="Each camp keeps its own cash. Money moves between camps only as payment for goods." style="position:relative">
+      <small id="cashLbl">Cash · Logging</small><b class="accent" id="cashV">$412K</b><span class="minor only-desk" id="cashOther">Mill $5.2K</span></div>
+    <div class="tcell only-desk" style="position:relative" data-tip="Charter Shares are earned when you close camp. Spend them on the Company board."><small id="shLbl">Shares · Logging</small><b id="shV">38</b></div>
+    <button type="button" class="tcell season" id="seasonBtn" aria-label="Season and weather">
+      <div><small>Season</small><b>Winter 1893</b></div>
+      <div class="wx"><b>Ice bridge</b><span>Hauling ×1.3 · skidding ×1.1 · 0:52 left</span></div>
+    </button>
+    <div class="tcell only-desk"><small>Log price</small><div style="display:flex;gap:8px;align-items:center"><b>×1.11</b>
+      <svg class="spark" viewBox="0 0 64 22" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="1.6" points="0,8 6,12 12,9 18,14 24,16 30,13 36,17 42,12 48,14 54,8 60,10 64,6"/></svg></div></div>
+    <button type="button" class="bell" id="bellBtn" aria-label="Needs you now, 3 items" aria-expanded="false"><svg class="i" style="width:24px;height:24px"><use href="#i-bell"/></svg><span class="cnt">3</span></button>
+  </header>
+
+  <main id="main">
+    <div class="tray" id="tray" hidden role="dialog" aria-label="Needs you now">
+      <h3>Needs you now</h3>
+      <div class="ti"><div><b>Perk ready</b><small>Logging · pick 1 of 3</small></div><button type="button" class="btn sm primary" data-go="logging">Pick</button></div>
+      <div class="ti"><div><b>Harbor Planing Mill</b><small>Charter order · ends this season, 74%</small></div><button type="button" class="btn sm" data-go="orders">Open</button></div>
+      <div class="ti"><div><b>No lot after this one</b><small>Logging · crews run out in 6 min</small></div><button type="button" class="btn sm" data-go="logging" data-tab="lots">Lots</button></div>
+    </div>
+
+    <!-- ================= LOGGING ================= -->
+    <section class="screen" data-screen="logging">
+      <div class="panel chead">
+        <div>
+          <p class="eyebrow">Logging · Outpost 3 · Storm coast</p>
+          <h2>Lantern Bluff, Lot 25</h2>
+          <div class="stats" style="margin-top:4px"><span>Net <b>+$3.4K</b>/min</span><span>Perks <b>4</b></span><span>Close now <b>+12</b> shares</span></div>
+        </div>
+        <div class="btnrow"><button type="button" class="btn primary">Pick perk (1)</button><button type="button" class="btn">Close camp</button></div>
+        <div class="bar thin"><i style="width:72%"></i></div>
+        <div class="chips" style="grid-column:1/-1">
+          <span class="chip perk" data-tip="Felling: a good fall drops the next tree for free.">Domino fall</span>
+          <span class="chip perk" data-tip="Skid game: mud speeds the team up.">Greased runners</span>
+          <span class="chip perk" data-tip="Lots cost 15% less.">Cruiser's eye</span>
+          <span class="chip perk" data-tip="Bad weather twice as often. +25% shares.">Storm season</span>
+          <span class="meta" style="margin:0 0 0 auto">Close camp at Steam Camp or 250K bd ft · 182K</span>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" data-tabs="log">
+        <button type="button" role="tab" data-t="work" aria-selected="true">Work</button>
+        <button type="button" role="tab" data-t="lots" aria-selected="false">Lots</button>
+        <button type="button" role="tab" data-t="crews" aria-selected="false">Crews</button>
+        <button type="button" role="tab" data-t="camp" aria-selected="false">Camp</button>
+        <button type="button" role="tab" data-t="log" aria-selected="false">Log</button>
+      </div>
+
+      <div data-pane="log:work" style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel worktop">
+          <div class="lotcard">
+            <button type="button" class="tree" aria-label="Chop the tree">
+              <svg viewBox="0 0 100 100" width="90%" height="96%" aria-hidden="true"><polygon points="50,8 34,40 66,40" fill="var(--needle2)"/><polygon points="50,24 28,60 72,60" fill="var(--needle)"/><polygon points="50,42 22,80 78,80" fill="var(--needle2)"/><rect x="45" y="76" width="10" height="22" fill="var(--bark)"/></svg>
+            </button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div class="facts"><span>This tree</span><b>Spruce</b><span>Chops left</span><b>14</b><span>Trees left</span><b>612 / 771</b><span>Done in</span><b>9 min</b></div>
+            <div class="bar"><i style="width:21%"></i></div>
+            <div class="chips"><span class="chip">Spruce 60%</span><span class="chip">Hemlock 25%</span><span class="chip">Pine 15%</span><span class="chip acc" data-tip="Picking Spruce: felling and skidding ×0.8">Picking ×0.8</span></div>
+          </div>
+        </div>
+        <div class="stages">
+          <div class="stage slow">
+            <h3><svg class="i"><use href="#i-axe"/></svg>Fell <span class="chip" style="margin-left:auto;color:var(--warn);border-color:currentColor">slowest</span></h3>
+            <div class="rate num">38 <small>trees/min</small></div>
+            <div><div class="bar thin warn"><i style="width:12%"></i></div><div class="barlbl"><span>On the ground</span><span class="num">9 stems</span></div></div>
+            <div class="btnrow"><button type="button" class="btn primary" data-play="Place a fall"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Play</button><button type="button" class="btn">Chop +1</button></div>
+          </div>
+          <div class="stage">
+            <h3><svg class="i"><use href="#i-saw"/></svg>Buck</h3>
+            <div class="rate num">44 <small>logs/min</small></div>
+            <div><div class="bar thin"><i style="width:30%"></i></div><div class="barlbl"><span>Logs in the woods</span><span class="num">8.1K bd ft</span></div></div>
+            <div class="btnrow"><button type="button" class="btn primary" data-play="Plan the cuts"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Play</button></div>
+          </div>
+          <div class="stage">
+            <h3><svg class="i"><use href="#i-log"/></svg>Skid</h3>
+            <div class="rate num">41 <small>logs/min</small></div>
+            <div class="chips"><span class="chip good" data-tip="Ice bridge this season">Weather ×1.1</span></div>
+            <div><div class="bar thin"><i style="width:55%"></i></div><div class="barlbl"><span>At the landing</span><span class="num">14K bd ft</span></div></div>
+            <div class="btnrow"><button type="button" class="btn primary" data-play="Skid the logs"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Play</button></div>
+          </div>
+          <div class="stage">
+            <h3><svg class="i"><use href="#i-scroll"/></svg>Haul</h3>
+            <div class="rate num">52 <small>logs/min</small></div>
+            <div class="chips"><span class="chip good" data-tip="Ice bridge this season">Weather ×1.3</span></div>
+            <div><div class="bar thin acc"><i style="width:64%"></i></div><div class="barlbl"><span>Next load</span><span class="num">0:11</span></div></div>
+            <div class="btnrow"><button type="button" class="btn primary" data-play="Haul to the cove"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Play</button></div>
+          </div>
+        </div>
+        <div class="panel slider">
+          <span style="font-weight:600">Logs to the mill</span><input type="range" min="0" max="50" step="5" value="15" aria-label="Logs to the mill"><b class="num">15%</b>
+          <p class="meta" style="grid-column:1/-1;margin:0">Mill pays 0.5× cove price. Auto: up to what the mill can saw (cap 20%).</p>
+        </div>
+      </div>
+
+      <div data-pane="log:lots" hidden style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="qhead"><div><p class="eyebrow">Land office</p><h3>Lots for sale</h3></div><span class="meta" style="margin:0">New listings in 2:14</span></div>
+          <div class="slots" style="margin-top:10px">
+            <div class="slot"><div class="sn"><span>1 · Company lot</span><span class="chip acc">Best value</span></div><h3>Harbor Flat, Lot 26</h3>
+              <div class="mix"><i style="width:70%;background:var(--needle2)"></i><i style="width:30%;background:var(--pile)"></i></div>
+              <div class="chips"><span class="chip">Pine 70%</span><span class="chip">Hemlock 30%</span></div>
+              <div class="chips"><span class="chip good" data-tip="Average lot this era: $19 a tree">Value $23 ▲</span><span class="chip bad" data-tip="Average: 1.4 mi">Haul 2.1 mi ▼</span><span class="chip good">Flat ▲</span></div>
+              <div class="foot"><button type="button" class="info" aria-label="Notes" data-tip="Fills about 40% of the Pine order. 412 trees.">i</button><button type="button" class="btn sm ghost">$4,120</button></div></div>
+            <div class="slot"><div class="sn"><span>2 · Surveyed lot</span></div><h3>Spruce Head, Lot 7</h3>
+              <div class="mix"><i style="width:55%;background:var(--needle)"></i><i style="width:30%;background:var(--needle2)"></i><i style="width:15%;background:var(--pile)"></i></div>
+              <div class="chips"><span class="chip">Spruce 55%</span><span class="chip">Pine 30%</span><span class="chip">Hemlock 15%</span></div>
+              <div class="chips"><span class="chip good">Prime 1 in 9 ▲</span><span class="chip bad">Steep ▼</span></div>
+              <div class="foot"><button type="button" class="info" aria-label="Notes" data-tip="Serves the Admiralty spar order.">i</button><button type="button" class="btn sm ghost">$6,300</button></div></div>
+            <div class="slot"><div class="sn"><span>3 · Cruiser's pick</span><span class="chip acc">Rare</span></div><h3>Maple Gulch, Lot 12</h3>
+              <div class="mix"><i style="width:45%;background:var(--needle)"></i><i style="width:25%;background:var(--needle2)"></i><i style="width:15%;background:var(--pile)"></i><i style="width:15%;background:var(--accent)"></i></div>
+              <div class="chips"><span class="chip">Spruce 45%</span><span class="chip">Pine 25%</span><span class="chip">Hemlock 15%</span><span class="chip acc">Maple 15%</span></div>
+              <div class="chips"><span class="chip good">Value $31 ▲</span><span class="chip bad">Price $14 ▼</span></div>
+              <div class="foot"><button type="button" class="info" aria-label="Notes" data-tip="Maple is next era's tree. Picking it here: ×0.58.">i</button><button type="button" class="btn sm ghost">$9,800</button></div></div>
+            <div class="slot lock"><svg class="i"><use href="#i-lock"/></svg><b>4 · AFK lot</b><span style="font-size:.82rem">Cut out 1 more lot to open</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="qhead"><div><p class="eyebrow">Cutting queue</p><h3>Your trees</h3></div>
+            <span class="seg2" id="qseg"><button type="button" aria-pressed="false">Lots</button><button type="button" aria-pressed="true">Trees</button></span></div>
+          <p class="meta">Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking slows felling and skidding.</p>
+          <div style="margin-top:6px">
+            <div class="sprow"><div><span class="nm">Spruce</span> <span class="chip">light</span><div class="meta" style="margin:2px 0 0">412 trees · 98K bd ft · $3,100 · Admiralty order</div></div><span class="rule"><button type="button" aria-pressed="false">Any</button><button type="button" aria-pressed="true">First</button><button type="button" aria-pressed="false">Skip</button></span></div>
+            <div class="sprow"><div><span class="nm">Pine</span> <span class="chip">average</span><div class="meta" style="margin:2px 0 0">288 trees · 61K bd ft · $1,700</div></div><span class="rule"><button type="button" aria-pressed="true">Any</button><button type="button" aria-pressed="false">First</button><button type="button" aria-pressed="false">Skip</button></span></div>
+            <div class="sprow"><div><span class="nm">Hemlock</span> <span class="chip">heavy</span><div class="meta" style="margin:2px 0 0">160 trees · 32K bd ft · $810 · mill wants it</div></div><span class="rule"><button type="button" aria-pressed="true">Any</button><button type="button" aria-pressed="false">First</button><button type="button" aria-pressed="false">Skip</button></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div data-pane="log:crews" hidden>
+        <div class="panel">
+          <div class="qhead"><h3>Crews and machines</h3><span class="seg2"><button type="button" aria-pressed="true">×1</button><button type="button" aria-pressed="false">×10</button><button type="button" aria-pressed="false">Max</button></span></div>
+          <div class="grp">Felling</div>
+          <div class="rows">
+            <div class="row"><div><span class="nm">Axeman</span> <span class="num meta">×24</span><small>+1 chop/s · $3/min wages</small></div><button type="button" class="btn sm ghost">$40</button></div>
+            <div class="row"><div><span class="nm">Saw team</span> <span class="num meta">×9</span><small>+4 chops/s · $10/min wages</small></div><button type="button" class="btn sm ghost">$220</button></div>
+          </div>
+          <div class="grp">Skidding</div>
+          <div class="rows"><div class="row"><div><span class="nm">Ox team</span> <span class="num meta">×6</span><small>+12 bd ft/s · $8/min wages</small></div><button type="button" class="btn sm ghost">$90</button></div></div>
+          <p class="meta">Bucking and hauling rows continue below, same layout.</p>
+        </div>
+      </div>
+      <div data-pane="log:camp" hidden>
+        <div class="panel">
+          <p class="eyebrow">Era</p><h3>Cove Landing → Steam Camp</h3>
+          <div class="bar" style="margin-top:8px"><i style="width:64%"></i></div><div class="barlbl"><span>Steam Camp at $25K delivered</span><span class="num">$16K</span></div>
+          <div class="grp">Improvements</div>
+          <div class="cards">
+            <div class="card"><h3>Hill hitch</h3><span class="meta" style="margin:0">Haul: climbs pull 1.5× harder.</span><div class="bar thin"><i style="width:100%"></i></div><div class="barlbl"><span>Earned</span><span>3/6</span></div></div>
+            <div class="card"><h3>Log roads</h3><span class="meta" style="margin:0">Spring mud slows half as much.</span><div class="bar thin"><i style="width:40%"></i></div><div class="barlbl"><span>Play 4 haul games</span><span>2/4</span></div></div>
+            <div class="card"><h3>Bunkhouse</h3><span class="meta" style="margin:0">Level 2 · wages ×0.90.</span><div class="bar thin"><i style="width:50%"></i></div><div class="barlbl"><span>Level 3</span><span>8/16 bundles</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div data-pane="log:log" hidden>
+        <div class="panel rows">
+          <div class="row"><div><small class="num">Win 1893</small>Ice bridge: hauling ×1.3.</div><span></span></div>
+          <div class="row"><div><small class="num">Fall 1893</small>Achievement: Wintered over. +$250</div><span></span></div>
+          <div class="row"><div><small class="num">Fall 1893</small>Bought Lantern Bluff, Lot 25.</div><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SAWMILL ================= -->
+    <section class="screen" data-screen="sawmill" hidden>
+      <div class="panel chead">
+        <div><p class="eyebrow">Sawmill · Mill run 2 · Whistle Pond</p><h2>Saw pit</h2>
+          <div class="stats" style="margin-top:4px"><span>Sawing <b>60</b> bd ft/min</span><span>Income <b>$22</b>/min</span><span>Perks <b>1</b></span></div></div>
+        <div class="btnrow"><button type="button" class="btn primary" data-play="Saw for grade">Saw boards</button><button type="button" class="btn" disabled>Close camp</button></div>
+        <div class="bar thin"><i style="width:31%"></i></div>
+        <span class="meta" style="grid-column:1/-1;margin:0">Close camp at Steam Mill or 150K bd ft sawn · 46K</span>
+      </div>
+      <div class="tabs" role="tablist" data-tabs="mill">
+        <button type="button" role="tab" data-t="mill" aria-selected="true">Mill</button>
+        <button type="button" role="tab" data-t="structs" aria-selected="false">Structures</button>
+        <button type="button" role="tab" data-t="sawyers" aria-selected="false">Sawyers</button>
+        <button type="button" role="tab" data-t="run" aria-selected="false">Run</button>
+      </div>
+      <div data-pane="mill:mill" class="mill">
+        <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+          <div class="qhead"><h3>On the carriage</h3><span class="chip" data-tip="Saw pit: hand power, the same every season.">Hand power ×1.0</span></div>
+          <div class="carriage" aria-hidden="true"><div class="log"></div><div class="blade"></div></div>
+          <div><div class="bar acc"><i style="width:46%"></i></div><div class="barlbl"><span>Pine log, 16 ft · No. 2</span><span class="num">0:04</span></div></div>
+          <div class="facts"><span>Sawyers</span><b>2 of 6</b><span>Plank bundles</span><b>3</b><span>Logs bought</span><b>4.2K bd ft · $210</b></div>
+          <button type="button" class="btn primary" data-play="Saw for grade"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Play: saw for grade</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="panel"><div class="qhead"><h3>Log pond</h3><button type="button" class="btn sm" aria-pressed="true">Buy logs: on</button></div>
+            <div class="bar" style="margin-top:8px"><i style="width:62%"></i></div><div class="barlbl"><span>From Logging at 0.5× · cove when empty</span><span class="num">999K bd ft</span></div></div>
+          <div class="panel"><div class="qhead"><h3>Lumber yard</h3><button type="button" class="btn sm" aria-pressed="true">Bundle: on</button></div>
+            <div class="yard" style="margin-top:8px">
+              <div class="ytile" data-tip="Sells at 3× the log price" style="position:relative"><small>Clear</small><b>120</b></div>
+              <div class="ytile" data-tip="Sells at 2×" style="position:relative"><small>Select</small><b>211</b></div>
+              <div class="ytile" data-tip="Sells at 1×; makes plank bundles first" style="position:relative"><small>Common</small><b>271</b></div></div>
+            <p class="meta">bd ft. Common makes plank bundles first while the bunkhouse needs them.</p></div>
+        </div>
+      </div>
+      <div data-pane="mill:structs" hidden class="panel">
+        <div class="struct"><div><b>Saw pit</b> <span class="chip good">Built</span><div class="meta" style="margin:2px 0 0">2 sawyers by hand.</div></div><span></span></div>
+        <div class="struct"><div><b>Mill pond &amp; wheel</b><div class="meta" style="margin:2px 0 6px">Water power: sawing ×2.5. Seasons now matter.</div>
+          <div class="cost"><span class="c have"><span class="icn"><svg class="i"><use href="#i-spar"/></svg></span>3/5</span><span class="c have"><span class="icn"><svg class="i"><use href="#i-drop"/></svg></span>2/2</span><span class="c have">$100</span></div></div><button type="button" class="btn primary">Build</button></div>
+        <div class="struct"><div><b>Circular saw</b><div class="meta" style="margin:2px 0 6px">+2 sawyers. Saw boards: turns take 1 s.</div>
+          <div class="cost"><span class="c have"><span class="icn"><svg class="i"><use href="#i-spar"/></svg></span>2/5</span><span class="c short"><span class="icn"><svg class="i"><use href="#i-gearwheel"/></svg></span>1/0</span><span class="c have">$250</span></div></div><button type="button" class="btn" disabled>Build</button></div>
+      </div>
+      <div data-pane="mill:sawyers" hidden class="panel rows">
+        <div class="row"><div><span class="nm">Sawyer pair</span> <span class="num meta">×1</span><small>+30 bd ft/min · $4/min</small></div><button type="button" class="btn sm ghost">$120</button></div>
+      </div>
+      <div data-pane="mill:run" hidden class="panel"><h3>Mill run 2</h3><p class="meta">Perks, run stats, close camp and past mill runs, as today.</p></div>
+    </section>
+
+    <!-- ================= WAREHOUSE ================= -->
+    <section class="screen" data-screen="warehouse" hidden>
+      <div class="qhead"><div><p class="eyebrow">Shared by every camp · never resets</p><h2>Warehouse</h2></div><button type="button" class="btn">Sell spares · $90</button></div>
+      <div class="placeholder">Placeholder art. Items, art and categories come from the inventory project; this is the frame.</div>
+      <div class="bulk">
+        <div class="panel ytile"><small>Log pond</small><b>999K bd ft</b></div>
+        <div class="panel ytile"><small>Clear lumber</small><b>120 bd ft</b></div>
+        <div class="panel ytile"><small>Select lumber</small><b>211 bd ft</b></div>
+        <div class="panel ytile"><small>Common lumber</small><b>271 bd ft</b></div>
+      </div>
+      <div class="wh">
+        <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="seg2"><button type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Prime</button><button type="button" aria-pressed="false">Finds</button><button type="button" aria-pressed="false">Mill</button></span>
+            <input class="search" type="search" placeholder="Search" aria-label="Search the warehouse">
+          </div>
+          <div class="grid" id="whgrid">
+            <button type="button" class="tile made new" data-item="spar" aria-pressed="true" aria-label="Prime spar, 5"><span class="ph">ART</span><svg class="i"><use href="#i-spar"/></svg><span class="flag"></span><span class="q">5</span></button>
+            <button type="button" class="tile made" data-item="hard" aria-label="Prime hardwood, 1"><span class="ph">ART</span><svg class="i"><use href="#i-log"/></svg><span class="q">1</span></button>
+            <button type="button" class="tile new" data-item="burl" aria-label="Burl, 3"><span class="ph">ART</span><svg class="i"><use href="#i-knot"/></svg><span class="q">3</span></button>
+            <button type="button" class="tile" data-item="pitch" aria-label="Amber pitch, 2"><span class="ph">ART</span><svg class="i"><use href="#i-drop"/></svg><span class="flag"></span><span class="q">2</span></button>
+            <button type="button" class="tile uncommon new" data-item="fit" aria-label="Ship's fitting, 1"><span class="ph">ART</span><svg class="i"><use href="#i-gearwheel"/></svg><span class="flag"></span><span class="q">1</span></button>
+            <button type="button" class="tile rare" data-item="glass" aria-label="Fog-glass, 1, locked"><span class="ph">ART</span><svg class="i"><use href="#i-glass"/></svg><svg class="i lk"><use href="#i-lock"/></svg><span class="q">1</span></button>
+            <button type="button" class="tile uncommon" data-item="marker" aria-label="Survey marker, 2"><span class="ph">ART</span><svg class="i"><use href="#i-marker"/></svg><span class="q">2</span></button>
+            <button type="button" class="tile" data-item="bundle" aria-label="Plank bundle, 3"><span class="ph">ART</span><svg class="i"><use href="#i-plank"/></svg><span class="q">3</span></button>
+            <span class="tile empty"></span><span class="tile empty"></span><span class="tile empty"></span><span class="tile empty"></span>
+          </div>
+          <p class="meta" style="margin:0">Edge: plain common · double uncommon · solid orange rare · dashed made by you. Dot: an order needs it. Glow: new.</p>
+        </div>
+        <div class="panel ipanel" id="ipanel">
+          <div style="display:flex;gap:12px;align-items:center"><div class="big"><svg class="i"><use href="#i-spar" id="ipIcon"/></svg></div>
+            <div><h3 id="ipName">Prime spar</h3><span class="chip" id="ipTag">Made</span> <span class="num meta" id="ipQty">×5</span></div>
+            <button type="button" class="btn sm only-phone" id="ipClose" style="margin-left:auto">Close</button></div>
+          <p class="meta" id="ipText">A straight, knot-free log stamped Prime. Good for ship masts.</p>
+          <p style="color:var(--accent);font-size:.85rem;margin:6px 0" id="ipNeed">Admiralty needs 11 more · 5 kept for building</p>
+          <div class="btnrow"><button type="button" class="btn sm">Sell 1 · $40</button><button type="button" class="btn sm">Sell all</button><button type="button" class="btn sm">Lock</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SHOP ================= -->
+    <section class="screen" data-screen="shop" hidden>
+      <div class="qhead"><div><p class="eyebrow">Company store · new stock every season</p><h2>Shop</h2></div><span class="chip">New stock in 1:42</span></div>
+      <div class="placeholder">Placeholder. What is sold, prices and rotation come from the perk shop project. This screen replaces the perk draft.</div>
+      <h3 style="font-size:1.05rem">Logging</h3>
+      <div class="cards">
+        <div class="offer"><span class="tier" style="color:var(--muted)">Common perk</span><h3>Wet-weather pay</h3><span class="meta" style="margin:0">Bad weather pays +20% on hauls.</span><div class="foot" style="display:flex;justify-content:space-between;align-items:center"><span class="num">$2,400</span><button type="button" class="btn sm primary">Buy</button></div></div>
+        <div class="offer"><span class="tier" style="color:var(--good)">Uncommon perk</span><h3>Second skid trail</h3><span class="meta" style="margin:0">Skid game: two teams at once.</span><div class="foot" style="display:flex;justify-content:space-between;align-items:center"><span class="num">$6,800</span><button type="button" class="btn sm primary">Buy</button></div></div>
+        <div class="offer leg"><span class="tier" style="color:var(--accent)">Legendary perk</span><h3>Domino fall</h3><span class="meta" style="margin:0">A good fall drops the next tree free.</span><div class="foot" style="display:flex;justify-content:space-between;align-items:center"><span class="num">$18,000</span><button type="button" class="btn sm" disabled>Owned</button></div></div>
+      </div>
+      <h3 style="font-size:1.05rem">Sawmill</h3>
+      <div class="cards">
+        <div class="offer"><span class="tier" style="color:var(--muted)">Common perk</span><h3>Sharp files</h3><span class="meta" style="margin:0">Turning a log takes no time.</span><div style="display:flex;justify-content:space-between;align-items:center"><span class="num">$900 mill</span><button type="button" class="btn sm primary">Buy</button></div></div>
+      </div>
+    </section>
+
+    <!-- ================= CHARTER BOARD ================= -->
+    <section class="screen" data-screen="orders" hidden>
+      <div class="qhead"><div><p class="eyebrow">Every order in one place</p><h2>Charter board</h2></div>
+        <span class="seg2"><button type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Logging</button><button type="button" aria-pressed="false">Sawmill</button></span></div>
+      <div class="qhead"><h3 style="font-size:1.05rem">Special orders <span class="meta">up to +25% shares</span></h3><button type="button" class="btn sm" aria-pressed="true">Auto-fill: on</button></div>
+      <div class="cards">
+        <div class="card"><span class="who">The Admiralty</span><h3>Admiralty spar order</h3>
+          <div class="need"><span class="icn"><svg class="i"><use href="#i-spar"/></svg></span><div class="bar thin"><i style="width:31%"></i></div><span class="num">5/16</span></div>
+          <div class="need"><span class="icn"><svg class="i"><use href="#i-drop"/></svg></span><div class="bar thin"><i style="width:100%"></i></div><span class="num">2/2</span></div>
+          <span class="meta" style="margin:0">+15% shares · unlocks Spar man perk · by end of outpost 4</span>
+          <div class="foot"><span></span><button type="button" class="btn sm" disabled>Hand in</button></div></div>
+        <div class="card"><span class="who">Captain of the Perseverance</span><h3>Patch the Perseverance</h3>
+          <div class="need"><span class="icn"><svg class="i"><use href="#i-gearwheel"/></svg></span><div class="bar thin"><i style="width:25%"></i></div><span class="num">1/4</span></div>
+          <span class="meta" style="margin:0">+8% shares · 2 burls back</span>
+          <div class="foot"><span></span><button type="button" class="btn sm" disabled>Hand in</button></div></div>
+      </div>
+      <h3 style="font-size:1.05rem">Active charter orders <span class="meta">2 of 3</span></h3>
+      <div class="cards">
+        <div class="card" style="border-color:var(--accent)"><span class="who">Logging · ends this season</span><h3>Harbor Planing Mill</h3>
+          <div><div class="bar"><i style="width:74%"></i></div><div class="barlbl"><span>1.48K of 2K bd ft</span><span>+28% on hauls</span></div></div>
+          <div><div class="bar thin warn"><i style="width:85%"></i></div><div class="barlbl"><span>Time</span><span class="num">0:38 left · fine $40</span></div></div></div>
+        <div class="card"><span class="who">Logging · species order</span><h3>Admiralty spar yard</h3>
+          <div><div class="bar"><i style="width:22%"></i></div><div class="barlbl"><span>Spruce 1.1K of 5K</span><span>+43%</span></div></div>
+          <div><div class="bar thin"><i style="width:30%"></i></div><div class="barlbl"><span>Time</span><span class="num">4:10 left</span></div></div></div>
+      </div>
+      <h3 style="font-size:1.05rem">Mill log orders</h3>
+      <div class="cards"><div class="card"><span class="who">Sawmill · free to miss</span><h3>Mill wants Hemlock</h3><div><div class="bar"><i style="width:40%"></i></div><div class="barlbl"><span>2.4K of 6K bd ft</span><span>1.2× price</span></div></div></div></div>
+      <h3 style="font-size:1.05rem">Offers</h3>
+      <div class="panel rows">
+        <div class="row"><div><span class="nm">Landfall Pier Works</span><small>1K bd ft of hemlock in 7 min · +52% · fills from your lot</small></div><button type="button" class="btn sm ghost">Sign</button></div>
+        <div class="row"><div><span class="nm">Fogline Box &amp; Crate</span><small>2K bd ft in 6 min · +21%</small></div><button type="button" class="btn sm ghost">Sign</button></div>
+        <div class="row"><div><span class="nm">Hire job · Grey Wash, Lot 5</span><small>Buyer gives the timber · 45% of price + $40 advance</small></div><button type="button" class="btn sm ghost">Sign</button></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="board" hidden><h2>Company board</h2><div class="panel"><p class="meta" style="margin:0">Each camp's Charter Share board in its own section (Logging's board, the mill's board), past outposts below. Same rows as today. Not drawn in this mockup.</p></div></section>
+    <section class="screen" data-screen="almanac" hidden><h2>Almanac</h2><div class="panel"><p class="meta" style="margin:0">Weather events seen and unseen, and the collection log moved from the Warehouse. Not drawn in this mockup.</p></div></section>
+    <section class="screen" data-screen="settings" hidden><h2>Settings</h2><div class="panel"><p class="meta" style="margin:0">Theme, number format, toast level, save backup, new company. Not drawn in this mockup.</p></div></section>
+    <section class="screen" data-screen="fog" hidden><h2>Fishing</h2><div class="panel"><p class="meta" style="margin:0">Still in the fog. A later camp: the sidebar shows it greyed with one line on how it opens.</p></div></section>
+
+    <div class="mgover" id="mgover" hidden role="dialog" aria-label="Mini-game">
+      <header><div><h2 id="mgTitle">Place a fall</h2><span class="meta">Hold to cut the notch. Let go on the line.</span></div><div class="btnrow"><button type="button" class="btn sm" aria-label="Help">?</button><button type="button" class="btn sm" id="mgClose">Close</button></div></header>
+      <div class="mgcanvas"><div>The mini-game canvas fills this area.<br>Desktop: sidebar and top bar stay (dimmed). Phone: full screen.<br>Toasts and weather cards wait until you close.</div></div>
+      <div class="barlbl" style="font-size:.85rem"><span>Wind 7 mph · par 10 s</span><span>Crews keep working</span></div>
+    </div>
+  </main>
+
+    <div class="toast" id="toast"><small>Prime timber</small><br><b>+4 Prime spars</b> · straight, knot-free logs for masts.</div>
+  <nav class="bottom" aria-label="Main">
+    <button type="button" data-go="logging" data-camp aria-current="page"><svg class="i" id="bCampIcon"><use href="#i-axe"/></svg><span id="bCampLbl">Logging</span><span class="dot"></span></button>
+    <button type="button" data-go="orders"><svg class="i"><use href="#i-scroll"/></svg>Orders<span class="dot"></span></button>
+    <button type="button" data-go="warehouse"><svg class="i"><use href="#i-crate"/></svg>Warehouse</button>
+    <button type="button" data-go="shop"><svg class="i"><use href="#i-shop"/></svg>Shop</button>
+    <button type="button" id="moreBtn"><svg class="i"><use href="#i-menu"/></svg>More</button>
+  </nav>
+</div>
+</div></div>
+
+<script>
+(function(){
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const app = $('#app'), frame = $('#frame');
+  const CAMPS = { logging: { sh: '38', cash: '$412K', other: 'Mill $5.2K', icon: '#i-axe', lbl: 'Logging' }, sawmill: { sh: '6', cash: '$5.2K', other: 'Logging $412K', icon: '#i-saw', lbl: 'Sawmill' } };
+  let lastCamp = 'logging';
+  function go(screen, tab){
+    $$('[data-screen]').forEach(s => s.hidden = s.dataset.screen !== screen);
+    $$('.nav button').forEach(b => { if (b.dataset.go === screen) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (CAMPS[screen]) { lastCamp = screen; const c = CAMPS[screen];
+      $('#cashLbl').textContent = 'Cash · ' + c.lbl; $('#cashV').textContent = c.cash; $('#cashOther').textContent = c.other; $('#shLbl').textContent = 'Shares · ' + c.lbl; $('#shV').textContent = c.sh;
+      $('#bCampIcon use').setAttribute('href', c.icon); $('#bCampLbl').textContent = c.lbl; $('.bottom [data-camp]').dataset.go = screen; }
+    $$('.bottom button').forEach(b => { const on = b.dataset.go === screen || (b.hasAttribute('data-camp') && (screen === 'fog')); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (tab) setTab(screen === 'logging' ? 'log' : 'mill', tab);
+    app.classList.remove('drawer'); $('#tray').hidden = true; $('#bellBtn').setAttribute('aria-expanded', 'false');
+    $('#main').scrollTop = 0;
+  }
+  function setTab(group, t){
+    $$(`[data-tabs="${group}"] button`).forEach(b => b.setAttribute('aria-selected', b.dataset.t === t ? 'true' : 'false'));
+    $$(`[data-pane^="${group}:"]`).forEach(p => p.hidden = p.dataset.pane !== group + ':' + t);
+  }
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (g && !g.closest('.mk')) {
+      // phone: tapping the Camp tab while on a camp switches camps
+      if (g.hasAttribute('data-camp') && g.getAttribute('aria-current') === 'page') { go(lastCamp === 'logging' ? 'sawmill' : 'logging'); return; }
+      go(g.dataset.go, g.dataset.tab); return; }
+    const tb = e.target.closest('[data-tabs] button'); if (tb) { setTab(tb.parentElement.dataset.tabs, tb.dataset.t); return; }
+    const pl = e.target.closest('[data-play]'); if (pl) { $('#mgTitle').textContent = pl.dataset.play; $('#mgover').hidden = false; app.classList.add('dimside'); return; }
+    if (e.target.closest('#mgClose')) { $('#mgover').hidden = true; app.classList.remove('dimside'); return; }
+    if (e.target.closest('#bellBtn')) { const t = $('#tray'); t.hidden = !t.hidden; $('#bellBtn').setAttribute('aria-expanded', String(!t.hidden)); return; }
+    if (e.target.closest('#moreBtn')) { app.classList.add('drawer'); return; }
+    if (e.target.closest('#drawerbg')) { app.classList.remove('drawer'); return; }
+    const rb = e.target.closest('.rule button, .seg2 button'); if (rb) { $$('button', rb.parentElement).forEach(b => b.setAttribute('aria-pressed', b === rb ? 'true' : 'false')); return; }
+    const tl = e.target.closest('.tile[data-item]'); if (tl) { pickItem(tl); return; }
+    if (e.target.closest('#ipClose')) { $('#ipanel').hidden = true; return; }
+    const tip = e.target.closest('[data-tip]'); $$('.tipon').forEach(x => { if (x !== tip) x.classList.remove('tipon'); }); if (tip) tip.classList.toggle('tipon');
+    const sb = e.target.closest('#seasonBtn'); if (sb) { const t = $('#toast'); t.innerHTML = '<small>Season news · Winter</small><br><b>Ice bridge</b> · The inlet froze over. Hauling ×1.3, skidding ×1.1.'; t.hidden = false; }
+  });
+  const ITEMS = {
+    spar: ['Prime spar', 'Made', 5, '#i-spar', 'A straight, knot-free log stamped Prime. Good for ship masts.', 'Admiralty needs 11 more · 5 kept for building'],
+    hard: ['Prime hardwood', 'Made', 1, '#i-log', 'A clean hardwood log. The planing mill needs it.', 'Kept for building'],
+    burl: ['Burl', 'Common', 3, '#i-knot', 'A swirly lump of wood. Buyers pay well for it.', ''],
+    pitch: ['Amber pitch', 'Common', 2, '#i-drop', 'Hard tree sap. Seals ship hulls and the mill pond dam.', 'Perseverance needs 6 more · 2 kept for building'],
+    fit: ["Ship's fitting", 'Uncommon', 1, '#i-gearwheel', 'Bronze parts from a wreck. Builds the circular saw.', 'Perseverance needs 3 more'],
+    glass: ['Fog-glass', 'Rare', 1, '#i-glass', 'Sea glass clouded by the fog. Locked.', 'Kept for the filing room'],
+    marker: ['Survey marker', 'Uncommon', 2, '#i-marker', 'An old survey stake. The land office lists one more lot.', ''],
+    bundle: ['Plank bundle', 'Made', 3, '#i-plank', 'Common lumber from the mill. Raises the bunkhouse.', 'Bunkhouse needs 5 more']
+  };
+  function pickItem(tl){
+    $$('#whgrid .tile').forEach(t => t.setAttribute('aria-pressed', t === tl ? 'true' : 'false'));
+    const it = ITEMS[tl.dataset.item]; tl.classList.remove('new');
+    $('#ipName').textContent = it[0]; $('#ipTag').textContent = it[1]; $('#ipQty').textContent = '×' + it[2];
+    $('#ipIcon').setAttribute('href', it[3]); $('#ipText').textContent = it[4]; $('#ipNeed').textContent = it[5];
+    $('#ipanel').hidden = false;
+  }
+  // mockup controls
+  $$('#mkView button').forEach(b => b.addEventListener('click', () => {
+    $$('#mkView button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    frame.classList.toggle('phone', b.dataset.v === 'phone');
+    if (b.dataset.v === 'phone') $('#ipanel').hidden = true; else $('#ipanel').hidden = false;
+  }));
+  $$('#mkTheme button').forEach(b => b.addEventListener('click', () => {
+    $$('#mkTheme button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    if (b.dataset.t) document.documentElement.setAttribute('data-theme', b.dataset.t); else document.documentElement.removeAttribute('data-theme');
+  }));
+  setTimeout(() => { $('#toast').hidden = true; }, 6000);
+  // open straight to a screen/view from the URL hash, e.g. #warehouse or #phone-orders
+  const h = location.hash.slice(1); if (h) { const [v, s] = h.includes('-') ? h.split('-') : ['', h];
+    if (v === 'phone') $('#mkView [data-v=phone]').click(); if (s) go(s); }
+})();
+</script>
+</body>
+</html>
