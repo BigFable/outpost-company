@@ -66,8 +66,11 @@ export function crewCount(own: Owned): number {
 /**
  * Rising wages: each extra crew of the same type is paid `WAGE_STEP` of the
  * base wage more than the one before. The nth crew earns up × (1 + k·(n−1)).
+ * Tuned by sim 2026-10-28 (docs/research/rising-wages.md): 0.15 leaves every
+ * profile's 3-run total unchanged within noise and moves time from run 1
+ * (more crews per type) to runs 2–3; 0.2 starts to slow idle.
  */
-export const WAGE_STEP = 0.1;
+export const WAGE_STEP = 0.15;
 /**
  * The wage cap: rising wages stop at this share of income a minute (measured on
  * a slow average). Base wages (every crew at its type's first-crew wage) are
