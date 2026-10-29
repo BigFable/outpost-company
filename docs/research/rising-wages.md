@@ -77,10 +77,26 @@ Hire prices dwarf 20 minutes of a wage rise, so a player reading the next crew's
 k = 0.15: wages 5–15% of income (idle run 1: 15%), cap on only for idle-away (41 min of 8 h), worst
 zero-income-with-stock stretch 5.0 min (same as before), no advances, no time short of wages, every run closes.
 
+### Sweep 6 — idle and casual, seeds 10–15 (pooled with the above: 15 seeds)
+
+| Profile | k = 0 run min | k = 0.15 run min | 3-run total | run-2 faster | wages % of income | worst gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| idle | 63/50/44 | 67/54/43 | 156 → 163 (+4.5%) | 20 → 19% | 8.7 → 12.5 | 28 → 30 min |
+| casual | 50/42/34 | 54/42/36 | 126 → 131 (+4%) | 15 → 20% | 7.1 → 9.6 | 29 → 34 min |
+
+With 15 seeds the picture is clearer than with 9: a 15% step costs idle and casual about 4–5% of pace over
+three runs, mostly in run 1, and does not move idle's run-2 speed-up. Still no unfinished runs, stalls,
+advances or wage arrears.
+
+`npm run balance:check` (seeds 1–3 only) fails 17/72 metrics at k = 0.15: seeds 1–3 are the unlucky ones
+for idle (67/60/47 vs 65/48/34 before; seeds 4–15 average 67/52/41 vs 63/50/46). Not re-recorded.
+
 ## Decision (balance agent, 2026-10-28)
 
-**Step 15%, cap 60% of income.** No profile's 3-run total gets slower, and the rise lands on run 1 (about
-210 crews, many of one type) more than on later runs (130–150 crews, more perks and meta), which nudges the
-run-2 speed-up the right way (+2 to +8 points) — inside the noise, so it is a nudge, not a fix. 20% starts
-to slow idle (run 3 34 → 51 min on 3 seeds). The cap is a safety rail: it binds only when a camp sits away
-with a dry queue, and there it cuts the time wages exceed income from 67 to 54 min.
+**Step 15%, cap 60% of income.** It is the largest step that keeps every target where it was: idle closes
+every run, no new stall, pace cost about 4–5% for idle and casual (the price of a wage that actually rises),
+minigame and idle-away unchanged within noise. It does not fix the run-2 speed-up miss (idle 19–20%); that
+needs a different lever. 20% starts to slow idle more (run 3 34 → 51 min on 3 seeds). 10% costs about half
+as much and is the fallback if the owner wants the rise felt less (`WAGE_STEP` in packages/core/src/formulas.ts).
+The cap is a safety rail: it binds only when a camp sits away with a dry queue, and there it cuts the time
+wages exceed income from 67 to 54 min.
