@@ -64,3 +64,23 @@ The cap only binds while the camp is away and income sags; any share from 0.5 to
 
 idle 65/43/48, casual 53/42/30, minigame 34/30/28, idle-away 121/121/92: same as the plain bot within noise.
 Hire prices dwarf 20 minutes of a wage rise, so a player reading the next crew's wage still buys the same crews.
+
+### Sweep 5 — k = 0.15, cap 60%, seeds 1–9
+
+| Profile | k = 0 | k = 0.1 | k = 0.15 | 3-run total, min (0 / 0.1 / 0.15) | run-2 faster (0 / 0.1 / 0.15) |
+| --- | --- | --- | --- | --- | --- |
+| idle | 64/49/44 | 63/54/42 | 68/52/40 | 157 / 160 / 159 | 21 / 13 / 23% |
+| casual | 51/41/38 | 52/41/38 | 56/40/35 | 131 / 131 / 131 | 19 / 22 / 27% |
+| minigame | 36/35/29 | 34/29/28 | 35/31/28 | 99 / 92 / 94 | 2 / 15 / 10% |
+| idle-away | 122/94/116 | 123/84/99 | 122/92/101 | 332 / 306 / 315 | 23 / 31 / 25% |
+
+k = 0.15: wages 5–15% of income (idle run 1: 15%), cap on only for idle-away (41 min of 8 h), worst
+zero-income-with-stock stretch 5.0 min (same as before), no advances, no time short of wages, every run closes.
+
+## Decision (balance agent, 2026-10-28)
+
+**Step 15%, cap 60% of income.** No profile's 3-run total gets slower, and the rise lands on run 1 (about
+210 crews, many of one type) more than on later runs (130–150 crews, more perks and meta), which nudges the
+run-2 speed-up the right way (+2 to +8 points) — inside the noise, so it is a nudge, not a fix. 20% starts
+to slow idle (run 3 34 → 51 min on 3 seeds). The cap is a safety rail: it binds only when a camp sits away
+with a dry queue, and there it cuts the time wages exceed income from 67 to 54 min.
