@@ -14,6 +14,7 @@ function run(profile, seed, hours=4, opt={}){
   // builds before several active orders (2026-10-26) keep one S.contract: read it as a list of 0 or 1
   const CS=()=>S.contracts||(S.contract?[S.contract]:[]), ordFull=()=>G.ordFull?G.ordFull():!!S.contract, ordCap=()=>G.ordCap?G.ordCap():1;
   // rising wages (2026-10-28): WAGE_STEP / WAGE_CAP override the game's step and cap share for tuning sweeps
+  const WAGE_H=+(process.env.WAGE_H||0);
   if(G.WAGE){ if(process.env.WAGE_STEP!=null) G.WAGE.step=+process.env.WAGE_STEP; if(process.env.WAGE_CAP!=null) G.WAGE.cap=+process.env.WAGE_CAP; }
   G.normalize(); G.refreshSales(); G.refreshOffers(); S.hireOffer=G.genHire(); G.setSite(); G.newTree();
   // playtest 2: finds and the Sawmill draw from their own seeded streams, so the logging draws above stay byte-exact
@@ -243,7 +244,10 @@ function run(profile, seed, hours=4, opt={}){
 
     // equipment for bottleneck, keep a tract reserve when queue low
     const neck=STG.reduce((a,b)=>cap(b)<cap(a)?b:a);
-    const opts=G.EQ.filter(e=>e.stage===neck&&e.era<=S.era).map(e=>({e,c:G.eqCost(e)})).sort((a,b)=>b.e.rate/b.c - a.e.rate/a.c);
+    // rising wages (2026-10-28): WAGE_H=<min> counts that many minutes of the next crew's wage rise (above its base wage) as part of
+    // its price, like a player reading the hire row; with no rise (step 0) the order is unchanged
+    const riseC=e=>WAGE_H && G.WAGE ? WAGE_H*(Core.crewWageAdded(e.up,S.own[e.id]||0,1,G.WAGE.step)-e.up) : 0;
+    const opts=G.EQ.filter(e=>e.stage===neck&&e.era<=S.era).map(e=>({e,c:G.eqCost(e),w:G.eqCost(e)+riseC(e)})).sort((a,b)=>b.e.rate/b.w - a.e.rate/a.w);
     // stalled on a stage with no crew at all (2026-10-28): nothing sold for 2 min, so hire its first crew without holding back the lot reserve
     const stalled = !process.env.NOCREWRES && G.baseRate(neck)<=0 && S.lastSale!=null && S.t-S.lastSale>=120;
     const tractRes = S.tracts.length<2 && !stalled ? G.cheapestSale() : 0;
