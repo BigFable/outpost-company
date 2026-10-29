@@ -34,10 +34,10 @@ async function baseSave(){ const dom=mk(); await sleep(300); const w=dom.window;
  const cv=d.getElementById('mgCanvas'); const key=(code,o={})=>cv.dispatchEvent(new w.KeyboardEvent('keydown',{code,key:code,bubbles:true,...o}));
  const goTo=ft=>{ for(let i=0;i<80;i++) key('ArrowLeft'); for(let i=1;i<ft;i++) key('ArrowRight'); };
  const peek=()=>d.getElementById('mgPeek').textContent;
- goTo(5); ok(/At 5 ft: a 5 ft piece from the base, pulp \((too short|rot)\), worth \$/.test(peek()),'preview names pulp and why: '+peek());
+ goTo(5); ok(/At 5 ft: a 5 ft piece from the base, firewood \((too short|rot)\), worth \$/.test(peek()),'preview names firewood and why: '+peek());
  const L=E('B.L'); const best=E('B.optPre.cuts.slice()'); const first=best[0];
  goTo(first); const pv=E(`seg(0, ${first})`);
- ok(new RegExp(`At ${first} ft: .*(grade ${pv.g} log|pulp)`).test(peek()) && /worth \$/.test(peek()),'preview names the grade and value of the hovered piece: '+peek());
+ ok(new RegExp(`At ${first} ft: .*(${({1:'Fine',2:'Good',3:'Common'})[pv.g]} log|firewood)`).test(peek()) && /worth \$/.test(peek()),'preview names the tier and value of the hovered piece: '+peek());
  // valid-length marks are anchored to the last cut
  key('Enter'); ok(E('B.cuts.length')===1,'Enter places a cut at the cursor');
  key('Enter'); ok(E('B.cuts.length')===0,'Enter again takes it out');

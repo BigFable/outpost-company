@@ -30,7 +30,7 @@ const {mk,sleep,ok,fails}=require('./repro/_h');
   const g=await mk({'timberline-v2':bad},{wait:400}); const {E,w,d}=g;
   ok(w.localStorage.getItem('timberline-v2-broken')===bad,'the unreadable text is kept under timberline-v2-broken');
   ok(E('S.log.some(l=>/could not be read/.test(l.text))'),'the activity log tells the player');
-  E("openWh('ledger')"); const b=d.getElementById('svBroken');
+  E("go('settings')"); const b=d.getElementById('svBroken');
   ok(!!b,'Save backup offers "Show the damaged save"');
   if(b){ b.click(); ok(d.getElementById('svOut').value===bad && !d.getElementById('svOut').hidden,'the button shows the damaged text for copying'); }
   E('save()'); ok(w.localStorage.getItem('timberline-v2-broken')===bad,'autosave does not touch the backup');
@@ -79,7 +79,7 @@ const {mk,sleep,ok,fails}=require('./repro/_h');
   const g=await mk(null,{wait:300}); const {E,d}=g; const f=n=>E(`fmt(${n})`);
   ok(f(9.96)==='10' && f(999.4)==='999' && f(999.6)==='1.00K' && f(9999)==='10.0K' && f(99999)==='100K' && f(-999999)==='-1.00M' && f(1234567)==='1.23M',
     'fmt: '+[9.96,999.4,999.6,9999,99999,-999999,1234567].map(f).join(' '));
-  E(`S.orders.autoFill=false; S.locks.push('logging.prime_spar'); addItem('logging.prime_spar',4,true); openWh('stock')`);
+  E(`S.orders.autoFill=false; S.locks.push('logging.prime_spar'); addItem('logging.prime_spar',4,true); openWh('stock','logging.prime_spar')`);
   ok(d.querySelector('[data-s1="logging.prime_spar"]').disabled && d.querySelector('[data-sa="logging.prime_spar"]').disabled,'Sell 1 and Sell all are disabled on a locked item');
   d.querySelector('[data-lk="logging.prime_spar"]').click();
   ok(!d.querySelector('[data-sa="logging.prime_spar"]').disabled,'unlocking enables them again');

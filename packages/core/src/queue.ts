@@ -299,7 +299,7 @@ export function campNote(c: QueueCaps, lot: QueueLot, ctx: CampNoteCtx): CampNot
   const sf = slopeFactor(lot.slope, sky), df = distanceFactor(lot.miles);
   const seas = seasonLines(lot.mix, ctx.season);
   const details: string[] = [];
-  details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} bd ft/s.`);
+  details.push(`On this lot: felling ${f2(r.fell)}, bucking ${f2(r.buck)}, skidding ${f2(r.skid)}, hauling ${f2(r.haul)} wood/s.`);
   details.push(`Weight ${f2(wt)}: skid and haul ×${f2(1 / wt)}. ${lot.miles} mi haul: hauling ×${f2(df)}. ${upper(SLOPES[lot.slope].label)} ground: skidding ×${f2(sf)}.`);
 
   const anyCrew = r.fell > 0 && r.buck > 0 && r.skid > 0 && r.haul > 0;

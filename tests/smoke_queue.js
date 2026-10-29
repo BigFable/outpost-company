@@ -32,7 +32,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(bestOf('admiralty_spar')===1 && /Best for the Admiralty order/.test(cards[1].textContent),'and the Admiralty badge (spruce stamps 3 Prime spars)');
  const sprFit=[...cards[1].querySelectorAll('.ofit')].map(p=>p.textContent).join(' | ');
  ok(/spruce order in time/.test(sprFit),'order fit names the spruce order: '+sprFit);
- ok(/≈ \d+(\.\d)? (of the 16 )?Prime spars/.test(sprFit) && /Admiralty order/.test(sprFit),'order fit estimates Prime spars toward the Admiralty');
+ ok(/≈ \d+(\.\d)? (of the 16 )?Prime logs/.test(sprFit) && /Admiralty order/.test(sprFit),'order fit estimates Prime logs toward the Admiralty');
  ok(cards[0].querySelector('[data-order="contract"]')===null,'a lot with no spruce makes no claim on the spruce order');
  ok(d.querySelectorAll('#sales [data-best="contract"]').length===1,'one best listing per order');
  // stock already in the warehouse counts: with 16 spars on hand the Admiralty needs nothing more from the land office

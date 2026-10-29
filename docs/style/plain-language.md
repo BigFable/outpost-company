@@ -27,9 +27,9 @@ Kept game words (each is explained where the player first meets it):
 | Fell, Buck, Skid, Haul | The four stage names; one word each, they fit the buttons | Work chain panel: "Fell trees, buck (cut) them into logs, skid (drag) logs to the landing, then haul them to the cove." |
 | landing | Where logs wait for the haul; in the same explainer | Work chain panel |
 | hinge | Core of the felling game | Felling help: "the uncut strip" |
-| bd ft | Board feet, the volume unit everywhere | — |
+| wood | The volume unit everywhere (1 wood = 1 board foot; resource-names.md §3) | Almanac: "Wood is measured in board feet: a board 1 ft long, 1 ft wide, 1 in thick." |
 | Charter Shares (short: shares), outpost, close camp, perk, reroll | Core loop words | Close camp panel |
-| Prime, Clear, Select, Common, pulp, grade 1–3 | Item and grade names | Bucking guide, lumber yard |
+| Common, Good, Fine, Prime, Rare (and firewood below them) | The one tier ladder for logs, boards and items, shown with 0–4 diamonds | Almanac, bucking guide, item panel |
 | era | The four company stages (Cove Landing → Into the Interior) | Company panel |
 
 Replaced:
@@ -60,13 +60,26 @@ Replaced:
 | slash fire | brush fire |
 | rolling (slope) | hilly |
 | mill outpost | mill run |
+| bd ft, board feet, MBF | wood |
+| grade 1 / 2 / 3 log, pulp | Fine / Good / Common log, firewood |
+| Clear / Select / Common lumber | Fine / Good / Common boards |
+| Prime spar | Prime log |
+| Quarter-sawn board | Prime board |
+| Burl | Swirl knot |
+| Amber pitch | Amber sap |
+| Survey marker | Restock token |
+| Ship’s fitting | Shipwreck bronze |
+| Fog-glass | Fog lens |
+| tanbark | hemlock bark |
+| Mill pond & wheel | Water wheel |
+| Admiralty spar order, Spar man, Pitch boiler | Admiralty mast order, Prime hunter, Sap boiler |
 
 Tree names (display only; save ids unchanged): pine → Pine, spruce → Spruce, hemlock → Hemlock, maple → Maple, oak → Oak, cloudwood → Redwood. Mid-sentence they are lowercase ("the pine order").
 
 Mini-game names (buttons): Fell tree, Cut logs, Skid logs, Drive load, Saw boards. In rules text the games are "the felling game", "the bucking game", "the skid game", "the haul game" and "Saw boards".
 
 ## Numbers
-- Use the game's formatters: `fmt` (1.2K, 3.4M), `money` ($1.2K, −$40), `bf` (12K bd ft), `mins` (30 s, 4.5 min, 1.2 h).
+- Use the game's formatters: `fmt` (1.2K, 3.4M), `money` ($1.2K, −$40), `bf` (12K wood), `mins` (30 s, 4.5 min, 1.2 h).
 - Multipliers as ×1.25 (the × sign, no space). Changes as +15% or −20% (true minus sign). Ranges with an en dash: 4–10 ft.
 - Whole percents. Seconds as "30 s". Distances as "2 mi", "120 yd".
 - Never change a number when rewording. Text changes are not balance changes.

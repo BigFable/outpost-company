@@ -212,16 +212,16 @@ const LEN_STD: Readonly<Record<number, number>> = { 8: 0.9, 10: 1, 12: 1.05, 14:
 const BUCK_STD: BuckRules = { L: [38, 62], d0: [20, 32], top: 8, knots: [2, 4], knotAt: [0.3, 0.95], rot: [0.5, 2, 6], sweep: 0.45,
   lenP: LEN_STD, g1Prime: 12, pitchMult: 1, tag: '', guide: '' };
 export const BUCK_RULES: Readonly<Partial<Record<SpeciesId, BuckRules>>> = deepFreeze({
-  pine: { ...BUCK_STD, pitchMult: 2, tag: 'Pine: finds amber pitch twice as often.',
-    guide: '<b>Pine:</b> amber pitch turns up twice as often. 16 ft logs pay ×1.15.' },
+  pine: { ...BUCK_STD, pitchMult: 2, tag: 'Pine: finds amber sap twice as often.',
+    guide: '<b>Pine:</b> amber sap turns up twice as often. 16 ft logs pay ×1.15.' },
   spruce: { ...BUCK_STD, L: [44, 66], d0: [16, 26], knots: [3, 5], knotAt: [0.5, 0.95], rot: [0.2, 2, 4], sweep: 0.2,
     lenP: { ...LEN_STD, 16: 1.25 }, g1Prime: 14,
     tag: 'Spruce: knots only in the top half. 16 ft logs pay ×1.25.',
-    guide: '<b>Spruce:</b> knots only in the top half, so the lower logs are clear. 16 ft logs pay ×1.25; Prime needs a grade 1 log of 14 ft.' },
+    guide: '<b>Spruce:</b> knots only in the top half, so the lower logs are Fine. 16 ft logs pay ×1.25; Prime needs a Fine log of 14 ft.' },
   hemlock: { ...BUCK_STD, L: [36, 56], d0: [22, 34], knots: [2, 3], rot: [0.8, 4, 10], sweep: 0.3, shake: [0.4, 4, 6],
     lenP: { 8: 1, 10: 1, 12: 1, 14: 1, 16: 1 },
-    tag: 'Hemlock: deep rot at the base, and cracks can make logs grade 3. Every length pays the same.',
-    guide: '<b>Hemlock:</b> rot runs 4–10 ft up from the base, and any log that crosses the cracks is grade 3. Every length pays the same.' },
+    tag: 'Hemlock: deep rot at the base, and cracks can make Common logs. Every length pays the same.',
+    guide: '<b>Hemlock:</b> rot runs 4–10 ft up from the base, and any log that crosses the cracks is a Common log. Every length pays the same.' },
 });
 
 /** Bucking rules for a species (the standard rules when it has none of its own yet). */
@@ -253,7 +253,7 @@ export const SPECIES_ORDER_OFF_TRACT = 0.6;
 
 /** "Best for" line per species. */
 export const BEST_FOR: Readonly<Record<SpeciesId, string>> = deepFreeze({
-  pine: 'boards and amber pitch', spruce: 'Prime spars (3 from a perfect fall)', hemlock: 'bark money in Spring and Summer',
+  pine: 'boards and amber sap', spruce: 'Prime logs (3 from a perfect fall)', hemlock: 'bark money in Spring and Summer',
   maple: 'boards', oak: 'boards', cloudwood: 'big timber',
 });
 

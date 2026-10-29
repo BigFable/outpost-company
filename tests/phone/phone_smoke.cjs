@@ -106,6 +106,12 @@ async function run(devName) {
   await shot('stage-cards', '#chain');
   ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#chain .stc')].map((x) => x.getBoundingClientRect()); return c.length === 4 && c.every((r) => r.right <= innerWidth + 1 && r.left >= -1); }), `${devName}: four stage cards on screen`);
   await shot('top-bar', '.top');
+  // slice 3: on a phone the camp header is one line (where you are, one stat, the buttons) plus the close-camp bar
+  if (await page.evaluate(() => innerWidth <= 700)) {
+    const hd = await page.evaluate(() => { const h = document.getElementById('runbar'), e = h.querySelector('.eyebrow'), r = h.getBoundingClientRect(), er = e.getBoundingClientRect(), lh = parseFloat(getComputedStyle(e).lineHeight) || 24;
+      return { h: Math.round(r.height), oneLine: er.height <= lh * 1.5, btnsTop: Math.round(document.querySelector('#runbar .chbtns').getBoundingClientRect().top - r.top) }; });
+    ok(hd.h <= 110 && hd.oneLine && hd.btnsTop < 30, `${devName}: the camp header is one line plus the bar ${JSON.stringify(hd)}`);
+  }
   // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
   await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
   await tapEl('#ltLots'); await sleep(150);
@@ -145,8 +151,22 @@ async function run(devName) {
   ok(await noSideScroll(), `${devName}: Warehouse screen has no sideways scroll`);
   const stw = await smallTargets(); ok(stw.length === 0, `${devName}: Warehouse tap targets are 44 px or more` + (stw.length ? ': ' + stw.slice(0, 12).join(' ') : ''));
   await shot('screen-warehouse');
-  for (const t of ['log', 'ledger']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
-  // save backup: copy, then load it back (validation, confirm step)
+  // the grid (slice 3): tap a tile, the item panel opens as a bottom sheet over the grid with 44 px buttons; Close shuts it
+  await tapEl('#whGrid [data-it="logging.burl"]'); await sleep(150);
+  const pnl = await page.evaluate(() => { const p = document.getElementById('whDetail'), r = p.getBoundingClientRect(), bt = document.getElementById('bottomTabs').getBoundingClientRect();
+    return { open: !p.classList.contains('none') && /Sell 1/.test(p.textContent), fits: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= 0 && (getComputedStyle(document.getElementById('bottomTabs')).display === 'none' || r.bottom <= bt.top + 1) }; });
+  ok(pnl.open && pnl.fits, `${devName}: tapping a tile opens the item panel on screen ${JSON.stringify(pnl)}`);
+  const stp = await smallTargets(); ok(stp.length === 0, `${devName}: item panel tap targets are 44 px or more` + (stp.length ? ': ' + stp.slice(0, 12).join(' ') : ''));
+  const sxp = await smallText(); ok(sxp.length === 0, `${devName}: item panel text is 12 px or more` + (sxp.length ? ': ' + sxp.slice(0, 12).join(' ') : ''));
+  await shot('warehouse-item');
+  await tapEl('#whDetail [data-lk]'); await sleep(100);
+  ok((await E(`S.locks.includes('logging.burl')`)) && await page.evaluate(() => !!document.querySelector('#whGrid [data-it="logging.burl"] .ilock')), `${devName}: Lock from the panel by touch`);
+  await tapEl('#whDetail [data-lk]'); await sleep(100);
+  if (await page.evaluate(() => getComputedStyle(document.querySelector('#whDetail [data-close]')).display !== 'none')) { await tapEl('#whDetail [data-close]'); await sleep(100);
+    ok(await page.evaluate(() => document.getElementById('whDetail').classList.contains('none')), `${devName}: Close shuts the item panel`); }
+  for (const t of ['collection', 'logs']) { await tapEl(`#whTabs [data-t=${t}]`); await sleep(100); await shot('sheet-warehouse-' + t); }
+  // save backup (Settings since slice 3): copy, then load it back (validation, confirm step)
+  await E(`go('settings')`); await sleep(150);
   await page.locator('#svCopy').scrollIntoViewIfNeeded(); await tapEl('#svCopy'); await sleep(200);
   const saveTxt = await page.evaluate(() => document.getElementById('svOut').value);
   ok(/^OUTPOST-SAVE:/.test(saveTxt) && saveTxt.length > 500, `${devName}: Copy save shows the save as text (${saveTxt.length} chars): ${await page.evaluate(() => document.getElementById('svMsg').textContent)}`);
@@ -162,7 +182,7 @@ async function run(devName) {
   await shot('save-confirm');
   await tapEl('#svLoad'); await sleep(200);
   ok((await E('S.cash')) > 1000 && /Save loaded/.test(await page.evaluate(() => document.getElementById('svMsg').textContent)), `${devName}: the pasted save loads (cash restored)`);
-  await tapEl('#whClose'); await sleep(100);
+  await E(`go('logging')`); await sleep(100);
   await E(`queueDraft(1); openDraft()`); await sleep(200); await sheetCheck('draft', 'draft');
   ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#dCards .pcard')].map((x) => x.getBoundingClientRect()); return innerWidth > 520 || c.every((r) => Math.abs(r.left - c[0].left) < 1); }), `${devName}: draft cards in one column on a narrow screen`);
   await tapEl('#dClose'); await sleep(100);
@@ -260,7 +280,7 @@ async function run(devName) {
   const L = await E('B.L'), ft = 16, [bx, by] = await toScreen(40 + ft * 560 / L, 120);
   await tapXY(bx, by); await sleep(80);
   const pk1 = await page.evaluate(() => document.getElementById('mgPeek').textContent);
-  ok((await E('B.cuts.length')) === 0 && /At 16 ft/.test(pk1) && /(log|pulp)/.test(pk1) && /Tap again/.test(pk1), `${devName}: first tap previews the cut only: ${pk1}`);
+  ok((await E('B.cuts.length')) === 0 && /At 16 ft/.test(pk1) && /(log|firewood)/.test(pk1) && /Tap again/.test(pk1), `${devName}: first tap previews the cut only: ${pk1}`);
   await shot('mg-buck-preview');
   const [bx2] = await toScreen(40 + 28 * 560 / L, 120);
   await tapXY(bx2, by); await sleep(80);

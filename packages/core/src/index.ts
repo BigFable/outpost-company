@@ -13,6 +13,7 @@ export * from './charter';
 export * from './generators';
 export * from './haul';
 export * from './items';
+export * from './icons';
 export * from './sawmill';
 export * from './species';
 export * from './queue';

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { must, scripted } from './test-rng';
 import {
   BUCK_PRIME_MAX, countEvents, CURRENCIES, DROP_TABLES, dropTier, idlePrimeChance, itemDef, itemSellPrice, ITEMS, ORDER_BONUS_CAP, ORDER_PERKS,
-  orderBonus, orderRemaining, primeFromBuck, primeFromFall, PRIME_RULES, rollDrop, rollIdleDrop, SPECIAL_ORDERS,
+  orderBonus, orderRemaining, primeFromBuck, primeFromFall, PRIME_RULES, renameOldText, rollDrop, rollIdleDrop, SPECIAL_ORDERS,
 } from './items';
 import { PERKS } from './content';
 import { streamRng } from './rng';
@@ -132,5 +132,19 @@ describe('streamRng', () => {
     expect(xs.every((x) => x >= 0 && x < 1)).toBe(true);
     const saved = { ...a }, more = ra();
     expect(streamRng(saved, 'drops')()).toBe(more);
+  });
+});
+
+describe('resource renames', () => {
+  it('old names in saved text read in the new words, and the rewrite is idempotent', () => {
+    const old = 'New find: Burl. Filled “Admiralty spar order”: 3 Prime spars, 2 amber pitch, a ship’s fitting and Fog-glass. Closed mill run 1: 30K bd ft sawn. Achievement: 10 MBF.';
+    const now = renameOldText(old);
+    expect(now).toBe('New find: Swirl knot. Filled “Admiralty mast order”: 3 Prime logs, 2 amber sap, a shipwreck bronze and Fog lens. Closed mill run 1: 30K wood sawn. Achievement: 10K wood.');
+    expect(renameOldText(now)).toBe(now);
+    expect(renameOldText('Used a survey marker. New find: Survey marker. Pitch boiler and Spar man unlocked.')).toBe('Used a restock token. New find: Restock token. Sap boiler and Prime hunter unlocked.');
+  });
+  it('every live item name is plain (no old lingo left)', () => {
+    for (const i of ITEMS) expect(renameOldText(i.name)).toBe(i.name);
+    expect(ITEMS.map((i) => i.name)).toEqual(['Prime log', 'Swirl knot', 'Amber sap', 'Restock token', 'Shipwreck bronze', 'Fog lens', 'Prime board', 'Plank bundle']);
   });
 });

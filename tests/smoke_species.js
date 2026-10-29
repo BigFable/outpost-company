@@ -36,7 +36,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(cards.every(c=>c.querySelector('.stat[data-stat="value"]') && c.querySelector('.stat[data-stat="chops"]')),'value and chops per tree shown (stat chips)');
  const wv=c=>c.querySelector('.stat[data-stat="weight"]').dataset.v;
  ok(wv(cards[0])==='good' && wv(cards[1])==='bad' && wv(cards[2])!=='good','weight chips against the Cove average (0.95): light spruce green, heavy hemlock red, pine-hemlock coast not green: '+cards.map(wv).join());
- ok(/Best for: Prime spars/.test(c0) && /Best for: bark money/.test(c1) && /Best for: boards and amber pitch/.test(cards[2].textContent),'best-for line by main species');
+ ok(/Best for: Prime logs/.test(c0) && /Best for: bark money/.test(c1) && /Best for: boards and amber sap/.test(cards[2].textContent),'best-for line by main species');
  ok(/Windy: felling-game wind ×1\.2/.test(c0) && /land ×0\.9/.test(c1),'ground twists shown');
  ok(cards.every(c=>c.querySelector('.fit').dataset.fit==='none'),'no crews: camp fit asks you to hire');
  // lots of fallers, few teams: the heavy lot is "teams short", the light one fits better
@@ -79,7 +79,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E(`F.wind.str=0; F.aim=F.gap;`); pe('pointerup',320,200);
  ok(E('F.phase')==='fall','mouse release drops the tree');
  E(`for(let i=0;i<120 && F.phase!=='done';i++) fellStep(1/60);`);
- ok(E('F.phase')==='done' && /Perfect fall/.test(st()) && /\+3 Prime spars/.test(st()),'a perfect spruce lay stamps 3 Prime spars: '+st().slice(0,160));
+ ok(E('F.phase')==='done' && /Perfect fall/.test(st()) && /\+3 Prime logs/.test(st()),'a perfect spruce lay stamps 3 Prime logs: '+st().slice(0,160));
  // hemlock: brittle
  E(`closeMG(); S.tracts=[Core.makeTract('Sw',[['hemlock',100]],50,1,'flat','swamp')]; setSite(); S.vis='hemlock'; openMG('fell'); cancelAnimationFrame(MG.raf);`);
  ok(/^Hemlock: brittle/.test(st()) && E('hingeZone().join()')==='0.1,0.2','hemlock tag; green hinge zone 10–20%');

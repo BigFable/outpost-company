@@ -34,10 +34,10 @@ describe('camp money', () => {
     expect(millStartCash()).toBe(FOUNDING_CRATE.cash + 300);
     expect(millStartCash()).toBe(360);
   });
-  it('the mill board node saw.advance is the Log crate: 3,000 bd ft of logs a mill run, no cash', () => {
+  it('the mill board node saw.advance is the Log crate: 3,000 wood of logs a mill run, no cash', () => {
     const n = MILL_META.find((x) => x.id === 'saw.advance');
     expect(n?.name).toBe('Log crate');
-    expect(n?.desc).toBe('Start each mill run with 3,000 bd ft of logs.');
+    expect(n?.desc).toBe('Start each mill run with 3,000 wood of logs.');
     expect(LOG_CRATE_BF).toBe(3000);
   });
   it('bundles: $40 each; a bunkhouse level counts its bundles', () => {
