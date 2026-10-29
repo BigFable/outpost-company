@@ -1811,7 +1811,7 @@ var Core = (function(exports) {
 	* most improvements whose only effect is inside a mini-game have no crews'
 	* route; the haul-game ones all do (playtest 1).
 	* `achievements` is a derived stat: the number of achievements earned. Targets rescaled for the
-	* achievements rework (2026-10-28: 23 first-outpost achievements of 61), so each unlocks about when it did before.
+	* achievements rework (2026-10-28: 23 first-outpost achievements of 63), so each unlocks about when it did before.
 	*/
 	var IMPROVEMENT_ALT_REQS = deepFreeze({
 		swamper: {
@@ -2921,35 +2921,37 @@ var Core = (function(exports) {
 			atLeast("cleanHaul", 1)
 		], 1500, 2),
 		once("first", "era2", "Diesel Road", "Reach Diesel Road.", [atLeast("era", 2)], 0, 2),
-		once("across", "close1", "Loaded the ship", "Close camp for the first time.", [closes(1)], 500, 1),
+		once("across", "close1", "Loaded the ship", "Close camp for the first time.", [closes(1)], 250, 1),
 		once("across", "close3", "Third charter", "Close camp 3 times.", [closes(3)], 2e3, 2),
-		once("across", "beatfirst", "Old hands", "Close an outpost faster than your first.", [atLeast("beatFirst", 1)], 1500, 2),
+		once("across", "beatfirst", "Old hands", "Close an outpost faster than your first.", [atLeast("beatFirst", 1)], 1e3, 2),
 		once("across", "quicksteam", "Quick steam", "On a later outpost, reach Steam Camp within 15 minutes.", [{
 			metric: "steamLater",
 			op: "<=",
 			value: 15
-		}], 2e3, 1),
+		}], 1e3, 1),
 		once("across", "diesel3", "Diesel veteran", "Reach Diesel Road in 3 outposts.", [atLeast("dieselRuns", 3), closes(2)], 1e4, 2),
-		once("across", "shares50", "Board favorite", "Earn 50 Charter Shares in all.", [atLeast("shares", 50)], 1e3, 1),
-		once("across", "mill1", "Saw it here", "Close your first mill run.", [atLeast("millRuns", 1)], 1e3, 1),
-		once("across", "tomill", "Logs for the mill", "Send 100,000 wood to the Sawmill.", [atLeast("toMill", 1e5)], 1e3, 1),
-		once("across", "bunk3", "Full bunkhouse", "Build the bunkhouse to level 3.", [atLeast("bunk", 3)], 3e3, 2),
-		once("across", "sawtop", "Top sawyer", "Get top sawing in Saw boards.", [atLeast("sawTop", 1)], 500, 1),
-		once("across", "sp3", "Charter regular", "Fill 3 special orders.", [atLeast("spOrders", 3), closes(1)], 2e3, 2),
-		once("across", "orders3", "Busy clerks", "Run 3 charter orders at once.", [atLeast("maxOrders", 3), closes(1)], 1e3, 1),
-		once("across", "afk3", "Away on business", "Buy 3 AFK lots.", [atLeast("afkLots", 3), closes(1)], 1e3, 1),
-		once("across", "perks40", "Seasoned charter", "Pick 40 perks.", [atLeast("perks", 40), closes(1)], 2e3, 1),
-		once("across", "curse3", "Cursed but rich", "Take 3 curse perks.", [atLeast("curses", 3), closes(1)], 1500, 1),
-		ladder("across", "t30k", "Thirty thousand trees", "Fell 30,000 trees.", "felled", 3e4, 2e5, 1, [closes(1)]),
-		ladder("across", "d10m", "Ten million wood", "Deliver 10 million wood.", "deliv", 1e7, 7e4, 3, [closes(1)]),
-		ladder("across", "e5m", "Five million in sales", "Earn $5M in sales.", "earned", 5e6, 12e4, 1, [closes(1)]),
-		ladder("across", "tr60", "Sixty lots", "Finish 60 lots.", "tracts", 60, 15e4, 2, [closes(1)]),
-		ladder("across", "w10", "Ten winters", "Work through ten winters.", "winters", 10, 3e4, 1, [closes(1)]),
+		once("across", "shares50", "Board favorite", "Earn 50 Charter Shares in all.", [atLeast("shares", 50)], 500, 1),
+		once("across", "mill1", "Saw it here", "Close your first mill run.", [atLeast("millRuns", 1)], 750, 1),
+		once("across", "tomill", "Logs for the mill", "Send 100,000 wood to the Sawmill.", [atLeast("toMill", 1e5)], 750, 1),
+		once("across", "bunk3", "Full bunkhouse", "Build the bunkhouse to level 3.", [atLeast("bunk", 3)], 2e3, 2),
+		once("across", "sawtop", "Top sawyer", "Get top sawing in Saw boards.", [atLeast("sawTop", 1)], 400, 1),
+		once("across", "sp3", "Charter regular", "Fill 3 special orders.", [atLeast("spOrders", 3), closes(1)], 1500, 2),
+		once("across", "orders3", "Busy clerks", "Run 3 charter orders at once.", [atLeast("maxOrders", 3), closes(1)], 750, 1),
+		once("across", "afk3", "Away on business", "Buy 3 AFK lots.", [atLeast("afkLots", 3), closes(1)], 750, 1),
+		once("across", "perks30", "Seasoned charter", "Pick 30 perks.", [atLeast("perks", 30), closes(1)], 1e3, 1),
+		once("across", "curse3", "Cursed but rich", "Take 3 curse perks.", [atLeast("curses", 3), closes(1)], 750, 1),
+		ladder("across", "t30k", "Thirty thousand trees", "Fell 30,000 trees.", "felled", 3e4, 8e4, 1, [closes(1)]),
+		ladder("across", "d10m", "Ten million wood", "Deliver 10 million wood.", "deliv", 1e7, 5e4, 3, [closes(1)]),
+		ladder("across", "e5m", "Five million in sales", "Earn $5M in sales.", "earned", 5e6, 6e4, 1, [closes(1)]),
+		ladder("across", "tr45", "Forty-five lots", "Finish 45 lots.", "tracts", 45, 2e4, 1, [closes(1)]),
+		ladder("across", "tr60", "Sixty lots", "Finish 60 lots.", "tracts", 60, 6e4, 2, [closes(1)]),
+		ladder("across", "c50", "Steady supplier", "Fill 50 charter orders.", "contracts", 50, 25e3, 1, [closes(1)]),
+		ladder("across", "w10", "Ten winters", "Work through ten winters.", "winters", 10, 15e3, 1, [closes(1)]),
 		ladder("across", "wx10", "Ten storms", "Ride out 10 bad-weather seasons to the end.", "storms", 10, 900, 1, [closes(1)]),
-		ladder("across", "pf25", "Faller of note", "Land 25 perfect falls.", "perfFell", 25, 2e3, 1, [closes(1)]),
-		ladder("across", "pb25", "Grader’s favorite", "Cut 25 trunks for full value.", "perfBuck", 25, 2e3, 1, [closes(1)]),
-		ladder("across", "cs25", "Teamster", "Make 25 clean skids.", "cleanSkid", 25, 2e3, 1, [closes(1)]),
-		ladder("across", "ch25", "Road boss", "Make 25 clean hauls.", "cleanHaul", 25, 2e3, 1, [closes(1)]),
+		ladder("across", "pf25", "Faller of note", "Land 25 perfect falls.", "perfFell", 25, 600, 1, [closes(1)]),
+		ladder("across", "pb25", "Grader’s favorite", "Cut 25 trunks for full value.", "perfBuck", 25, 600, 1, [closes(1)]),
+		ladder("across", "cs25", "Teamster", "Make 25 clean skids.", "cleanSkid", 25, 600, 1, [closes(1)]),
+		ladder("across", "ch25", "Road boss", "Make 25 clean hauls.", "cleanHaul", 25, 600, 1, [closes(1)]),
 		once("long", "close5", "Five outposts", "Close camp 5 times.", [closes(5)], 5e3, 2),
 		once("long", "close10", "Ten outposts", "Close camp 10 times.", [closes(10)], 2e4, 3),
 		once("long", "era3", "Into the Interior", "Reach Into the Interior.", [atLeast("era", 3), closes(1)], 0, 3),

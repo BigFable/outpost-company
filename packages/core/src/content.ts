@@ -167,7 +167,7 @@ export const IMPROVEMENT_REQS: Readonly<Record<string, StatRequirement>> = deepF
  * most improvements whose only effect is inside a mini-game have no crews'
  * route; the haul-game ones all do (playtest 1).
  * `achievements` is a derived stat: the number of achievements earned. Targets rescaled for the
- * achievements rework (2026-10-28: 23 first-outpost achievements of 61), so each unlocks about when it did before.
+ * achievements rework (2026-10-28: 23 first-outpost achievements of 63), so each unlocks about when it did before.
  */
 export const IMPROVEMENT_ALT_REQS: Readonly<Record<string, StatRequirement>> = deepFreeze({
   swamper: {text:'Fill 6 orders', stats:['contracts'], target:6},

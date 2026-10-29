@@ -19,7 +19,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  E('S.weather.off=true; S.weather.cur=null; render(true);');
 
  // ---------- 1. the list: three tiers on the Almanac screen, locked ones say "Close camp to unlock"
- ok(E('ACH.length')===61 && E('Core.ACH_TIERS.length')===3,'61 achievements in 3 tiers');
+ ok(E('ACH.length')===63 && E('Core.ACH_TIERS.length')===3,'63 achievements in 3 tiers');
  d.getElementById('achAll').click(); await sleep(50);
  ok(E('S.ui.screen')==='almanac' && !d.getElementById('scrAlm').hidden,'All achievements opens the Almanac screen');
  const tiers=[...d.querySelectorAll('#achBody .achtier')];

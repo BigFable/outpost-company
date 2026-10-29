@@ -71,8 +71,8 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(!d.getElementById('newrun').hidden,'new-run modifier modal opens');
  ok(d.getElementById('rbRun').textContent==='Outpost 2','run counter = Outpost 2');
  ok(/^14$/.test(d.getElementById("rbBank").textContent),'legacy banked: '+d.getElementById('rbBank').textContent);
- // achievements rework: "Loaded the ship" (close camp once) pays $500 into the new outpost
-ok(/^\$(0|500)$/.test(d.getElementById('lsCashV').textContent),'cash reset (top bar): '+d.getElementById('lsCashV').textContent);
+ // achievements rework: "Loaded the ship" (close camp once) pays $250 into the new outpost
+ok(/^\$(0|250)$/.test(d.getElementById('lsCashV').textContent),'cash reset (top bar): '+d.getElementById('lsCashV').textContent);
  ok(/Cove woodlot/.test(d.getElementById('tName').textContent),'fresh cove woodlot');
  // pick modifiers
  const mods=[...d.querySelectorAll('#nrMods .modb')]; ok(mods.length===3,'3 modifiers');
