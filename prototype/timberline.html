@@ -954,6 +954,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
             <p class="eyebrow">Hiring</p>
             <h2>Crews and machines</h2>
             <div class="buyn" id="buyN" role="group" aria-label="How many to buy"><span>Buy</span><button type="button" data-n="1" aria-pressed="true">×1</button><button type="button" data-n="10" aria-pressed="false">×10</button><button type="button" data-n="25" aria-pressed="false">×25</button><button type="button" data-n="max" aria-pressed="false">Max</button></div>
+            <p class="meta" id="wageNote">Each extra crew of one type is paid more.</p>
             <div id="eq"></div>
           </section>
         </div>
@@ -3510,15 +3511,61 @@ var Core = (function(exports) {
 		return EQUIPMENT.reduce((a, e) => a + (own[e.id] || 0), 0);
 	}
 	/**
-	* Upkeep per minute before multipliers. Crews with nothing to do (utilisation
-	* below 1) are paid `idleShare` of their wage: 0.25 normally, 0 with Company store.
+	* Rising wages: each extra crew of the same type is paid `WAGE_STEP` of the
+	* base wage more than the one before. The nth crew earns up × (1 + k·(n−1)).
+	* Tuned by sim 2026-10-28 (docs/research/rising-wages.md): 0.15 leaves every
+	* profile's 3-run total unchanged within noise and moves time from run 1
+	* (more crews per type) to runs 2–3; 0.2 starts to slow idle.
 	*/
-	function crewUpkeep(own, util, idleShare) {
-		return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0) * (idleShare + (1 - idleShare) * (util[e.stage] ?? 1)), 0);
+	var WAGE_STEP = .15;
+	/**
+	* The wage cap: rising wages stop at this share of income a minute (measured on
+	* a slow average). Base wages (every crew at its type's first-crew wage) are
+	* always paid, so the cap only ever trims the rise and a camp with no income
+	* pays exactly what it did before rising wages.
+	*/
+	var WAGE_CAP_SHARE = .6;
+	/** Seconds of the slow income average the wage cap reads (so the cap does not flicker with each sale). */
+	var WAGE_CAP_AVG_SEC = 120;
+	/** Wage per minute of the `n`th crew of one type (n = 1 for the first), before multipliers. */
+	function crewWage(up, n, k = WAGE_STEP) {
+		return n < 1 ? 0 : up * (1 + k * (n - 1));
 	}
-	/** Upkeep per minute if every crew worked flat out, before multipliers. */
-	function crewUpkeepFull(own) {
-		return EQUIPMENT.reduce((a, e) => a + e.up * (own[e.id] || 0), 0);
+	/** Wages per minute of `count` crews of one type, before multipliers: up × (count + k·count·(count−1)/2). */
+	function crewWagesFor(up, count, k = WAGE_STEP) {
+		const c = Math.max(0, count);
+		return up * (c + k * c * (c - 1) / 2);
+	}
+	/** Extra wages per minute from hiring `add` more of a type that has `owned` already, before multipliers. */
+	function crewWageAdded(up, owned, add = 1, k = WAGE_STEP) {
+		return crewWagesFor(up, owned + add, k) - crewWagesFor(up, owned, k);
+	}
+	/**
+	* Upkeep per minute before multipliers, with rising wages per type (`k`; pass 0
+	* for base wages). Crews with nothing to do (utilisation below 1) are paid
+	* `idleShare` of their wage: 0.25 normally, 0 with Company store.
+	*/
+	function crewUpkeep(own, util, idleShare, k = WAGE_STEP) {
+		return EQUIPMENT.reduce((a, e) => a + crewWagesFor(e.up, own[e.id] || 0, k) * (idleShare + (1 - idleShare) * (util[e.stage] ?? 1)), 0);
+	}
+	/** Upkeep per minute if every crew worked flat out, before multipliers (rising wages per type; `k` = 0 for base wages). */
+	function crewUpkeepFull(own, k = WAGE_STEP) {
+		return EQUIPMENT.reduce((a, e) => a + crewWagesFor(e.up, own[e.id] || 0, k), 0);
+	}
+	/**
+	* The wage bill after the cap. `rising` and `base` are the bills with and
+	* without rising wages (same multipliers); `incomePerMin` is the slow income
+	* average. The rise stops at `share` of income, and the base bill is always
+	* paid: max(base, min(rising, share × income)). At zero income this is the base
+	* bill, so the payroll guard, wages owed and the company advance work as before.
+	*/
+	function wageCap(rising, base, incomePerMin, share = WAGE_CAP_SHARE) {
+		const lim = Math.max(0, share * Math.max(0, incomePerMin));
+		const wages = Math.max(base, Math.min(rising, lim));
+		return {
+			wages,
+			capped: wages < rising - 1e-9
+		};
 	}
 	/** Product of an improvement multiplier over the improvements owned, in table order. */
 	function improvementMult(owned, key) {
@@ -7322,6 +7369,9 @@ var Core = (function(exports) {
 	exports.TRACT_SWITCH_COST = TRACT_SWITCH_COST;
 	exports.TURN_TIME_CARRIAGE = TURN_TIME_CARRIAGE;
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
+	exports.WAGE_CAP_AVG_SEC = WAGE_CAP_AVG_SEC;
+	exports.WAGE_CAP_SHARE = WAGE_CAP_SHARE;
+	exports.WAGE_STEP = WAGE_STEP;
 	exports.WIND_CAP = WIND_CAP;
 	exports.aboutTime = aboutTime;
 	exports.achievementBar = achievementBar;
@@ -7363,6 +7413,9 @@ var Core = (function(exports) {
 	exports.crewRate = crewRate;
 	exports.crewUpkeep = crewUpkeep;
 	exports.crewUpkeepFull = crewUpkeepFull;
+	exports.crewWage = crewWage;
+	exports.crewWageAdded = crewWageAdded;
+	exports.crewWagesFor = crewWagesFor;
 	exports.cutOutSeconds = cutOutSeconds;
 	exports.cutPlan = cutPlan;
 	exports.deepFreeze = deepFreeze;
@@ -7530,6 +7583,7 @@ var Core = (function(exports) {
 	exports.tractThroughput = tractThroughput;
 	exports.treeValue = treeValue;
 	exports.turnLog = turnLog;
+	exports.wageCap = wageCap;
 	exports.weightTag = weightTag;
 	exports.windMult = windMult;
 	return exports;
@@ -7633,7 +7687,14 @@ const mins = s => s < 60 ? Math.ceil(s)+' s' : s < 3600 ? fmt(s/60)+' min' : fmt
 let wxMute = false;
 const evNow = () => !wxMute && S.weather && S.weather.cur ? Core.eventDef(S.weather.cur.id) : undefined;
 const effSeason = () => Core.effectiveSeason(season(), evNow());
-const upkeepBase = () => Core.crewUpkeep(S.own, S.util || {}, perk('store') ? 0 : .25) * umult('upkeep') * pmult('upkeep') * bunkF();
+// rising wages and the wage cap (owner decision 2026-10-28): each extra crew of a type costs WAGE.step of its base wage more,
+// and the rise stops at WAGE.cap of income a minute (S.payEma, a 2-minute average). Base wages are always paid (Core.wageCap).
+const WAGE = {step: Core.WAGE_STEP, cap: Core.WAGE_CAP_SHARE};
+const upM = () => umult('upkeep') * pmult('upkeep') * bunkF();
+const wageBill = (ev = 1, full = false) => { const m = upM()*ev, sh = perk('store') ? 0 : .25,
+  bill = k => (full ? Core.crewUpkeepFull(S.own, k) : Core.crewUpkeep(S.own, S.util || {}, sh, k))*m;
+  return Core.wageCap(bill(WAGE.step), bill(0), (S.payEma || 0)*60, WAGE.cap); };
+const upkeepBase = () => wageBill().wages;
 // payroll guard: harmful weather pauses while cash is under 2 minutes of upkeep (no event can put crews into arrears)
 const payGuard = () => Core.payrollGuard(S.cash, upkeepBase());
 const evOpts = stage => ({corduroy: has('corduroy'), swampBoots: !!perk('swamp'), greased: !!perk('greased'), iceRoad: has('icerd'), illWind: !!perk('illwind'),
@@ -7660,8 +7721,10 @@ function fellBf(chops){ const t = tract(), v = t && cutOf(t); return v ? chops /
 // per minute; crews with nothing to do are paid a quarter rate
 // the bunkhouse (raised with plank bundles from the Sawmill) makes crews cheaper to keep and to hire
 const bunkF = () => Core.bunkhouseMult(S.structures || {});
-const upkeep = () => upkeepBase() * evMult('upkeep');
-const fullUpkeep = () => Core.crewUpkeepFull(S.own) * umult('upkeep') * pmult('upkeep') * bunkF();
+const upkeep = () => wageBill(evMult('upkeep')).wages;
+const fullUpkeep = () => wageBill(1, true).wages;
+// wages a minute the next `n` crews of a type add (rising wages, every wage multiplier; before the cap)
+const wageAdd = (e, n = 1) => Core.crewWageAdded(e.up, own(e.id), n, WAGE.step) * upM();
 const market = () => Core.marketPrice(S.t);
 // crews and machines: the bunkhouse and a Supply ship make them cheaper
 const hireF = () => bunkF() * evMult('hire');
@@ -8056,7 +8119,8 @@ function tick(dt){
   else { const st = stallNow(); if (st) companyAdvance(st); }
   // income average
   const k = Math.min(1, dt/20);
-  S.ema += (S.bucket/dt - S.ema)*k; S.bucket = 0;
+  S.ema += (S.bucket/dt - S.ema)*k;
+  S.payEma = (S.payEma || 0) + (S.bucket/dt - (S.payEma || 0))*Math.min(1, dt/Core.WAGE_CAP_AVG_SEC); S.bucket = 0; // the wage cap's slow income average
   S.upEma = upkeep()/60*eff;
   S.phT -= dt; if (S.phT <= 0){ S.ph.push(market()); if (S.ph.length > 60) S.ph.shift(); S.phT = 4; }
   if (S.camps.sawmill) millTick(dt);
@@ -8226,7 +8290,7 @@ function buildEquipment(){
     g.innerHTML = `<h3>${s.verb}<small></small></h3>`;
     EQ.filter(e => e.stage === s.id).forEach(e => {
       const r = document.createElement('div'); r.className = 'row';
-      r.innerHTML = `<div class="info"><b>${e.name}</b><span class="own"></span><p>${e.desc}</p><span class="spec">+${fmt(e.rate)} ${s.unit} · ${money(e.up)}/min wages</span></div><div class="btns"><button class="sellb" type="button" title="Sell one for half price">Sell</button><button class="buy" type="button"></button></div>`;
+      r.innerHTML = `<div class="info"><b>${e.name}</b><span class="own"></span><p>${e.desc}</p><span class="spec">+${fmt(e.rate)} ${s.unit} · <span class="wage">${money(e.up)}/min wages</span></span></div><div class="btns"><button class="sellb" type="button" title="Sell one for half price">Sell</button><button class="buy" type="button"></button></div>`;
       r.querySelector('.buy').onclick = () => buyEq(e);
       r.querySelector('.sellb').onclick = () => { if (!own(e.id)) return; S.own[e.id]--; S.cash += Math.floor(eqCost(e)*.5); render(); };
       g.appendChild(r); eqRows[e.id] = r;
@@ -8608,6 +8672,9 @@ function render(force){
   { const hp = chainEls.haulPile, d = S.run.deliv; hp.querySelector('b').textContent = bf(d); hp.querySelector('.bar i').style.width = Math.min(100, d/CLOSE_VOL*100).toFixed(1) + '%'; }
   // equipment
   document.querySelectorAll('#buyN button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.n === 'max' ? 'max' : +b.dataset.n) === S.ui.buyN)));
+  { const w = wageBill(evMult('upkeep')), base = `Each extra crew of one type is paid ${Math.round(WAGE.step*100)}% more.`,
+      txt = !w.capped ? base : w.wages > (S.payEma || 0)*60*WAGE.cap + 1e-6 ? `${base} Income is low, so only base wages are paid.` : `${base} Wages capped at ${Math.round(WAGE.cap*100)}% of income.`;
+    const el = $('wageNote'); if (el.textContent !== txt) el.textContent = txt; }
   document.querySelectorAll('#eq .group').forEach(g => {
     const r = baseRate(g.dataset.stage);
     g.querySelector('h3 small').textContent = r ? `${fmt(r)} ${STAGES.find(s => s.id === g.dataset.stage).unit} now` : '';
@@ -8617,7 +8684,10 @@ function render(force){
     r.querySelector('.own').textContent = own(e.id) ? '×'+own(e.id) : '';
     const b = r.querySelector('.buy'), p = buyPlan(e), lab = S.ui.buyN === 1 ? money(p.total) : `${S.ui.buyN === 'max' && p.none ? 'Max' : '×' + p.count} · ${money(p.total)}`;
     if (b.textContent !== lab) b.textContent = lab; b.disabled = !!p.none || S.cash < p.total;
-    b.setAttribute('aria-label', p.none ? `Buy ${e.name}: need ${money(p.total)}` : `Buy ${p.count} ${e.name} for ${money(p.total)}`);
+    // rising wages: the row shows what the next crew (or the next ×N) adds to wages a minute
+    const wn = p.none ? 1 : p.count, wa = wageAdd(e, wn), wt = wn > 1 ? `${wn} more: +${money(wa)}/min wages` : own(e.id) ? `next one ${money(wa)}/min wages` : `${money(wa)}/min wages`;
+    const we = r.querySelector('.wage'); if (we.textContent !== wt) we.textContent = wt;
+    b.setAttribute('aria-label', (p.none ? `Buy ${e.name}: need ${money(p.total)}` : `Buy ${p.count} ${e.name} for ${money(p.total)}`) + `, +${money(wa)}/min wages`);
     r.querySelector('.sellb').hidden = !own(e.id);
   });
   renderSales(); renderQueue(); renderContracts(); renderCompany(); renderGoals(); renderRun();
@@ -9891,7 +9961,10 @@ function normalize(){
   // money and the past-outposts list come from the save as-is: a damaged or hand-edited value must not break every comparison or the page
   if (!(typeof S.cash === 'number' && isFinite(S.cash))) S.cash = 0;
   const num = v => typeof v === 'number' && isFinite(v) ? v : 0;
-  S.runs = S.runs.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 12).map((x, i) => Object.assign(x, {
+  // rising wages (2026-10-28): S.payEma, the wage cap's slow income average, is not in fresh() (close camp drops it, so a new
+  // outpost starts at 0); an old save has none yet, so it starts at the camp's income now
+  S.payEma = typeof S.payEma === 'number' && isFinite(S.payEma) ? S.payEma : Math.max(0, num(S.ema));
+  S.runs =S.runs.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(0, 12).map((x, i) => Object.assign(x, {
     n:num(x.n) || S.runs.length - i, min:num(x.min), deliv:num(x.deliv), earned:num(x.earned), legacy:num(x.legacy),
     era:Math.max(0, Math.min(ERAS.length - 1, Math.floor(num(x.era)))), mods:(Array.isArray(x.mods) ? x.mods : []).filter(id => MODS.some(m => m.id === id))}));
   const r = S.run = Object.assign(freshRun(), S.run || {});
