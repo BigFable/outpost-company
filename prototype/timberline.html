@@ -492,6 +492,7 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
 /* mid width (tablets, small laptops): the sidebar is an icon rail; the menu button shows it with names over the page */
 @media (min-width:701px) and (max-width:1060px){
   :root{--sidew:72px}
+  .chstats .rbsaved{display:none}
   .tcell{padding:6px 10px}
   .tcell.mkt{display:none}
   .app:not(.drawer) .side .sub,.app:not(.drawer) .side .pb,.app:not(.drawer) .navh,.app:not(.drawer) .brand h1,.app:not(.drawer) .brand p,.app:not(.drawer) .sidefoot,.app:not(.drawer) .side .ncnt{display:none}
@@ -548,7 +549,11 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
 .chead .eyebrow{margin:0 0 2px}
 .chead .runno{font-family:inherit;font-weight:inherit;font-size:inherit;color:inherit}
 .chead h2{font-size:1.4rem;line-height:1.15;overflow-wrap:anywhere}
-.chstats{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.85rem;color:var(--muted);margin-top:4px}
+/* one line at every width: a wrapping stats row changed the header's height as numbers ticked and moved the tab bar under a
+   finger (landscape phones). The first stat never shrinks; later ones shrink to an ellipsis. Up to 1060 px "Saved" is left out (the top bar's Shares cell shows the same number). */
+.chstats{display:flex;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-width:0;gap:4px 18px;font-size:.85rem;color:var(--muted);margin-top:4px}
+.chstats>span{flex:none}
+.chstats>span:not(:first-child){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .chstats b{font-family:var(--f-num);font-weight:600;color:var(--ink)}
 .chstats .rbnet b.pos{color:var(--good)} .chstats .rbnet b.neg{color:var(--bad)}
 .chstats .sub{font-size:12px}
@@ -858,7 +863,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
         <div class="chmain">
           <p class="eyebrow"><span class="chcamp">Logging · </span><span class="runno" id="rbRun">Outpost 1</span> · <span id="rbEra">Cove Landing</span></p>
           <h2 id="chLot">Cove woodlot</h2>
-          <div class="chstats"><span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span><span><b id="rbPerks">0</b> perks</span><span class="only-desk">Close now: <b id="rbLegacy">0</b> shares</span><span class="only-desk">Saved <b id="rbBank">0</b></span></div>
+          <div class="chstats"><span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span><span><b id="rbPerks">0</b> perks</span><span class="only-desk">Close now: <b id="rbLegacy">0</b> shares</span><span class="only-desk rbsaved">Saved <b id="rbBank">0</b></span></div>
         </div>
         <div class="chbtns"><button class="draftbtn" id="draftBtn" type="button" hidden>Pick perk (1)</button><button class="hbtn" id="chClose" type="button">Close camp</button></div>
         <div class="chbar"><div class="bar"><i id="chBar"></i></div><p class="chgoal" id="chGoal"></p></div>

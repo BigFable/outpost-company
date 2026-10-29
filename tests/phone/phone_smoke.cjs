@@ -102,6 +102,15 @@ async function run(devName) {
       await E('window.scrollTo(0, 0)'); await shot('tab-' + id);
     }
   };
+  // the camp header stats stay on one line whatever the numbers say, so the tab bar never moves under a finger
+  ok(await page.evaluate(() => {
+    const c = document.querySelector('#runbar .chstats'), n = document.getElementById('tNet'), sb = document.getElementById('tNetSub'), t0 = n.textContent, s0 = sb.textContent;
+    const tabY = () => Math.round(document.getElementById('logTabs').getBoundingClientRect().top);
+    n.textContent = '$0'; sb.textContent = '$0 in · $0 wages'; const a = [c.offsetHeight, tabY()];
+    n.textContent = '$9.8K'; sb.textContent = '$12.5K in · $2.7K wages'; const b = [c.offsetHeight, tabY()];
+    n.textContent = t0; sb.textContent = s0;
+    return a[0] === b[0] && a[1] === b[1] && getComputedStyle(c).flexWrap === 'nowrap';
+  }), `${devName}: camp header stats stay one line (the tab bar does not move as Net changes)`);
   await tabCheck('Logging', ['ltLots', 'ltCrews', 'ltCamp', 'ltLog', 'ltWork']);
   await shot('stage-cards', '#chain');
   ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#chain .stc')].map((x) => x.getBoundingClientRect()); return c.length === 4 && c.every((r) => r.right <= innerWidth + 1 && r.left >= -1); }), `${devName}: four stage cards on screen`);
