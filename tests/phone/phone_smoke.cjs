@@ -122,7 +122,7 @@ async function run(devName) {
   await tapEl('#stash .scard[data-sp=spruce] [data-cut]'); await sleep(150);
   ok((await E(`tract().name`)) === 'Spruce head, Lot 7' && /Picking spruce/.test(await page.evaluate(() => document.getElementById('pickNote').textContent)), `${devName}: Cut here moves the crews; the picking note shows`);
   await shot('queue-trees', '#queuePanel');
-  await E(`setStashRule('spruce', 'any')`); await tapEl('#qTabs [data-v=lots]'); await sleep(100);
+  await E(`setStashRule('spruce', 'any')`); await tapEl('#qTabs [data-v=stock]'); await sleep(100);
   // Sawmill tab
   await nav('#tabMill');
   ok(await page.evaluate(() => !document.getElementById('millView').hidden), `${devName}: Sawmill screen opens with a tap`);

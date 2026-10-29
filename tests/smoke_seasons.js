@@ -30,7 +30,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(/New in the almanac/.test(card().textContent) && E('dCur.sticky'),'first sighting: the card stays open until clicked');
  ok(/Ice bridge: .*haul ×1.3/.test(d.getElementById('tSeasonSub').textContent) && /left/.test(d.getElementById('tSeasonSub').textContent),'season sub-line reads the event and its time left: '+d.getElementById('tSeasonSub').textContent);
  ok(d.querySelector('.modal:not([hidden])')===null,'the card is not a modal');
- ok(d.querySelectorAll('#sales [data-fit]').length===E('S.forSale.length') && E('S.forSale.length')>0,'the land-office species cards render alongside the weather card');
+ ok(d.querySelectorAll('#sales .row.lot').length===E('S.forSale.length') && E('S.forSale.length')>0,'the land-office species cards render alongside the weather card');
  E(`S.weather.burnt=true; render(true)`); ok([...d.querySelectorAll('#sales button[data-i]')].every((b,i)=>b.textContent===E(`money(tractCost(S.forSale[${i}]))`)),'listing cards show the weather-adjusted price'); E(`S.weather.burnt=false; render(true)`);
  E('S.t+=60; render(true)'); ok(!card().hidden,'a first-sighting card does not fold away by itself');
  d.getElementById('dOk').click(); ok(card().hidden,'clicking the card folds it away');
