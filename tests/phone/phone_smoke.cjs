@@ -106,6 +106,12 @@ async function run(devName) {
   await shot('stage-cards', '#chain');
   ok(await page.evaluate(() => { const c = [...document.querySelectorAll('#chain .stc')].map((x) => x.getBoundingClientRect()); return c.length === 4 && c.every((r) => r.right <= innerWidth + 1 && r.left >= -1); }), `${devName}: four stage cards on screen`);
   await shot('top-bar', '.top');
+  // slice 3: on a phone the camp header is one line (where you are, one stat, the buttons) plus the close-camp bar
+  if (await page.evaluate(() => innerWidth <= 700)) {
+    const hd = await page.evaluate(() => { const h = document.getElementById('runbar'), e = h.querySelector('.eyebrow'), r = h.getBoundingClientRect(), er = e.getBoundingClientRect(), lh = parseFloat(getComputedStyle(e).lineHeight) || 24;
+      return { h: Math.round(r.height), oneLine: er.height <= lh * 1.5, btnsTop: Math.round(document.querySelector('#runbar .chbtns').getBoundingClientRect().top - r.top) }; });
+    ok(hd.h <= 110 && hd.oneLine && hd.btnsTop < 30, `${devName}: the camp header is one line plus the bar ${JSON.stringify(hd)}`);
+  }
   // the cutting queue's Trees tab (lot stash): cards, the rule switch, a species' lots and Cut here, all by touch
   await E(`S.tracts.push(Object.assign(Core.makeTract('Spruce head, Lot 7', [['spruce', 80], ['pine', 20]], 50, 2, 'rolling', 'headland'), {seq: S.tractSeq++})); render(true)`);
   await tapEl('#ltLots'); await sleep(150);

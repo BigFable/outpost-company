@@ -624,6 +624,22 @@ html{scroll-padding-top:calc(var(--toph) + 8px);scroll-padding-bottom:calc(var(-
   .tray .ti button{min-height:44px}
 }
 @media (max-width:520px){#sales{grid-template-columns:minmax(0,1fr)}}
+/* phones (slice 3): the camp header is one line (where you are, one stat, the buttons) plus the close-camp bar.
+   The lot name is on the Work tab's lot card; perk chips and extra rules are on the Log / Run tab; Close camp shows once it can close
+   (the bell says so too). */
+@media (max-width:700px){
+  .chead{grid-template-columns:minmax(0,1fr) auto;padding:6px 12px 8px;gap:2px 10px;align-items:center}
+  .chead .chmain{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .chead h2,.chead .chcamp,.chead .chchips{display:none}
+  .chead .eyebrow{flex:0 1 auto;min-width:0;margin:0;font-family:var(--f-display);font-size:1.02rem;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chead .chstats{flex:none;margin:0;flex-wrap:nowrap;white-space:nowrap}
+  .chead .chstats>span:not(:first-child){display:none}
+  .chead .chbtns{justify-content:flex-end;flex-wrap:nowrap}
+  .chead .chbtns button{flex:none;padding-inline:10px}
+  .chead .chbtns .hbtn:disabled{display:none}
+  .chead .chbar .bar{height:4px}
+  .chead .chgoal{margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
 /* Settings (slice 3): one row per choice, a segmented switch on the right */
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 0;flex-wrap:wrap}
 .setrow+.setrow{border-top:1px dotted var(--line)}
@@ -819,7 +835,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
     <section class="screen" id="scrLog" data-screen="logging" aria-label="Logging">
       <div class="panel chead" id="runbar">
         <div class="chmain">
-          <p class="eyebrow">Logging · <span class="runno" id="rbRun">Outpost 1</span> · <span id="rbEra">Cove Landing</span></p>
+          <p class="eyebrow"><span class="chcamp">Logging · </span><span class="runno" id="rbRun">Outpost 1</span> · <span id="rbEra">Cove Landing</span></p>
           <h2 id="chLot">Cove woodlot</h2>
           <div class="chstats"><span class="rbnet">Net <b id="tNet">$0</b>/min <span class="sub" id="tNetSub"></span></span><span><b id="rbPerks">0</b> perks</span><span class="only-desk">Close now: <b id="rbLegacy">0</b> shares</span><span class="only-desk">Saved <b id="rbBank">0</b></span></div>
         </div>
@@ -956,7 +972,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
     <section class="screen" id="scrMill" data-screen="sawmill" aria-label="Sawmill" hidden>
       <div class="panel chead" id="mHead">
         <div class="chmain">
-          <p class="eyebrow">Sawmill · <span id="mhRun">Mill run 1</span> · Whistle Pond</p>
+          <p class="eyebrow"><span class="chcamp">Sawmill · </span><span id="mhRun">Mill run 1</span><span class="chcamp"> · Whistle Pond</span></p>
           <h2 id="mhName">Saw pit</h2>
           <div class="chstats"><span>Sawing <b id="mhRate">0</b>/min</span><span>Income <b id="mhInc">$0</b>/min</span><span><b id="mhPerks">0</b> perks</span></div>
         </div>
