@@ -1,6 +1,6 @@
-// Lot stat chips (owner request 2026-10-26): land-office listings, cutting-queue Lots rows and Trees cards show their key
-// numbers as chips colored against the era's average lot (green ▲ better, red ▼ worse, plain about average), the averages
-// on tap, the camp note behind a small "i", and the "Best for" order badge kept.
+// Lot stat chips (owner request 2026-10-26; trimmed 2026-10-28): land-office listings show chops against the era's average lot
+// and one haul chip (Easy / OK / Hard), Priority cards keep their chips (green ▲ better, red ▼ worse, plain about average),
+// with the averages on tap. Stock rows carry no chips.
 const {JSDOM, VirtualConsole}=require('jsdom');const fs=require('fs');
 const errs=[]; const vc=new VirtualConsole(); vc.on('error',e=>errs.push(String(e&&e.stack||e))); vc.on('jsdomError',e=>errs.push('jsdom:'+e.message));
 const START="window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});";
@@ -26,37 +26,30 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  const cards=[...d.querySelectorAll('#sales .row.lot')];
  const chips=c=>[...c.querySelectorAll('.stat')].map(s=>s.dataset.stat);
  const v=(c,id)=>c.querySelector(`.stat[data-stat="${id}"]`);
- // 1. chips present, in the same order on every listing
- const order=E('Core.LOT_STATS.join()');
- ok(cards.length===2 && cards.every(c=>chips(c).join()===order),'every listing shows the 7 chips in one order: '+chips(cards[0]).join());
- // 2. colors and arrows for a known lot: the spruce head (light, few chops, 2 mi, flat, $5 a tree) and the hemlock bog
+ // 1. the land office listing (owner 2026-10-28): two chips only, chops against the average and one haul chip
+ ok(cards.length===2 && cards.every(c=>chips(c).join()==='chops,haul'),'every listing shows chops then haul: '+chips(cards[0]).join());
+ // 2. colours and arrows: the spruce head (few chops, 2 mi, flat) and the hemlock bog (12 mi, steep)
  const s=cards[0], h=cards[1];
- ok(['chops','weight','haul','slope','price'].every(id=>v(s,id).dataset.v==='good' && v(s,id).classList.contains('good') && /▲/.test(v(s,id).textContent)),'spruce head: chops, weight, haul, slope and price are green with ▲');
- ok(v(s,'value').dataset.v==='bad' && /▼/.test(v(s,'value').textContent),'spruce is cheap wood: value red with ▼');
- ok(v(s,'prime').dataset.v==='even' && !/[▲▼]/.test(v(s,'prime').textContent),'idle Prime is the same on every Cove lot: plain, no arrow');
- ok(['weight','haul','slope'].every(id=>v(h,id).dataset.v==='bad' && /▼/.test(v(h,id).textContent)),'hemlock bog, 12 mi, steep: weight, haul and slope red with ▼');
- ok(/Chops\s*15/.test(v(s,'chops').textContent) && /Haul\s*2 mi/.test(v(s,'haul').textContent) && /Slope\s*flat/.test(v(s,'slope').textContent) && /Price \$5 /.test(v(s,'price').textContent),'chip text: '+[...s.querySelectorAll('.stat')].map(x=>x.textContent).join(' | '));
- // 3. the average on hover (title) and on tap
+ ok(v(s,'chops').dataset.v==='good' && v(s,'chops').classList.contains('good') && /▲/.test(v(s,'chops').textContent),'spruce head: chops green with ▲');
+ ok(v(s,'haul').dataset.haul==='easy' && v(s,'haul').classList.contains('good') && /Haul\s*Easy/.test(v(s,'haul').textContent),'spruce head, 2 mi flat: Haul Easy in green');
+ ok(v(h,'haul').dataset.haul==='hard' && v(h,'haul').classList.contains('bad') && /▼/.test(v(h,'haul').textContent),'hemlock bog, 12 mi steep: Haul Hard in red with ▼');
+ ok(/Chops\s*15/.test(v(s,'chops').textContent),'chip text: '+[...s.querySelectorAll('.stat')].map(x=>x.textContent).join(' | '));
+ ok(!/bd ft|Value|Weight|Prime|Price|Best for|Logged|ground/i.test([...cards].map(c=>c.querySelector('.info').textContent).join(' ')),'no value, weight, Prime, price chip, bd ft, ground or best-for text on a listing');
+ ok(/60 trees · Spruce 90% · Pine 10%/.test(s.textContent) && s.querySelector('.spbar') && /\$300/.test(s.querySelector('button.buy').textContent),'tree count, mix, mix bar and the price on the buy button');
+ // 3. the average on hover (title) and on tap; the haul chip's tap shows miles and ground
  const avgChops=E('Core.eraLotAverages(0).chops');
  ok(new RegExp('avg '+E(`fmt(${avgChops})`)).test(v(s,'chops').title) && /better than average/.test(v(s,'chops').title),'hover: '+v(s,'chops').title);
  const btn=s.querySelector('button.stats');
  ok(btn && btn.getAttribute('aria-pressed')==='false' && !d.documentElement.classList.contains('stat-avg'),'averages hidden at first');
  btn.click();
  ok(d.documentElement.classList.contains('stat-avg') && [...d.querySelectorAll('button.stats')].every(b=>b.getAttribute('aria-pressed')==='true'),'tap the chips: averages show on every row');
- ok(/avg \$?[\d.]+/.test(v(s,'value').querySelector('.avg').textContent),'each chip carries its average: '+v(s,'value').querySelector('.avg').textContent);
+ ok(/avg [\d.]+/.test(v(s,'chops').querySelector('.avg').textContent) && /^12 mi, steep$/.test(v(h,'haul').querySelector('.avg').textContent),'chops carries its average, haul its miles and ground: '+v(h,'haul').querySelector('.avg').textContent);
  d.querySelector('#sales button.stats').click();
  ok(!d.documentElement.classList.contains('stat-avg'),'tap again hides them');
- // 4. the camp note sits behind the "i", the order badge stays
- const note=s.querySelector('details.notei');
- ok(note && !note.open && note.querySelector('summary .ib').textContent==='i' && note.querySelector('.fit') && /On this lot: felling/.test(note.textContent),'camp note behind a closed "i"');
- ok(!s.querySelector('.info > p.fit') && !/chops a tree ·/.test(s.textContent),'no camp-note sentence or old stat sentence on the card face');
- ok(/Best for the spruce order/.test(s.querySelector('[data-best="contract"]').textContent),'the order-fit badge is kept');
- // 5. queue Lots rows (no price chip) and Trees cards
- E(`S.tracts.push(Object.assign(Core.makeTract('Bog',[['hemlock',100]],20,10,'steep','swamp'),{seq:S.tractSeq++})); S.ui.qView='lots'; render(true);`);
- const rows=[...d.querySelectorAll('#tq .qrow')];
- ok(rows.length===2 && rows.every(r=>chips(r).join()==='chops,value,weight,haul,slope,prime'),'queue rows: chips without a price');
- ok(v(rows[1],'haul').dataset.v==='bad' && v(rows[1],'slope').dataset.v==='bad' && rows[1].querySelector('details.notei'),'queue row: far, steep bog in red, camp note behind "i"');
- E(`S.ui.qView='trees'; render(true);`);
+ // 5. Priority cards (the per-lot queue rows became the Stock tab, 2026-10-28: no chips there)
+ E(`S.tracts.push(Object.assign(Core.makeTract('Bog',[['hemlock',100]],20,10,'steep','swamp'),{seq:S.tractSeq++})); S.ui.qView='stock'; render(true);`);
+ ok(d.querySelectorAll('#stock .stk[data-sp]').length>=1 && !d.querySelector('#stock .stat'),'Stock rows: kind and count only, no stat chips');
+ E(`S.ui.qView='priority'; render(true);`);
  const sc=d.querySelector('#stash .scard[data-sp="hemlock"]');
  ok(sc && chips(sc).join()==='chops,value,weight,prime' && v(sc,'weight').dataset.v==='bad','Trees card: hemlock chips, heavy in red');
  ok(errs.length===0,'no errors'+(errs.length?': '+errs.slice(0,3).join(' | '):''));

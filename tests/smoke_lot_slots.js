@@ -37,12 +37,12 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(slots()==='0,1' && /New land office slot: Surveyed lot/.test(E('S.log.map(l=>l.text).join("|")')),'2 lots cut out: slot 2 opens with a note');
  const s2=E('S.forSale[1]');
  ok(s2.mix.length===3 && !s2.afk && s2.mix.every(m=>['pine','spruce','hemlock'].includes(m[0])),'slot 2 lists a 3-species Cove lot: '+s2.mix.map(m=>m.join(' ')).join(', '));
- ok(rows()[1].querySelectorAll('.stat').length>0 && /Surveyed lot/.test(rows()[1].querySelector('.slotchip').textContent),'slot 2 listing has stat chips and its slot name');
+ ok(rows()[1].querySelectorAll('.stat').length===2 && rows()[1].dataset.slot==='1' && !rows()[1].querySelector('.slotchip'),'slot 2 listing has the chops and haul chips (no slot-name chip since 2026-10-28)');
  cutOne();
  const s3=E('S.forSale[2]');
  ok(slots()==='0,1,2' && s3.mix.length===4 && s3.mix.some(m=>m[0]==='maple'),'3 lots: slot 3 opens with a 4-species lot incl. maple');
  const mw=s3.mix.find(m=>m[0]==='maple')[1]; ok(mw>=10 && mw<=20,'the rare maple is 10-20%: '+mw);
- ok(/Rare: Maple/.test(rows()[2].textContent),'slot 3 listing names its rare tree');
+ ok(/Maple \d+%/.test(rows()[2].textContent),'slot 3 listing shows its rare tree in the mix');
  cutOne();
  ok(slots()==='0,1,2,3' && E('S.forSale[3].afk')===true && d.querySelectorAll('#sales .row.locked').length===0,'4 lots: the AFK lot opens in slot 4; no locked rows left');
  ok(E('S.stats.slots')===4,'opened slots are recorded');
@@ -53,10 +53,15 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(slots()==='0,1,2,3' && E('S.forSale[1].mix.length')===3 && E('S.forSale[1].name')!==n2,'buying from slot 2 relists slot 2 with a new 3-species lot');
  E('buyTract(2); render(true);'); ok(E('S.forSale[2].slot')===2 && E('S.forSale[2].mix.length')===4,'buying from slot 3 relists slot 3');
  E('buyTract(0); render(true);'); ok(E('S.forSale[0].slot')===0 && E('S.forSale[0].mix.length')===2,'buying from slot 1 relists a 2-species lot');
+ // the AFK lot is always for sale (owner 2026-10-28): buying it lists another at once, so idle players can buy several in a row
+ const a0=E('S.forSale[3].name'), own0=E('S.tracts.filter(t=>t.afk).length');
  E('buyTract(3); render(true);');
- ok(slots()==='0,1,2' && E('S.afkHeld')===true && /Bought/.test(d.querySelector('#sales .row.locked[data-slot="3"]').textContent),'buying the AFK lot leaves slot 4 empty (shown as bought) until the next board');
+ ok(slots()==='0,1,2,3' && E('S.forSale[3].afk')===true && E('S.forSale[3].name')!==a0 && !E('S.afkHeld') && !d.querySelector('#sales .row.locked'),'buying the AFK lot lists another AFK lot at once (no restock wait)');
+ E('buyTract(3); buyTract(3); render(true);');
+ ok(E('S.tracts.filter(t=>t.afk).length')===own0+3 && E('S.forSale[3].afk')===true,'three AFK lots bought in a row, slot 4 still listed');
+ const a1=E('S.forSale[3].name'), n1=E('S.forSale[0].name');
  E('S.saleT=0; tick(0.1); render(true);');
- ok(slots()==='0,1,2,3' && E('S.forSale[3].afk') && !E('S.afkHeld'),'the 3-minute refresh relists every open slot, the AFK lot too');
+ ok(slots()==='0,1,2,3' && E('S.forSale[3].name')===a1 && E('S.forSale[0].name')!==n1,'the 3-minute refresh relists the other slots and keeps the AFK listing');
  ok(E('S.forSale.filter(t=>t.afk).length')===1 && E('S.forSale.slice(0,3).every(t=>!t.afk)'),'the AFK lot is only ever in slot 4');
 
  // ---------- 4. charter orders: only trees you can get now
@@ -91,6 +96,11 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  dom=mk({'timberline-v2':mkOld(7, [cove(1), cove(2), afkOld])}); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s);
  ok(slots()==='0,1,2,3' && E('S.forSale[1].name')==='Old cove, Lot 2' && E('S.forSale[3].name')==='Cutover, Lot 9' && E('S.forSale[2].mix.length')===4,'old save, 7 lots cut out: all four slots open; old listings kept, slot 3 filled');
  ok(E('S.stats.slots')===4 && !/New land office slot/.test(E('S.log.map(l=>l.text).join("|")')),'old saves open their slots quietly (no unlock notes)');
+ dom.window.close();
+ // a save from when a bought AFK lot left slot 4 empty until the next board (afkHeld): the AFK lot is listed again on load
+ { const o=JSON.parse(mkOld(7, [cove(1), cove(2), cove(3)])); o.afkHeld=true; o.saleT=170;
+   dom=mk({'timberline-v2':JSON.stringify(o)}); await sleep(300); w=dom.window; d=w.document; E=s=>w.__eval(s); }
+ ok(slots()==='0,1,2,3' && E('S.forSale[3].afk')===true && E('S.afkHeld')===false && !d.querySelector('#sales .row.locked'),'old save holding the AFK slot: the AFK lot is for sale again at once');
 
  ok(errs.length===0,'no console errors '+errs.slice(0,3).join(' | '));
  console.log(fails?fails+' FAILED':'ALL PASS'); process.exit(fails?1:0);

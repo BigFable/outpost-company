@@ -30,25 +30,21 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
    S.forSale.forEach(t=>t.price=100); S.own={}; render(true);`);
  const cards=[...d.querySelectorAll('#sales .row.lot')];
  ok(cards.length===3,'three listing cards');
- const c0=cards[0].textContent, c1=cards[1].textContent;
- ok(/Spruce point/.test(c0) && /Hemlock swamp/.test(c1) && /Coast bottoms/.test(cards[2].textContent),'each card names its ground');
+ // the listing (trimmed 2026-10-28) keeps the mix bar; ground, weight, best-for and the camp note left the card face.
+ // The ground and its twist stay on the lot name's hover title; the numbers are still Core's, checked here directly.
+ ok(/Spruce point: Windy/.test(cards[0].querySelector('b').title) && /Hemlock swamp/.test(cards[1].querySelector('b').title),'the lot name carries its ground and twist as a hover title');
  ok(cards.every(c=>c.querySelectorAll('.spbar i').length===2),'each card has a species bar');
- ok(cards.every(c=>c.querySelector('.stat[data-stat="value"]') && c.querySelector('.stat[data-stat="chops"]')),'value and chops per tree shown (stat chips)');
- const wv=c=>c.querySelector('.stat[data-stat="weight"]').dataset.v;
- ok(wv(cards[0])==='good' && wv(cards[1])==='bad' && wv(cards[2])!=='good','weight chips against the Cove average (0.95): light spruce green, heavy hemlock red, pine-hemlock coast not green: '+cards.map(wv).join());
- ok(/Best for: Prime logs/.test(c0) && /Best for: bark money/.test(c1) && /Best for: boards and amber sap/.test(cards[2].textContent),'best-for line by main species');
- ok(/Windy: felling-game wind ×1\.2/.test(c0) && /land ×0\.9/.test(c1),'ground twists shown');
- ok(cards.every(c=>c.querySelector('.fit').dataset.fit==='none'),'no crews: camp fit asks you to hire');
- // lots of fallers, few teams: the heavy lot is "teams short", the light one fits better
+ ok(cards.every(c=>c.querySelector('.stat[data-stat="chops"]') && c.querySelector('.stat[data-stat="haul"]') && !c.querySelector('.stat[data-stat="value"]')),'chops and haul chips; no value chip');
+ const wv=i=>E(`Core.lotStatChips(S.forSale[${i}], 0, 0, ['weight'])[0].verdict`);
+ ok(wv(0)==='good' && wv(1)==='bad' && wv(2)!=='good','weight against the Cove average (0.95): light spruce better, heavy hemlock worse, pine-hemlock coast not better: '+[0,1,2].map(wv).join());
+ ok(/^Prime logs/.test(E(`Core.BEST_FOR.spruce`)) && /bark money/.test(E(`Core.BEST_FOR.hemlock`)),'best-for words by main species (Core)');
+ // lots of fallers, few teams: the heavy lot holds skidding back more than the light one (Core.campNote, used by no card now)
  E(`S.own={crosscut:4, bucker:20, oxen:1, sled:3}; render(true);`);
- const fits=[...d.querySelectorAll('#sales .fit')].map(p=>p.dataset.fit), ratio=i=>E(`Core.campFit(campCaps(), S.forSale[${i}]).ratio`);
- // the camp note (2026-10-25) replaced the camp-fit hint: it names the slowest stage and how far it falls behind
- ok(fits[1]==='skid' && /teams are slowest here; skidding falls about \d+% behind felling/.test(d.querySelectorAll('#sales .fit')[1].textContent),'fallers ahead of teams: the hemlock swamp says skidding will fall behind: '+fits.join());
- const behind=i=>E(`Core.campNote(bareCaps(), S.forSale[${i}], {season:'Fall'}).behind`);
+ const behind=i=>E(`Core.campNote(bareCaps(), S.forSale[${i}], {season:'Fall'}).behind`), neck=i=>E(`Core.campNote(bareCaps(), S.forSale[${i}], {season:'Fall'}).key`);
+ ok(neck(1)==='skid','fallers ahead of teams: skidding is the slowest stage on the hemlock swamp');
  ok(behind(0)<behind(1),'the light spruce lot falls behind less than the heavy swamp in a team-short camp');
- ok(ratio(0)<ratio(1),'the light spruce lot fits a team-short camp better than the heavy swamp');
  E(`S.own={axeman:1, bucker:20, horses:6, wagon:4}; render(true);`);
- ok(d.querySelectorAll('#sales .fit')[0].dataset.fit==='fell' && /fallers are slowest here/.test(d.querySelectorAll('#sales .fit')[0].textContent),'teams ahead of fallers: the card says so');
+ ok(neck(0)==='fell','teams ahead of fallers: felling is the slowest stage');
 
  // ---------- 2. weight: idle skid and haul move bd ft / weight; felling unchanged
  E(`S.own={oxen:2, sled:2, axeman:1}; S.tracts=[Core.makeTract('W',[['pine',1]],50,1,'flat')]; setSite();`);
@@ -134,7 +130,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  ok(Math.abs(E(`S.forSale[1].wt`)-1.04)<1e-9 && E(`S.tracts[0].wt`)===1,'weights recomputed from the mix');
  ok(E(`S.tracts[0].left`)===800 && E(`S.tracts[0].val`)===200,'the old tract keeps its progress and value');
  ok(E('S.bulk.logs')===12345,'the mill pond is kept');
- ok(!!d.querySelector('#sales .row.lot') && /Coast bottoms/.test($('sales').textContent),'converted listings render as cards');
+ ok(!!d.querySelector('#sales .row.lot') && !!d.querySelector('#sales .row.lot b[title^="Coast bottoms"]'),'converted listings render as cards (ground on the name title)');
  E('tick(1); render(true)');
 
  await sleep(100);

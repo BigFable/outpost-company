@@ -164,6 +164,9 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .qbtns button:disabled{opacity:.35;cursor:not-allowed}
 .qbtns button.now{border-color:var(--accent);color:var(--accent)}
 .chipl.afkchip{color:var(--muted);margin-left:4px}
+/* idle cutting stocked (2026-10-28): Your lots and the AFK listing */
+.meta.stocked b{font-family:var(--f-num);font-weight:600;color:var(--ink)}
+.row.lot p.afkt{color:var(--ink);font-size:.8rem}
 /* lot slots: a slot's name on its listing, and compact rows for locked slots */
 .chipl.slotchip,.chipl.lockchip{color:var(--muted);margin-left:4px}
 .chipl.rare{color:var(--warn);margin-left:4px}
@@ -176,6 +179,17 @@ details.fitmore ul{margin:4px 0 0;padding-left:18px}
 .qtabs{margin:8px 0 2px}
 .qtabs button{min-height:44px}
 .meta.pick{color:var(--accent);font-weight:600}
+/* the Stock tab (2026-10-28): one row per kind of tree you own, with a bar */
+.stock{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.stk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 10px;min-height:44px;padding:4px 0;border-top:1px dotted var(--line)}
+.stk:first-child{border-top:0}
+.stk .sw{width:12px;height:12px;border-radius:3px}
+.stk b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.stk .num{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:.85rem;font-weight:600;color:var(--ink);text-align:right}
+.stk .stbar{grid-column:2 / -1;display:block;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.stk .stbar i{display:block;height:100%;border-radius:4px}
+.stk .chipl{margin-left:6px;color:var(--accent)}
+.stk.total{grid-template-columns:minmax(0,1fr) auto;color:var(--muted);font-size:.82rem}
 .stash{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .scard{border:1px solid var(--line);border-radius:6px;padding:6px 10px 10px;min-width:0;overflow-wrap:anywhere}
 .scard summary{cursor:pointer;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
@@ -212,8 +226,9 @@ details.notei .ib{display:inline-grid;place-items:center;width:22px;height:22px;
 details.notei[open] .ib{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 details.notei[open] summary{justify-content:flex-start}
 .meta.statkey .good{color:var(--good)} .meta.statkey .bad{color:var(--bad)}
-/* phones: the buy button drops under the listing so the chips get the full width */
-@media (max-width:520px){.row.lot{flex-wrap:wrap}.row.lot .info{flex:1 1 100%}.row.lot .btns{margin-left:auto}}
+/* phones: the listing cards stack (the buy button under the chips, right-aligned). No flex-wrap here: in the cards'
+   column layout a wrap pushed the buy button into a second column off the right edge (fixed 2026-10-28) */
+@media (max-width:520px){.row.lot .btns{margin-left:auto}}
 .contract{border:1px solid var(--accent);border-radius:4px;padding:10px 12px;margin-top:8px}
 .contract .bar{margin:8px 0 4px}
 .contract .line{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
@@ -908,22 +923,22 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
             <p class="eyebrow">Land office</p>
             <h2>Lots for sale</h2>
             <p class="meta" id="saleMeta">Far and steep lots are cheaper but slower.</p>
-            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
+            <p class="meta statkey"><span class="good">▲ Green</span>: fewer chops than an average lot, or an easy haul. <span class="bad">▼ Red</span>: more chops, or a hard haul. Tap to see why.</p>
             <div id="sales"></div>
           </section>
           <section class="panel" id="queuePanel">
             <p class="eyebrow">Cutting queue</p>
             <h2>Your lots</h2>
-            <div class="tabs qtabs" id="qTabs" role="group" aria-label="Queue view"><button type="button" data-v="lots" aria-pressed="false">Lots</button><button type="button" data-v="trees" aria-pressed="true">Trees</button></div>
+            <p class="meta stocked" id="stocked" title="How long your crews can keep cutting the trees you own, at today's pace">Idle cutting stocked: <b class="num" id="stockedV">—</b></p>
+            <div class="tabs qtabs" id="qTabs" role="group" aria-label="Your lots view"><button type="button" data-v="stock" aria-pressed="true">Stock</button><button type="button" data-v="priority" aria-pressed="false">Priority</button></div>
             <p class="meta pick" id="pickNote" hidden></p>
-            <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value and price are a tree. Tap the numbers to see the averages.</p>
-            <div id="qLots" hidden>
-              <p class="meta" id="qMeta">Crews cut the top lot, then move down the list. Drag or use the arrows to reorder.</p>
-              <div class="qmode" id="qMode" role="group" aria-label="Queue order"><span>Order</span></div>
-              <ol class="tq" id="tq"></ol>
+            <div id="qStock">
+              <p class="meta" id="stockMeta">Trees you own, by kind. Set which kinds crews cut first under Priority.</p>
+              <div class="stock" id="stock"></div>
             </div>
-            <div id="qTrees">
-              <p class="meta" id="stashMeta">Every tree on your lots. Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one tree slows felling and skidding.</p>
+            <div id="qTrees" hidden>
+              <p class="meta" id="stashMeta">Any: cut as it comes. First: cut it first. Skip: leave it standing. Picking one kind slows felling and skidding.</p>
+              <p class="meta statkey"><span class="good">▲ Green</span>: better than an average lot. <span class="bad">▼ Red</span>: worse. Value is a tree. Tap the numbers to see the averages.</p>
               <div class="stash" id="stash"></div>
             </div>
           </section>
@@ -3636,6 +3651,7 @@ var Core = (function(exports) {
 	* The four slots, one listing each. Slot 1 is today's listing (genTract, with the
 	* push-tract price guarantee); slots 2 and 3 list genRichTract lots; slot 4 the AFK lot.
 	* Unlocks count lifetime lots cut out, so they stay open through close camp.
+	* The AFK slot is `always` for sale: no restock wait (owner request 2026-10-28).
 	*/
 	var LOT_SLOTS = deepFreeze([
 		{
@@ -3658,7 +3674,8 @@ var Core = (function(exports) {
 			name: "AFK lot",
 			species: 3,
 			need: 4,
-			afk: true
+			afk: true,
+			always: true
 		}
 	]);
 	/** Main species share on a rich lot, and the rare tree's share (percent). */
@@ -5590,6 +5607,33 @@ var Core = (function(exports) {
 		if (bf <= 0) return 0;
 		return thr > 0 ? bf / thr : Infinity;
 	}
+	/**
+	* Idle cutting stocked (owner request 2026-10-28): seconds the crews can keep
+	* cutting from the lots already bought, each lot at its own slowest stage
+	* (the sum of `cutOutSeconds`). Infinity with trees but no crews; 0 with no trees.
+	*/
+	function stockedSeconds(c, lots, skyline = false) {
+		let s = 0;
+		for (const l of lots) s += cutOutSeconds(c, l, skyline);
+		return s;
+	}
+	/**
+	* A rough time in plain words: "about 25m", "about 3h 10m" (to 5 minutes under
+	* an hour, to 10 minutes above), "under 1m" for a few seconds, "none" for 0
+	* and "—" when it cannot be known (no crews).
+	*/
+	function aboutTime(sec) {
+		if (!(sec === sec) || !isFinite(sec)) return "—";
+		if (sec <= 0) return "none";
+		if (sec < 60) return "under 1m";
+		const m = sec / 60;
+		if (m < 60) {
+			const r = m < 10 ? Math.round(m) : Math.round(m / 5) * 5;
+			return r >= 60 ? "about 1h" : `about ${r}m`;
+		}
+		const t = Math.round(m / 10) * 10, h = Math.floor(t / 60), mm = t % 60;
+		return `about ${h}h${mm ? ` ${mm}m` : ""}`;
+	}
 	/** Mix-weighted seasonal value factor (hemlock tanbark, maple), as `seasonValueFactor` but on read-only data. */
 	function seasonFactorOf(mix, season) {
 		let plain = 0, now = 0, hit = false;
@@ -6068,6 +6112,25 @@ var Core = (function(exports) {
 			});
 		}
 		return out;
+	}
+	/**
+	* Haul factor = distance factor x skid factor of the slope (1 at a flat mile).
+	* Easy from 0.8 (flat out to 4 mi, hilly at 1 mi); Hard under 0.56 (any steep
+	* lot, hilly from 8 mi); OK between.
+	*/
+	var HAUL_EASE = deepFreeze({
+		easy: .8,
+		hard: .56
+	});
+	/** The haul chip for a lot: its haul factor, Easy / OK / Hard, and the matching colour (good / even / bad). */
+	function haulChip(l, skyline = false) {
+		const f = distanceFactor(Math.max(0, Number(l.miles) || 0)) * slopeFactor(l.slope, skyline);
+		const key = f >= HAUL_EASE.easy - 1e-9 ? "easy" : f < HAUL_EASE.hard ? "hard" : "ok";
+		return {
+			key,
+			factor: f,
+			verdict: key === "easy" ? "good" : key === "hard" ? "bad" : "even"
+		};
 	}
 	//#endregion
 	//#region packages/core/src/stash.ts
@@ -7032,6 +7095,7 @@ var Core = (function(exports) {
 	exports.GROUNDS = GROUNDS;
 	exports.HALF_SEC = HALF_SEC;
 	exports.HAUL_CLEAN_BONUS = HAUL_CLEAN_BONUS;
+	exports.HAUL_EASE = HAUL_EASE;
 	exports.HAUL_FLAT = HAUL_FLAT;
 	exports.HAUL_GHOST_STEP = HAUL_GHOST_STEP;
 	exports.HAUL_LEN = HAUL_LEN;
@@ -7133,6 +7197,7 @@ var Core = (function(exports) {
 	exports.TURN_TIME_CARRIAGE = TURN_TIME_CARRIAGE;
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
 	exports.WIND_CAP = WIND_CAP;
+	exports.aboutTime = aboutTime;
 	exports.achievementMet = achievementMet;
 	exports.achievementProgress = achievementProgress;
 	exports.advanceRepay = advanceRepay;
@@ -7208,6 +7273,7 @@ var Core = (function(exports) {
 	exports.groundMix = groundMix;
 	exports.handAmount = handAmount;
 	exports.haulBonus = haulBonus;
+	exports.haulChip = haulChip;
 	exports.haulDrive = haulDrive;
 	exports.haulGhostAt = haulGhostAt;
 	exports.haulGrade = haulGrade;
@@ -7322,6 +7388,7 @@ var Core = (function(exports) {
 	exports.stashRule = stashRule;
 	exports.stashTotals = stashTotals;
 	exports.statVerdict = statVerdict;
+	exports.stockedSeconds = stockedSeconds;
 	exports.stormSeasonMult = stormSeasonMult;
 	exports.streamRng = streamRng;
 	exports.structureDef = structureDef;
@@ -7389,9 +7456,9 @@ function freshRun(){ return {init:false, base:null, bounty:[], n:1, t0:0, deliv:
 function freshMeta(){ return {legacy:0, total:0, nodes:[]}; }
 // per-company interface choices: equipment buy amount (1, 10, 25 or 'max'), bucking guides on, bucking guide card seen; camp tab, Saw for grade guides
 // qOrder: the cutting queue's order (Core.QUEUE_MODES: as bought, by order deadline, by value an hour, by hand)
-// stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: the cutting queue's tab ('lots' or 'trees';
-// Trees by default, owner request 2026-10-26; a switch lasts for the session: every load opens on Trees again)
-function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'trees', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'all', whSort:'default', whFilter:null, logTab:'work', millTab:'mill', almTab:'weather', theme:'auto', numFmt:'short', toastLvl:'all'}; }
+// stashRule: the lot stash's rule per species (Core.STASH_RULES; unset = Any); qView: Your lots' tab ('stock' or 'priority',
+// 2026-10-28; was 'lots' or 'trees'). Stock by default; a switch lasts for the session: every load opens on Stock again
+function freshUi(){ return {qOrder:'bought', stashRule:{}, qView:'stock', buyN:1, buckGuide:true, buckIntro:false, haulHint:false, camp:'logging', screen:null, millSeen:false, sawGuide:true, sawMark:null, sawIntro:false, sawRuns:0, whTab:'all', whSort:'default', whFilter:null, logTab:'work', millTab:'mill', almTab:'weather', theme:'auto', numFmt:'short', toastLvl:'all'}; }
 // special charter orders: open orders and their hand-ins, fills, the bonus filled this outpost (capped at close camp), when missed ones return, unlocked order perks
 function freshOrders(){ return {open:[], filled:{}, filledAt:{}, back:{}, bonusPct:0, autoFill:true, perks:[]}; }
 // seeds for the named random streams (finds, the Sawmill); never Math.random, so the logging sim's draws stay byte-exact
@@ -7599,6 +7666,8 @@ const saleCap = () => S.era > 0 ? Core.pushTractCap(eraCost(S.era)) : undefined;
 // Slot 1 is the plain lot with the push-tract price guarantee; slots 2 and 3 open at 2 and 3 lifetime lots cut out
 // (Core.genRichTract: 3 species, then 4 with a rare tree); slot 4, the AFK lot (own 'land' stream), at 4.
 // Slots never close: they count S.stats.tracts, which survives close camp.
+// The AFK lot is always for sale (owner 2026-10-28, Core.LOT_SLOTS[3].always): buying it lists another at once, and the
+// board's 3-minute refresh keeps its listing (a push inland, a new outpost or new extra rules still draw a fresh one).
 const openSlots = () => Core.slotsOpen(S.stats.tracts);
 function genSlot(k){
   let t;
@@ -7613,9 +7682,12 @@ function capSlot1(){
   if (cap === undefined || i < 0 || S.forSale.some(x => !x.afk && x.price <= cap)) return;
   S.forSale[i] = Object.assign(Core.fitTractPrice(S.forSale[i], cap), {slot:0});
 }
-function refreshSales(){
-  const n = openSlots(); S.forSale = []; S.afkHeld = false;
-  for (let k = 0; k < n; k++) S.forSale.push(genSlot(k));
+function refreshSales(keepAlways){
+  const n = openSlots(), was = S.forSale; S.forSale = []; S.afkHeld = false;
+  for (let k = 0; k < n; k++){
+    const old = keepAlways && Core.LOT_SLOTS[k].always ? was.find(x => x.slot === k) : null;
+    S.forSale.push(old || genSlot(k));
+  }
   S.saleT = 180; capSlot1();
 }
 // a slot that just opened gets its listing now, with a note and a toast (old saves open theirs quietly in normalize)
@@ -7637,9 +7709,8 @@ function buyTract(i){
   t.roadCost = Core.roadCost(t); t.seq = S.tractSeq++; standOf(t);
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
-  // the slot relists its own kind of lot; the AFK lot is not relisted until the next board
-  if (t.afk){ S.forSale.splice(i, 1); S.afkHeld = true; }
-  else { S.forSale[i] = genSlot(t.slot || 0); capSlot1(); }
+  // the slot relists its own kind of lot at once (the AFK lot too: it is always for sale)
+  S.forSale[i] = genSlot(Number.isInteger(t.slot) ? t.slot : t.afk ? Core.LOT_SLOTS.findIndex(x => x.afk) : 0); if (!t.afk) capSlot1();
   delete t.slot;
   note(`Bought ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
@@ -7840,7 +7911,7 @@ function tick(dt){
     S.contracts.splice(S.contracts.indexOf(c), 1);
   }
   S.offerT -= dt; if (S.offerT <= 0 || (!S.offers.length && !ordFull())) refreshOffers();
-  S.saleT -= dt; if (S.saleT <= 0) refreshSales();
+  S.saleT -= dt; if (S.saleT <= 0) refreshSales(true);
   // the company advance: any sale this tick resets the stall clock; a stall past Core.STALL_SEC gets the missing crews advanced
   if (S.bucket > 0) S.lastSale = S.t;
   else { const st = stallNow(); if (st) companyAdvance(st); }
@@ -8044,6 +8115,10 @@ function speciesBar(t){
 // ---------- order fit and the camp note (Core: packages/core/src/queue.ts). Read-only: no draws, no game numbers change.
 // the camp's steady capacities with no site factors: no pace boost, flat ground, one mile, pine weight (each lot applies its own)
 const bareCaps = () => ({fell: baseRate('fell')*seasonF('fell'), buck: baseRate('buck')*seasonF('buck'), skid: baseRate('skid')*seasonF('skid'), haul: baseRate('haul')*seasonF('haul')});
+// idle cutting stocked (owner 2026-10-28, Core.stockedSeconds): how long crews can keep cutting the trees already bought, each
+// lot at its slowest stage at the steady pace (no speed boost); "—" with no crews. A listing's own time is what buying it adds.
+const stockedSec = () => Core.stockedSeconds(bareCaps(), queueViews(), has('skyline'));
+const addsSec = t => Core.cutOutSeconds(bareCaps(), t, has('skyline'));
 // the felling-game pace the Prime estimate trusts: perfect falls per tree felled (0 for an idle company)
 const perfRate = () => Math.min(Core.FIT_PERF_RATE_MAX, (S.stats.perfFell || 0) / Math.max(40, S.felled || 0));
 const spWord = sp => SP[sp].name.toLowerCase();
@@ -8068,19 +8143,8 @@ function fitOrders(){
 // owned lots as the queue helpers read them (the lot stash: picked lots by their standing trees, the crews' lot by what they cut)
 const queueViews = () => S.tracts.map((t, j) => lotView(t, j === 0));
 const lotFits = (t, ahead, orders) => Core.orderFit(t, orders, {caps:bareCaps(), era:S.era, perfRate:perfRate(), skyline:has('skyline')}, ahead);
-// pine bucking finds amber pitch twice as often: a plain hint when special orders still want pitch (no estimate, no badge)
-function pitchHint(t){
-  const P = 'logging.amber_pitch', want = Math.max(0, orderNeed(P) - Math.max(0, bankN(P) - reserveFor(P))), sh = Core.mixShare(t.mix, 'pine');
-  return want > 0 && sh >= .3 ? `<p class="ofit">Pine ${Math.round(sh*100)}%: twice the amber sap when bucking (orders want ${want} more).</p>` : '';
-}
-function noteFor(t, current){
-  const ev = evNow(), factors = {};
-  if (ev) STAGES.forEach(st => { const f = Core.eventStageFactor(ev, st.id, S.st, evOpts(st.id)); if (f !== 1) factors[st.id] = f; });
-  return Core.campNote(bareCaps(), t, {skyline:has('skyline'), season:effSeason(), current, weather: ev && Object.keys(factors).length ? {name:ev.name, factors} : null, money});
-}
 // "details" folds stay open across re-renders
 const openD = new Set();
-const fitHtml = lines => lines.map(f => `<p class="ofit${f.amount > 0 ? '' : ' late'}" data-order="${f.orderId}">${f.text}</p>`).join('');
 const bindDetails = box => box.querySelectorAll('details[data-d]').forEach(el => el.addEventListener('toggle', () => { if (el.open) openD.add(el.dataset.d); else openD.delete(el.dataset.d); }));
 // ---------- lot stat chips (Core: packages/core/src/lotstats.ts): each number against the average lot for the era.
 // Green ▲ better, red ▼ worse, plain within ±10%. Tap a row of chips to show the averages (all rows; not saved).
@@ -8111,21 +8175,24 @@ const statRow = (chips, note, id) => `<div class="statrow"><button type="button"
 document.addEventListener('click', e => { const b = e.target && e.target.closest ? e.target.closest('button.stats') : null; if (!b) return;
   statAvg = !statAvg; document.documentElement.classList.toggle('stat-avg', statAvg);
   document.querySelectorAll('button.stats').forEach(x => x.setAttribute('aria-pressed', String(statAvg))); });
-const bestChips = (i, best, orders) => Object.keys(best).filter(id => best[id] === i).map(id => { const o = orders.find(x => x.id === id); return o ? `<span class="chipl best" data-best="${id}">Best for ${o.short}</span>` : ''; }).join('');
-// a listing's chips: price a tree is the price on its buy button (weather and fire discounts included)
-const listingChips = t => statChips(Object.assign({}, t, {price: tractCost(t)}));
-function listingCard(t, i, fits, note, best, orders){
-  const g = Core.GROUNDS[Core.groundId(t.ground)], main = Core.mainSpecies(t.mix);
-  const sl = Core.LOT_SLOTS[t.slot], rare = sl && sl.rare ? Core.rareSpecies(S.era) : null;
-  return `<div class="row lot${t.afk ? ' afk' : ''}" data-slot="${t.slot ?? ''}"><div class="info"><b>${t.name}</b> <span class="chipl ground">${g.name}</span>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}` +
-    `${sl && t.slot > 0 && !t.afk ? `<span class="chipl slotchip">${sl.name}</span>` : ''}${rare && SP[rare] ? `<span class="chipl rare">Rare: ${SP[rare].name.split(' ').pop()}</span>` : ''}${bestChips(i, best, orders)}
-    <p>${fmt(t.trees)} trees · ${bf(t.trees*t.bf)} · ${mixText(t)}</p>${speciesBar(t)}
-    ${statRow(listingChips(t), note, 'l'+t.name)}
-    <p>Best for: ${t.afk ? 'time away from the game' : main ? Core.BEST_FOR[main] : 'mixed use'}${g.twist ? ' · ' + g.twist : ''}</p>
-    ${fitHtml(fits)}${pitchHint(t)}</div>
-    <div class="btns"><button class="buy" type="button" data-i="${i}">${money(tractCost(t))}</button></div></div>`;
+// ---------- the land office listing (owner 2026-10-28): only what changes the choice. Tree mix and count, the price (on the
+// buy button), chops a tree against the average lot (green fewer, red more) and one haul chip for distance and slope
+// (Core.haulChip: Easy green, OK plain, Hard red). Tap the chips for the average chops and the miles and ground.
+const HAUL_WORD = {easy:'Easy', ok:'OK', hard:'Hard'};
+function haulChipHtml(t){
+  const h = Core.haulChip(t, has('skyline')), g = h.verdict, why = `${fmt(t.miles)} mi, ${SLOPES[t.slope].label}`;
+  return `<span class="stat ${g}" data-stat="haul" data-haul="${h.key}" data-v="${g}" title="Haul: ${HAUL_WORD[h.key]} (${why})"><span class="sk">Haul</span> ${HAUL_WORD[h.key]}` +
+    (g === 'even' ? '' : ` <span class="mk" aria-label="${g === 'good' ? 'better' : 'worse'}">${g === 'good' ? '▲' : '▼'}</span>`) + ` <span class="avg">${why}</span></span>`;
 }
-// a slot with no listing: locked (goal and progress), or the AFK lot already bought this board
+const listingChips = t => statChips(t, ['chops']) + haulChipHtml(t);
+function listingCard(t, i){
+  const g = Core.GROUNDS[Core.groundId(t.ground)];
+  return `<div class="row lot${t.afk ? ' afk' : ''}" data-slot="${t.slot ?? ''}"><div class="info"><b title="${g.name}${g.twist ? ': ' + g.twist : ''}">${t.name}</b>${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}
+    <p class="lotl">${fmt(t.trees)} trees · ${mixText(t)}</p>${speciesBar(t)}
+    ${statRow(listingChips(t))}${t.afk ? `<p class="afkt" data-afkt="${i}"></p>` : ''}</div>
+    <div class="btns"><button class="buy" type="button" data-i="${i}" aria-label="Buy ${t.name} for ${money(tractCost(t))}">${money(tractCost(t))}</button></div></div>`;
+}
+// a slot with no listing: locked (goal and progress); an open slot always relists at once
 function slotRow(k){
   const s = Core.LOT_SLOTS[k], left = Core.lotsToOpen(k, S.stats.tracts);
   if (left > 0) return `<div class="row locked" data-slot="${k}" data-locked="1"><div class="info"><b>${s.name}</b><span class="chipl lockchip">Locked</span>
@@ -8137,89 +8204,55 @@ const aheadOfNew = t => t.afk || qMode() === 'hand' ? S.tracts : S.tracts.filter
 // the same lots as the queue helpers read them (the lot stash: picked lots by their standing trees, the crews' lot by what they cut)
 const aheadView = t => aheadOfNew(t).map(x => lotView(x, x === S.tracts[0]));
 function renderSales(){
-  const orders = fitOrders(), cur = tract();
-  // a bought lot joins the end of the queue, so every lot under contract is ahead of it (in an auto mode a normal lot
-  // goes ahead of a waiting AFK lot); the AFK lot never takes a "Best for" badge
-  const fits = S.forSale.map(t => lotFits(t, aheadView(t), orders)), best = Core.bestFor(fits, S.forSale), notes = S.forSale.map(t => noteFor(t, cur && lotView(cur, true)));
   const locked = slotRows();
-  const key = S.forSale.map((t, i) => t.slot+t.name+t.trees+':'+tractCost(t)+':'+fits[i].map(f => f.text).join('/')+':'+notes[i].short+notes[i].details.join('/')+pitchHint(t)+listingChips(t)).join('|') + JSON.stringify(best) + locked;
-  list('sales', key, S.forSale.map((t,i) => listingCard(t, i, fits[i], notes[i], best, orders)).join('') + locked,
-    box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); bindDetails(box); });
+  const key = S.forSale.map(t => t.slot+t.name+t.trees+':'+tractCost(t)+':'+listingChips(t)).join('|') + locked;
+  list('sales', key, S.forSale.map((t,i) => listingCard(t, i)).join('') + locked,
+    box => { box.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => buyTract(+b.dataset.i)); });
   $('sales').querySelectorAll('button[data-i]').forEach(b => { const t = S.forSale[+b.dataset.i]; b.disabled = !t || S.cash < tractCost(t); });
-  $('saleMeta').textContent = `Far and steep lots are cheaper but slower. New lots in ${mins(Math.max(0,S.saleT))}.` +
+  $('sales').querySelectorAll('[data-afkt]').forEach(el => { const t = S.forSale[+el.dataset.afkt]; if (!t) return;
+    const add = addsSec(t), txt = isFinite(add) ? `Stocked now: ${Core.aboutTime(stockedSec())} · this lot adds + ${Core.aboutTime(add)} of cutting` : 'Hire a crew for each stage to see how long it lasts.';
+    if (el.textContent !== txt) el.textContent = txt; });
+  $('saleMeta').textContent = `Far and steep lots are cheaper but slower. New lots in ${mins(Math.max(0,S.saleT))}.` + (S.forSale.some(t => t.afk) ? ' The AFK lot is always for sale.' : '') +
     (S.weather.burnt ? ' After the fire: the next lot costs 20% less.' : '') + (evMult('tractPrice') < 1 ? ` ${evNow().name}: lots 15% cheaper this season.` : '');
 }
-// ---------- the cutting queue panel: owned lots in order, crews on the first. Drag the grip (mouse or touch, pointer events)
-// or use the arrow buttons to reorder; Cut next puts a lot second, Cut now moves the crews to it (free, progress kept);
-// the order buttons sort the waiting lots.
-let qDrag = null;
-// queue rows and tree cards: the chips a bought lot or a species carries (no asking price)
-const Q_STATS = ['chops', 'value', 'weight', 'haul', 'slope', 'prime'], S_STATS = ['chops', 'value', 'weight', 'prime'];
-function fitChip(f, orders){
-  const o = orders.find(x => x.id === f.orderId), sh = o ? o.short.replace(/^the /, '') : '';
-  const n = f.amount >= 10 ? Math.round(f.amount) : Math.round(f.amount*10)/10;
-  return `<span class="chipl ofb" data-fitb="${f.orderId}">${f.fills ? `Fills ${sh}` : f.kind === 'species' ? (f.share > 0 ? `${Math.max(1, Math.round(f.amount*100))}% of ${sh}` : `Helps ${sh}`) : `≈${n} for ${sh}`}</span>`;
-}
-// the queue row under a pointer's y (the first or last row when above or below the list)
-function qRowAt(box, y){
-  const rows = [...box.querySelectorAll('.qrow')]; if (!rows.length) return null;
-  for (let i = 0; i < rows.length; i++){ const r = rows[i].getBoundingClientRect(); if (y < r.bottom) return i; }
-  return rows.length - 1;
-}
-function bindQueueDrag(box){
-  box.querySelectorAll('.qgrip').forEach(g => {
-    const li = g.closest('.qrow');
-    g.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); qDrag = {from: +li.dataset.q, to: +li.dataset.q, id: e.pointerId};
-      try { g.setPointerCapture(e.pointerId); } catch(_){} li.classList.add('dragging'); });
-    g.addEventListener('pointermove', e => { if (!qDrag || qDrag.id !== e.pointerId) return; e.preventDefault();
-      const to = qRowAt(box, e.clientY); if (to == null) return; qDrag.to = to;
-      box.querySelectorAll('.qrow').forEach((x, i) => x.classList.toggle('over', i === to && to !== qDrag.from)); });
-    const end = (e, drop) => { if (!qDrag || qDrag.id !== e.pointerId) return; const d = qDrag; qDrag = null;
-      try { g.releasePointerCapture(e.pointerId); } catch(_){}
-      if (!(drop && moveTract(d.from, d.to))) render(true); };
-    g.addEventListener('pointerup', e => end(e, true));
-    g.addEventListener('pointercancel', e => end(e, false));
-  });
-}
+// ---------- Your lots (owner 2026-10-28): two tabs. Stock shows how many trees of each kind you own; Priority (the lot stash)
+// sets which kinds crews cut first. The queue logic is unchanged (Core.queueOrder under S.ui.qOrder; cutNow / cutNext /
+// moveTract stay for Cut here); the per-lot queue list it replaced is gone.
+// tree cards: the chips a species carries (no asking price)
+const S_STATS = ['chops', 'value', 'weight', 'prime'];
+// S.ui.qView: 'stock' or 'priority' (saves from before 2026-10-28 said 'lots' or 'trees')
+const qViewOf = v => v === 'priority' || v === 'trees' ? 'priority' : 'stock';
 function renderQueue(){
-  const tabs = $('qTabs'), view = S.ui.qView === 'lots' ? 'lots' : 'trees';
+  { const v = Core.aboutTime(stockedSec()), el = $('stockedV'); if (el.textContent !== v) el.textContent = v; }
+  const tabs = $('qTabs'), view = qViewOf(S.ui.qView);
   if (!tabs.dataset.bound){ tabs.dataset.bound = '1'; tabs.querySelectorAll('button').forEach(b => b.onclick = () => { S.ui.qView = b.dataset.v; render(true); b.focus(); }); }
   tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
-  $('qLots').hidden = view !== 'lots'; $('qTrees').hidden = view !== 'trees';
+  $('qStock').hidden = view !== 'stock'; $('qTrees').hidden = view !== 'priority';
   const pn = pickNoteText(), pe = $('pickNote'); pe.hidden = !pn; if (pe.textContent !== pn) pe.textContent = pn;
-  if (view === 'trees'){ renderStash(); return; }
-  const mb = $('qMode');
-  if (!mb.querySelector('button')){ mb.insertAdjacentHTML('beforeend', Core.QUEUE_MODES.map(m => `<button type="button" data-m="${m}" aria-pressed="false">${Core.QUEUE_MODE_LABEL[m]}</button>`).join(''));
-    mb.querySelectorAll('button').forEach(b => b.onclick = () => setQueueMode(b.dataset.m)); }
-  mb.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === qMode())));
-  const orders = fitOrders(), caps = bareCaps(), sky = has('skyline'), n = S.tracts.length;
-  const qv = queueViews();
-  const rows = S.tracts.map((t, i) => ({t, i, lv: qv[i], fits: lotFits(qv[i], qv.slice(0, i), orders), note: noteFor(qv[i], i ? qv[0] : null), chips: statChips(qv[i], Q_STATS)}));
-  const key = qMode() + '|' + rows.map(r => `${r.t.seq}:${r.t.name}:${r.fits.map(f => fitChip(f, orders) + f.text).join('/')}:${r.note.short}${r.note.details.join('/')}${r.chips}`).join('|');
-  if (!qDrag) list('tq', key, n ? rows.map(({t, i, fits, note, chips}) => `<li class="qrow${i === 0 ? ' on' : ''}" data-q="${i}">
-    <button type="button" class="qgrip" aria-label="Drag ${t.name} to reorder" title="Drag to reorder">⠿</button>
-    <div class="info"><b>${i + 1}. ${t.name}</b>${i === 0 ? '<span class="chipl crew">Crews here</span>' : ''}${t.hire ? `<span class="chipl ground">Hire job: ${t.hire.mill}</span>` : ''}${t.afk ? '<span class="chipl afkchip">For time away</span>' : ''}${fits.filter(f => f.amount > 0).map(f => fitChip(f, orders)).join('')}
-      <p>${mixText(lotView(t))}</p>${speciesBar(lotView(t))}
-      ${statRow(chips, note, 'q'+t.seq)}<span class="spec" data-qs="${i}"></span>${fitHtml(fits)}</div>
-    <div class="qbtns"><button type="button" data-qu="${i}" aria-label="Move ${t.name} up" title="Move up" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-qd="${i}" aria-label="Move ${t.name} down" title="Move down" ${i === n - 1 ? 'disabled' : ''}>▼</button>${i > 1 ? `<button type="button" data-qnext="${i}">Cut next</button>` : ''}${i > 0 ? `<button type="button" class="now" data-qnow="${i}">Cut now</button>` : ''}</div></li>`).join('')
-    : '<li class="empty">No lots. Buy one at the land office or take a hire job.</li>',
-    box => {
-      const refocus = (attr, i) => { const b = document.querySelector(`#tq [data-${attr}="${i}"]`); if (b && !b.disabled) b.focus(); };
-      box.querySelectorAll('[data-qu]').forEach(b => b.onclick = () => { const i = +b.dataset.qu; if (moveTract(i, i - 1)) refocus('qu', i - 1); });
-      box.querySelectorAll('[data-qd]').forEach(b => b.onclick = () => { const i = +b.dataset.qd; if (moveTract(i, i + 1)) refocus('qd', i + 1); });
-      box.querySelectorAll('[data-qnext]').forEach(b => b.onclick = () => cutNext(+b.dataset.qnext));
-      box.querySelectorAll('[data-qnow]').forEach(b => b.onclick = () => cutNow(+b.dataset.qnow));
-      bindQueueDrag(box); bindDetails(box);
-    });
-  rows.forEach(({t, i, lv, note}) => { const el = document.querySelector(`#tq [data-qs="${i}"]`); if (!el) return;
-    const eta = Core.cutOutSeconds(caps, lv, sky);
-    const txt = `${fmt(t.left)} of ${fmt(t.trees)} trees left · done in ${isFinite(eta) ? mins(eta) : '—'} · ${money(t.left*lotView(t).val)} of logs · ${money(note.perHour)} an hour`;
-    if (el.textContent !== txt) el.textContent = txt; });
-  const m = qMode();
-  $('qMeta').textContent = 'Crews cut the top lot, then move down the list. ' + (n > 1 ? 'Drag or use the arrows to reorder. Moving is free and lots keep their progress. ' : '') +
-    (m === 'hand' ? 'Order: by hand.' : m === 'bought' ? 'Order: as bought.' : m === 'deadline' ? 'Order: soonest deadline first.' : 'Order: most value an hour first.') + (m !== 'hand' ? ' Crews finish their lot before moving.' : '');
+  if (view === 'priority') renderStash(); else renderStock();
 }
-// ---------- the Trees tab (the lot stash): every owned tree by species, its rule, and the lots that hold it.
+// the Stock tab: kind, count and a bar (scaled to the biggest count); a First or Skip rule shows as a small tag.
+// The rows rebuild only when the kinds or rules change; counts and bars update in place.
+function renderStock(){
+  const rows = Core.stashTotals(S.tracts.map(t => Object.assign({}, t, {stand: standOf(t)}))).filter(r => r.trees >= Core.STAND_MIN), R = S.ui.stashRule;
+  const key = rows.map(r => r.sp + ':' + Core.stashRule(R, r.sp)).join('|');
+  list('stock', key, rows.length ? rows.map(r => { const rule = Core.stashRule(R, r.sp);
+    return `<div class="stk" data-sp="${r.sp}"><span class="sw sp-${r.sp}" aria-hidden="true"></span><b>${SP[r.sp].name}${rule === 'any' ? '' : `<span class="chipl">${Core.STASH_RULE_LABEL[rule]}</span>`}</b><span class="num" data-stn="${r.sp}"></span>` +
+      `<span class="stbar" aria-hidden="true"><i class="sp-${r.sp}" data-stb="${r.sp}"></i></span></div>`; }).join('') +
+      '<div class="stk total"><span data-stt></span></div>'
+    : '<p class="empty">No trees yet. Buy a lot at the land office.</p>');
+  if (!rows.length) return;
+  const box = $('stock'), top = Math.max(1, ...rows.map(r => r.trees)), all = rows.reduce((a, r) => a + r.trees, 0);
+  rows.forEach(r => {
+    const n = box.querySelector(`[data-stn="${r.sp}"]`), b = box.querySelector(`[data-stb="${r.sp}"]`), t = fmt(Math.round(r.trees));
+    if (n && n.textContent !== t) n.textContent = t;
+    if (b) b.style.width = (r.trees / top * 100).toFixed(1) + '%';
+  });
+  const tt = box.querySelector('[data-stt]'), lots = S.tracts.filter(t => t.left >= 1).length;
+  const txt = `${fmt(Math.round(all))} trees on ${lots} lot${lots === 1 ? '' : 's'}`;
+  if (tt && tt.textContent !== txt) tt.textContent = txt;
+}
+// ---------- the Priority tab (the lot stash; was Trees): every owned tree by species, its rule, and the lots that hold it.
 // The cards rebuild only when species, rules, lots or orders change; the numbers update in place.
 const PRIME_ITEMS = [...new Set(Core.PRIME_RULES.map(r => r.item))];
 // the open orders a species serves: its tree order, and Prime needs it can make
@@ -9686,7 +9719,7 @@ function normalize(){
   S.stats.tracts = Math.max(0, Math.floor(+S.stats.tracts || 0));
   // lot slots (2026-10-28): an old save opens the slots its lifetime lots cut out have earned, without the unlock notes
   if (!hadSlots) S.stats.slots = Core.slotsOpen(S.stats.tracts);
-  S.afkHeld = !!S.afkHeld;
+  S.afkHeld = false; // the AFK lot is always for sale now (2026-10-28); boot relists it on an old save that held it
   S.meta = Object.assign(freshMeta(), S.meta || {}); if (!Array.isArray(S.meta.nodes)) S.meta.nodes = [];
   S.ui = Object.assign(freshUi(), S.ui && typeof S.ui === 'object' ? S.ui : {}); if (!BUY_NS.includes(S.ui.buyN)) S.ui.buyN = 1;
   if (!Array.isArray(S.runs)) S.runs = [];
@@ -9731,7 +9764,7 @@ function normalize(){
   // the lot stash (2026-10-25): an old lot's tree counts come from its mix and trees left; rules merge with the default (Any)
   S.tracts.forEach(t => { t.left = Math.max(0, +t.left || 0); t.stand = Core.fixStand(t.stand, t.mix, t.left); });
   S.ui.stashRule = Object.fromEntries(Object.entries(obj(S.ui.stashRule) ? S.ui.stashRule : {}).filter(([k, r]) => SP[k] && (r === 'first' || r === 'skip')));
-  S.ui.qView = 'trees';
+  S.ui.qView = 'stock';
   rulesAny = Core.rulesAllAny(S.ui.stashRule); rulesV++;
   S.forSale = (Array.isArray(S.forSale) ? S.forSale : []).filter(obj).map(fixTract);
   // lot slots: a board from before slots keeps its listings in the open slots (normal lots fill slots 1-3 in order, the AFK
@@ -11046,7 +11079,7 @@ $('road').onclick = buildRoad;
 
 function boot(){
   if (!S.forSale.length) refreshSales();
-  else { for (let k = 0; k < openSlots(); k++) if (!S.forSale.some(x => x.slot === k) && !(Core.LOT_SLOTS[k].afk && S.afkHeld)) S.forSale.push(genSlot(k));
+  else { for (let k = 0; k < openSlots(); k++) if (!S.forSale.some(x => x.slot === k)) S.forSale.push(genSlot(k));
     S.forSale.sort((a, b) => a.slot - b.slot); }
   S.stats.slots = Math.max(S.stats.slots || 1, openSlots());
   if (!S.offers.length && !ordFull()) refreshOffers();

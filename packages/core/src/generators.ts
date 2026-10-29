@@ -205,18 +205,24 @@ export interface LotSlot {
   readonly rare?: boolean;
   /** The slot lists the AFK lot. */
   readonly afk?: boolean;
+  /**
+   * Always for sale (owner request 2026-10-28, the AFK lot): buying it lists an
+   * equivalent lot at once, and the board's 3-minute refresh keeps the listing.
+   */
+  readonly always?: boolean;
 }
 
 /**
  * The four slots, one listing each. Slot 1 is today's listing (genTract, with the
  * push-tract price guarantee); slots 2 and 3 list genRichTract lots; slot 4 the AFK lot.
  * Unlocks count lifetime lots cut out, so they stay open through close camp.
+ * The AFK slot is `always` for sale: no restock wait (owner request 2026-10-28).
  */
 export const LOT_SLOTS: readonly LotSlot[] = deepFreeze([
   { name: 'Company lot', species: 2, need: 0 },
   { name: 'Surveyed lot', species: 3, need: 2 },
   { name: "Cruiser's pick", species: 4, need: 3, rare: true },
-  { name: 'AFK lot', species: 3, need: 4, afk: true },
+  { name: 'AFK lot', species: 3, need: 4, afk: true, always: true },
 ]);
 
 /** Main species share on a rich lot, and the rare tree's share (percent). */

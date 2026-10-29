@@ -10,6 +10,7 @@
  */
 import { SLOPES, SPECIES, type SlopeId, type SpeciesId } from './content';
 import { deepFreeze } from './freeze';
+import { distanceFactor, slopeFactor } from './formulas';
 import { genTract } from './generators';
 import { primePerTree, type QueueLot } from './queue';
 import { PRIME_RULES, type ItemId } from './items';
@@ -134,4 +135,22 @@ export function lotStatChips(l: StatLot, era: number, perfRate = 0, only?: reado
     out.push({ id, value: x, avg: avg[id], verdict: statVerdict(id, x, avg[id]) });
   }
   return out;
+}
+
+// ---------- the haul chip (owner request 2026-10-28): distance and slope as one Easy / OK / Hard word on a listing
+
+export type HaulEase = 'easy' | 'ok' | 'hard';
+/**
+ * Haul factor = distance factor x skid factor of the slope (1 at a flat mile).
+ * Easy from 0.8 (flat out to 4 mi, hilly at 1 mi); Hard under 0.56 (any steep
+ * lot, hilly from 8 mi); OK between.
+ */
+export const HAUL_EASE: Readonly<{ easy: number; hard: number }> = deepFreeze({ easy: 0.8, hard: 0.56 });
+export interface HaulChip { readonly key: HaulEase; readonly factor: number; readonly verdict: StatVerdict }
+
+/** The haul chip for a lot: its haul factor, Easy / OK / Hard, and the matching colour (good / even / bad). */
+export function haulChip(l: { readonly miles: number; readonly slope: SlopeId }, skyline = false): HaulChip {
+  const f = distanceFactor(Math.max(0, Number(l.miles) || 0)) * slopeFactor(l.slope, skyline);
+  const key: HaulEase = f >= HAUL_EASE.easy - 1e-9 ? 'easy' : f < HAUL_EASE.hard ? 'hard' : 'ok';
+  return { key, factor: f, verdict: key === 'easy' ? 'good' : key === 'hard' ? 'bad' : 'even' };
 }

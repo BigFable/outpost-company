@@ -68,6 +68,32 @@ export function cutOutSeconds(c: QueueCaps, l: QueueLot, skyline = false): numbe
   return thr > 0 ? bf / thr : Infinity;
 }
 
+/**
+ * Idle cutting stocked (owner request 2026-10-28): seconds the crews can keep
+ * cutting from the lots already bought, each lot at its own slowest stage
+ * (the sum of `cutOutSeconds`). Infinity with trees but no crews; 0 with no trees.
+ */
+export function stockedSeconds(c: QueueCaps, lots: readonly QueueLot[], skyline = false): number {
+  let s = 0;
+  for (const l of lots) s += cutOutSeconds(c, l, skyline);
+  return s;
+}
+
+/**
+ * A rough time in plain words: "about 25m", "about 3h 10m" (to 5 minutes under
+ * an hour, to 10 minutes above), "under 1m" for a few seconds, "none" for 0
+ * and "—" when it cannot be known (no crews).
+ */
+export function aboutTime(sec: number): string {
+  if (!(sec === sec) || !isFinite(sec)) return '—';
+  if (sec <= 0) return 'none';
+  if (sec < 60) return 'under 1m';
+  const m = sec / 60;
+  if (m < 60) { const r = m < 10 ? Math.round(m) : Math.round(m / 5) * 5; return r >= 60 ? 'about 1h' : `about ${r}m`; }
+  const t = Math.round(m / 10) * 10, h = Math.floor(t / 60), mm = t % 60;
+  return `about ${h}h${mm ? ` ${mm}m` : ''}`;
+}
+
 /** Mix-weighted seasonal value factor (hemlock tanbark, maple), as `seasonValueFactor` but on read-only data. */
 function seasonFactorOf(mix: readonly (readonly [SpeciesId, number])[], season: Season): number {
   let plain = 0, now = 0, hit = false;
