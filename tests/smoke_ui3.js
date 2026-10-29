@@ -76,7 +76,7 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  d.querySelector('#almBody [data-it="logging.burl"]').click(); ok(E('S.ui.screen')==='warehouse' && E('S.ui.whTab')==='collection' && /Swirl knot/.test($('whDetail').textContent),'tapping a find opens it in the Warehouse collection');
  $('navAlm').click(); $('atGuide').click();
  ok(/1 wood is 1 board foot/.test($('almBody').textContent) && d.querySelectorAll('#almBody .ladder>div').length===6 && /Legendary/.test($('almBody').textContent),'Guide: what wood means, the tier ladder with firewood below, perk labels unchanged');
- key($('atGuide'),'ArrowRight'); ok(E('S.ui.almTab')==='weather' && d.activeElement===$('atWeather'),'arrow keys move along the Almanac tabs');
+ key($('atGuide'),'ArrowRight'); ok(E('S.ui.almTab')==='achievements' && d.activeElement===$('atAch'),'arrow keys move along the Almanac tabs (Guide wraps to Achievements)');
  $('lsCash').click(); ok(E('S.ui.screen')==='logging' && E('S.ui.logTab')==='log' && !!$('lpLog').querySelector('#ledgerPanel') && /Shares to spend/.test($('ledgerFacts').textContent),'the Ledger lives on Logging › Log; the cash in the top bar opens it');
  E(`openWh('ledger')`); ok(E('S.ui.screen')==='logging' && E('S.ui.logTab')==='log','openWh("ledger") still lands on the Ledger');
  $('navSet').click();

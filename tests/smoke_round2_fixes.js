@@ -40,13 +40,13 @@ let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++
  // a Diesel Road push uses the same rule (half of its price)
  E(`S.era=2; refreshSales();`); ok(cheapest()<=E('eraCost(2)')/2,'Diesel Road board has a tract at or under half its push price');
 
- // 2. d2m between d1m and d3m, pays $10K
+ // 2. (achievements rework 2026-10-28: d2m merged into d3m) d3m between d1m and d10m, pays $33,500
  const ids=E('ACH.map(a=>a.id)');
- ok(ids.indexOf('d1m')<ids.indexOf('d2m') && ids.indexOf('d2m')<ids.indexOf('d3m'),'d2m sits between d1m and d3m');
- E(`S.ach=ACH.map(a=>a.id).filter(id=>id!=='d2m'&&id!=='d3m'); S.stats.deliv=2e6; S.cash=0; S.run.bounty=[]; S.run.bountyPaid=0;`);
+ ok(ids.indexOf('d1m')<ids.indexOf('d3m') && ids.indexOf('d3m')<ids.indexOf('d10m') && !ids.includes('d2m'),'d3m sits between d1m and d10m');
+ E(`S.ach=ACH.map(a=>a.id).filter(id=>id!=='d3m'&&id!=='d10m'); S.stats.deliv=3e6; S.cash=0; S.run.bounty=[]; S.run.bountyPaid=0;`);
  E('checkAch(true)');
- ok(E(`S.ach.includes('d2m')`) && !E(`S.ach.includes('d3m')`),'delivering 2M bd ft earns d2m only');
- ok(E('S.cash')>=10000,'d2m pays $10K: cash '+E('S.cash'));
+ ok(E(`S.ach.includes('d3m')`) && !E(`S.ach.includes('d10m')`),'delivering 3M wood earns d3m only');
+ ok(E('S.cash')>=33500,'d3m pays $33,500: cash '+E('S.cash'));
 
  // 3. haul: the load screen and end ticket show the new caps
  E(`closeMG(); S.season=1; S.landing={bf:1e6, val:2e5}; S.upg=[]; S.run.perks=[]; openMG('haul'); cancelAnimationFrame(MG.raf);`);

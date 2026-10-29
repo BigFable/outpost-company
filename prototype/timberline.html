@@ -249,6 +249,12 @@ details.notei[open] summary{justify-content:flex-start}
 .goal .line{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .goal p{margin:1px 0 6px;font-size:.8rem;color:var(--muted)}
 .goal p.req{color:var(--ink);font-weight:500;margin-top:-2px}
+/* achievements screen (rework 2026-10-28): grouped by tier; done ones ticked, ones that need closing camp say so */
+.goal .chipl.ownd{color:var(--good);border-color:var(--good)}
+.goal .chipl.lockchip{color:var(--muted);white-space:normal}
+.goal.locked b{color:var(--muted)}
+.goal .gl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.achtier>p.meta{margin:0 0 4px}
 #eraBar{background:var(--good)}
 .toasts{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;max-width:calc(100vw - 32px)}
 .toast{background:var(--panel);border:1px solid var(--accent);border-left-width:5px;border-radius:6px;padding:10px 14px;min-width:220px;max-width:340px;box-shadow:0 6px 20px rgba(0,0,0,.18);animation:tin .35s cubic-bezier(.2,.9,.3,1.3)}
@@ -826,7 +832,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
       <button type="button" id="navShop" data-go="shop" title="Shop"><svg class="i" aria-hidden="true"><use href="#i-shop"/></svg><span class="nm">Shop</span><span class="dot" id="navShopDot" hidden></span><span class="sub"><span id="navShopSub">Coming soon</span></span></button>
       <button type="button" id="lsOrd" data-go="orders" title="Charter board"><svg class="i" aria-hidden="true"><use href="#i-scroll"/></svg><span class="nm">Charter board</span><span class="ncnt" id="navOrdN" hidden></span><span class="sub">Special order: <span id="lsOrdV">None</span></span></button>
       <button type="button" id="navBoard" data-go="board" title="Company board"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg><span class="nm">Company board</span><span class="ncnt" id="navBoardN">0</span><span class="sub"><span id="navBoardSub">Charter Shares to spend</span></span></button>
-      <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Weather cards seen</span></button>
+      <button type="button" id="navAlm" data-go="almanac" title="Almanac"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span class="nm">Almanac</span><span class="ncnt" id="navAlmN">0</span><span class="sub">Achievements, weather, finds</span></button>
       <button type="button" id="navSet" data-go="settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg><span class="nm">Settings</span><span class="sub">Theme, save backup, new company</span></button>
     </nav>
     <p class="sidefoot">Saves on this device. <span id="saved"></span></p>
@@ -959,7 +965,7 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
             <div id="eraNext"></div>
             <div class="group"><h3>Improvements</h3><p class="meta">Earned, not bought. Play mini-games or keep working to unlock them.</p><div id="upgs"></div></div>
             <div class="group" id="bunkGroup" hidden><h3>Bunkhouse<small id="bunkLv"></small></h3><p class="meta">Built with plank bundles from the Sawmill. Each level makes crews cheaper. It stays when you close camp.</p><div id="bunk"></div></div>
-            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div></div>
+            <div class="group"><h3>Next goals</h3><p class="meta" id="repLine"></p><div id="goals"></div><div class="cbtns"><button class="act" type="button" id="achAll">All achievements</button></div></div>
           </section>
         </div>
         <div class="tpane" id="lpLog" data-pane="logging:log" role="tabpanel" aria-labelledby="ltLog" hidden>
@@ -1054,8 +1060,9 @@ button.itile[aria-current="true"]{outline:3px solid var(--ink);outline-offset:4p
       <section class="panel">
         <p class="eyebrow">Almanac</p>
         <h2 id="almTitle">The coast’s almanac</h2>
-        <p class="meta">What you have seen on the Fogbound Coast: the weather, the things you found, and how the company counts wood.</p>
+        <p class="meta">What the company has done and seen on the Fogbound Coast: achievements, the weather, the things you found, and how the company counts wood.</p>
         <div class="ctabs" id="almTabs" role="tablist" aria-label="Almanac">
+          <button type="button" role="tab" data-at="achievements" id="atAch" aria-controls="almBody">Achievements<span class="c" id="almNA"></span></button>
           <button type="button" role="tab" data-at="weather" id="atWeather" aria-controls="almBody">Weather<span class="c" id="almNW"></span></button>
           <button type="button" role="tab" data-at="finds" id="atFinds" aria-controls="almBody">Finds<span class="c" id="almNF"></span></button>
           <button type="button" role="tab" data-at="guide" id="atGuide" aria-controls="almBody">Guide</button>
@@ -1990,7 +1997,8 @@ var Core = (function(exports) {
 	* the company reaches without mini-games. The mini-game route stays faster;
 	* most improvements whose only effect is inside a mini-game have no crews'
 	* route; the haul-game ones all do (playtest 1).
-	* `achievements` is a derived stat: the number of achievements earned.
+	* `achievements` is a derived stat: the number of achievements earned. Targets rescaled for the
+	* achievements rework (2026-10-28: 23 first-outpost achievements of 63), so each unlocks about when it did before.
 	*/
 	var IMPROVEMENT_ALT_REQS = deepFreeze({
 		swamper: {
@@ -2014,9 +2022,9 @@ var Core = (function(exports) {
 			target: 30
 		},
 		grade: {
-			text: "Earn 36 achievements",
+			text: "Earn 28 achievements",
 			stats: ["achievements"],
-			target: 36
+			target: 28
 		},
 		bunks: {
 			text: "Finish 60 lots",
@@ -2044,9 +2052,9 @@ var Core = (function(exports) {
 			target: 12
 		},
 		lookout: {
-			text: "Earn 24 achievements",
+			text: "Earn 16 achievements",
 			stats: ["achievements"],
-			target: 24
+			target: 16
 		},
 		binders: {
 			text: "Finish 40 lots",
@@ -2074,9 +2082,9 @@ var Core = (function(exports) {
 			target: 75e6
 		},
 		radios: {
-			text: "Earn 46 achievements",
+			text: "Earn 42 achievements",
 			stats: ["achievements"],
-			target: 46
+			target: 42
 		},
 		shop: {
 			text: "Fill 100 orders",
@@ -2546,112 +2554,819 @@ var Core = (function(exports) {
 	/** Board feet an outpost must deliver before it can close camp without reaching Steam Camp. */
 	var CLOSE_VOL = 25e4;
 	//#endregion
+	//#region packages/core/src/items.ts
+	/**
+	* The company warehouse: item definitions, Prime timber, finds (drop tables),
+	* special charter orders and their bonus cap, as data plus pure helpers.
+	* Spec: docs/design/prime-timber-drops-inventory.md (smallest playtest version)
+	* and docs/design/sawmill-camp.md (mill goods).
+	*
+	* Owner ruling: the only currencies are cash and Charter Shares. Everything
+	* else the player collects is an item here.
+	*
+	* Randomness: every roll takes an injected Rng. The prototype feeds these from
+	* a separate seeded stream (`streamRng(S.rng, 'drops')`), never Math.random,
+	* so the logging sim's existing draws stay byte-exact.
+	*/
+	var TIERS = deepFreeze([
+		"scrap",
+		"common",
+		"good",
+		"fine",
+		"prime",
+		"rare"
+	]);
+	var TIER_LABEL = deepFreeze({
+		scrap: "Firewood",
+		common: "Common",
+		good: "Good",
+		fine: "Fine",
+		prime: "Prime",
+		rare: "Rare"
+	});
+	var TIER_DIAMONDS = deepFreeze({
+		scrap: 0,
+		common: 0,
+		good: 1,
+		fine: 2,
+		prime: 3,
+		rare: 4
+	});
+	/** Board grades and log grades on the ladder (ids unchanged: clear/select/common, 1/2/3/'P' where 'P' is pulp, now firewood). */
+	var BOARD_TIER = deepFreeze({
+		clear: "fine",
+		select: "good",
+		common: "common"
+	});
+	var LOG_TIER = deepFreeze({
+		"1": "fine",
+		"2": "good",
+		"3": "common",
+		P: "scrap"
+	});
+	/** Board grade names for players (the ids stay clear/select/common): Fine, Good, Common. */
+	var BOARD_LABEL = deepFreeze({
+		clear: "Fine",
+		select: "Good",
+		common: "Common"
+	});
+	/** A log grade for players: 1 Fine, 2 Good, 3 Common, 'P' firewood. */
+	function logTierName(g) {
+		const t = LOG_TIER[String(g)];
+		return t ? TIER_LABEL[t] : TIER_LABEL.common;
+	}
+	var ITEMS = deepFreeze([
+		{
+			id: "logging.prime_spar",
+			name: "Prime log",
+			plural: "Prime logs",
+			skill: "logging",
+			category: "prime",
+			rarity: "made",
+			sell: 40,
+			desc: "A perfect log, stamped Prime. Builds the mill and fills big orders.",
+			uses: [
+				"order",
+				"structure",
+				"sell"
+			],
+			from: "Perfect falls (3 from a spruce) and Fine logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50",
+			tier: "prime",
+			icon: {
+				glyph: "spar",
+				tint: "spruce",
+				badge: "prime"
+			}
+		},
+		{
+			id: "logging.burl",
+			name: "Swirl knot",
+			plural: "Swirl knots",
+			skill: "logging",
+			category: "find",
+			rarity: "common",
+			sell: 30,
+			desc: "A swirly lump of wood. Buyers pay well for it.",
+			uses: [
+				"sell",
+				"collection",
+				"future:sawmill"
+			],
+			from: "Felling and bucking",
+			tier: "common",
+			icon: {
+				glyph: "burl",
+				tint: "bark"
+			}
+		},
+		{
+			id: "logging.amber_pitch",
+			name: "Amber sap",
+			plural: "Amber sap",
+			skill: "logging",
+			category: "find",
+			rarity: "common",
+			sell: 12,
+			desc: "Hard tree sap. Seals ship hulls and the water wheel’s dam.",
+			uses: [
+				"order",
+				"structure",
+				"sell",
+				"future:smelting"
+			],
+			from: "Bucking (pine has the most)",
+			tier: "common",
+			icon: {
+				glyph: "drop",
+				tint: "amber"
+			}
+		},
+		{
+			id: "logging.survey_marker",
+			name: "Restock token",
+			plural: "Restock tokens",
+			skill: "logging",
+			category: "find",
+			rarity: "uncommon",
+			sell: 18,
+			desc: "A brass company token. Use one to reroll your perk cards (2 per outpost).",
+			uses: [
+				"reroll",
+				"sell",
+				"future:surveying"
+			],
+			from: "Skidding",
+			tier: "good",
+			icon: {
+				glyph: "marker",
+				tint: "brass"
+			}
+		},
+		{
+			id: "logging.ships_fitting",
+			name: "Shipwreck bronze",
+			plural: "Shipwreck bronze",
+			skill: "logging",
+			category: "find",
+			rarity: "uncommon",
+			sell: 22,
+			desc: "Bronze parts washed ashore from a wreck. Builds the circular saw.",
+			uses: [
+				"order",
+				"structure",
+				"sell",
+				"future:raising"
+			],
+			from: "Hauling (washed up by the cove road)",
+			tier: "good",
+			icon: {
+				glyph: "deadeye",
+				tint: "bronze"
+			}
+		},
+		{
+			id: "logging.fog_glass",
+			name: "Fog lens",
+			plural: "Fog lenses",
+			skill: "logging",
+			category: "find",
+			rarity: "rare",
+			sell: 90,
+			desc: "A smoky, sea-worn lens. Nobody knows who made it.",
+			uses: [
+				"sell",
+				"collection",
+				"future:surveying"
+			],
+			from: "Top results in felling, skidding and hauling",
+			tier: "rare",
+			icon: {
+				glyph: "lens",
+				tint: "fog"
+			}
+		},
+		{
+			id: "sawmill.quarter_sawn",
+			name: "Prime board",
+			plural: "Prime boards",
+			skill: "sawmill",
+			category: "mill",
+			rarity: "made",
+			sell: 25,
+			desc: "The best board, from a great run on a Prime log. The Admiralty wants it for decks.",
+			uses: ["sell", "future:raising"],
+			from: "A great Saw boards run on a Prime log",
+			tier: "prime",
+			icon: {
+				glyph: "board",
+				tint: "oak",
+				figure: "quarter",
+				badge: "prime"
+			}
+		},
+		{
+			id: "sawmill.plank_bundle",
+			name: "Plank bundle",
+			plural: "Plank bundles",
+			skill: "sawmill",
+			category: "mill",
+			rarity: "made",
+			sell: 10,
+			desc: "500 wood of Common boards. Builds the bunkhouse.",
+			uses: ["structure", "sell"],
+			from: "Common boards at the Sawmill",
+			tier: "common",
+			icon: {
+				glyph: "bundle",
+				tint: "pine"
+			}
+		}
+	]);
+	var BULK = deepFreeze([
+		{
+			id: "company.logs",
+			name: "Log pond",
+			tab: "logs",
+			scope: "company",
+			tier: "common",
+			icon: {
+				glyph: "pile",
+				tint: "pine"
+			},
+			desc: "Logs waiting for the Sawmill. Logging fills it; the mill saws it."
+		},
+		{
+			id: "sawmill.lumber.clear",
+			name: "Fine boards",
+			tab: "boards",
+			scope: "camp",
+			tier: "fine",
+			icon: {
+				glyph: "bundle",
+				tint: "pine",
+				straps: false,
+				knots: 0
+			},
+			desc: "No knots. Sell for 3× the log price."
+		},
+		{
+			id: "sawmill.lumber.select",
+			name: "Good boards",
+			tab: "boards",
+			scope: "camp",
+			tier: "good",
+			icon: {
+				glyph: "bundle",
+				tint: "pine",
+				straps: false,
+				knots: 1
+			},
+			desc: "A few small knots. Sell for 2×."
+		},
+		{
+			id: "sawmill.lumber.common",
+			name: "Common boards",
+			tab: "boards",
+			scope: "camp",
+			tier: "common",
+			icon: {
+				glyph: "bundle",
+				tint: "pine",
+				straps: false,
+				knots: 4
+			},
+			desc: "Knotty. Sell for 1×, or make plank bundles."
+		}
+	]);
+	var ITEM_BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
+	function itemDef(id) {
+		return ITEM_BY_ID.get(id);
+	}
+	var CURRENCIES = deepFreeze([
+		{
+			id: "cash",
+			name: "Cash",
+			scope: "outpost"
+		},
+		{
+			id: "shares.logging",
+			name: "Charter Shares",
+			scope: "skill",
+			skill: "logging"
+		},
+		{
+			id: "shares.sawmill",
+			name: "Charter Shares",
+			scope: "skill",
+			skill: "sawmill"
+		}
+	]);
+	/**
+	* Sale price of one item at an era: base × √(TRACT_BASE[era] ÷ 60).
+	* The spec's linear scale (× TRACT_BASE ÷ 60) made warehouse sales 9-45% of an
+	* outpost's earnings in the sim (most sales land at Diesel Road, ×250); the
+	* square root keeps them near the 5% guardrail. Balance agent to confirm.
+	*/
+	function itemSellPrice(id, era) {
+		const d = ITEM_BY_ID.get(id);
+		return d ? Math.round(d.sell * Math.sqrt((TRACT_BASE[era] ?? 60) / 60)) : 0;
+	}
+	var PRIME_RULES = deepFreeze([
+		{
+			species: "pine",
+			item: "logging.prime_spar",
+			perfectFall: 1,
+			buckMinLen: 12
+		},
+		{
+			species: "spruce",
+			item: "logging.prime_spar",
+			perfectFall: 3,
+			buckMinLen: 14
+		},
+		{
+			species: "hemlock",
+			item: "logging.prime_spar",
+			perfectFall: 1,
+			buckMinLen: 12
+		}
+	]);
+	var PRIME_BY_SP = new Map(PRIME_RULES.map((p) => [p.species, p]));
+	/** Prime made by a perfect fall of this species (null when it makes none yet). */
+	function primeFromFall(species) {
+		const r = PRIME_BY_SP.get(species);
+		return r ? {
+			item: r.item,
+			qty: r.perfectFall
+		} : null;
+	}
+	/** Bucking score needed before grade 1 cuts are stamped Prime. */
+	var BUCK_PRIME_SCORE = .9;
+	/** Shortest grade 1 sawlog that can be stamped Prime by default (spruce needs 14 ft), and the most Prime one stem gives. */
+	var BUCK_PRIME_MIN_LEN = 12;
+	var BUCK_PRIME_MAX = 2;
+	/** Prime from one bucked stem: 1 per grade 1 sawlog of the species' Prime length (12 ft; spruce 14 ft) when the score is ≥ 90%, at most 2. */
+	function primeFromBuck(species, segments, score) {
+		const r = PRIME_BY_SP.get(species);
+		if (!r || score < .9) return null;
+		const n = Math.min(2, segments.filter((s) => s.g === 1 && s.len >= r.buckMinLen).length);
+		return n > 0 ? {
+			item: r.item,
+			qty: n
+		} : null;
+	}
+	/** Chance a crew-felled tree is Prime: 2% at Cove Landing, scaled down as tracts grow so Prime per tract stays near 1.2. */
+	function idlePrimeChance(era) {
+		return .02 * TRACT_BASE[0] / (TRACT_BASE[era] ?? TRACT_BASE[0]);
+	}
+	/**
+	* How many of `n` independent events with chance `p` happen, cheaply: exact
+	* Bernoulli draws for small n, otherwise the expected count with the
+	* fractional part drawn. Draws: min(n, 8) for small n, else one.
+	*/
+	function countEvents(rng, n, p) {
+		if (n <= 0 || p <= 0) return 0;
+		if (n <= 8 && Number.isInteger(n)) {
+			let k = 0;
+			for (let i = 0; i < n; i++) if (rng() < p) k++;
+			return k;
+		}
+		const e = n * p, whole = Math.floor(e);
+		return whole + (rng() < e - whole ? 1 : 0);
+	}
+	var TIER_MULT = [
+		.1,
+		.4,
+		1
+	];
+	var DROP_TABLES = deepFreeze({
+		fell: {
+			id: "logging.fell",
+			skill: "logging",
+			game: "fell",
+			baseChance: .25,
+			tierMult: TIER_MULT,
+			idlePerMin: .02,
+			idleRareMult: .1,
+			entries: [{
+				item: "logging.burl",
+				qty: [1, 1],
+				weight: 50,
+				minTier: 0
+			}, {
+				item: "logging.fog_glass",
+				qty: [1, 1],
+				weight: 10,
+				minTier: 2,
+				rare: true
+			}]
+		},
+		buck: {
+			id: "logging.buck",
+			skill: "logging",
+			game: "buck",
+			baseChance: .35,
+			tierMult: TIER_MULT,
+			idlePerMin: .06,
+			idleRareMult: .1,
+			entries: [{
+				item: "logging.amber_pitch",
+				qty: [1, 1],
+				weight: 70,
+				minTier: 0
+			}, {
+				item: "logging.burl",
+				qty: [1, 1],
+				weight: 20,
+				minTier: 0
+			}]
+		},
+		skid: {
+			id: "logging.skid",
+			skill: "logging",
+			game: "skid",
+			baseChance: .2,
+			tierMult: TIER_MULT,
+			idlePerMin: .02,
+			idleRareMult: .1,
+			entries: [{
+				item: "logging.survey_marker",
+				qty: [1, 1],
+				weight: 50,
+				minTier: 1
+			}, {
+				item: "logging.fog_glass",
+				qty: [1, 1],
+				weight: 10,
+				minTier: 2,
+				rare: true
+			}]
+		},
+		haul: {
+			id: "logging.haul",
+			skill: "logging",
+			game: "haul",
+			baseChance: .25,
+			tierMult: TIER_MULT,
+			idlePerMin: .02,
+			idleRareMult: .1,
+			entries: [
+				{
+					item: "logging.ships_fitting",
+					qty: [1, 1],
+					weight: 60,
+					minTier: 1
+				},
+				{
+					item: "logging.ships_fitting",
+					qty: [2, 2],
+					weight: 30,
+					minTier: 2
+				},
+				{
+					item: "logging.fog_glass",
+					qty: [1, 1],
+					weight: 10,
+					minTier: 2,
+					rare: true
+				}
+			]
+		}
+	});
+	/** Tier from a mini-game's quality q: top ≥ 0.97, mid ≥ 0.55, else low. */
+	function dropTier(q) {
+		return q >= .97 ? 2 : q >= .55 ? 1 : 0;
+	}
+	/** Weighted pick among entries; one draw. */
+	function pickEntry(rng, entries, weight) {
+		const tot = entries.reduce((a, e) => a + weight(e), 0);
+		if (tot <= 0) return null;
+		let x = rng() * tot;
+		for (const e of entries) {
+			x -= weight(e);
+			if (x <= 0) return e;
+		}
+		return entries[entries.length - 1] ?? null;
+	}
+	/**
+	* A mini-game's drop roll. Draws: the chance roll; on a hit, the entry pick.
+	* Low tier rolls on entries with minTier 0 ("common"), mid on minTier ≤ 1, top on all.
+	* `weightMult` favours an item (pine's pitch pockets: amber pitch ×2 in bucking).
+	*/
+	function rollDrop(table, tier, rng, chanceMult = 1, weightMult = {}) {
+		if (rng() >= table.baseChance * table.tierMult[tier] * chanceMult) return null;
+		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight * (weightMult[x.item] ?? 1));
+		return e ? {
+			item: e.item,
+			qty: e.qty[0]
+		} : null;
+	}
+	/**
+	* An idle crew's drop roll (one per 60 s of work at half capacity or more).
+	* Rolls on common and uncommon entries (minTier ≤ 1), rares at idleRareMult of
+	* their weight. `weightMult` lets a perk favour one item (Pitch boiler).
+	* Draws: the chance roll; on a hit, the entry pick.
+	*/
+	function rollIdleDrop(table, rng, chanceMult = 1, weightMult = {}) {
+		if (rng() >= table.idlePerMin * chanceMult) return null;
+		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= 1 || x.rare), (x) => x.weight * (x.rare ? table.idleRareMult : 1) * (weightMult[x.item] ?? 1));
+		return e ? {
+			item: e.item,
+			qty: e.qty[0]
+		} : null;
+	}
+	/**
+	* Seconds of stage work per idle roll. Work is time × utilisation: a stage
+	* running flat out rolls every 60 s, one starved to 30% every 200 s. (The spec's
+	* "at least half capacity" gate left only the bottleneck stage rolling, so
+	* bucking, the only pitch source, almost never rolled; see the sim notes.)
+	*/
+	var IDLE_DROP_SECONDS = 60;
+	var SPECIAL_ORDERS = deepFreeze([{
+		id: "admiralty_spar",
+		skill: "logging",
+		client: "The Admiralty",
+		name: "Admiralty mast order",
+		short: "Admiralty",
+		text: "The Admiralty wants Prime logs for ship masts, and amber sap to seal them.",
+		needs: [{
+			item: "logging.prime_spar",
+			qty: 16
+		}, {
+			item: "logging.amber_pitch",
+			qty: 2
+		}],
+		bonusPct: .15,
+		unlockPerk: "sparman",
+		trigger: ["logging.prime_spar"],
+		dueOutposts: 2
+	}, {
+		id: "caulk_perseverance",
+		skill: "logging",
+		client: "the captain of the Perseverance",
+		name: "Patch the Perseverance",
+		short: "Perseverance",
+		text: "The company ship is leaking. Her captain needs amber sap and shipwreck bronze before she sails.",
+		needs: [{
+			item: "logging.amber_pitch",
+			qty: 6
+		}, {
+			item: "logging.ships_fitting",
+			qty: 3
+		}],
+		bonusPct: .08,
+		rewardItems: [{
+			item: "logging.burl",
+			qty: 2
+		}],
+		unlockPerk: "pitchboiler",
+		trigger: ["logging.amber_pitch", "logging.ships_fitting"],
+		dueOutposts: 2
+	}]);
+	/** Most special orders open at once. */
+	var ORDER_OPEN_MAX = 2;
+	/** Special-order bonus cap per outpost (owner rule: the balance agent may raise it to 0.35 only if active < 1.5× casual). */
+	var ORDER_BONUS_CAP = .25;
+	/** A missed order is withdrawn and posted again this many outposts after it closed. */
+	var ORDER_RETURN_OUTPOSTS = 2;
+	/** Charter Shares multiplier from the special-order bonus filled this outpost: 1 + min(cap, sum). */
+	function orderBonus(filledPct) {
+		return 1 + Math.min(ORDER_BONUS_CAP, Math.max(0, filledPct));
+	}
+	/** Items still needed to fill an order, given what has been handed in. */
+	function orderRemaining(def, given) {
+		return def.needs.map((n) => ({
+			item: n.item,
+			qty: Math.max(0, n.qty - (given[n.item] ?? 0))
+		})).filter((n) => n.qty > 0);
+	}
+	/** Order perks: rare, rule-changing, offered in Logging drafts once their order is filled. */
+	var ORDER_PERKS = deepFreeze([{
+		id: "sparman",
+		r: "rare",
+		name: "Prime hunter",
+		desc: "Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime log, but perfect falls give no speed boost."
+	}, {
+		id: "pitchboiler",
+		r: "rare",
+		name: "Sap boiler",
+		desc: "Bucking game: each firewood piece becomes amber sap (2 at most) instead of firewood value. Idle buckers find sap 3× as often."
+	}]);
+	/**
+	* Old player-facing names and their new ones, longest first. Ids and save keys never change; this only rewrites text a
+	* save already holds (the camp log). Each rule is idempotent: new names never match an old pattern.
+	*/
+	var RENAMES = [
+		[/Admiralty spar order/g, "Admiralty mast order"],
+		[/Prime spars/g, "Prime logs"],
+		[/Prime spar/g, "Prime log"],
+		[/Quarter-sawn boards/g, "Prime boards"],
+		[/Quarter-sawn board/g, "Prime board"],
+		[/(Ship|ship)[’']s fittings/g, "shipwreck bronze"],
+		[/Ship[’']s fitting/g, "Shipwreck bronze"],
+		[/ship[’']s fitting/g, "shipwreck bronze"],
+		[/Survey markers/g, "Restock tokens"],
+		[/Survey marker/g, "Restock token"],
+		[/survey markers/g, "restock tokens"],
+		[/survey marker/g, "restock token"],
+		[/Fog-glass/g, "Fog lens"],
+		[/fog-glass/g, "fog lens"],
+		[/Amber pitch/g, "Amber sap"],
+		[/amber pitch/g, "amber sap"],
+		[/\bBurls\b/g, "Swirl knots"],
+		[/\bBurl\b/g, "Swirl knot"],
+		[/\bburls\b/g, "swirl knots"],
+		[/\bburl\b/g, "swirl knot"],
+		[/Spar man/g, "Prime hunter"],
+		[/Pitch boiler/g, "Sap boiler"],
+		[/Mill pond & wheel/g, "Water wheel"],
+		[/\b(\d+) MBF\b/g, "$1K wood"],
+		[/board feet/g, "wood"],
+		[/bd ft/g, "wood"]
+	];
+	/** Old item names and "bd ft" in a line of saved text, rewritten in the new words. */
+	function renameOldText(text) {
+		return RENAMES.reduce((t, [re, to]) => t.replace(re, to), text);
+	}
+	//#endregion
 	//#region packages/core/src/achievements.ts
 	/**
 	* Achievements and improvement unlock requirements as data (tech plan 2.1 principle 3).
 	* Conditions read named metrics through a callback, so the caller decides where
 	* the numbers come from (the prototype reads its save state; M3 reads GameState).
+	*
+	* Achievements rework (2026-10-28, docs/design/achievements-rework.md): three tiers
+	* that follow the game's real milestones. "First outpost" can all be earned before
+	* the first close camp; every "Across outposts" and "Long haul" achievement needs at
+	* least one close camp, either through an explicit `closes` condition or a metric
+	* that only moves once camp has closed (AFTER_CLOSE_METRICS). Tests hold both rules.
 	*/
-	var ladder = (id, name, desc, metric, target, cash, rep) => ({
-		id,
-		name,
-		desc,
-		cash,
-		rep,
-		when: [{
-			metric,
-			op: ">=",
-			value: target
-		}],
-		ladder: true
-	});
-	var once = (id, name, desc, when, cash, rep = 0) => ({
-		id,
-		name,
-		desc,
-		cash,
-		rep,
-		when,
-		ladder: false
-	});
+	var ACH_TIERS = deepFreeze([
+		{
+			id: "first",
+			name: "First outpost",
+			desc: "Goals for your first landing."
+		},
+		{
+			id: "across",
+			name: "Across outposts",
+			desc: "Close camp and land again to earn these."
+		},
+		{
+			id: "long",
+			name: "Long haul",
+			desc: "Collections and big numbers over many outposts."
+		}
+	]);
+	/** Metrics that stay at 0 (or undefined) until the company first closes camp. */
+	var AFTER_CLOSE_METRICS = deepFreeze([
+		"closes",
+		"shares",
+		"millRuns",
+		"sawTop",
+		"bunk",
+		"toMill",
+		"steamLater",
+		"beatFirst"
+	]);
 	var atLeast = (metric, value) => ({
 		metric,
 		op: ">=",
 		value
 	});
+	var closes = (n) => atLeast("closes", n);
+	var ladder = (tier, id, name, desc, metric, target, cash, rep, extra = []) => ({
+		id,
+		name,
+		desc,
+		cash,
+		rep,
+		tier,
+		when: [atLeast(metric, target), ...extra],
+		ladder: true
+	});
+	var once = (tier, id, name, desc, when, cash, rep = 0) => ({
+		id,
+		name,
+		desc,
+		cash,
+		rep,
+		tier,
+		when,
+		ladder: false
+	});
+	/**
+	* Items a company can get today: a mini-game or idle find (a drop table), Prime timber (a Prime rule), or made at the Sawmill.
+	* "Full warehouse" counts only these, so an item added ahead of its skill never blocks the achievement.
+	*/
+	var SOURCED = /* @__PURE__ */ new Set([...Object.values(DROP_TABLES).flatMap((t) => t.entries.map((e) => e.item)), ...PRIME_RULES.map((r) => r.item)]);
+	var FINDABLE_ITEMS = deepFreeze(ITEMS.filter((i) => SOURCED.has(i.id) || i.skill === "sawmill" && i.rarity === "made"));
+	var ITEM_KINDS = FINDABLE_ITEMS.length;
 	var ACHIEVEMENTS = deepFreeze([
-		once("first_tree", "Timber!", "Fell your first tree.", [atLeast("felled", 1)], 10),
-		once("first_sale", "First load", "Deliver logs to the cove.", [{
+		once("first", "first_tree", "Timber!", "Fell your first tree.", [atLeast("felled", 1)], 10),
+		once("first", "first_sale", "First load", "Deliver logs to the cove.", [{
 			metric: "deliv",
 			op: ">",
 			value: 0
 		}], 15),
-		once("first_crew", "On the payroll", "Hire your first crew.", [atLeast("crew", 1)], 25),
-		once("full_chain", "Stump to mill", "Have a crew working every stage.", [atLeast("crewedStages", 4)], 100, 1),
-		ladder("d10k", "10K wood", "Deliver 10,000 wood.", "deliv", 1e4, 150, 1),
-		ladder("d50k", "50K wood", "Deliver 50,000 wood.", "deliv", 5e4, 500, 1),
-		ladder("d250k", "Quarter million", "Deliver 250,000 wood.", "deliv", 25e4, 1800, 2),
-		ladder("d1m", "A million wood", "Deliver 1,000,000 wood.", "deliv", 1e6, 6e3, 2),
-		ladder("d2m", "Second shift", "Deliver 2 million wood.", "deliv", 2e6, 1e4, 1),
-		ladder("d3m", "Three million", "Deliver 3 million wood.", "deliv", 3e6, 2e4, 1),
-		ladder("d10m", "Ten million", "Deliver 10 million wood.", "deliv", 1e7, 7e4, 3),
-		ladder("d30m", "Thirty million", "Deliver 30 million wood.", "deliv", 3e7, 25e4, 2),
-		ladder("d100m", "A hundred million", "Deliver 100 million wood.", "deliv", 1e8, 9e5, 3),
-		ladder("d300m", "Three hundred million", "Deliver 300 million wood.", "deliv", 3e8, 3e6, 2),
-		ladder("d1b", "A billion wood", "Deliver 1 billion wood.", "deliv", 1e9, 12e6, 5),
-		ladder("e10k", "Ten thousand dollars", "Earn $10K in sales.", "earned", 1e4, 300, 0),
-		ladder("e100k", "Six figures", "Earn $100K in sales.", "earned", 1e5, 3e3, 1),
-		ladder("e1m", "Millionaire charter", "Earn $1M in sales.", "earned", 1e6, 3e4, 1),
-		ladder("e5m", "Five million in sales", "Earn $5M in sales.", "earned", 5e6, 12e4, 1),
-		ladder("e25m", "Toast of the board", "Earn $25M in sales.", "earned", 25e6, 6e5, 2),
-		ladder("e100m", "Founders of Landfall", "Earn $100M in sales.", "earned", 1e8, 2e6, 2),
-		ladder("t100", "Hundred trees", "Fell 100 trees.", "felled", 100, 200, 0),
-		ladder("t1k", "Thousand trees", "Fell 1,000 trees.", "felled", 1e3, 2500, 1),
-		ladder("t3k", "Three thousand trees", "Fell 3,000 trees.", "felled", 3e3, 1e4, 1),
-		ladder("t10k", "Ten thousand trees", "Fell 10,000 trees.", "felled", 1e4, 4e4, 2),
-		ladder("t30k", "Thirty thousand trees", "Fell 30,000 trees.", "felled", 3e4, 2e5, 1),
-		ladder("t100k", "A hundred thousand", "Fell 100,000 trees.", "felled", 1e5, 7e5, 3),
-		ladder("tr3", "Cut out", "Finish 3 lots.", "tracts", 3, 300, 0),
-		ladder("tr10", "Ten lots", "Finish 10 lots.", "tracts", 10, 2500, 1),
-		ladder("tr30", "Thirty lots", "Finish 30 lots.", "tracts", 30, 3e4, 2),
-		ladder("tr60", "Sixty lots", "Finish 60 lots.", "tracts", 60, 15e4, 2),
-		ladder("hire1", "Hired hands", "Finish a hire job.", "hires", 1, 150, 0),
-		ladder("c1", "Under contract", "Fill an order.", "contracts", 1, 250, 0),
-		ladder("c5", "Reliable supplier", "Fill 5 orders.", "contracts", 5, 1500, 1),
-		ladder("c10", "Steady supplier", "Fill 10 orders.", "contracts", 10, 8e3, 1),
-		ladder("c20", "Preferred supplier", "Fill 16 orders.", "contracts", 16, 25e3, 2),
-		ladder("crew10", "Ten-crew outfit", "Own 10 crews or machines.", "crew", 10, 400, 0),
-		ladder("crew30", "Big outfit", "Own 30 crews or machines.", "crew", 30, 4e3, 1),
-		ladder("crew75", "Industrial outfit", "Own 75 crews or machines.", "crew", 75, 8e4, 2),
-		ladder("crew50", "Fifty-crew outfit", "Own 50 crews or machines.", "crew", 50, 2e4, 1),
-		ladder("crew120", "Company of the Reach", "Own 120 crews or machines.", "crew", 120, 5e5, 2),
-		ladder("w1", "Wintered over", "Work through a winter.", "winters", 1, 250, 0),
-		ladder("w5", "Five winters", "Work through five winters.", "winters", 5, 3500, 1),
-		ladder("w10", "Ten winters", "Work through ten winters.", "winters", 10, 3e4, 1),
-		ladder("pf1", "Right on target", "Land a perfect fall.", "perfFell", 1, 60, 0),
-		ladder("pf10", "Faller of note", "Land 10 perfect falls.", "perfFell", 10, 900, 1),
-		ladder("pb1", "Full value", "Cut a trunk for full value.", "perfBuck", 1, 60, 0),
-		ladder("pb10", "Grader’s favorite", "Cut 10 trunks for full value.", "perfBuck", 10, 900, 1),
-		ladder("cs1", "Clean skid", "Beat the skid target time with no stump hits.", "cleanSkid", 1, 60, 0),
-		ladder("cs10", "Teamster", "Make 10 clean skids.", "cleanSkid", 10, 900, 1),
-		ladder("ch1", "Clean haul", "Beat the haul target with a full load, nothing lost.", "cleanHaul", 1, 60, 0),
-		ladder("ch10", "Road boss", "Make 10 clean hauls.", "cleanHaul", 10, 900, 1),
-		once("allround", "All-around logger", "Get a clean run in every mini-game.", [
+		once("first", "first_crew", "On the payroll", "Hire your first crew.", [atLeast("crew", 1)], 25),
+		ladder("first", "w1", "Wintered over", "Work through a winter.", "winters", 1, 250, 0),
+		once("first", "full_chain", "Every stage crewed", "Have a crew working all four stages.", [atLeast("crewedStages", 4)], 100, 1),
+		ladder("first", "c5", "Reliable supplier", "Fill 5 charter orders.", "contracts", 5, 1750, 1),
+		ladder("first", "crew30", "Big outfit", "Own 30 crews or machines.", "crew", 30, 4400, 1),
+		ladder("first", "d50k", "Fifty thousand wood", "Deliver 50,000 wood.", "deliv", 5e4, 950, 1),
+		once("first", "prime1", "Stamped Prime", "Make your first Prime log.", [atLeast("prime", 1)], 100),
+		once("first", "slot4", "Full land office", "Open all four land office slots.", [atLeast("slots", 4)], 1050, 1),
+		ladder("first", "tr10", "Ten lots", "Finish 10 lots.", "tracts", 10, 2800, 1),
+		once("first", "era1", "Full steam", "Reach Steam Camp.", [atLeast("era", 1)], 0, 2),
+		ladder("first", "t1k", "Thousand trees", "Fell 1,000 trees.", "felled", 1e3, 12700, 1),
+		ladder("first", "crew75", "Industrial outfit", "Own 75 crews or machines.", "crew", 75, 1e5, 2),
+		ladder("first", "crew120", "Company of the Reach", "Own 120 crews or machines.", "crew", 120, 5e5, 2),
+		ladder("first", "d1m", "A million wood", "Deliver 1,000,000 wood.", "deliv", 1e6, 7800, 2),
+		ladder("first", "d3m", "Three million wood", "Deliver 3 million wood.", "deliv", 3e6, 33500, 1),
+		ladder("first", "e1m", "Millionaire charter", "Earn $1M in sales.", "earned", 1e6, 33e3, 1),
+		ladder("first", "tr30", "Thirty lots", "Finish 30 lots.", "tracts", 30, 63e3, 2),
+		ladder("first", "t10k", "Ten thousand trees", "Fell 10,000 trees.", "felled", 1e4, 4e4, 1),
+		once("first", "sp1", "Special delivery", "Fill a special order from the charter board.", [atLeast("spOrders", 1)], 1e3, 1),
+		once("first", "allround", "All-around logger", "Get a clean run in every mini-game.", [
 			atLeast("perfFell", 1),
 			atLeast("perfBuck", 1),
 			atLeast("cleanSkid", 1),
 			atLeast("cleanHaul", 1)
 		], 1500, 2),
-		ladder("wx10", "Ten storms", "Ride out 10 bad-weather seasons to the end.", "storms", 10, 900, 1),
-		once("wxall", "Every season’s card", "See every weather card.", [atLeast("almanac", 16)], 1500, 2),
-		once("era1", "Full steam", "Reach Steam Camp.", [atLeast("era", 1)], 0, 2),
-		once("era2", "Diesel Road", "Reach Diesel Road.", [atLeast("era", 2)], 0, 2),
-		once("era3", "Into the Interior", "Reach Into the Interior.", [atLeast("era", 3)], 0, 3)
+		once("first", "era2", "Diesel Road", "Reach Diesel Road.", [atLeast("era", 2)], 0, 2),
+		once("across", "close1", "Loaded the ship", "Close camp for the first time.", [closes(1)], 250, 1),
+		once("across", "close3", "Third charter", "Close camp 3 times.", [closes(3)], 2e3, 2),
+		once("across", "beatfirst", "Old hands", "Close an outpost faster than your first.", [atLeast("beatFirst", 1)], 1e3, 2),
+		once("across", "quicksteam", "Quick steam", "On a later outpost, reach Steam Camp within 15 minutes.", [{
+			metric: "steamLater",
+			op: "<=",
+			value: 15
+		}], 1e3, 1),
+		once("across", "diesel3", "Diesel veteran", "Reach Diesel Road in 3 outposts.", [atLeast("dieselRuns", 3), closes(2)], 1e4, 2),
+		once("across", "shares50", "Board favorite", "Earn 50 Charter Shares in all.", [atLeast("shares", 50)], 500, 1),
+		once("across", "mill1", "Saw it here", "Close your first mill run.", [atLeast("millRuns", 1)], 750, 1),
+		once("across", "tomill", "Logs for the mill", "Send 100,000 wood to the Sawmill.", [atLeast("toMill", 1e5)], 750, 1),
+		once("across", "bunk3", "Full bunkhouse", "Build the bunkhouse to level 3.", [atLeast("bunk", 3)], 2e3, 2),
+		once("across", "sawtop", "Top sawyer", "Get top sawing in Saw boards.", [atLeast("sawTop", 1)], 400, 1),
+		once("across", "sp3", "Charter regular", "Fill 3 special orders.", [atLeast("spOrders", 3), closes(1)], 1500, 2),
+		once("across", "orders3", "Busy clerks", "Run 3 charter orders at once.", [atLeast("maxOrders", 3), closes(1)], 750, 1),
+		once("across", "afk3", "Away on business", "Buy 3 AFK lots.", [atLeast("afkLots", 3), closes(1)], 750, 1),
+		once("across", "perks30", "Seasoned charter", "Pick 30 perks.", [atLeast("perks", 30), closes(1)], 1e3, 1),
+		once("across", "curse3", "Cursed but rich", "Take 3 curse perks.", [atLeast("curses", 3), closes(1)], 750, 1),
+		ladder("across", "t30k", "Thirty thousand trees", "Fell 30,000 trees.", "felled", 3e4, 8e4, 1, [closes(1)]),
+		ladder("across", "d10m", "Ten million wood", "Deliver 10 million wood.", "deliv", 1e7, 5e4, 3, [closes(1)]),
+		ladder("across", "e5m", "Five million in sales", "Earn $5M in sales.", "earned", 5e6, 6e4, 1, [closes(1)]),
+		ladder("across", "tr45", "Forty-five lots", "Finish 45 lots.", "tracts", 45, 2e4, 1, [closes(1)]),
+		ladder("across", "tr60", "Sixty lots", "Finish 60 lots.", "tracts", 60, 6e4, 2, [closes(1)]),
+		ladder("across", "c50", "Steady supplier", "Fill 50 charter orders.", "contracts", 50, 25e3, 1, [closes(1)]),
+		ladder("across", "w10", "Ten winters", "Work through ten winters.", "winters", 10, 15e3, 1, [closes(1)]),
+		ladder("across", "wx10", "Ten storms", "Ride out 10 bad-weather seasons to the end.", "storms", 10, 900, 1, [closes(1)]),
+		ladder("across", "pf25", "Faller of note", "Land 25 perfect falls.", "perfFell", 25, 600, 1, [closes(1)]),
+		ladder("across", "pb25", "Grader’s favorite", "Cut 25 trunks for full value.", "perfBuck", 25, 600, 1, [closes(1)]),
+		ladder("across", "cs25", "Teamster", "Make 25 clean skids.", "cleanSkid", 25, 600, 1, [closes(1)]),
+		ladder("across", "ch25", "Road boss", "Make 25 clean hauls.", "cleanHaul", 25, 600, 1, [closes(1)]),
+		once("long", "close5", "Five outposts", "Close camp 5 times.", [closes(5)], 5e3, 2),
+		once("long", "close10", "Ten outposts", "Close camp 10 times.", [closes(10)], 2e4, 3),
+		once("long", "era3", "Into the Interior", "Reach Into the Interior.", [atLeast("era", 3), closes(1)], 0, 3),
+		once("long", "shares200", "Charter partner", "Earn 200 Charter Shares in all.", [atLeast("shares", 200)], 1e4, 2),
+		once("long", "mill5", "Mill master", "Close 5 mill runs.", [atLeast("millRuns", 5)], 5e3, 2),
+		once("long", "alltrees", "Every tree on the coast", "Fell all six kinds of tree, redwood too.", [atLeast("species", 6), closes(1)], 5e3, 2),
+		once("long", "wxall", "Every season’s card", "See every weather card in the Almanac.", [atLeast("almanac", 16), closes(1)], 1500, 2),
+		once("long", "fog3", "Fog collector", "Find 3 fog lenses.", [atLeast("fogLens", 3), closes(1)], 3e3, 1),
+		once("long", "items", "Full warehouse", "Find every kind of item in the warehouse.", [atLeast("items", ITEM_KINDS), closes(1)], 5e3, 2),
+		once("long", "sp10", "Charter house", "Fill 10 special orders.", [atLeast("spOrders", 10), closes(1)], 5e3, 2),
+		ladder("long", "c100", "Company supplier", "Fill 100 charter orders.", "contracts", 100, 15e4, 2, [closes(1)]),
+		ladder("long", "d100m", "A hundred million", "Deliver 100 million wood.", "deliv", 1e8, 9e5, 3, [closes(3)]),
+		ladder("long", "e100m", "Founders of Landfall", "Earn $100M in sales.", "earned", 1e8, 2e6, 2, [closes(3)])
 	]);
+	var ACH_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
+	function achievementDef(id) {
+		return ACH_BY_ID.get(id);
+	}
+	/**
+	* Old saves: earned ids from before the rework that now live on under another id.
+	* Every other id that is no longer in ACHIEVEMENTS is dropped (its cash and reputation stay paid).
+	*/
+	var ACH_RENAMED = deepFreeze({
+		c20: "c5",
+		crew50: "crew30",
+		w5: "w1"
+	});
+	/** An old save's earned list: kept ids stay in order, renamed ones map, unknown ones drop, no repeats. */
+	function migrateAchievements(ids) {
+		const out = [];
+		for (const raw of Array.isArray(ids) ? ids : []) {
+			if (typeof raw !== "string") continue;
+			const id = ACH_BY_ID.has(raw) ? raw : ACH_RENAMED[raw];
+			if (id && ACH_BY_ID.has(id) && !out.includes(id)) out.push(id);
+		}
+		return out;
+	}
 	function holds(c, read) {
 		const v = read(c.metric);
-		if (v === void 0) return false;
-		return c.op === ">" ? v > c.value : v >= c.value;
+		if (v === void 0 || v === null || Number.isNaN(v)) return false;
+		return c.op === ">" ? v > c.value : c.op === "<=" ? v <= c.value : v >= c.value;
 	}
 	/** True when every condition holds. */
 	function achievementMet(def, read) {
@@ -2663,6 +3378,25 @@ var Core = (function(exports) {
 		if (!def.ladder || !c) return null;
 		return [read(c.metric), c.value];
 	}
+	/**
+	* [current, target] for the achievements list: the first condition that counts
+	* up to a target above 1 (not the close-camp gate). Null when there is nothing to count.
+	*/
+	function achievementBar(def, read) {
+		const c = def.when.find((x) => x.metric !== "closes" && x.op === ">=" && x.value > 1);
+		if (!c) return null;
+		return [Math.max(0, read(c.metric) ?? 0), c.value];
+	}
+	/**
+	* Close camps this achievement needs before it can be earned: its `closes`
+	* condition, or 1 when it reads a metric that only moves after a close camp; 0 for first-outpost ones.
+	*/
+	function closesNeeded(def) {
+		let n = 0;
+		for (const c of def.when) if (c.metric === "closes") n = Math.max(n, c.value);
+		else if (AFTER_CLOSE_METRICS.includes(c.metric)) n = Math.max(n, 1);
+		return n;
+	}
 	/** The metric a repeat bounty measures for this achievement (ladders only). */
 	function bountyMetric(def) {
 		return def.ladder && def.when[0] ? def.when[0].metric : null;
@@ -2671,6 +3405,27 @@ var Core = (function(exports) {
 	var BOUNTY_RATE = .25;
 	/** Repeat bounties pay an outpost at most this share of the cost of its next push inland. */
 	var BOUNTY_CAP = .2;
+	/**
+	* New achievements and repeat bounties met this outpost ("goals") queue a perk
+	* pick every this many. 3 since the rework (was 5): the first outpost has 23
+	* achievements, not 58, so a first landing still earns about as many perk picks.
+	*/
+	var GOALS_PER_DRAFT = 3;
+	/**
+	* One achievement pays at most this share of the next push inland now (of the current era's cost at the
+	* last era); the board holds the rest and pays it when the outpost reaches its next era. Since the rework,
+	* achievements already met in an earlier outpost unlock the moment camp closes, so without this a new
+	* landing at the cove could collect $200,000 and skip straight past Steam Camp.
+	*/
+	var ACH_PAY_CAP = .5;
+	function achievementPayCap(nextEraCost, currentEraCost) {
+		return Math.round(ACH_PAY_CAP * (Number.isFinite(nextEraCost) ? nextEraCost : currentEraCost));
+	}
+	/** [paid now, held for the next era] for `cash` owed under `cap`. */
+	function splitReward(cash, cap) {
+		const c = Math.max(0, cash), now = Math.min(c, Math.max(0, cap));
+		return [now, c - now];
+	}
 	/**
 	* Most repeat-bounty cash one outpost can collect: BOUNTY_CAP of the next era's
 	* cost, or of the current era's cost once the last era is reached.
@@ -4056,641 +4811,6 @@ var Core = (function(exports) {
 			total: load + overweight + clean + pace,
 			ahead
 		};
-	}
-	//#endregion
-	//#region packages/core/src/items.ts
-	/**
-	* The company warehouse: item definitions, Prime timber, finds (drop tables),
-	* special charter orders and their bonus cap, as data plus pure helpers.
-	* Spec: docs/design/prime-timber-drops-inventory.md (smallest playtest version)
-	* and docs/design/sawmill-camp.md (mill goods).
-	*
-	* Owner ruling: the only currencies are cash and Charter Shares. Everything
-	* else the player collects is an item here.
-	*
-	* Randomness: every roll takes an injected Rng. The prototype feeds these from
-	* a separate seeded stream (`streamRng(S.rng, 'drops')`), never Math.random,
-	* so the logging sim's existing draws stay byte-exact.
-	*/
-	var TIERS = deepFreeze([
-		"scrap",
-		"common",
-		"good",
-		"fine",
-		"prime",
-		"rare"
-	]);
-	var TIER_LABEL = deepFreeze({
-		scrap: "Firewood",
-		common: "Common",
-		good: "Good",
-		fine: "Fine",
-		prime: "Prime",
-		rare: "Rare"
-	});
-	var TIER_DIAMONDS = deepFreeze({
-		scrap: 0,
-		common: 0,
-		good: 1,
-		fine: 2,
-		prime: 3,
-		rare: 4
-	});
-	/** Board grades and log grades on the ladder (ids unchanged: clear/select/common, 1/2/3/'P' where 'P' is pulp, now firewood). */
-	var BOARD_TIER = deepFreeze({
-		clear: "fine",
-		select: "good",
-		common: "common"
-	});
-	var LOG_TIER = deepFreeze({
-		"1": "fine",
-		"2": "good",
-		"3": "common",
-		P: "scrap"
-	});
-	/** Board grade names for players (the ids stay clear/select/common): Fine, Good, Common. */
-	var BOARD_LABEL = deepFreeze({
-		clear: "Fine",
-		select: "Good",
-		common: "Common"
-	});
-	/** A log grade for players: 1 Fine, 2 Good, 3 Common, 'P' firewood. */
-	function logTierName(g) {
-		const t = LOG_TIER[String(g)];
-		return t ? TIER_LABEL[t] : TIER_LABEL.common;
-	}
-	var ITEMS = deepFreeze([
-		{
-			id: "logging.prime_spar",
-			name: "Prime log",
-			plural: "Prime logs",
-			skill: "logging",
-			category: "prime",
-			rarity: "made",
-			sell: 40,
-			desc: "A perfect log, stamped Prime. Builds the mill and fills big orders.",
-			uses: [
-				"order",
-				"structure",
-				"sell"
-			],
-			from: "Perfect falls (3 from a spruce) and Fine logs of 12 ft or more (14 ft on spruce); idle crews about 1 tree in 50",
-			tier: "prime",
-			icon: {
-				glyph: "spar",
-				tint: "spruce",
-				badge: "prime"
-			}
-		},
-		{
-			id: "logging.burl",
-			name: "Swirl knot",
-			plural: "Swirl knots",
-			skill: "logging",
-			category: "find",
-			rarity: "common",
-			sell: 30,
-			desc: "A swirly lump of wood. Buyers pay well for it.",
-			uses: [
-				"sell",
-				"collection",
-				"future:sawmill"
-			],
-			from: "Felling and bucking",
-			tier: "common",
-			icon: {
-				glyph: "burl",
-				tint: "bark"
-			}
-		},
-		{
-			id: "logging.amber_pitch",
-			name: "Amber sap",
-			plural: "Amber sap",
-			skill: "logging",
-			category: "find",
-			rarity: "common",
-			sell: 12,
-			desc: "Hard tree sap. Seals ship hulls and the water wheel’s dam.",
-			uses: [
-				"order",
-				"structure",
-				"sell",
-				"future:smelting"
-			],
-			from: "Bucking (pine has the most)",
-			tier: "common",
-			icon: {
-				glyph: "drop",
-				tint: "amber"
-			}
-		},
-		{
-			id: "logging.survey_marker",
-			name: "Restock token",
-			plural: "Restock tokens",
-			skill: "logging",
-			category: "find",
-			rarity: "uncommon",
-			sell: 18,
-			desc: "A brass company token. Use one to reroll your perk cards (2 per outpost).",
-			uses: [
-				"reroll",
-				"sell",
-				"future:surveying"
-			],
-			from: "Skidding",
-			tier: "good",
-			icon: {
-				glyph: "marker",
-				tint: "brass"
-			}
-		},
-		{
-			id: "logging.ships_fitting",
-			name: "Shipwreck bronze",
-			plural: "Shipwreck bronze",
-			skill: "logging",
-			category: "find",
-			rarity: "uncommon",
-			sell: 22,
-			desc: "Bronze parts washed ashore from a wreck. Builds the circular saw.",
-			uses: [
-				"order",
-				"structure",
-				"sell",
-				"future:raising"
-			],
-			from: "Hauling (washed up by the cove road)",
-			tier: "good",
-			icon: {
-				glyph: "deadeye",
-				tint: "bronze"
-			}
-		},
-		{
-			id: "logging.fog_glass",
-			name: "Fog lens",
-			plural: "Fog lenses",
-			skill: "logging",
-			category: "find",
-			rarity: "rare",
-			sell: 90,
-			desc: "A smoky, sea-worn lens. Nobody knows who made it.",
-			uses: [
-				"sell",
-				"collection",
-				"future:surveying"
-			],
-			from: "Top results in felling, skidding and hauling",
-			tier: "rare",
-			icon: {
-				glyph: "lens",
-				tint: "fog"
-			}
-		},
-		{
-			id: "sawmill.quarter_sawn",
-			name: "Prime board",
-			plural: "Prime boards",
-			skill: "sawmill",
-			category: "mill",
-			rarity: "made",
-			sell: 25,
-			desc: "The best board, from a great run on a Prime log. The Admiralty wants it for decks.",
-			uses: ["sell", "future:raising"],
-			from: "A great Saw boards run on a Prime log",
-			tier: "prime",
-			icon: {
-				glyph: "board",
-				tint: "oak",
-				figure: "quarter",
-				badge: "prime"
-			}
-		},
-		{
-			id: "sawmill.plank_bundle",
-			name: "Plank bundle",
-			plural: "Plank bundles",
-			skill: "sawmill",
-			category: "mill",
-			rarity: "made",
-			sell: 10,
-			desc: "500 wood of Common boards. Builds the bunkhouse.",
-			uses: ["structure", "sell"],
-			from: "Common boards at the Sawmill",
-			tier: "common",
-			icon: {
-				glyph: "bundle",
-				tint: "pine"
-			}
-		}
-	]);
-	var BULK = deepFreeze([
-		{
-			id: "company.logs",
-			name: "Log pond",
-			tab: "logs",
-			scope: "company",
-			tier: "common",
-			icon: {
-				glyph: "pile",
-				tint: "pine"
-			},
-			desc: "Logs waiting for the Sawmill. Logging fills it; the mill saws it."
-		},
-		{
-			id: "sawmill.lumber.clear",
-			name: "Fine boards",
-			tab: "boards",
-			scope: "camp",
-			tier: "fine",
-			icon: {
-				glyph: "bundle",
-				tint: "pine",
-				straps: false,
-				knots: 0
-			},
-			desc: "No knots. Sell for 3× the log price."
-		},
-		{
-			id: "sawmill.lumber.select",
-			name: "Good boards",
-			tab: "boards",
-			scope: "camp",
-			tier: "good",
-			icon: {
-				glyph: "bundle",
-				tint: "pine",
-				straps: false,
-				knots: 1
-			},
-			desc: "A few small knots. Sell for 2×."
-		},
-		{
-			id: "sawmill.lumber.common",
-			name: "Common boards",
-			tab: "boards",
-			scope: "camp",
-			tier: "common",
-			icon: {
-				glyph: "bundle",
-				tint: "pine",
-				straps: false,
-				knots: 4
-			},
-			desc: "Knotty. Sell for 1×, or make plank bundles."
-		}
-	]);
-	var ITEM_BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
-	function itemDef(id) {
-		return ITEM_BY_ID.get(id);
-	}
-	var CURRENCIES = deepFreeze([
-		{
-			id: "cash",
-			name: "Cash",
-			scope: "outpost"
-		},
-		{
-			id: "shares.logging",
-			name: "Charter Shares",
-			scope: "skill",
-			skill: "logging"
-		},
-		{
-			id: "shares.sawmill",
-			name: "Charter Shares",
-			scope: "skill",
-			skill: "sawmill"
-		}
-	]);
-	/**
-	* Sale price of one item at an era: base × √(TRACT_BASE[era] ÷ 60).
-	* The spec's linear scale (× TRACT_BASE ÷ 60) made warehouse sales 9-45% of an
-	* outpost's earnings in the sim (most sales land at Diesel Road, ×250); the
-	* square root keeps them near the 5% guardrail. Balance agent to confirm.
-	*/
-	function itemSellPrice(id, era) {
-		const d = ITEM_BY_ID.get(id);
-		return d ? Math.round(d.sell * Math.sqrt((TRACT_BASE[era] ?? 60) / 60)) : 0;
-	}
-	var PRIME_RULES = deepFreeze([
-		{
-			species: "pine",
-			item: "logging.prime_spar",
-			perfectFall: 1,
-			buckMinLen: 12
-		},
-		{
-			species: "spruce",
-			item: "logging.prime_spar",
-			perfectFall: 3,
-			buckMinLen: 14
-		},
-		{
-			species: "hemlock",
-			item: "logging.prime_spar",
-			perfectFall: 1,
-			buckMinLen: 12
-		}
-	]);
-	var PRIME_BY_SP = new Map(PRIME_RULES.map((p) => [p.species, p]));
-	/** Prime made by a perfect fall of this species (null when it makes none yet). */
-	function primeFromFall(species) {
-		const r = PRIME_BY_SP.get(species);
-		return r ? {
-			item: r.item,
-			qty: r.perfectFall
-		} : null;
-	}
-	/** Bucking score needed before grade 1 cuts are stamped Prime. */
-	var BUCK_PRIME_SCORE = .9;
-	/** Shortest grade 1 sawlog that can be stamped Prime by default (spruce needs 14 ft), and the most Prime one stem gives. */
-	var BUCK_PRIME_MIN_LEN = 12;
-	var BUCK_PRIME_MAX = 2;
-	/** Prime from one bucked stem: 1 per grade 1 sawlog of the species' Prime length (12 ft; spruce 14 ft) when the score is ≥ 90%, at most 2. */
-	function primeFromBuck(species, segments, score) {
-		const r = PRIME_BY_SP.get(species);
-		if (!r || score < .9) return null;
-		const n = Math.min(2, segments.filter((s) => s.g === 1 && s.len >= r.buckMinLen).length);
-		return n > 0 ? {
-			item: r.item,
-			qty: n
-		} : null;
-	}
-	/** Chance a crew-felled tree is Prime: 2% at Cove Landing, scaled down as tracts grow so Prime per tract stays near 1.2. */
-	function idlePrimeChance(era) {
-		return .02 * TRACT_BASE[0] / (TRACT_BASE[era] ?? TRACT_BASE[0]);
-	}
-	/**
-	* How many of `n` independent events with chance `p` happen, cheaply: exact
-	* Bernoulli draws for small n, otherwise the expected count with the
-	* fractional part drawn. Draws: min(n, 8) for small n, else one.
-	*/
-	function countEvents(rng, n, p) {
-		if (n <= 0 || p <= 0) return 0;
-		if (n <= 8 && Number.isInteger(n)) {
-			let k = 0;
-			for (let i = 0; i < n; i++) if (rng() < p) k++;
-			return k;
-		}
-		const e = n * p, whole = Math.floor(e);
-		return whole + (rng() < e - whole ? 1 : 0);
-	}
-	var TIER_MULT = [
-		.1,
-		.4,
-		1
-	];
-	var DROP_TABLES = deepFreeze({
-		fell: {
-			id: "logging.fell",
-			skill: "logging",
-			game: "fell",
-			baseChance: .25,
-			tierMult: TIER_MULT,
-			idlePerMin: .02,
-			idleRareMult: .1,
-			entries: [{
-				item: "logging.burl",
-				qty: [1, 1],
-				weight: 50,
-				minTier: 0
-			}, {
-				item: "logging.fog_glass",
-				qty: [1, 1],
-				weight: 10,
-				minTier: 2,
-				rare: true
-			}]
-		},
-		buck: {
-			id: "logging.buck",
-			skill: "logging",
-			game: "buck",
-			baseChance: .35,
-			tierMult: TIER_MULT,
-			idlePerMin: .06,
-			idleRareMult: .1,
-			entries: [{
-				item: "logging.amber_pitch",
-				qty: [1, 1],
-				weight: 70,
-				minTier: 0
-			}, {
-				item: "logging.burl",
-				qty: [1, 1],
-				weight: 20,
-				minTier: 0
-			}]
-		},
-		skid: {
-			id: "logging.skid",
-			skill: "logging",
-			game: "skid",
-			baseChance: .2,
-			tierMult: TIER_MULT,
-			idlePerMin: .02,
-			idleRareMult: .1,
-			entries: [{
-				item: "logging.survey_marker",
-				qty: [1, 1],
-				weight: 50,
-				minTier: 1
-			}, {
-				item: "logging.fog_glass",
-				qty: [1, 1],
-				weight: 10,
-				minTier: 2,
-				rare: true
-			}]
-		},
-		haul: {
-			id: "logging.haul",
-			skill: "logging",
-			game: "haul",
-			baseChance: .25,
-			tierMult: TIER_MULT,
-			idlePerMin: .02,
-			idleRareMult: .1,
-			entries: [
-				{
-					item: "logging.ships_fitting",
-					qty: [1, 1],
-					weight: 60,
-					minTier: 1
-				},
-				{
-					item: "logging.ships_fitting",
-					qty: [2, 2],
-					weight: 30,
-					minTier: 2
-				},
-				{
-					item: "logging.fog_glass",
-					qty: [1, 1],
-					weight: 10,
-					minTier: 2,
-					rare: true
-				}
-			]
-		}
-	});
-	/** Tier from a mini-game's quality q: top ≥ 0.97, mid ≥ 0.55, else low. */
-	function dropTier(q) {
-		return q >= .97 ? 2 : q >= .55 ? 1 : 0;
-	}
-	/** Weighted pick among entries; one draw. */
-	function pickEntry(rng, entries, weight) {
-		const tot = entries.reduce((a, e) => a + weight(e), 0);
-		if (tot <= 0) return null;
-		let x = rng() * tot;
-		for (const e of entries) {
-			x -= weight(e);
-			if (x <= 0) return e;
-		}
-		return entries[entries.length - 1] ?? null;
-	}
-	/**
-	* A mini-game's drop roll. Draws: the chance roll; on a hit, the entry pick.
-	* Low tier rolls on entries with minTier 0 ("common"), mid on minTier ≤ 1, top on all.
-	* `weightMult` favours an item (pine's pitch pockets: amber pitch ×2 in bucking).
-	*/
-	function rollDrop(table, tier, rng, chanceMult = 1, weightMult = {}) {
-		if (rng() >= table.baseChance * table.tierMult[tier] * chanceMult) return null;
-		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= tier), (x) => x.weight * (weightMult[x.item] ?? 1));
-		return e ? {
-			item: e.item,
-			qty: e.qty[0]
-		} : null;
-	}
-	/**
-	* An idle crew's drop roll (one per 60 s of work at half capacity or more).
-	* Rolls on common and uncommon entries (minTier ≤ 1), rares at idleRareMult of
-	* their weight. `weightMult` lets a perk favour one item (Pitch boiler).
-	* Draws: the chance roll; on a hit, the entry pick.
-	*/
-	function rollIdleDrop(table, rng, chanceMult = 1, weightMult = {}) {
-		if (rng() >= table.idlePerMin * chanceMult) return null;
-		const e = pickEntry(rng, table.entries.filter((x) => x.minTier <= 1 || x.rare), (x) => x.weight * (x.rare ? table.idleRareMult : 1) * (weightMult[x.item] ?? 1));
-		return e ? {
-			item: e.item,
-			qty: e.qty[0]
-		} : null;
-	}
-	/**
-	* Seconds of stage work per idle roll. Work is time × utilisation: a stage
-	* running flat out rolls every 60 s, one starved to 30% every 200 s. (The spec's
-	* "at least half capacity" gate left only the bottleneck stage rolling, so
-	* bucking, the only pitch source, almost never rolled; see the sim notes.)
-	*/
-	var IDLE_DROP_SECONDS = 60;
-	var SPECIAL_ORDERS = deepFreeze([{
-		id: "admiralty_spar",
-		skill: "logging",
-		client: "The Admiralty",
-		name: "Admiralty mast order",
-		short: "Admiralty",
-		text: "The Admiralty wants Prime logs for ship masts, and amber sap to seal them.",
-		needs: [{
-			item: "logging.prime_spar",
-			qty: 16
-		}, {
-			item: "logging.amber_pitch",
-			qty: 2
-		}],
-		bonusPct: .15,
-		unlockPerk: "sparman",
-		trigger: ["logging.prime_spar"],
-		dueOutposts: 2
-	}, {
-		id: "caulk_perseverance",
-		skill: "logging",
-		client: "the captain of the Perseverance",
-		name: "Patch the Perseverance",
-		short: "Perseverance",
-		text: "The company ship is leaking. Her captain needs amber sap and shipwreck bronze before she sails.",
-		needs: [{
-			item: "logging.amber_pitch",
-			qty: 6
-		}, {
-			item: "logging.ships_fitting",
-			qty: 3
-		}],
-		bonusPct: .08,
-		rewardItems: [{
-			item: "logging.burl",
-			qty: 2
-		}],
-		unlockPerk: "pitchboiler",
-		trigger: ["logging.amber_pitch", "logging.ships_fitting"],
-		dueOutposts: 2
-	}]);
-	/** Most special orders open at once. */
-	var ORDER_OPEN_MAX = 2;
-	/** Special-order bonus cap per outpost (owner rule: the balance agent may raise it to 0.35 only if active < 1.5× casual). */
-	var ORDER_BONUS_CAP = .25;
-	/** A missed order is withdrawn and posted again this many outposts after it closed. */
-	var ORDER_RETURN_OUTPOSTS = 2;
-	/** Charter Shares multiplier from the special-order bonus filled this outpost: 1 + min(cap, sum). */
-	function orderBonus(filledPct) {
-		return 1 + Math.min(ORDER_BONUS_CAP, Math.max(0, filledPct));
-	}
-	/** Items still needed to fill an order, given what has been handed in. */
-	function orderRemaining(def, given) {
-		return def.needs.map((n) => ({
-			item: n.item,
-			qty: Math.max(0, n.qty - (given[n.item] ?? 0))
-		})).filter((n) => n.qty > 0);
-	}
-	/** Order perks: rare, rule-changing, offered in Logging drafts once their order is filled. */
-	var ORDER_PERKS = deepFreeze([{
-		id: "sparman",
-		r: "rare",
-		name: "Prime hunter",
-		desc: "Felling game: a good fall on pine, spruce or hemlock also gives 1 Prime log, but perfect falls give no speed boost."
-	}, {
-		id: "pitchboiler",
-		r: "rare",
-		name: "Sap boiler",
-		desc: "Bucking game: each firewood piece becomes amber sap (2 at most) instead of firewood value. Idle buckers find sap 3× as often."
-	}]);
-	/**
-	* Old player-facing names and their new ones, longest first. Ids and save keys never change; this only rewrites text a
-	* save already holds (the camp log). Each rule is idempotent: new names never match an old pattern.
-	*/
-	var RENAMES = [
-		[/Admiralty spar order/g, "Admiralty mast order"],
-		[/Prime spars/g, "Prime logs"],
-		[/Prime spar/g, "Prime log"],
-		[/Quarter-sawn boards/g, "Prime boards"],
-		[/Quarter-sawn board/g, "Prime board"],
-		[/(Ship|ship)[’']s fittings/g, "shipwreck bronze"],
-		[/Ship[’']s fitting/g, "Shipwreck bronze"],
-		[/ship[’']s fitting/g, "shipwreck bronze"],
-		[/Survey markers/g, "Restock tokens"],
-		[/Survey marker/g, "Restock token"],
-		[/survey markers/g, "restock tokens"],
-		[/survey marker/g, "restock token"],
-		[/Fog-glass/g, "Fog lens"],
-		[/fog-glass/g, "fog lens"],
-		[/Amber pitch/g, "Amber sap"],
-		[/amber pitch/g, "amber sap"],
-		[/\bBurls\b/g, "Swirl knots"],
-		[/\bBurl\b/g, "Swirl knot"],
-		[/\bburls\b/g, "swirl knots"],
-		[/\bburl\b/g, "swirl knot"],
-		[/Spar man/g, "Prime hunter"],
-		[/Pitch boiler/g, "Sap boiler"],
-		[/Mill pond & wheel/g, "Water wheel"],
-		[/\b(\d+) MBF\b/g, "$1K wood"],
-		[/board feet/g, "wood"],
-		[/bd ft/g, "wood"]
-	];
-	/** Old item names and "bd ft" in a line of saved text, rewritten in the new words. */
-	function renameOldText(text) {
-		return RENAMES.reduce((t, [re, to]) => t.replace(re, to), text);
 	}
 	//#endregion
 	//#region packages/core/src/icons.ts
@@ -7048,10 +7168,14 @@ var Core = (function(exports) {
 	}
 	//#endregion
 	exports.ACHIEVEMENTS = ACHIEVEMENTS;
+	exports.ACH_PAY_CAP = ACH_PAY_CAP;
+	exports.ACH_RENAMED = ACH_RENAMED;
+	exports.ACH_TIERS = ACH_TIERS;
 	exports.ADVANCE_REPAY_SHARE = ADVANCE_REPAY_SHARE;
 	exports.AFK_LOT = AFK_LOT;
 	exports.AFK_MIX = AFK_MIX;
 	exports.AFK_NOTE = AFK_NOTE;
+	exports.AFTER_CLOSE_METRICS = AFTER_CLOSE_METRICS;
 	exports.BEST_FOR = BEST_FOR;
 	exports.BIG_STICK_CLEAR = BIG_STICK_CLEAR;
 	exports.BOARD_GRADES = BOARD_GRADES;
@@ -7086,11 +7210,13 @@ var Core = (function(exports) {
 	exports.ERA_SPECIES = ERA_SPECIES;
 	exports.EVENT_CLAMP = EVENT_CLAMP;
 	exports.FELL_RULES = FELL_RULES;
+	exports.FINDABLE_ITEMS = FINDABLE_ITEMS;
 	exports.FIRE_PER_SEC = FIRE_PER_SEC;
 	exports.FIRST_CARD = FIRST_CARD;
 	exports.FIT_PERF_RATE_MAX = FIT_PERF_RATE_MAX;
 	exports.FOUNDING_CRATE = FOUNDING_CRATE;
 	exports.GENTLE_CHANGES = GENTLE_CHANGES;
+	exports.GOALS_PER_DRAFT = GOALS_PER_DRAFT;
 	exports.GRADE_MIX = GRADE_MIX;
 	exports.GROUNDS = GROUNDS;
 	exports.HALF_SEC = HALF_SEC;
@@ -7198,7 +7324,10 @@ var Core = (function(exports) {
 	exports.TURN_TIME_PIT = TURN_TIME_PIT;
 	exports.WIND_CAP = WIND_CAP;
 	exports.aboutTime = aboutTime;
+	exports.achievementBar = achievementBar;
+	exports.achievementDef = achievementDef;
 	exports.achievementMet = achievementMet;
+	exports.achievementPayCap = achievementPayCap;
 	exports.achievementProgress = achievementProgress;
 	exports.advanceRepay = advanceRepay;
 	exports.applyMults = applyMults;
@@ -7226,6 +7355,7 @@ var Core = (function(exports) {
 	exports.cheapestCrew = cheapestCrew;
 	exports.clamp = clamp;
 	exports.clauseMult = clauseMult;
+	exports.closesNeeded = closesNeeded;
 	exports.composeSeason = composeSeason;
 	exports.countEvents = countEvents;
 	exports.coveLogPrice = coveLogPrice;
@@ -7309,6 +7439,7 @@ var Core = (function(exports) {
 	exports.marketPrice = marketPrice;
 	exports.maxSawyers = maxSawyers;
 	exports.maxSkidLogs = maxSkidLogs;
+	exports.migrateAchievements = migrateAchievements;
 	exports.milesWithRoad = milesWithRoad;
 	exports.millFlowBf = millFlowBf;
 	exports.millLegacyGain = millLegacyGain;
@@ -7378,6 +7509,7 @@ var Core = (function(exports) {
 	exports.speciesSeasonValue = speciesSeasonValue;
 	exports.splitDelivery = splitDelivery;
 	exports.splitOrder = splitOrder;
+	exports.splitReward = splitReward;
 	exports.splitTicks = splitTicks;
 	exports.stageRate = stageRate;
 	exports.stallRescue = stallRescue;
@@ -7442,13 +7574,17 @@ const fresh = () => ({v:2, cash:0, era:0, year:1890, season:2, st:0, t:0,
   stems:{bf:0,val:0}, cut:{bf:0,val:0}, landing:{bf:0,val:0},
   own:{}, upg:[], tracts:[Object.assign(makeTract('Cove woodlot', [['pine',6],['hemlock',4]], 40, 1, 'flat'), {seq:0})], tractSeq:1,
   site:{miles:1, slope:'flat'}, hp:null, vis:'pine', forSale:[], afkHeld:false, saleT:0, hireOffer:null, offers:[], offerT:0, contracts:[],
-  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
+  boost:{}, owed:0, rep:0, ach:[], run:freshRun(), meta:freshMeta(), runs:[], stats:{deliv:0, tracts:0, slots:1, hires:0, contracts:0, perfFell:0, perfBuck:0, cleanSkid:0, cleanHaul:0, winters:0, run_fell:0, run_buck:0, run_skid:0, run_haul:0, goodFell:0, buck85:0, buck90:0, mudRuns:0, fullLoads:0, winterHauls:0, skidLogs:0, parHaul:0, storms:0, cleared:0,
+    // achievements rework (2026-10-28): lifetime counters that survive close camp. sp = kinds of tree felled; steamLater and firstMin stay unset until known
+    afkLots:0, prime:0, maxOrders:0, sp:{}, perks:0, curses:0, sawTop:0, toMill:0, beatFirst:0, dieselRuns:0}, ui:freshUi(), ema:0, upEma:0, bucket:0, short:false, felled:0, earned:0, ph:[], phT:0, log:[], last:Date.now(),
   // company-wide (playtest 2): the warehouse, special orders, structures and the Sawmill camp. All survive every close camp.
   bank:{}, found:{}, locks:[], newCount:0, orders:freshOrders(), structures:{}, camps:{}, shares:{sawmill:freshMeta()}, story:{sawmillOpened:false, card:false},
   millShare:Core.MILL_SHARE_DEFAULT, bulk:{logs:0}, rng:freshRng(), dropT:{}, mruns:[], weather:freshWeather(),
   // the company advance (2026-10-28): crews advanced to unblock a zero-income stall, still owed (forgiven at close camp).
   // S.lastSale (the time of the last sale) is set by normalize() and close camp, so an old save's stall clock starts at its own time
-  adv:0});
+  adv:0,
+  // achievements rework (2026-10-28): reward cash over Core.ACH_PAY_CAP of the next push inland, held by the board until the next era (company-wide)
+  achHeld:0});
 // seasonal events (Core: packages/core/src/weather.ts): company-wide, one roll per season change on the events stream, rolled one season ahead.
 // changes -1 = not yet known (an old save): normalize() sets it from the winters already worked, so a veteran company gets no gentle start.
 function freshWeather(){ return {cur:null, next:null, streak:0, seen:{}, changes:-1, burnt:false, off:false, stats:{bad:0, guard:0, fires:0, burned:0, maxStreak:0}}; }
@@ -7710,7 +7846,7 @@ function buyTract(i){
   S.tracts.push(t);
   if (S.tracts.length === 1){ setSite(); newTree(); } else applyQueue();
   // the slot relists its own kind of lot at once (the AFK lot too: it is always for sale)
-  S.forSale[i] = genSlot(Number.isInteger(t.slot) ? t.slot : t.afk ? Core.LOT_SLOTS.findIndex(x => x.afk) : 0); if (!t.afk) capSlot1();
+  S.forSale[i] = genSlot(Number.isInteger(t.slot) ? t.slot : t.afk ? Core.LOT_SLOTS.findIndex(x => x.afk) : 0); if (!t.afk) capSlot1(); else S.stats.afkLots++;
   delete t.slot;
   note(`Bought ${t.name}: ${fmt(t.trees)} trees.`);
   render(true);
@@ -7778,7 +7914,7 @@ const ordFull = () => S.contracts.length >= ordCap();
 function accept(i){
   if (ordFull()) return;
   const o = S.offers[i]; if (!o) return;
-  S.contracts.push({...o, done:0, end:S.t + o.dur});
+  S.contracts.push({...o, done:0, end:S.t + o.dur}); S.stats.maxOrders = Math.max(S.stats.maxOrders || 0, S.contracts.length);
   S.offers.splice(i,1); applyQueue();
   note(`Signed with ${o.mill}: ${bf(o.vol)} in ${mins(o.dur)}, +${Math.round(o.prem*100)}%.`);
   render(true);
@@ -7786,9 +7922,12 @@ function accept(i){
 
 // ---------- simulation
 // species seasonal traits (hemlock tanbark in Spring and Summer, maple in Winter) come in through Core.seasonValueFactor
+// kinds of tree felled, for the achievements (a stand {species: trees} or a list of species)
+function markSp(x){ const sp = S.stats.sp; if (!x || Object.keys(sp).length >= 6) return;
+  for (const id of Array.isArray(x) ? x : Object.keys(x).filter(k => x[k] > 0)) if (!sp[id] && SP[id]) sp[id] = 1; }
 function fellK(t, k){
   if (!t.picked && (rulesAny || ignoresRules(t))){
-    t.left -= k; S.felled += k;
+    t.left -= k; S.felled += k; markSp(standOf(t));
     S.stems.bf += k*t.bf; S.stems.val += k*t.val*Core.seasonValueFactor(t.mix, effSeason()); // an Early freeze counts as Winter for species traits too (maple)
     const st = standOf(t); t.stand = Core.fellFromStand(st, Object.keys(st), k); // every species in proportion
     return;
@@ -7796,7 +7935,7 @@ function fellK(t, k){
   // the lot stash: fell what the rules pick, a set at a time (First trees, then the rest), at those trees' own figures
   for (let guard = 0; k > 0 && guard < 20; guard++){
     const v = cutOf(t), n = v.picking ? Math.min(k, Math.max(1, Math.floor(v.count + 1e-9))) : k;
-    t.left -= n; S.felled += n; k -= n;
+    t.left -= n; S.felled += n; k -= n; markSp(v.species);
     S.stems.bf += n*v.bf; S.stems.val += n*v.val*Core.seasonValueFactor(v.mix, effSeason());
     t.stand = Core.fellFromStand(standOf(t), v.species, n); if (v.picking) t.picked = true;
   }
@@ -7845,7 +7984,7 @@ function deliver(amt){
   let base = full, sent = 0;
   if (sh > 0){ const m = S.camps.sawmill, sale = Core.millLogSale(want, full*sh, m.cash); sent = sale.bf;
     if (sale.bf < want - 1e-9) millShortAt = S.t;
-    if (sale.bf > 0){ S.bulk.logs += sale.bf; S.run.toMill = (S.run.toMill || 0) + sale.bf;
+    if (sale.bf > 0){ S.bulk.logs += sale.bf; S.run.toMill = (S.run.toMill || 0) + sale.bf; S.stats.toMill += sale.bf;
       m.cash = Math.max(0, m.cash - sale.cost); m.logPaid = (m.logPaid || 0) + sale.cost; S.run.millPaid = (S.run.millPaid || 0) + sale.cost;
       base = full*(1 - sale.bf/amt) + sale.cost; } }
   if (S.camps.sawmill) flowNote(amt, sent);
@@ -7902,7 +8041,7 @@ function tick(dt){
   for (const k in cap){ const u = full[k] > 0 ? used[k]/full[k] : 1; S.util[k] = (S.util[k] ?? 1) + (u - (S.util[k] ?? 1))*Math.min(1, dt/3); }
   idleFinds(dt, full);
   // run milestones
-  if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0;
+  if (S.era > S.run.era){ while (S.run.era < S.era){ S.run.era++; S.run.eraT[S.run.era] = S.t - S.run.t0; eraStats(S.run.era);
     queueDraft(.65, `Reached ${ERAS[S.run.era].name}`); } }
   // contracts
   for (const c of S.contracts.filter(c => S.t >= c.end)){
@@ -8557,24 +8696,43 @@ function renderDispatch(){
 }
 
 // ---------- achievements (definitions are data in packages/core)
+// lifetime era counters: outposts that reached Diesel Road, and the fastest Steam Camp on an outpost after the first (minutes)
+function eraStats(e){
+  if (S.achHeld > 0){ const [now, rest] = Core.splitReward(S.achHeld, achCap()); S.achHeld = rest; S.cash += now;
+    if (now > 0){ note(`The board paid the achievement rewards it held: +${money(now)}.`); toast({label:'Achievement rewards', name:`+${money(now)}`, line:`Held by the board until ${ERAS[e].name}.${rest > 0 ? ` ${money(rest)} more at the next era.` : ''}`}); } }
+  if (e === 2) S.stats.dieselRuns++;
+  if (e === 1 && S.run.n > 1){ const mn = (S.run.eraT[1] || 0)/60; if (!(S.stats.steamLater <= mn)) S.stats.steamLater = mn; }
+}
 const crewCount = () => Core.crewCount(S.own);
-const achMetric = m => m === 'deliv' ? S.stats.deliv : m === 'earned' ? S.earned : m === 'felled' ? S.felled : m === 'crew' ? crewCount() : m === 'era' ? S.era
-  : m === 'crewedStages' ? ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length : m === 'almanac' ? Object.keys(S.weather.seen).length : S.stats[m];
+// metrics read from the save (Core.AchMetric); anything not named here is a lifetime counter in S.stats
+const ACH_READ = {
+  deliv: () => S.stats.deliv, earned: () => S.earned, felled: () => S.felled, crew: () => crewCount(), era: () => S.era,
+  crewedStages: () => ['fell','buck','skid','haul'].filter(st => baseRate(st) > 0).length, almanac: () => Object.keys(S.weather.seen).length,
+  closes: () => Math.max(0, (S.run.n || 1) - 1), shares: () => S.meta.total || 0, species: () => Object.keys(S.stats.sp || {}).length,
+  millRuns: () => S.camps.sawmill ? Math.max(0, (S.camps.sawmill.n || 1) - 1) : 0, bunk: () => S.structures['logging.bunkhouse'] || 0,
+  spOrders: () => Object.values(S.orders.filled).reduce((a, n) => a + (+n || 0), 0), fogLens: () => (S.found['logging.fog_glass'] || {}).total || 0,
+  items: () => Core.FINDABLE_ITEMS.filter(i => S.found[i.id]).length,
+};
+const achMetric = m => ACH_READ[m] ? ACH_READ[m]() : S.stats[m];
 const ACH = Core.ACHIEVEMENTS;
+// one achievement pays at most half the next push inland now; the board holds the rest until the next era (Core.ACH_PAY_CAP)
+const achCap = () => Core.achievementPayCap(eraCost(S.era+1), eraCost(S.era));
 const achProg = a => Core.achievementProgress(a, achMetric);
 function checkAch(quiet){
   if (checkUnlocks(quiet)) render(true);
-  const got = [];
+  const got = []; let paidNow = 0, heldNow = 0;
   for (const a of ACH){
     if (S.ach.includes(a.id) || !Core.achievementMet(a, achMetric)) continue;
-    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.cash += a.cash; S.rep += a.rep; got.push(a);
-    note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(a.cash)}` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
+    S.ach.push(a.id); if (S.run.bounty) S.run.bounty.push(a.id); S.rep += a.rep; got.push(a);
+    const [now, held] = Core.splitReward(a.cash, achCap() - paidNow); paidNow += now; S.cash += now; S.achHeld += held; heldNow += held;
+    note(`Achievement: ${a.name}` + (/[.!?]$/.test(a.name) ? '' : '.') + (a.cash ? ` +${money(now)}` : '') + (held > 0 ? ` (${money(held)} held until the next era)` : '') + (a.rep ? ` · reputation +${a.rep}` : ''));
   }
   const bn = checkBounties();
   if (!got.length){ if (bn) render(true); return; }
   S.run.goals = (S.run.goals||0) + got.length; goalDrafts();
-  if (quiet || got.length > 3){ toast({name: `${got.length} achievements`, line: `+${money(got.reduce((x,a) => x + a.cash, 0))} · reputation +${got.reduce((x,a) => x + (a.rep||0), 0)}`}); }
-  else got.forEach(a => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
+  const heldTxt = heldNow > 0 ? `${money(heldNow)} held until the next era` : '';
+  if (quiet || got.length > 3){ toast({name: `${got.length} achievements`, line: [`+${money(paidNow)}`, heldTxt, `reputation +${got.reduce((x,a) => x + (a.rep||0), 0)}`].filter(Boolean).join(' · ')}); }
+  else got.forEach((a, i) => toast({name:a.name, line:[a.desc, a.cash ? '+'+money(a.cash) : '', i === got.length - 1 ? heldTxt : '', a.rep ? `reputation +${a.rep}` : ''].filter(Boolean).join(' · ')}));
   render(true);
 }
 // toasts wait while a sheet (mini-game, draft, warehouse, ...) is open so they never cover it; at most 2 show on a phone
@@ -8611,7 +8769,7 @@ function armToast(){
   setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); armToast(); }, 400); }, 4500);
 }
 function renderGoals(){
-  const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
+  const open = ACH.filter(a => !S.ach.includes(a.id) && a.ladder && Core.closesNeeded(a) <= achMetric('closes')).map(a => { const [c,t] = achProg(a); return {a, r: Math.min(1, c/t), c, t}; })
     .sort((x,y) => y.r - x.r).slice(0,3);
   list('goals', open.map(o => o.a.id).join(), open.map(o => `<div class="goal"><div class="line"><b>${o.a.name}</b><span class="spec">${o.a.cash ? money(o.a.cash) : ''}${o.a.rep ? ` · rep +${o.a.rep}` : ''}</span></div>
     <p>${o.a.desc}</p><div class="bar"><i data-g="${o.a.id}"></i></div></div>`).join(''));
@@ -9650,7 +9808,8 @@ function runDone(kind, q, again, sp){
   if (r.prog >= need){ r.prog = 0; r.gameDrafts = (r.gameDrafts||0) + 1; const qq = r.pq; r.pq = 0; queueDraft(qq, null); }
   if (!again){ gameFind(kind, q, sp); clearRoad(kind, q); }
 }
-function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= 5){ r.goalMark = (r.goalMark||0) + 5; queueDraft(.35, 'Five goals met'); } }
+const GOALS_N = Core.GOALS_PER_DRAFT; // a perk pick every few goals (new achievements and repeat bounties)
+function goalDrafts(){ const r = S.run; while ((r.goals||0) - (r.goalMark||0) >= GOALS_N){ r.goalMark = (r.goalMark||0) + GOALS_N; queueDraft(.35, `${['','One','Two','Three','Four','Five'][GOALS_N] || GOALS_N} goals met`); } }
 function contractFilled(){
   S.run.cFilled++; if (perk('snowball')) S.run.snow++;
   if (S.run.cFilled % 5 === 0) queueDraft(.45, 'Five orders filled');
@@ -9666,7 +9825,7 @@ function currentOffer(camp = 'logging'){ const r = dRun(camp); if (!r || !r.dq.l
 function pickPerk(id, camp = 'logging'){
   const r = dRun(camp), off = currentOffer(camp); if (!off || !off.includes(id)) return false;
   r.perks.push(id); r.dq.shift(); r.drafts = r.dq.length; r.offer = null;
-  const p = PMAP[id]; note(`${camp === 'sawmill' ? 'Mill perk' : 'Perk'} (${RARITY[p.r].label.toLowerCase()}): ${p.name}.`);
+  const p = PMAP[id]; S.stats.perks++; if (p.r === 'curse') S.stats.curses++; note(`${camp === 'sawmill' ? 'Mill perk' : 'Perk'} (${RARITY[p.r].label.toLowerCase()}): ${p.name}.`);
   toast({label:`${RARITY[p.r].label} perk`, name:p.name, line:p.desc});
   return true;
 }
@@ -9680,6 +9839,7 @@ function markerReroll(){ if (!canMarker()) return false; S.bank[MARKER]--; S.run
 function closeCamp(){
   if (!canClose()) return 0;
   const gain = legacyNow(), r = S.run, bonus = Math.min(Core.ORDER_BONUS_CAP, S.orders.bonusPct), storm = stormMult() - 1;
+  { const mn = runMin(); if (r.n === 1 || !(S.stats.firstMin > 0)) S.stats.firstMin = S.stats.firstMin > 0 ? S.stats.firstMin : mn; else if (mn < S.stats.firstMin) S.stats.beatFirst++; }
   S.meta.legacy += gain; S.meta.total += gain;
   S.runs.unshift({n:r.n, min:Math.round(runMin()), deliv:r.deliv, earned:r.earned, legacy:gain, era:S.era, mods:[...r.mods], perks:r.perks.length, eraT:r.eraT.map(x => x == null ? null : Math.round(x/60)), bonus});
   S.runs.length = Math.min(S.runs.length, 12);
@@ -9687,7 +9847,7 @@ function closeCamp(){
   // the warehouse, special orders, structures and the Sawmill belong to the company, not this outpost (pillar 4)
   const keep = {ui:S.ui, ach:S.ach, rep:S.rep, upg:S.upg, stats:S.stats, meta:S.meta, runs:S.runs, log:S.log, earned:S.earned, felled:S.felled, t:S.t, ph:S.ph, year:S.year, season:S.season, st:S.st,
     bank:S.bank, found:S.found, locks:S.locks, newCount:S.newCount, unseen:S.unseen, orders:S.orders, structures:S.structures, camps:S.camps, shares:S.shares, story:S.story, millShare:S.millShare, bulk:S.bulk, rng:S.rng, mruns:S.mruns,
-    weather:S.weather}; // the weather is the coast's, not the outpost's: closing camp never touches it
+    weather:S.weather, achHeld:S.achHeld}; // the weather is the coast's, not the outpost's: closing camp never touches it
   const kept = meta('nest') ? Math.floor(S.cash*.1) : 0, n = r.n + 1;
   const nf = fresh(); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, nf, keep);
   S.run = freshRun(); S.run.init = true; S.run.n = n; S.run.t0 = S.t; S.run.setup = true; S.run.achMark = S.ach.length;
@@ -9714,8 +9874,13 @@ function buyMeta(id){
   return true;
 }
 function normalize(){
-  const hadSlots = !!(S.stats && typeof S.stats.slots === 'number');
+  const hadSlots = !!(S.stats && typeof S.stats.slots === 'number'), hadAch2 = !!(S.stats && typeof S.stats.prime === 'number');
   S.stats = Object.assign(fresh().stats, S.stats || {});
+  if (!S.stats.sp || typeof S.stats.sp !== 'object' || Array.isArray(S.stats.sp)) S.stats.sp = {};
+  ['afkLots','prime','maxOrders','perks','curses','sawTop','toMill','beatFirst','dieselRuns'].forEach(k => { const v = S.stats[k]; S.stats[k] = typeof v === 'number' && isFinite(v) ? Math.max(0, v) : 0; });
+  ['steamLater','firstMin'].forEach(k => { if (!(typeof S.stats[k] === 'number' && isFinite(S.stats[k]) && S.stats[k] >= 0)) delete S.stats[k]; });
+  // achievements rework (2026-10-28): earned ids that survive stay, a few map to their new id, removed ones drop (their cash and reputation stay)
+  S.ach = Core.migrateAchievements(S.ach);
   S.stats.tracts = Math.max(0, Math.floor(+S.stats.tracts || 0));
   // lot slots (2026-10-28): an old save opens the slots its lifetime lots cut out have earned, without the unlock notes
   if (!hadSlots) S.stats.slots = Core.slotsOpen(S.stats.tracts);
@@ -9734,7 +9899,7 @@ function normalize(){
   if (!r.init){ // an existing company becomes run 1, already under way
     r.init = true; r.t0 = 0; snapBase(); r.bounty = S.ach.slice(); r.deliv = S.stats.deliv || 0; r.earned = S.earned || 0; r.era = S.era; r.achMark = S.ach.length;
   }
-  r.drafts = r.dq.length;
+  r.drafts = r.dq.length; r.bounty = Core.migrateAchievements(r.bounty);
   // playtest 2: company-wide state (older saves have none of it; nested objects merge with their defaults)
   const obj = v => v && typeof v === 'object' && !Array.isArray(v);
   ['bank','found','structures','camps','bulk','dropT'].forEach(k => { if (!obj(S[k])) S[k] = {}; });
@@ -9794,7 +9959,7 @@ function normalize(){
   // seasonal events (2026-10-25): older saves have no weather; the first roll comes at the next season change
   S.weather = Object.assign(freshWeather(), obj(S.weather) ? S.weather : {});
   // the company advance (2026-10-28): an old save owes nothing and its stall clock starts now
-  S.adv = Math.max(0, num(S.adv)); S.lastSale = typeof S.lastSale === 'number' && isFinite(S.lastSale) && S.lastSale <= S.t ? S.lastSale : num(S.t);
+  S.adv = Math.max(0, num(S.adv)); S.achHeld = Math.max(0, num(S.achHeld)); S.lastSale = typeof S.lastSale === 'number' && isFinite(S.lastSale) && S.lastSale <= S.t ? S.lastSale : num(S.t);
   S.stats.advances = Math.max(0, num(S.stats.advances));
   if (!obj(S.weather.seen)) S.weather.seen = {};
   S.weather.stats = Object.assign(freshWeather().stats, obj(S.weather.stats) ? S.weather.stats : {});
@@ -9829,8 +9994,24 @@ function normalize(){
   if (!['auto', 'light', 'dark'].includes(S.ui.theme)) S.ui.theme = 'auto';
   if (!['short', 'full'].includes(S.ui.numFmt)) S.ui.numFmt = 'short';
   if (!['all', 'important', 'none'].includes(S.ui.toastLvl)) S.ui.toastLvl = 'all';
+  if (!hadAch2) seedAchStats();
   // an existing company already past its first close camp gets the Sawmill and the founding crate now
   if (!S.story.sawmillOpened && (S.runs.length > 0 || r.n > 1)) openSawmill(false);
+}
+// achievements rework (2026-10-28): a save from before it gets its new lifetime counters from what it still remembers
+// (the past-outposts list keeps 12, the warehouse's finds, the current outpost); counts it cannot know start at 0
+function seedAchStats(){
+  const st = S.stats, past = S.runs, cur = S.run, crateP = Core.FOUNDING_CRATE.items.filter(i => IDEF(i.item) && IDEF(i.item).category === 'prime').reduce((a, i) => a + i.qty, 0);
+  Core.ITEMS.filter(d => d.category === 'prime').forEach(d => { const f = S.found[d.id]; if (f) st.prime += Math.max(0, (+f.total || 0) - (S.story.sawmillOpened ? crateP : 0)); });
+  st.dieselRuns = past.filter(x => x.era >= 2).length + (cur.era >= 2 ? 1 : 0);
+  const first = past.find(x => x.n === 1); if (first && first.min > 0) st.firstMin = first.min;
+  if (st.firstMin > 0) st.beatFirst = past.filter(x => x.n > 1 && x.min > 0 && x.min < st.firstMin).length;
+  const steam = past.filter(x => x.n > 1 && Array.isArray(x.eraT) && x.eraT[1] != null).map(x => +x.eraT[1]).filter(x => x >= 0);
+  if (steam.length) st.steamLater = Math.min(...steam);
+  st.perks = past.reduce((a, x) => a + (+x.perks || 0), 0) + cur.perks.length; st.curses = cur.perks.filter(id => PMAP[id] && PMAP[id].r === 'curse').length;
+  st.maxOrders = S.contracts.length; st.toMill = +cur.toMill || 0; st.afkLots = (S.tracts || []).filter(t => t && t.afk).length; // afkHeld is cleared before this runs (the AFK lot is always for sale)
+  if (S.felled > 0) ['pine', 'hemlock'].forEach(id => st.sp[id] = 1); // every company starts on the Cove woodlot
+  (S.tracts || []).forEach(t => { if (t.trees > t.left) (t.mix || []).forEach(m => { if (SP[m[0]]) st.sp[m[0]] = 1; }); });
 }
 
 // --- UI
@@ -9957,7 +10138,7 @@ const SODEF = id => Core.SPECIAL_ORDERS.find(d => d.id === id);
 function addItem(id, qty, quiet){
   if (!(qty > 0)) return;
   S.bank[id] = bankN(id) + qty; S.newCount = (S.newCount || 0) + qty; S.unseen[id] = (S.unseen[id] || 0) + qty;
-  const d = IDEF(id), f = S.found[id];
+  const d = IDEF(id), f = S.found[id]; if (d.category === 'prime') S.stats.prime += qty;
   if (!f){ S.found[id] = {first:`${season()} ${S.year}`, total:qty}; note(`New find: ${d.name}.`); toast({label:'New find', name:d.name, line:d.desc}); }
   else { f.total += qty; if (!quiet) toast({label:d.category === 'prime' ? 'Prime!' : d.category === 'mill' ? 'Made' : 'Find', name:`+${itemsTxt({item:id, qty})}`, line:d.desc, minor:true}); }
   postOrders(); autoFill();
@@ -10303,7 +10484,7 @@ function sawFinish(timeUp){
   const qs = Math.min(Core.quarterSawn(L.prime, q, score), nClear);
   if (qs){ bfG.clear = Math.max(0, bfG.clear - qs*clearW*W.cellBf); addItem('sawmill.quarter_sawn', qs); }
   const b0 = bankN(BUNDLE), rev = sawLumber(bfG, L.giant ? Core.BIG_STICK_CLEAR : 1), nb = bankN(BUNDLE) - b0;
-  S.ui.sawRuns = (S.ui.sawRuns || 0) + 1; m.best = Math.max(m.best || 0, score);
+  S.ui.sawRuns = (S.ui.sawRuns || 0) + 1; m.best = Math.max(m.best || 0, score); if (q >= .97) S.stats.sawTop++;
   millRunDone(q);
   const chainOk = q >= .97 && mperk('chaincarriage') && W.chain < 3;
   const tier = q >= .97 ? 'Top sawing' : q >= .55 ? 'Good sawing' : 'Under target, but every board sells';
@@ -10819,7 +11000,7 @@ function bindSettings(){
   $('setSave').innerHTML = saveIoHtml(); bindSaveIo($('setSave'));
 }
 // the Almanac screen: weather cards (seen and unseen), the collection, and a short guide to wood and the tier ladder
-const ALM_TABS = ['weather', 'finds', 'guide'];
+const ALM_TABS = ['achievements', 'weather', 'finds', 'guide'];
 const TIER_GUIDE = [['common', 'Everyday stuff', 'logging.burl'], ['good', 'Better than most', 'logging.survey_marker'], ['fine', 'Top quality from normal work', 'sawmill.lumber.clear'],
   ['prime', 'Stamped for skill: the best cut, the best fall', 'logging.prime_spar'], ['rare', 'Luck: few ever turn up', 'logging.fog_glass']];
 function almGuideHtml(){
@@ -10844,11 +11025,27 @@ function bindAlm(){
     if (j < 0) return; e.preventDefault(); S.ui.almTab = ALM_TABS[j]; renderAlm(); const f = tabs.querySelector(`[data-at="${ALM_TABS[j]}"]`); if (f) f.focus(); });
   $('almBody').addEventListener('click', e => { const b = e.target.closest('[data-it]'); if (b) openWh('collection', b.dataset.it); });
 }
+// the achievements list (rework 2026-10-28), on the Almanac screen: grouped by tier; locked ones say how many close camps they need
+function renderAch(){
+  const closed = achMetric('closes'), done = new Set(S.ach), pct = a => { const b = Core.achievementBar(a, achMetric); return b ? Math.floor(Math.min(1, b[0]/b[1])*20) : 0; };
+  const key = S.ach.join() + '|' + closed + '|' + ACH.map(a => done.has(a.id) ? '' : pct(a)).join('');
+  const reward = a => [a.cash ? money(a.cash) : '', a.rep ? `rep +${a.rep}` : ''].filter(Boolean).join(' · ');
+  const row = a => {
+    const got = done.has(a.id), need = Core.closesNeeded(a) - closed, bar = got ? null : Core.achievementBar(a, achMetric);
+    const lock = !got && need > 0 ? (closed === 0 ? 'Close camp to unlock' : `Close camp ${need} more ${need === 1 ? 'time' : 'times'}`) : '';
+    return `<div class="goal${got ? ' done' : ''}${lock ? ' locked' : ''}" data-ach="${a.id}"><div class="line"><span class="gl"><b>${a.name}</b>${got ? '<span class="chipl ownd">Done</span>' : ''}${lock ? `<span class="chipl lockchip">${lock}</span>` : ''}</span><span class="spec">${reward(a)}</span></div>
+      <p>${a.desc}${bar && !lock ? ` ${fmt(Math.floor(bar[0]))} of ${fmt(bar[1])}.` : ''}</p>${bar && !lock ? `<div class="bar"><i style="width:${(Math.min(1, bar[0]/bar[1])*100).toFixed(1)}%"></i></div>` : ''}</div>`; };
+  const m = `${S.ach.length} of ${ACH.length} earned · reputation ${S.rep} (+${S.rep}% on sales). A reward pays up to ${money(achCap())} now; the board holds the rest until your next era${S.achHeld > 0 ? ` (holding ${money(S.achHeld)})` : ''}.`;
+  list('almBody', 'ach|' + key + '|' + m, `<p class="meta" id="achMeta">${m}</p><div id="achBody">` + Core.ACH_TIERS.map(t => { const xs = ACH.filter(a => a.tier === t.id), n = xs.filter(a => done.has(a.id)).length;
+    return `<div class="group achtier" data-tier="${t.id}"><h3>${t.name}<small>${n} of ${xs.length}</small></h3><p class="meta">${t.desc}</p>${xs.map(row).join('')}</div>`; }).join('') + '</div>');
+}
 function renderAlm(){
   const tab = ALM_TABS.includes(S.ui.almTab) ? S.ui.almTab : 'weather';
   $('almTabs').querySelectorAll('[data-at]').forEach(b => { const on = b.dataset.at === tab; if (b.getAttribute('aria-selected') !== String(on)){ b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; } });
   const nw = `${Core.SEASON_EVENTS.filter(e => S.weather.seen[e.id]).length}/${Core.SEASON_EVENTS.length}`, nf = `${Core.ITEMS.filter(i => S.found[i.id]).length}/${Core.ITEMS.length}`;
   if ($('almNW').textContent !== nw) $('almNW').textContent = nw; if ($('almNF').textContent !== nf) $('almNF').textContent = nf;
+  const na = `${S.ach.length}/${ACH.length}`; if ($('almNA').textContent !== na) $('almNA').textContent = na;
+  if (tab === 'achievements'){ renderAch(); return; }
   if (tab === 'finds'){ list('almBody', 'finds|' + Object.keys(S.found).map(k => k + S.found[k].total).join(), almFindsHtml()); return; }
   if (tab === 'guide'){ list('almBody', 'guide', almGuideHtml()); return; }
   renderAlmWeather();
@@ -10990,7 +11187,7 @@ function renderMill(){
 function bindCompany(){
   $('lsCash').onclick = openLedger; $('lsShares').onclick = () => go('board');
   document.querySelectorAll('.nav [data-go]').forEach(b => b.onclick = () => { go(b.dataset.go); if (!app.classList.contains('drawer')) b.focus(); });
-  $('lsWh').onclick = () => openWh(S.ui.whTab);
+  $('lsWh').onclick = () => openWh(S.ui.whTab); $('achAll').onclick = () => { S.ui.almTab = 'achievements'; go('almanac', () => reveal('scrAlm')); };
   // Camp tab: first tap goes to your camp; a second tap (already on a camp) opens the camp picker
   $('btCamp').setAttribute('aria-haspopup', 'dialog'); $('btCamp').setAttribute('aria-expanded', 'false'); $('btCamp').setAttribute('aria-controls', 'campPick');
   $('btCamp').onclick = () => { if (CAMP_SCREENS.includes(S.ui.screen)) toggleCampPick(); else go(S.ui.camp); };

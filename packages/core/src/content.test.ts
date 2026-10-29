@@ -37,7 +37,7 @@ describe('content tables', () => {
     expect(ERAS.map((e) => e.cost)).toEqual([0, 15000, 1000000, 10000000]);
     expect(EQUIPMENT.find((e) => e.id === 'axeman')).toMatchObject({ rate: 1, cost: 40, up: 3 });
     expect(IMPROVEMENTS.find((u) => u.id === 'cook')?.mult).toEqual({ fell: 1.25, buck: 1.25 });
-    expect(ACHIEVEMENTS).toHaveLength(58);
+    expect(ACHIEVEMENTS).toHaveLength(63);
   });
 });
 
@@ -45,25 +45,25 @@ describe('achievements', () => {
   const reader = (vals: Partial<Record<AchMetric, number>>) => (m: AchMetric) => vals[m];
   const byId = (id: string) => must(ACHIEVEMENTS.find((a) => a.id === id));
 
-  it('d2m sits between the 1M and 3M delivery ladders: 2M bd ft, $10K', () => {
-    const ids = ACHIEVEMENTS.map((x) => x.id), a = byId('d2m');
-    expect(ids.indexOf('d1m')).toBeLessThan(ids.indexOf('d2m'));
-    expect(ids.indexOf('d2m')).toBeLessThan(ids.indexOf('d3m'));
-    expect(a).toMatchObject({ cash: 10000, ladder: true, when: [{ metric: 'deliv', op: '>=', value: 2e6 }] });
+  it('d3m sits between the 1M delivery ladder and the 10M one', () => {
+    const ids = ACHIEVEMENTS.map((x) => x.id), a = byId('d3m');
+    expect(ids.indexOf('d1m')).toBeLessThan(ids.indexOf('d3m'));
+    expect(ids.indexOf('d3m')).toBeLessThan(ids.indexOf('d10m'));
+    expect(a).toMatchObject({ ladder: true, tier: 'first', when: [{ metric: 'deliv', op: '>=', value: 3e6 }] });
     expect(byId('d1m').cash).toBeLessThan(a.cash);
-    expect(a.cash).toBeLessThan(byId('d3m').cash);
-    expect(achievementMet(a, reader({ deliv: 1999999 }))).toBe(false);
-    expect(achievementMet(a, reader({ deliv: 2e6 }))).toBe(true);
+    expect(a.cash).toBeLessThan(byId('d10m').cash);
+    expect(achievementMet(a, reader({ deliv: 2999999 }))).toBe(false);
+    expect(achievementMet(a, reader({ deliv: 3e6 }))).toBe(true);
     expect(bountyMetric(a)).toBe('deliv');
   });
   it('ladders compare >= target and report progress', () => {
-    const a = byId('d10k');
-    expect(achievementMet(a, reader({ deliv: 9999 }))).toBe(false);
-    expect(achievementMet(a, reader({ deliv: 10000 }))).toBe(true);
-    expect(achievementProgress(a, reader({ deliv: 500 }))).toEqual([500, 10000]);
+    const a = byId('d50k');
+    expect(achievementMet(a, reader({ deliv: 49999 }))).toBe(false);
+    expect(achievementMet(a, reader({ deliv: 50000 }))).toBe(true);
+    expect(achievementProgress(a, reader({ deliv: 500 }))).toEqual([500, 50000]);
     expect(bountyMetric(a)).toBe('deliv');
-    expect(bountyMetric(byId('crew10'))).toBe('crew');
-    expect(bountyMetric(byId('pf1'))).toBe('perfFell');
+    expect(bountyMetric(byId('crew30'))).toBe('crew');
+    expect(bountyMetric(byId('pf25'))).toBe('perfFell');
   });
   it('first sale needs strictly more than zero delivered', () => {
     expect(achievementMet(byId('first_sale'), reader({ deliv: 0 }))).toBe(false);
@@ -112,7 +112,7 @@ describe("improvements' crews' route", () => {
   it('progress reports whichever route is closer to done', () => {
     expect(improvementProgress('swamper', { run_skid: 1 })).toEqual([1, 3]);
     expect(improvementProgress('swamper', { run_skid: 1, contracts: 5 })).toEqual([5, 6]);
-    expect(improvementProgress('grade', { buck85: 0, achievements: 30 })).toEqual([30, 36]);
+    expect(improvementProgress('grade', { buck85: 0, achievements: 20 })).toEqual([20, 28]);
     expect(improvementProgress('gunstick', { contracts: 99 })).toEqual([0, 3]);
   });
   it('text names both routes', () => {
