@@ -7887,7 +7887,7 @@ function render(force){
   // equipment
   document.querySelectorAll('#buyN button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.n === 'max' ? 'max' : +b.dataset.n) === S.ui.buyN)));
   { const w = wageBill(evMult('upkeep')), base = `Each extra crew of one type is paid ${Math.round(WAGE.step*100)}% more.`,
-      txt = !w.capped ? base : w.wages > (S.payEma || 0)*60*WAGE.cap + 1e-6 ? `${base} Wages capped at base pay while income is low.` : `${base} Wages capped at ${Math.round(WAGE.cap*100)}% of income.`;
+      txt = !w.capped ? base : w.wages > (S.payEma || 0)*60*WAGE.cap + 1e-6 ? `${base} Income is low, so only base wages are paid.` : `${base} Wages capped at ${Math.round(WAGE.cap*100)}% of income.`;
     const el = $('wageNote'); if (el.textContent !== txt) el.textContent = txt; }
   document.querySelectorAll('#eq .group').forEach(g => {
     const r = baseRate(g.dataset.stage);

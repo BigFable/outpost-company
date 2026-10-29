@@ -41,7 +41,7 @@ const near=(a,b,e=1e-6)=>Math.abs(a-b)<e;
   // ---------- 4. no income: base wages, exactly as before rising wages; the payroll guard and wages owed work as before
   setup({axeman:20}, 0);
   ok(near(E('upkeep()'), 60),'with no income only base pay is charged: $'+E('upkeep()'));
-  ok(note()==='Each extra crew of one type is paid 10% more. Wages capped at base pay while income is low.','the note says base pay: '+note());
+  ok(note()==='Each extra crew of one type is paid 10% more. Income is low, so only base wages are paid.','the note says base pay: '+note());
   E('S.cash=0; S.owed=0;');
   ok(E('payGuard()')===true,'the payroll guard is on with no cash');
   E('S.cut={bf:0,val:0}; S.stems={bf:0,val:0}; S.landing={bf:0,val:0}; S.tracts=[]; tick(1);');
