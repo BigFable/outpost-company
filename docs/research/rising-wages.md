@@ -20,4 +20,17 @@ like a player reading the hire row; with k = 0 it changes nothing.
 
 ## Interim results
 
-(filled in as sweeps finish)
+### Sweep 1 — step k, cap 60%, seeds 1–3 (run minutes run1/run2/run3, mean)
+
+| k | idle | casual | minigame | idle-away | run-2 faster (idle/casual/mg/away) | wages % of income (idle/casual/mg/away) | cap on, min (away) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 (before) | 65/48/34 | 53/36/38 | 38/38/29 | 121/86/121 | 26/31/0/29% | 9/8/4/34 | 0 |
+| 0.05 | 68/48/41 | 51/38/39 | 37/30/33 | 130/91/86 | 29/26/16/30% | 10/8/4/42 | 54 |
+| 0.10 | 66/49/38 | 55/43/31 | 37/30/29 | 121/101/103 | 24/21/19/17% | 12/9/5/33 | 43 |
+| 0.20 | 65/49/51 | 50/37/35 | 34/31/26 | (not run) | 25/27/6/– | 13/11/5/– | – |
+
+No unfinished runs, no stalls (zero-income-with-stock max 5 min, same as before), no company advances, no
+time short of wages in any config. Wages are only 4–13% of income for the playing profiles, so the rise
+moves run times by less than the seed noise at k ≤ 0.1. The cap only matters for idle-away (away for long
+stretches, wages a third of income): it is on 40–55 min of the 8 hours there. k = 0.2 starts to show (idle
+run 3 34 → 51 min, gap 16 → 25 min).
