@@ -1,6 +1,6 @@
 # Roadmap
 
-*Updated 2026-10-26 (weekly brief `reports/2026-10-26-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
+*Updated 2026-11-02 (weekly brief `reports/2026-11-02-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
 
 ## Done
 | Date | Milestone | Notes |
@@ -24,23 +24,25 @@
 | 2026-10-25 | Steam spike build and owner test plan (`docs/steam/spike-test-plan.md`) | Result waits on the owner's test run |
 | 2026-10-25 | Launch drafts: itch.io playtest guide, store page draft, wishlist plan | `docs/launch/` |
 | 2026-10-25 | Lot stash slice 1: Trees tab, Any / First / Skip per species, picking cost | |
+| 2026-10-28 | Round 5 merged: several charter orders, camp money slice 1 + tuning, color-coded lots, four lot slots, round 4 tuning | Balance baseline recorded for round 5 |
+| 2026-10-28 | Zero-income stall rescue (company advance) | No-soft-lock pillar |
+| 2026-10-28 | UI rework slices 1-2: sidebar, top bar with bell, phone bottom tabs, camp tabs, stage cards, Almanac screen | |
+| 2026-10-28 | Designs approved: UI rework, inventory revamp, perk shop, resource names and tier ladder, achievements rework | `docs/design/` |
 
 ## In progress
 | Work | Where | Status | Notes |
 | --- | --- | --- | --- |
-| Round 4 file: camp money slice 1 + owner tuning, several charter orders at once, lot stat colors | `integrate/round4` (`build/camp-money`, `build/more-orders`); `build/lot-colors` not yet in | On track | Needs QA save check and a balance run before merge |
-| Playtest round 3 (species + seasons, on phones too) | main | At risk | Phone build untested on a real phone; no file sent yet |
+| Round 7b: UI slice 3a (Warehouse icons, renames, tier colors, Almanac/Settings), achievements rework (63), simpler lots + AFK lot always for sale, rising crew wages (15% step, 60% cap) | `integrate/round7b` | At risk | Tests pass; 21 of 72 timings off the baseline; needs balance sign-off, new baseline and QA save check before merge. No commits since 2026-10-28 |
+| Playtest round 3 (on phones too) | main | At risk | Phone build untested on a real phone; no file sent. Recommendation: wait for round 7b |
 | Steam spike (achievements, cloud save, Win/Mac/Deck) | `docs/steam/spike-test-plan.md` | Blocked | Waiting on the owner to run the test (gate G1) |
-| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner |
-| Late-run active-play design | `docs/design/late-run-active-play.md` | Waiting on owner | Proposal; aimed at the active-play miss below |
-| Land office lot slots | `docs/design/lot-slots.md` | Waiting on owner | Proposal with measured unlock timings |
+| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner; drop RuneScape comparisons (Melvor 2 now carries the name) |
 
 ## Next
-1. Finish and merge the round 4 file; real-phone check; playtest round 3.
+1. Merge round 7b; real-phone check; itch.io file for playtest round 3.
 2. Steam spike result and the owner's Steam fee call (G1).
-3. itch.io web build for friends (unlisted).
-4. Species slice 2 (mill and heavy-wood games), after round 3 feedback.
-5. Seasons slice 2 (full coast, Sawmill hooks, dispatch orders), after species slice 1 is accepted.
+3. UI rework slice 3b: Shop screen with the perk shop.
+4. "Follow your lead" (late-run active play), after the UI rework.
+5. Species slice 2 and seasons slice 2, after round 3 feedback.
 
 ## Later
 - Species slice 3 (hardwoods, giant cloudwood); Sawmill finds, special orders and later mill structures.
@@ -52,4 +54,4 @@ Last recorded baseline (6 seeds, 3 runs, 8 h), after the 2026-10-24 fixes:
 - Active play pays too little: mini-game vs casual about 1.29x by time to Diesel Road and 1.10-1.37x by Charter Shares per minute (target 1.5-2x). Sawmill active vs casual about 1.26x. Prime timber and special orders were the answer; the late-run design is the next step.
 - Mini-game run 2 is 15% faster than run 1 (target 25-40%). Idle 25% and casual 39% pass.
 - Achievement/unlock gaps of 28-48 min late in run 3 (target under 20). Counting perk drafts, every profile is under 16 min. Idle unlock gaps also persist late in Sawmill runs 2-3.
-- Species and seasons slice 1: merged; baseline re-recorded 2026-10-25. Camp money tuning and multi-orders still need a balance run together before round 4 merges.
+- Round 5 baseline recorded 2026-10-28. Round 7b (achievements, rising wages) moves 21 of 72 timings off it; mini-game run 2 is only 6% faster than run 1; rising wages leave idle run 2 at 19-20%. Needs a balance sign-off and new baseline before merge.
