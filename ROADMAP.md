@@ -1,6 +1,6 @@
 # Roadmap
 
-*Updated 2026-11-02 (weekly brief `reports/2026-11-02-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
+*Updated 2026-11-09 (weekly brief `reports/2026-11-09-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
 
 ## Done
 | Date | Milestone | Notes |
@@ -32,10 +32,10 @@
 ## In progress
 | Work | Where | Status | Notes |
 | --- | --- | --- | --- |
-| Round 7b: UI slice 3a (Warehouse icons, renames, tier colors, Almanac/Settings), achievements rework (63), simpler lots + AFK lot always for sale, rising crew wages (15% step, 60% cap) | `integrate/round7b` | At risk | Tests pass; 21 of 72 timings off the baseline; needs balance sign-off, new baseline and QA save check before merge. No commits since 2026-10-28 |
-| Playtest round 3 (on phones too) | main | At risk | Phone build untested on a real phone; no file sent. Recommendation: wait for round 7b |
-| Steam spike (achievements, cloud save, Win/Mac/Deck) | `docs/steam/spike-test-plan.md` | Blocked | Waiting on the owner to run the test (gate G1) |
-| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner; drop RuneScape comparisons (Melvor 2 now carries the name) |
+| Round 7b: UI slice 3a (Warehouse icons, renames, tier colors, Almanac/Settings), achievements rework (63), simpler lots + AFK lot always for sale, rising crew wages (15% step, 60% cap) | `integrate/round7b` | At risk | Tests pass; 21 of 72 timings off the baseline; needs balance sign-off, new baseline and QA save check before merge. No commits since 2026-10-28 (12 days); merge or drop by 2026-11-16 |
+| Playtest round 3 (on phones too) | main | At risk | Phone build untested on a real phone; no file sent. Recommendation: wait for round 7b; if not merged by 2026-11-16, send main |
+| Steam spike (achievements, cloud save, Win/Mac/Deck) | `docs/steam/spike-test-plan.md` | Blocked | Waiting on the owner to run the test (gate G1); blocked since 2026-10-25 |
+| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner; drop RuneScape comparisons (Melvor 2 now carries the name); store-page call by end of November |
 
 ## Next
 1. Merge round 7b; real-phone check; itch.io file for playtest round 3.
