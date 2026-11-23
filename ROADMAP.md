@@ -1,6 +1,6 @@
 # Roadmap
 
-*Updated 2026-11-16 (weekly brief `reports/2026-11-16-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
+*Updated 2026-11-23 (weekly brief `reports/2026-11-23-weekly.md`). Status values: done, in progress, next, later. Decisions live in `DECISIONS.md`; the four-week plan is `docs/plan-next-4-weeks.md`.*
 
 ## Done
 | Date | Milestone | Notes |
@@ -32,10 +32,10 @@
 ## In progress
 | Work | Where | Status | Notes |
 | --- | --- | --- | --- |
-| Round 7b: UI slice 3a (Warehouse icons, renames, tier colors, Almanac/Settings), achievements rework (63), simpler lots + AFK lot always for sale, rising crew wages (15% step, 60% cap) | `integrate/round7b` | At risk | Tests pass; 21 of 72 timings off the baseline; needs balance sign-off, new baseline and QA save check before merge. No commits since 2026-10-28 (19 days); 2026-11-16 deadline missed; merge this week or park by 2026-11-23 |
-| Playtest round 3 (on phones too) | main | At risk | Phone build untested on a real phone; no file sent; no player feedback since round 2. Recommendation: send main now unless a session opens this week |
-| Steam spike (achievements, cloud save, Win/Mac/Deck) | `docs/steam/spike-test-plan.md` | Blocked | Waiting on the owner to run the test (gate G1); blocked since 2026-10-25 (22 days) |
-| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner; drop RuneScape comparisons (Melvor 2 now carries the name); store-page call by 2026-11-30; Melvor Idle 2 Early Access 2026-11-17 |
+| Round 7b: UI slice 3a (Warehouse icons, renames, tier colors, Almanac/Settings), achievements rework (63), simpler lots + AFK lot always for sale, rising crew wages (15% step, 60% cap) | `integrate/round7b` | Blocked | Tests pass; 21 of 72 timings off the baseline; needs balance sign-off, new baseline and QA save check before merge. No commits since 2026-10-28 (26 days); 2026-11-23 park date reached; waits on the owner's finish-or-park call. Recommendation: finish; park if no session by 2026-11-30 |
+| Playtest round 3 (on phones too) | main | At risk | Phone build untested on a real phone; no file sent; no player feedback since round 2 (about four weeks). Recommendation: send main now |
+| Steam spike (achievements, cloud save, Win/Mac/Deck) | `docs/steam/spike-test-plan.md` | Blocked | Waiting on the owner to run the test (gate G1); blocked since 2026-10-25 (29 days) |
+| Store-page plan | `docs/launch/` | Waiting on owner | Nothing goes public without the owner; drop RuneScape comparisons (Melvor 2 now carries the name); store-page call by 2026-11-30 (this week); Melvor Idle 2 launched 2026-11-17 at $14.99 in Early Access. Recommendation: draft now, private until the owner approves |
 
 ## Next
 1. Merge round 7b; real-phone check; itch.io file for playtest round 3.
